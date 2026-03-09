@@ -1,0 +1,14 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "intro",
+    "repository-overview",
+    "---Tutorials---",
+    "...tutorials",
+    "---How-To Guides---",
+    "...how-to",
+    "---Reference---",
+    "...reference"
+  ]
+}

@@ -1,0 +1,47 @@
+---
+title: Repository Overview
+description: A high-level look at the Open Reporting codebase and structure.
+---
+
+# Repository Overview
+
+Open Reporting is structured as a monorepo containing the core platform components, documentation, and agent skills.
+
+## Structure at a Glance
+
+```text
+open-reporting/
+├── backend/          # FastAPI server, database models, and API logic
+├── frontend/         # React application (Vite, Tailwind, shadcn/ui)
+├── docs-site/        # Documentation site (Fumadocs)
+├── skills/           # Specialized capabilities for AI agents
+└── docker-compose.yml # Orchestration for local development
+```
+
+## Core Components
+
+### Backend
+The backend is a modern Python API built with **FastAPI**.
+- **Database**: Uses SQLModel (SQLAlchemy + Pydantic) for data modeling.
+- **Package Management**: Managed by `uv` for lightning-fast dependency resolution.
+- **Features**: Authentication, real-time notifications, semantic search (pgvector), and report management.
+
+### Frontend
+The frontend is a sleek, responsive dashboard built with **React 19** and **Vite**.
+- **Styling**: Uses **Tailwind CSS 4** for modern, utility-first styling.
+- **UI Components**: Leverages **shadcn/ui** for high-quality, accessible components.
+- **State Management**: Built-in React Context for authentication and global application state.
+
+### Docs Site
+You are currently viewing the docs site, which is built using **Fumadocs** (a Next.js-based documentation framework). It provides a fast, searchable, and beautiful documentation experience.
+
+### Skills
+The `skills/` directory contains modular capabilities that can be utilized by AI agents to perform specific tasks, such as generating reports, analyzing data, or interacting with external services.
+
+## Development Workflow
+
+To contribute to Open Reporting, you generally need both the backend and frontend running.
+
+1.  **Backend Development**: Navigate to `/backend`, run `uv sync`, and start the server with `uvicorn`.
+2.  **Frontend Development**: Navigate to `/frontend`, run `npm install`, and start the dev server with `npm run dev`.
+3.  **Documentation**: Navigate to `/docs-site` and run `npm run dev` to see your changes reflected here.

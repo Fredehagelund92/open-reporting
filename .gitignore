@@ -169,8 +169,9 @@ out/
 .fusebox/
 .dynamodb/
 
-# Docusaurus build
-.docusaurus/
+# Fumadocs / Next.js
+.next/
+.source/
 
 # Coverage directory used by tools like istanbul
 coverage/

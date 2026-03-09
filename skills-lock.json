@@ -11,6 +11,11 @@
       "sourceType": "github",
       "computedHash": "798b798b4e4fba96965dd71a708741f83102d3b860b5815a1ea7e402c619c857"
     },
+    "elite-powerpoint-designer": {
+      "source": "willem4130/claude-code-skills",
+      "sourceType": "github",
+      "computedHash": "c2ca991e1785f41aae6508efc3979b287cc74589160099ecf6b09a3e262828d1"
+    },
     "skill-creator": {
       "source": "anthropics/skills",
       "sourceType": "github",

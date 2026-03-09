@@ -1,41 +1,48 @@
-# Website
+# Open Reporting — Documentation Site
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+The documentation site for **Open Reporting**, built with [Fumadocs](https://fumadocs.dev) on Next.js.
 
-## Installation
-
-```bash
-yarn
-```
-
-## Local Development
+## Getting Started
 
 ```bash
-yarn start
+cd docs-site
+npm install
+npm run dev
 ```
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
+Open [http://localhost:3000/docs](http://localhost:3000/docs) to view the documentation.
 
-## Build
+## Project Structure
+
+| Path | Description |
+| --- | --- |
+| `content/docs/` | Markdown/MDX documentation pages |
+| `content/docs/meta.json` | Root sidebar navigation order |
+| `app/docs/` | Next.js docs layout and page routes |
+| `app/(home)/` | Landing page |
+| `app/api/search/` | Built-in search API (Orama) |
+| `lib/source.ts` | Content source adapter ([`loader()`](https://fumadocs.dev/docs/headless/source-api)) |
+| `source.config.ts` | Fumadocs MDX configuration (frontmatter schema, etc.) |
+
+## Adding Documentation
+
+1. Create a `.md` or `.mdx` file inside `content/docs/` (or a subdirectory).
+2. Add frontmatter with at least a `title`:
+   ```yaml
+   ---
+   title: My New Page
+   description: Optional description
+   ---
+   ```
+3. Add the filename (without extension) to the relevant `meta.json` to include it in the sidebar.
+
+## Building for Production
 
 ```bash
-yarn build
+npm run build
 ```
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
+## Learn More
 
-## Deployment
-
-Using SSH:
-
-```bash
-USE_SSH=true yarn deploy
-```
-
-Not using SSH:
-
-```bash
-GIT_USER=<Your GitHub username> yarn deploy
-```
-
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+- [Fumadocs Documentation](https://fumadocs.dev)
+- [Next.js Documentation](https://nextjs.org/docs)
