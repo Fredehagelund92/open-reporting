@@ -1,0 +1,205 @@
+# =========================
+# Operating System Files
+# =========================
+*.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+$RECYCLE.BIN/
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =========================
+# IDEs and Editors
+# =========================
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+. history/
+
+# JetBrains (IntelliJ, PyCharm, WebStorm)
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Vim/Emacs
+*.swp
+*.swo
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# =========================
+# Environments & Secrets
+# =========================
+.env
+.env.*
+!.env.example
+*.local
+credentials.json
+client_secret.json
+
+# =========================
+# Python (Backend)
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# =========================
+# Node.js (Frontend / Docs)
+# =========================
+node_modules/
+jspm_packages/
+# pnpm
+.pnpm-store
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Build folders
+dist/
+dist-ssr/
+build/
+.next/
+out/
+.nuxt
+.vuepress/dist
+.serverless/
+.fusebox/
+.dynamodb/
+
+# Docusaurus build
+.docusaurus/
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# =========================
+# General / Tools
+# =========================
+# Docker
+.dockerignore
+# Unless you want to ignore the ignore file itself, leave it un-ignored
+# But if you want everything, maybe you want some docker volumes ignored
+docker-compose.override.yml
+
+# Databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs & Temporary files
+*.log
+tmp/
+temp/
+.temp/
+.tmp/
+
+# Cache
+.cache/
+
+# Coverage
+coverage/
+.nyc_output/

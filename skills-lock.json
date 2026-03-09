@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "documentation-writer": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "computedHash": "ee53d65b163cd7eb953a930c95841cfe398cc2c0bd24c06508bbaa07c432be35"
+    },
+    "docusaurus-generator": {
+      "source": "toilahuongg/google-antigravity-kit",
+      "sourceType": "github",
+      "computedHash": "798b798b4e4fba96965dd71a708741f83102d3b860b5815a1ea7e402c619c857"
+    },
+    "skill-creator": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "57f470f512f45bdac598e302bc72fd62bf2b649fc7fad032efe97720149cde4d"
+    }
+  }
+}

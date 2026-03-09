@@ -1,0 +1,161 @@
+/**
+ * ProfilePage — User profile and settings page.
+ * Shows the current user's profile, their favorites, and account controls.
+ */
+
+import { Link } from "react-router-dom"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { getAvatarColor, getInitials } from "@/lib/user"
+import {
+  ArrowLeft,
+  Mail,
+  Shield,
+  Star,
+  FileText,
+  LogOut,
+  Calendar,
+} from "lucide-react"
+
+import { useAuth } from "@/context/AuthContext"
+import { MOCK_PINNED, MOCK_REPORTS, MOCK_COMMENTS, MOCK_SAVED_REPORTS } from "@/data/mock"
+
+export function ProfilePage() {
+  const { user, isAuthenticated, logout } = useAuth()
+
+  if (!isAuthenticated || !user) {
+    return (
+      <ScrollArea className="flex-1 bg-white">
+        <main className="max-w-3xl mx-auto p-6 md:p-8">
+          <div className="text-center py-20">
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Not signed in</h1>
+            <p className="text-muted-foreground">Please sign in to view your profile.</p>
+          </div>
+        </main>
+      </ScrollArea>
+    )
+  }
+
+  // Count user interactions from mock data
+  const userComments = MOCK_COMMENTS.filter(c => c.author === user.name).length
+  const userFavorites = MOCK_PINNED.length + MOCK_SAVED_REPORTS.length
+  const userReportInteractions = userComments * 3 + MOCK_SAVED_REPORTS.length * 2
+  const joinedString = new Date(user.joinedAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+
+  return (
+    <ScrollArea className="flex-1 bg-white">
+      <main className="max-w-3xl mx-auto p-6 md:p-8">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-slate-900 mb-6"
+        >
+          <ArrowLeft className="size-4" />
+          Back to Feed
+        </Link>
+
+        {/* Profile Header */}
+        <Card className="mb-8 overflow-hidden">
+          <div className="h-28 bg-gradient-to-r from-slate-800 via-slate-700 to-amber-600" />
+          <CardContent className="relative pt-0 pb-8 px-6 flex flex-col items-center text-center">
+            <div className="-mt-12 mb-4">
+              <Avatar className="size-24 ring-4 ring-white shadow-lg">
+                {user.avatar && <AvatarImage src={user.avatar} className="object-cover" />}
+                <AvatarFallback className={`text-2xl font-bold ${getAvatarColor(user.name || user.id)}`}>
+                  {getInitials(user.name)}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-4">{user.name}</h1>
+
+            <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Mail className="size-4" />
+                {user.email}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Shield className="size-4" />
+                <Badge variant={user.role === "ADMIN" ? "default" : "secondary"} className="font-medium whitespace-nowrap">
+                  {user.role.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ")}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Calendar className="size-4" />
+                Joined {joinedString}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <Card className="text-center p-4">
+            <p className="text-3xl font-bold text-slate-900">{userFavorites}</p>
+            <p className="text-sm text-muted-foreground">Favorites</p>
+          </Card>
+          <Card className="text-center p-4">
+            <p className="text-3xl font-bold text-slate-900">{userReportInteractions}</p>
+            <p className="text-sm text-muted-foreground">Reports Viewed</p>
+          </Card>
+          <Card className="text-center p-4">
+            <p className="text-3xl font-bold text-slate-900">{userComments}</p>
+            <p className="text-sm text-muted-foreground">Comments</p>
+          </Card>
+        </div>
+
+        {/* Favorites List */}
+        <Card className="mb-8">
+          <CardHeader className="px-6 py-4 border-b">
+            <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <Star className="size-4 text-amber-500 fill-amber-500" />
+              Your Favorites
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ul className="divide-y">
+              {MOCK_PINNED.map((fav) => (
+                <li key={fav.id}>
+                  <Link
+                    to={fav.type === "space" ? `/space/${fav.label.replace("o/", "")}` : `/report/${MOCK_REPORTS.find(r => r.id === fav.targetId)?.slug || fav.targetId}`}
+                    className="flex items-center gap-3 px-6 py-3 hover:bg-slate-50 transition-colors"
+                  >
+                    {fav.type === "space" ? (
+                      <Star className="size-4 text-amber-500 fill-amber-500 shrink-0" />
+                    ) : (
+                      <FileText className="size-4 text-amber-500 shrink-0" />
+                    )}
+                    <span className="text-sm font-medium text-slate-700">{fav.label}</span>
+                    <Badge variant="outline" className="ml-auto text-xs capitalize">{fav.type}</Badge>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+
+        {/* Account Actions */}
+        <Card>
+          <CardHeader className="px-6 py-4 border-b">
+            <CardTitle className="text-base font-bold text-slate-800">Account</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-900">Sign out</p>
+                  <p className="text-xs text-muted-foreground">You are signed in via Google Workspace</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={logout} className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 gap-2">
+                  <LogOut className="size-4" />
+                  Sign out
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    </ScrollArea>
+  )
+}
