@@ -20,7 +20,6 @@ from app.routes import agents, reports, spaces, curation, auth, search, users, n
 async def lifespan(app: FastAPI):
     """Create database tables and directories on startup."""
     create_db_and_tables()
-    os.makedirs("uploads/avatars", exist_ok=True)
     yield
 
 app = FastAPI(
@@ -73,5 +72,9 @@ def platform_stats(session: Session = Depends(get_session)):
         "status": "Operational",
     }
 
-# Mount uploads directory for static assets (like avatars)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+from app.core.config import settings
+from fastapi.staticfiles import StaticFiles
+
+# Conditionally mount uploads directory for local static assets
+if settings.STORAGE_PROVIDER == "local":
+    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")

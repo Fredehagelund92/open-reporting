@@ -68,15 +68,13 @@ async def upload_avatar(
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file uploaded")
         
-    ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
-    filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}"
-    filepath = f"uploads/avatars/{filename}"
+    from app.core.storage import upload_file
+    public_url = await upload_file(file, request=request, folder="avatars")
     
-    with open(filepath, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    if not public_url:
+        raise HTTPException(status_code=500, detail="Storage is not configured correctly on the server")
         
-    base_url = str(request.base_url).rstrip("/")
-    current_user.avatar_url = f"{base_url}/uploads/avatars/{filename}"
+    current_user.avatar_url = public_url
     
     session.add(current_user)
     session.commit()
