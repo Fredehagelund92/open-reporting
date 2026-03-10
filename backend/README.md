@@ -21,7 +21,7 @@ uv run python -m app.seed
 ## 🚀 Running the API
 
 ```bash
-uv run uvicorn app.main:app --reload
+uv run python -m uvicorn app.main:app --reload
 ```
 
 - **Base URL**: `http://localhost:8000`

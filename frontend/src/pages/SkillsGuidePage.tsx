@@ -41,7 +41,7 @@ export function SkillsGuidePage() {
           <p className="text-slate-600 mb-6 text-lg">
             Before building a Skill, it helps to understand what an AI Agent actually is. At its core, an agent requires three components to be useful in a professional environment:
           </p>
-          
+
           <div className="grid gap-6 md:grid-cols-3">
             <Card className="border-slate-200">
               <CardHeader className="pb-2">
@@ -109,7 +109,7 @@ export function SkillsGuidePage() {
                 You are a digital marketing agent. Your goal is to analyze ad spend using the following MCPs:<br />
                 1. The `google-ads-mcp` to pull campaign metrics (clicks, impressions, cost) for the last 7 days.<br />
                 2. The `postgres-mcp` to cross-reference those clicks with actual confirmed product purchases in our DB.<br /><br />
-                
+
                 <span className="text-muted-foreground/60 italic">// Tell the agent how to format its final output</span><br />
                 <span className="text-violet-400 font-bold">## Output Format</span><br />
                 Format your final analysis as an <strong>Open Reporting HTML Artifact</strong>.<br />
@@ -123,28 +123,28 @@ export function SkillsGuidePage() {
         {/* Section 3: Tutorial */}
         <div className="mb-12">
           <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b pb-2">3. Creating Your First Skill</h2>
-          
+
           <div className="space-y-6">
             {[
-              { 
-                step: "1", 
-                title: "Initialize the File", 
-                body: "In your project directory, create a new folder named `.agents/skills/`. Inside it, create a new folder for your specific skill, and place a file inside named `SKILL.md`." 
+              {
+                step: "1",
+                title: "Initialize the File",
+                body: "In your project directory, create a new folder named `.agents/skills/`. Inside it, create a new folder for your specific skill, and place a file inside named `SKILL.md`."
               },
-              { 
-                step: "2", 
-                title: "Define the Trigger", 
-                body: "Write the YAML frontmatter at the very top of the file. The `description` field is extremely critical—this is how the Assistant AI knows exactly *when* to activate this skill during a conversation." 
+              {
+                step: "2",
+                title: "Define the Trigger",
+                body: "Write the YAML frontmatter at the very top of the file. The `description` field is extremely critical—this is how the Assistant AI knows exactly *when* to activate this skill during a conversation."
               },
-              { 
-                step: "3", 
-                title: "Write Explicit Steps", 
-                body: "Do not leave room for assumptions. LLMs work best with numbered checklists. Instead of 'Analyze the DB', write '1. Query the public.users table. 2. Filter for active=true. 3. Group by signup_date.'" 
+              {
+                step: "3",
+                title: "Write Explicit Steps",
+                body: "Do not leave room for assumptions. LLMs work best with numbered checklists. Instead of 'Analyze the DB', write '1. Query the public.users table. 2. Filter for active=true. 3. Group by signup_date.'"
               },
-              { 
-                step: "4", 
-                title: "Publish to Open Reporting", 
-                body: "At the end of your instructions, explicitly tell the agent to output the final result here on the platform using standard HTML artifacts and visually beautiful CSS." 
+              {
+                step: "4",
+                title: "Publish to Open Reporting",
+                body: "At the end of your instructions, explicitly tell the agent to output the final result here on the platform using standard HTML artifacts and visually beautiful CSS."
               },
             ].map(item => (
               <div key={item.step} className="flex gap-4 items-start">
@@ -181,15 +181,6 @@ export function SkillsGuidePage() {
           </CardHeader>
         </Card>
 
-        {/* Section 5: Internal Support */}
-        <div className="text-center p-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-          <p className="text-slate-600 mb-4">
-            Have questions about deploying a custom MCP for your department, or need help refining your Skill prompt?
-          </p>
-          <Button variant="outline" className="gap-2">
-            <Building2 className="size-4" /> Contact Internal Platform Team
-          </Button>
-        </div>
 
       </main>
     </ScrollArea>

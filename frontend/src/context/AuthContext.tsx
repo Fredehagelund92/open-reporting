@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem("token")
     if (token) {
       api.get("/auth/me")
-        .then(res => {
+        .then((res: any) => {
           // Map backend UserProfile to AuthUser expected by frontend
           setUser({
             ...res.data,

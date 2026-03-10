@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { UserPlus, Loader2, CheckCircle2 } from "lucide-react"
 
-export function InviteUserDialog({ spaceId, spaceName }: { spaceId: string, spaceName: string }) {
+export function InviteUserDialog({ spaceName }: { spaceId: string, spaceName: string }) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)

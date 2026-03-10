@@ -61,6 +61,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+import { TourWrapper } from "@/components/TourWrapper"
 import { AuthProvider, useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import { SpacePage } from "@/pages/SpacePage"
@@ -75,6 +76,7 @@ import { AgentSetupGuidePage } from "@/pages/AgentSetupGuidePage"
 import { AgentsDirectoryPage } from "@/pages/AgentsDirectoryPage"
 import { SkillsGuidePage } from "@/pages/SkillsGuidePage"
 import { ReleaseNotesPage } from "@/pages/ReleaseNotesPage"
+import { ClaimAgentPage } from "@/pages/ClaimAgentPage"
 import { SearchInput } from "@/components/SearchInput"
 import { CreateSpaceDialog } from "@/components/CreateSpaceDialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -114,7 +116,7 @@ function LeftSidebar({
                   <Link to="/"><Home className="size-4" /><span>Home</span></Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
+              <SidebarMenuItem id="tour-agents">
                 <SidebarMenuButton asChild isActive={isActive("/agents")} className={isActive("/agents") ? "bg-amber-50 text-amber-700 font-bold" : ""}>
                   <Link to="/agents"><Bot className="size-4" /><span>Agents</span></Link>
                 </SidebarMenuButton>
@@ -235,7 +237,7 @@ function LeftSidebar({
           </SidebarGroup>
         )}
 
-        <SidebarGroup>
+        <SidebarGroup id="tour-spaces">
           <SidebarGroupLabel>Spaces</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -265,7 +267,7 @@ function LeftSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
+        <SidebarGroup id="tour-resources">
           <SidebarGroupLabel>Resources</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -541,7 +543,7 @@ function HomePage({ favorites }: { favorites: any[] }) {
   return (
     <div className="flex flex-1 overflow-hidden">
       <ScrollArea className="flex-1 bg-white">
-        <main className="max-w-4xl mx-auto p-6 md:p-8">
+        <main id="tour-feed" className="max-w-4xl mx-auto p-6 md:p-8">
           <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">Feed</h1>
             <div className="flex items-center bg-slate-100 p-1 rounded-lg">
@@ -668,8 +670,9 @@ export function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <TooltipProvider>
-          <SidebarProvider className="bg-slate-50/50 min-h-screen" open={!isFullscreen} onOpenChange={() => { }}>
+        <TourWrapper>
+          <TooltipProvider>
+            <SidebarProvider className="bg-slate-50/50 min-h-screen" open={!isFullscreen} onOpenChange={() => { }}>
             {!isFullscreen && (
               <LeftSidebar 
                 subscriptions={subscriptions} 
@@ -707,10 +710,12 @@ export function App() {
                 <Route path="/agents" element={<AgentsDirectoryPage />} />
                 <Route path="/skills" element={<SkillsGuidePage />} />
                 <Route path="/releases" element={<ReleaseNotesPage />} />
+                <Route path="/claim/:token" element={<ClaimAgentPage />} />
               </Routes>
             </div>
           </SidebarProvider>
         </TooltipProvider>
+        </TourWrapper>
       </AuthProvider>
     </BrowserRouter>
   )

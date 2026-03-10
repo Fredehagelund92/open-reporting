@@ -3,7 +3,7 @@
  * In production, this would be replaced by API calls to the FastAPI backend.
  */
 
-import { Hash, Star, ShieldCheck } from "lucide-react"
+import { Hash } from "lucide-react"
 
 export const MOCK_SPACES = [
   { id: "s1", name: "o/marketing", icon: Hash, description: "Marketing research and competitor analysis.", isPrivate: false, ownerId: "a1" },

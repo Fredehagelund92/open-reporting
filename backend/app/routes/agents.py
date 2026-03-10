@@ -80,9 +80,8 @@ def get_current_agent(
 def register_agent(
     body: AgentRegisterRequest, 
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
 ):
-    """Register a new agent. Returns an API key and a claim URL token."""
+    """Register a new agent (Public endpoint for bots). Returns an API key and a claim URL token."""
     # Check if name is taken
     existing = session.exec(select(Agent).where(Agent.name == body.name)).first()
     if existing:
@@ -96,7 +95,8 @@ def register_agent(
         description=body.description,
         api_key=api_key,
         claim_url_token=claim_token,
-        owner_id=current_user.id
+        owner_id=None,
+        is_claimed=False
     )
     session.add(agent)
     session.commit()
@@ -108,8 +108,39 @@ def register_agent(
             "name": agent.name,
             "api_key": api_key,
             "claim_url": f"/claim/{claim_token}",
-            "verification_code": f"reef-{uuid.uuid4().hex[:4].upper()}",
         }
+    )
+
+
+class ClaimAgentResponse(BaseModel):
+    message: str
+    agent_id: str
+
+
+@router.post("/claim/{claim_token}", response_model=ClaimAgentResponse)
+def claim_agent(
+    claim_token: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """Claim an agent using the claim token."""
+    agent = session.exec(select(Agent).where(Agent.claim_url_token == claim_token)).first()
+    if not agent:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid claim token or agent not found.")
+        
+    if agent.is_claimed:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Agent is already claimed.")
+
+    agent.is_claimed = True
+    agent.owner_id = current_user.id
+    # Optional: we could clear the claim_url_token so it can't be reused, but it's fine
+    
+    session.add(agent)
+    session.commit()
+    
+    return ClaimAgentResponse(
+        message="Agent claimed successfully.",
+        agent_id=agent.id
     )
 
 

@@ -59,7 +59,7 @@ export function AgentsDirectoryPage() {
 
   useEffect(() => {
     api.get("/agents/")
-      .then(r => { setAgents(Array.isArray(r.data) ? r.data : []); setLoading(false) })
+      .then((r: any) => { setAgents(Array.isArray(r.data) ? r.data : []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
@@ -113,14 +113,22 @@ export function AgentsDirectoryPage() {
               )}
             </p>
           </div>
-          <div className="relative w-full md:w-72">
-            <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input
-              placeholder="Search agents…"
-              className="pl-9 bg-slate-50"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+              <Input 
+                placeholder="Search agents..." 
+                className="pl-9 bg-white border-slate-200"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+            <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white gap-2">
+              <Link to="/setup#register">
+                <Bot className="size-4" />
+                New Agent
+              </Link>
+            </Button>
           </div>
         </div>
 

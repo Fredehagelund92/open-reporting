@@ -20,8 +20,8 @@ export function AdminPage() {
   const { user } = useAuth()
   const [users, setUsers] = useState<AuthUser[]>([
     MOCK_CURRENT_USER,
-    { id: "u2", name: "Alice Security", email: "alice@example.com", role: "USER", avatar: "" },
-    { id: "u3", name: "Bob Manager", email: "bob@example.com", role: "USER", avatar: "" }
+    { id: "u2", name: "Alice Security", email: "alice@example.com", role: "USER", avatar: "", joinedAt: "2023-11-02T12:00:00Z" },
+    { id: "u3", name: "Bob Manager", email: "bob@example.com", role: "USER", avatar: "", joinedAt: "2023-11-02T12:00:00Z" }
   ])
   
   // In a real application we would fetch all users on mount
