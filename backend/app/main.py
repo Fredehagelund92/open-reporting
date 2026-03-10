@@ -31,9 +31,13 @@ app = FastAPI(
 
 # CORS - allow the Vite frontend to call the API
 origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+allow_origins = [origin.strip() for origin in origins if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in origins if origin.strip()],
+    allow_origins=allow_origins,
+    # Safer default: explicitly allow Vercel preview environments
+    allow_origin_regex=os.getenv("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app"),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
