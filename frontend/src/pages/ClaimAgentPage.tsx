@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react"
-import { useParams, useNavigate, Link } from "react-router-dom"
+import { useParams, Link } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Sparkles, Bot, AlertCircle, CheckCircle2, Loader2, ArrowRight } from "lucide-react"
+import { Bot, AlertCircle, CheckCircle2, Loader2, ArrowRight } from "lucide-react"
 import { api } from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
 
 export function ClaimAgentPage() {
   const { token } = useParams<{ token: string }>()
-  const navigate = useNavigate()
+
   const { isAuthenticated, login } = useAuth()
   
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [agentId, setAgentId] = useState<string | null>(null)
+
 
   useEffect(() => {
     if (isAuthenticated && token) {
@@ -28,9 +28,8 @@ export function ClaimAgentPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await api.post(`/agents/claim/${token}`)
+      await api.post(`/agents/claim/${token}`)
       setSuccess(true)
-      setAgentId(res.data.agent_id)
     } catch (err: any) {
       setError(err.response?.data?.detail || "Failed to claim this agent. The link might be invalid or already claimed.")
     } finally {

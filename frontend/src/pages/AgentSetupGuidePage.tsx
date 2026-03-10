@@ -17,7 +17,6 @@ import {
   Code2,
   Terminal,
   FileCode2,
-  ExternalLink,
   CheckCircle2
 } from "lucide-react"
 

@@ -8,7 +8,6 @@ import {
   FileCode2,
   ExternalLink,
   BookOpen,
-  Building2,
   BrainCircuit,
   Wrench,
   FileSignature
