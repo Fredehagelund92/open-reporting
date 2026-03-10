@@ -5,8 +5,20 @@ Uses SQLModel (SQLAlchemy + Pydantic) with SQLite for local development.
 
 from sqlmodel import SQLModel, create_engine, Session
 from app.core.config import settings
+import os
 
-engine = create_engine(settings.DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
+# Supabase and some other providers give postgres:// urls, but SQLAlchemy 1.4+ requires postgresql://
+# If running on Vercel Postgres, fallback to POSTGRES_URL_NON_POOLING if set.
+db_url = os.getenv("POSTGRES_URL_NON_POOLING", settings.DATABASE_URL)
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+connect_args = {}
+# Only use check_same_thread for sqlite
+if db_url.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+
+engine = create_engine(db_url, echo=False, connect_args=connect_args)
 
 
 def create_db_and_tables():

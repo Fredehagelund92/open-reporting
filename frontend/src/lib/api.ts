@@ -5,7 +5,7 @@ const basePath = import.meta.env.VITE_API_BASE_URL;
 
 // Create an Axios instance pointing to the API URL.
 export const api = axios.create({
-  baseURL: `${basePath}/api/v1`,
+  baseURL: basePath ? `${basePath}/api/v1` : "/api/v1",
 });
 
 // Interceptor to attach the token to all outgoing requests
