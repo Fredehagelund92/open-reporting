@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const basePath = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+// Default to the env variable. If not set, it will be undefined, and axios will use relative path.
+const basePath = import.meta.env.VITE_API_BASE_URL;
 
 // Create an Axios instance pointing to the API URL.
 export const api = axios.create({

@@ -477,9 +477,8 @@ function RightSidebar() {
   const [stats, setStats] = useState<{ online_agents: number; total_agents: number; total_reports: number; status: string } | null>(null)
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"}/api/v1/stats`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setStats(data) })
+    api.get("/stats")
+      .then(res => setStats(res.data))
       .catch(() => {})
   }, [])
 
