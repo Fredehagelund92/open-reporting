@@ -23,6 +23,13 @@ engine = create_engine(db_url, echo=False, connect_args=connect_args)
 
 def create_db_and_tables():
     """Create all database tables from SQLModel metadata."""
+    # If on Postgres, ensure pgvector extension exists
+    if db_url.startswith("postgresql"):
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            conn.commit()
+            
     SQLModel.metadata.create_all(engine)
 
 

@@ -37,10 +37,7 @@ import {
   Bot,
   Star,
   LogOut,
-  LogIn,
-  ChevronDown,
   Settings,
-  User,
   Bookmark,
   Bell,
   Flame,
@@ -51,8 +48,11 @@ import {
   BarChart2,
   FileCode2,
   Megaphone,
-  Loader2,
+  ShieldAlert,
+  User as UserIcon,
+  ChevronUp,
 } from "lucide-react"
+import { LoginButton } from "@/components/LoginButton"
 import { getAvatarColor, getInitials } from "@/lib/user"
 import {
   DropdownMenu,
@@ -60,6 +60,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu"
 
 import { TourWrapper } from "@/components/TourWrapper"
@@ -95,8 +96,9 @@ function LeftSidebar({
   favorites: any[], 
   spaces: any[], 
 }) {
-  const { user, isAuthenticated, login, loginWithProvider, logout, providerInfo, isLoggingIn } = useAuth()
+  const { user, isAuthenticated, logout } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
 
   const isActive = (path: string) => location.pathname === path
   const isSpaceActive = (spaceName: string) => location.pathname.startsWith(`/space/${spaceName.replace("o/", "")}`)
@@ -321,61 +323,40 @@ function LeftSidebar({
         {isAuthenticated && user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start items-center gap-3 h-auto py-2 px-3">
+              <Button variant="ghost" className="w-full justify-start gap-2 h-12 px-2 hover:bg-slate-100">
                 <Avatar className="size-8">
-                  {user.avatar && <AvatarImage src={user.avatar} className="object-cover" />}
-                  <AvatarFallback className={`text-xs ${getAvatarColor(user.name || user.id)}`}>
-                    {getInitials(user.name)}
-                  </AvatarFallback>
+                  <AvatarImage src={user.avatar} />
+                  <AvatarFallback className={getAvatarColor(user.id)}>{getInitials(user.name)}</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col items-start flex-1 min-w-0 overflow-hidden">
-                  <span className="text-sm font-semibold truncate w-full text-left">{user.name}</span>
-                  <span className="text-xs text-muted-foreground truncate w-full text-left">{user.email}</span>
+                <div className="flex flex-col items-start min-w-0 flex-1">
+                  <span className="text-sm font-bold truncate w-full text-left">{user.name}</span>
+                  <span className="text-xs text-slate-500 truncate w-full text-left">{user.email}</span>
                 </div>
-                <ChevronDown className="size-4 text-muted-foreground shrink-0" />
+                <ChevronUp className="size-4 ml-auto text-slate-400" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent side="top" align="start" className="w-56">
-              <DropdownMenuItem asChild>
-                <Link to="/profile" className="flex items-center gap-2">
-                  <User className="size-4" />
-                  Profile
-                </Link>
+            <DropdownMenuContent align="end" className="w-56 mb-2">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/profile")}>
+                <UserIcon className="size-4 mr-2" /> Profile
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/settings" className="flex items-center gap-2">
-                  <Settings className="size-4" />
-                  Settings
-                </Link>
+              <DropdownMenuItem onClick={() => navigate("/settings")}>
+                <Settings className="size-4 mr-2" /> Settings
               </DropdownMenuItem>
+              {user.role === "ADMIN" && (
+                <DropdownMenuItem onClick={() => navigate("/admin")}>
+                  <ShieldAlert className="size-4 mr-2" /> Admin Panel
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600">
-                <LogOut className="size-4" />
-                Sign out
+                <LogOut className="size-4 mr-2" /> Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          providerInfo?.provider === "local" ? (
-            <Button onClick={login} variant="outline" className="w-full gap-2">
-              <LogIn className="size-4" />
-              Dev Sign In
-            </Button>
-          ) : (
-            <Button 
-              onClick={loginWithProvider} 
-              variant="outline" 
-              className="w-full gap-2 transition-all"
-              disabled={isLoggingIn}
-            >
-              {isLoggingIn ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <LogIn className="size-4" />
-              )}
-              {isLoggingIn ? "Redirecting..." : `Sign in with ${providerInfo?.display_name || "SSO"}`}
-            </Button>
-          )
+          <LoginButton className="w-full" />
         )}
       </SidebarFooter>
     </Sidebar>

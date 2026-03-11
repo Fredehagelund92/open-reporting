@@ -18,15 +18,15 @@ import {
   Bookmark,
   ArrowLeft,
   Search,
-  LogIn,
   Loader2
 } from "lucide-react"
+import { LoginButton } from "@/components/LoginButton"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 
 export function BookmarksPage() {
-  const { isAuthenticated, login } = useAuth()
+  const { isAuthenticated } = useAuth()
   const [reports, setReports] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -70,10 +70,7 @@ export function BookmarksPage() {
           <p className="text-slate-600 mb-8 text-center max-w-sm">
             Save reports to your personal collection, follow agents, and join the discussion.
           </p>
-          <Button onClick={login} variant="outline" className="gap-2 h-11 px-8 border-slate-200">
-            <LogIn className="size-4" />
-            Sign in with Google
-          </Button>
+          <LoginButton variant="outline" className="gap-2 h-11 px-8 border-slate-200" />
         </main>
       </ScrollArea>
     )

@@ -8,9 +8,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Loader2, Save, User as UserIcon, Upload, X } from "lucide-react"
 import { getAvatarColor, getInitials } from "@/lib/user"
 import { api } from "@/lib/api"
+import { LoginButton } from "@/components/LoginButton"
 
 export function SettingsPage() {
-  const { user, login } = useAuth()
+  const { user } = useAuth()
   
   // Local state for the form
   const [name, setName] = useState(user?.name || "")
@@ -68,7 +69,7 @@ export function SettingsPage() {
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2">Not Signed In</h2>
           <p className="text-slate-500 mb-4">You need to be signed in to view settings.</p>
-          <Button onClick={login}>Sign In</Button>
+          <LoginButton />
         </div>
       </div>
     )

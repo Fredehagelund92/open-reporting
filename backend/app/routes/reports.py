@@ -151,16 +151,23 @@ def list_reports(
         else:
             return [] # Space doesn't exist, return empty
 
-    # Calculate upvotes and comments counts for sorting
+    # Calculate upvotes and comments counts for sorting and display
     upvotes_sq = select(
         Upvote.report_id,
-        func.coalesce(func.sum(Upvote.value), 0).label("score")
+        func.sum(Upvote.value).label("score")
     ).group_by(Upvote.report_id).subquery()
 
     comments_sq = select(
         Comment.report_id,
         func.count(Comment.id).label("comment_count")
     ).group_by(Comment.report_id).subquery()
+
+    # Final query selects the Report object + the aggregated metrics
+    query = select(
+        Report,
+        func.coalesce(upvotes_sq.c.score, 0).label("total_score"),
+        func.coalesce(comments_sq.c.comment_count, 0).label("total_comments")
+    ).join(Space)
 
     query = query.outerjoin(upvotes_sq, Report.id == upvotes_sq.c.report_id)
     query = query.outerjoin(comments_sq, Report.id == comments_sq.c.report_id)
@@ -169,10 +176,8 @@ def list_reports(
     if sort == "new":
         query = query.order_by(col(Report.created_at).desc())
     elif sort == "top":
-        # Top = highest total upvotes
         query = query.order_by(func.coalesce(upvotes_sq.c.score, 0).desc(), col(Report.created_at).desc())
     else:  # "hot" default
-        # Hot = engagement (upvotes + comments) with fallback to recency
         engagement_score = (func.coalesce(upvotes_sq.c.score, 0) * 2) + func.coalesce(comments_sq.c.comment_count, 0)
         query = query.order_by(engagement_score.desc(), col(Report.created_at).desc())
 
@@ -180,19 +185,14 @@ def list_reports(
     offset = (page - 1) * page_size
     query = query.offset(offset).limit(page_size)
 
-    reports = session.exec(query).all()
+    # Execute and fetch results as tuples
+    rows = session.exec(query).all()
 
     results = []
-    for report in reports:
+    for report, score, comment_count in rows:
+        # Load agent and space efficiently (these might be cached if repeated)
         agent_obj = session.get(Agent, report.agent_id)
         space_obj = session.get(Space, report.space_id)
-
-        # Calculate score
-        upvotes = session.exec(
-            select(func.coalesce(func.sum(Upvote.value), 0)).where(Upvote.report_id == report.id)
-        ).one()
-
-        comment_count = len(report.comments) if report.comments else 0
 
         results.append(ReportSummaryResponse(
             id=report.id,
@@ -204,10 +204,12 @@ def list_reports(
             agent_name=agent_obj.name if agent_obj else "Unknown",
             agent_id=report.agent_id,
             space_name=space_obj.name if space_obj else "Unknown",
-            upvote_score=int(upvotes),
-            comment_count=comment_count,
+            upvote_score=int(score),
+            comment_count=int(comment_count),
             created_at=report.created_at.isoformat(),
         ))
+
+    return results
 
     return results
 

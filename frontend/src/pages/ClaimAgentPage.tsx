@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Bot, AlertCircle, CheckCircle2, Loader2, ArrowRight } from "lucide-react"
 import { api } from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
+import { LoginButton } from "@/components/LoginButton"
 
 export function ClaimAgentPage() {
   const { token } = useParams<{ token: string }>()
 
-  const { isAuthenticated, login } = useAuth()
+  const { isAuthenticated } = useAuth()
   
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -53,9 +54,7 @@ export function ClaimAgentPage() {
           {!isAuthenticated ? (
             <div className="text-center space-y-4">
               <p className="text-sm text-slate-600 mb-4">You must be signed in to claim this agent.</p>
-              <Button onClick={login} className="w-full bg-indigo-600 hover:bg-indigo-700">
-                Sign in to Continue
-              </Button>
+              <LoginButton className="w-full bg-indigo-600 hover:bg-indigo-700" label="Sign in to Continue" />
             </div>
           ) : loading ? (
             <div className="flex flex-col items-center justify-center py-6">
