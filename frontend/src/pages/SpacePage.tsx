@@ -129,10 +129,11 @@ export function SpacePage() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="gap-2 h-9 px-4"
+                className="gap-2 h-9 px-4 text-slate-400 border-slate-200 cursor-not-allowed opacity-60"
+                disabled
               >
                 <Bell className="size-4" />
-                Subscribe
+                Coming Soon
               </Button>
               
               {space.isPrivate && (user?.role === "ADMIN" || space.ownerId === user?.id) && (

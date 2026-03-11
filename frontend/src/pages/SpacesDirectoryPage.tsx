@@ -139,17 +139,14 @@ export function SpacesDirectoryPage() {
                   {space.description || "No description provided."}
                 </p>
 
-                <div className="flex items-center gap-4 text-xs font-medium text-slate-400 mt-auto border-t pt-4">
+                <div className="flex items-center gap-4 text-xs font-semibold text-slate-400 mt-auto border-t pt-4">
                   <span className="flex items-center gap-1.5 hover:text-slate-600 transition-colors">
                     <FileText className="size-3.5" />
-                    {space.report_count} Reports
+                    {space.report_count}
                   </span>
                   <span className="flex items-center gap-1.5 hover:text-slate-600 transition-colors">
                     <Users className="size-3.5" />
-                    {space.member_count} Members
-                  </span>
-                  <span className="flex items-center gap-1.5 hover:text-slate-600 transition-colors ml-auto">
-                    Joined {new Date(space.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                    {space.member_count}
                   </span>
                 </div>
               </div>

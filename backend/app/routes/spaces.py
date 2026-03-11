@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, select, col, or_
 
 from app.database import get_session
-from app.models import Space, SpaceAccess, User
+from app.models import Space, SpaceAccess, User, Favorite
 from app.auth.dependencies import get_current_user, get_current_user_optional, require_space_access
 
 router = APIRouter(prefix="/api/v1/spaces", tags=["Spaces"])
@@ -76,7 +76,9 @@ def get_space_stats(session: Session = Depends(get_session)):
     
     total_spaces = session.exec(select(func.count(Space.id))).one()
     total_reports = session.exec(select(func.count(Report.id))).one()
-    total_memberships = session.exec(select(func.count(SpaceAccess.id))).one()
+    # Total memberships = Total space favorites + Total number of spaces (owners)
+    total_favs = session.exec(select(func.count(Favorite.id)).where(Favorite.target_type == "space")).one()
+    total_memberships = total_favs + total_spaces
     
     return SpaceStatsResponse(
         total_spaces=total_spaces,
@@ -99,20 +101,20 @@ def list_spaces(
     count_sq = select(Report.space_id, func.count(Report.id).label("cnt")).group_by(Report.space_id).subquery()
     report_count_expr = func.coalesce(count_sq.c.cnt, 0).label("report_count")
 
-    member_sq = select(SpaceAccess.space_id, func.count(SpaceAccess.id).label("m_cnt")).group_by(SpaceAccess.space_id).subquery()
-    member_count_expr = func.coalesce(member_sq.c.m_cnt, 0).label("member_count")
+    member_sq = select(Favorite.target_id, func.count(Favorite.id).label("m_cnt")).where(Favorite.target_type == "space").group_by(Favorite.target_id).subquery()
+    member_count_expr = (func.coalesce(member_sq.c.m_cnt, 0) + 1).label("member_count")
 
     if current_user and current_user.role == "ADMIN":
-        query = select(Space, report_count_expr, member_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id).outerjoin(member_sq, Space.id == member_sq.c.space_id)
+        query = select(Space, report_count_expr, member_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id).outerjoin(member_sq, Space.id == member_sq.c.target_id)
     elif current_user:
         access_sq = select(SpaceAccess.space_id).where(SpaceAccess.user_id == current_user.id)
-        query = select(Space, report_count_expr, member_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id).outerjoin(member_sq, Space.id == member_sq.c.space_id).where(or_(
+        query = select(Space, report_count_expr, member_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id).outerjoin(member_sq, Space.id == member_sq.c.target_id).where(or_(
             Space.is_private == False,
             Space.owner_id == current_user.id,
             col(Space.id).in_(access_sq)
         ))
     else:
-        query = select(Space, report_count_expr, member_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id).outerjoin(member_sq, Space.id == member_sq.c.space_id).where(Space.is_private == False)
+        query = select(Space, report_count_expr, member_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id).outerjoin(member_sq, Space.id == member_sq.c.target_id).where(Space.is_private == False)
     
     if sort == "popularity":
         # Popularity is a mix of reports and members (just using reports for now as per previous logic)
@@ -137,10 +139,12 @@ def list_spaces(
 @router.get("/{space_id}", response_model=SpaceResponse)
 def get_space(space: Space = Depends(require_space_access), session: Session = Depends(get_session)):
     """Get details of a specific space."""
-    from app.models import Report, SpaceAccess
+    from app.models import Report, Favorite
     from sqlalchemy import func
     rc_cnt = session.exec(select(func.count(Report.id)).where(Report.space_id == space.id)).one()
-    m_cnt = session.exec(select(func.count(SpaceAccess.id)).where(SpaceAccess.space_id == space.id)).one()
+    # Member count = number of people who favorited it + 1 for the owner
+    fav_cnt = session.exec(select(func.count(Favorite.id)).where(Favorite.target_type == "space", Favorite.target_id == space.id)).one()
+    m_cnt = fav_cnt + 1
     
     return SpaceResponse(
         id=space.id, name=space.name, description=space.description,

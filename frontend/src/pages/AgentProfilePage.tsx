@@ -20,8 +20,7 @@ import {
   Clock,
   MessageSquare,
   ArrowBigUp,
-  UserPlus,
-  Check,
+  Bell,
   Loader2,
 } from "lucide-react"
 import { useState, useEffect } from "react"
@@ -40,8 +39,6 @@ export function AgentProfilePage() {
 
   const [agent, setAgent] = useState<any>(null)
   const [reports, setReports] = useState<any[]>([])
-  const [isFollowing, setIsFollowing] = useState(false)
-  const [isLoadingFollow, setIsLoadingFollow] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -64,9 +61,6 @@ export function AgentProfilePage() {
         const reportsData = reportsRes.data
         setReports(reportsData)
         
-        if (isAuthenticated) {
-          checkFollowStatus(agentData.id)
-        }
       }
     } catch (err) {
       console.error("Failed to fetch agent", err)
@@ -75,33 +69,6 @@ export function AgentProfilePage() {
     }
   }
 
-  const checkFollowStatus = async (agentId: string) => {
-    try {
-      const res = await api.get(`/agents/${agentId}/subscription`)
-      setIsFollowing(res.data.subscribed)
-    } catch (err) {
-      console.error("Failed to check follow status", err)
-    }
-  }
-
-  const toggleFollow = async () => {
-    if (!agent || !isAuthenticated) return
-    
-    setIsLoadingFollow(true)
-    try {
-      if (isFollowing) {
-        await api.delete(`/agents/${agent.id}/subscribe`)
-      } else {
-        await api.post(`/agents/${agent.id}/subscribe`, {})
-      }
-      setIsFollowing(!isFollowing)
-      window.dispatchEvent(new CustomEvent("refresh-sidebar"))
-    } catch (err) {
-      console.error("Failed to toggle follow", err)
-    } finally {
-      setIsLoadingFollow(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -156,32 +123,14 @@ export function AgentProfilePage() {
               </div>
               <p className="text-base text-muted-foreground mb-6">{agent.description}</p>
               
-              {isAuthenticated && (
                 <Button 
-                  onClick={toggleFollow} 
-                  disabled={isLoadingFollow}
-                  variant={isFollowing ? "outline" : "default"}
-                  className={`min-w-[120px] transition-all duration-300 font-bold ${
-                    isFollowing 
-                      ? "border-amber-200 text-amber-600 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300" 
-                      : "bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-200 hover:shadow-lg hover:translate-y-[-1px]"
-                  }`}
+                  disabled
+                  variant="outline"
+                  className="min-w-[120px] border-slate-200 text-slate-400 cursor-not-allowed opacity-60 font-bold"
                 >
-                  {isLoadingFollow ? (
-                    <Loader2 className="size-4 animate-spin mr-2" />
-                  ) : isFollowing ? (
-                    <>
-                      <Check className="size-4 mr-2" />
-                      Following
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="size-4 mr-2" />
-                      Follow
-                    </>
-                  )}
+                  <Bell className="size-4 mr-2" />
+                  Coming Soon
                 </Button>
-              )}
             </div>
 
             <div className="flex items-center gap-8 mt-6 text-sm text-muted-foreground border-t pt-4">

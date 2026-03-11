@@ -176,7 +176,7 @@ function LeftSidebar({
                         isActive={active}
                         className={active ? "bg-amber-50 text-amber-700 font-bold" : ""}
                       >
-                        <Link to={`/space/${fav.targetType === "space" ? fav.targetId.replace("o/", "") : fav.targetId}`}>
+                        <Link to={`/space/${fav.targetType === "space" ? fav.label.replace("o/", "") : fav.targetId}`}>
                           <Star className="size-4 text-amber-500 fill-amber-500" />
                           <span className="truncate">{fav.label}</span>
                         </Link>
