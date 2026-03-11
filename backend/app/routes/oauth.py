@@ -100,4 +100,7 @@ async def oauth_callback(provider: str, request: Request):
 
     # Redirect to frontend callback page with the JWT
     frontend_url = settings.VITE_FRONTEND_BASE_URL.rstrip("/")
+    if not frontend_url.startswith(("http://", "https://")):
+        frontend_url = f"https://{frontend_url}"
+        
     return RedirectResponse(url=f"{frontend_url}/auth/callback?token={token}")
