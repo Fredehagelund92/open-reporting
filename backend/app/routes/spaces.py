@@ -34,6 +34,7 @@ class SpaceResponse(BaseModel):
     owner_id: Optional[str]
     created_at: str
     report_count: int = 0
+    member_count: int = 0
 
 class SpaceStatsResponse(BaseModel):
     total_spaces: int
@@ -60,10 +61,10 @@ def create_space(
     session.refresh(space)
 
     return SpaceResponse(
-        id=space.id, name=space.name, description=space.description,
         is_private=space.is_private, owner_id=space.owner_id,
         created_at=space.created_at.isoformat(),
-        report_count=0
+        report_count=0,
+        member_count=1 # Owner is the first member
     )
 
 
@@ -94,25 +95,27 @@ def list_spaces(
     from sqlalchemy import func
     from app.models import Report
 
-    # Base query for counts
+    # Subqueries for counts
     count_sq = select(Report.space_id, func.count(Report.id).label("cnt")).group_by(Report.space_id).subquery()
-
-    # Expression for report count
     report_count_expr = func.coalesce(count_sq.c.cnt, 0).label("report_count")
 
+    member_sq = select(SpaceAccess.space_id, func.count(SpaceAccess.id).label("m_cnt")).group_by(SpaceAccess.space_id).subquery()
+    member_count_expr = func.coalesce(member_sq.c.m_cnt, 0).label("member_count")
+
     if current_user and current_user.role == "ADMIN":
-        query = select(Space, report_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id)
+        query = select(Space, report_count_expr, member_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id).outerjoin(member_sq, Space.id == member_sq.c.space_id)
     elif current_user:
         access_sq = select(SpaceAccess.space_id).where(SpaceAccess.user_id == current_user.id)
-        query = select(Space, report_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id).where(or_(
+        query = select(Space, report_count_expr, member_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id).outerjoin(member_sq, Space.id == member_sq.c.space_id).where(or_(
             Space.is_private == False,
             Space.owner_id == current_user.id,
             col(Space.id).in_(access_sq)
         ))
     else:
-        query = select(Space, report_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id).where(Space.is_private == False)
+        query = select(Space, report_count_expr, member_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id).outerjoin(member_sq, Space.id == member_sq.c.space_id).where(Space.is_private == False)
     
     if sort == "popularity":
+        # Popularity is a mix of reports and members (just using reports for now as per previous logic)
         query = query.order_by(report_count_expr.desc())
     else:
         query = query.order_by(Space.name)
@@ -124,24 +127,27 @@ def list_spaces(
             id=s.id, name=s.name, description=s.description,
             is_private=s.is_private, owner_id=s.owner_id,
             created_at=s.created_at.isoformat(),
-            report_count=rc
+            report_count=rc,
+            member_count=mc
         )
-        for s, rc in results
+        for s, rc, mc in results
     ]
 
 
 @router.get("/{space_id}", response_model=SpaceResponse)
 def get_space(space: Space = Depends(require_space_access), session: Session = Depends(get_session)):
     """Get details of a specific space."""
-    from app.models import Report
+    from app.models import Report, SpaceAccess
     from sqlalchemy import func
-    cnt = session.exec(select(func.count(Report.id)).where(Report.space_id == space.id)).one()
+    rc_cnt = session.exec(select(func.count(Report.id)).where(Report.space_id == space.id)).one()
+    m_cnt = session.exec(select(func.count(SpaceAccess.id)).where(SpaceAccess.space_id == space.id)).one()
     
     return SpaceResponse(
         id=space.id, name=space.name, description=space.description,
         is_private=space.is_private, owner_id=space.owner_id,
         created_at=space.created_at.isoformat(),
-        report_count=cnt
+        report_count=rc_cnt,
+        member_count=m_cnt
     )
 
 
@@ -258,6 +264,8 @@ def update_space(
     return SpaceResponse(
         id=space.id, name=space.name, description=space.description,
         is_private=space.is_private, created_at=space.created_at.isoformat(),
+        report_count=0,
+        member_count=0
     )
 
 

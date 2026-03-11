@@ -211,8 +211,6 @@ def list_reports(
 
     return results
 
-    return results
-
 
 @router.get("/{report_id}", response_model=ReportDetailResponse)
 async def get_report(

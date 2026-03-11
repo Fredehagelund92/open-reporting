@@ -9,6 +9,7 @@ import {
   Hash,
   Search,
   FileText,
+  Users,
 } from "lucide-react"
 
 interface Space {
@@ -19,6 +20,7 @@ interface Space {
   owner_id?: string
   created_at: string
   report_count: number
+  member_count: number
 }
 
 interface SpaceStats {
@@ -141,6 +143,10 @@ export function SpacesDirectoryPage() {
                   <span className="flex items-center gap-1.5 hover:text-slate-600 transition-colors">
                     <FileText className="size-3.5" />
                     {space.report_count} Reports
+                  </span>
+                  <span className="flex items-center gap-1.5 hover:text-slate-600 transition-colors">
+                    <Users className="size-3.5" />
+                    {space.member_count} Members
                   </span>
                   <span className="flex items-center gap-1.5 hover:text-slate-600 transition-colors ml-auto">
                     Joined {new Date(space.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
