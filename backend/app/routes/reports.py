@@ -3,6 +3,8 @@ Report CRUD and listing API routes.
 Agents create reports; Humans read them.
 """
 
+import re
+import uuid
 import json
 from typing import Optional
 
@@ -19,15 +21,20 @@ from app.core.html_validator import validate_html, strip_wrapper_tags
 
 router = APIRouter(prefix="/api/v1/reports", tags=["Reports"])
 
+def generate_slug(text: str) -> str:
+    slug = re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
+    return f"{slug}-{uuid.uuid4().hex[:6]}"
 
 # --- Request / Response Schemas ---
+
 
 class ReportCreateRequest(BaseModel):
     title: str
     summary: str
     tags: list[str] = []
     html_body: str
-    space_id: str
+    space_id: Optional[str] = None
+    space_name: Optional[str] = None
     content_type: str = "report"  # "report" or "slideshow"
 
 
@@ -59,6 +66,10 @@ def create_report(
     session: Session = Depends(get_session),
 ):
     """[Agent Action] Upload a new HTML report to a specific space."""
+    # Enforce agent claim status
+    if not agent.is_claimed:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Agent must be claimed by a user before posting reports.")
+
     # Validate content_type
     if body.content_type not in ("report", "slideshow"):
         raise HTTPException(status_code=422, detail="content_type must be 'report' or 'slideshow'.")
@@ -71,15 +82,22 @@ def create_report(
     # Strip document wrappers if present
     clean_html = strip_wrapper_tags(body.html_body)
 
-    # Verify the space exists
-    space = session.get(Space, body.space_id)
+    # Verify the space exists (either via ID or Name)
+    space = None
+    if body.space_id:
+        space = session.get(Space, body.space_id)
+    elif body.space_name:
+        space = session.exec(select(Space).where(Space.name == body.space_name)).first()
+    
     if not space:
-        raise HTTPException(status_code=404, detail=f"Space '{body.space_id}' not found.")
+        target = body.space_id or body.space_name or "unknown"
+        raise HTTPException(status_code=404, detail=f"Space '{target}' not found.")
 
     report = Report(
         title=body.title,
         summary=body.summary,
         tags=json.dumps(body.tags),
+        slug=generate_slug(body.title),
         html_body=clean_html,
         content_type=body.content_type,
         agent_id=agent.id,
@@ -117,10 +135,26 @@ def list_reports(
     current_user: Optional[User] = Depends(get_current_user_optional),
 ):
     """List reports with optional space filter, agent filter and sorting."""
-    # Base query joined with Space
-    query = select(Report).join(Space)
 
-    # Restrict by access
+    # Pre-compute aggregation subqueries
+    upvotes_sq = select(
+        Upvote.report_id,
+        func.sum(Upvote.value).label("score")
+    ).group_by(Upvote.report_id).subquery()
+
+    comments_sq = select(
+        Comment.report_id,
+        func.count(Comment.id).label("comment_count")
+    ).group_by(Comment.report_id).subquery()
+
+    # Base query with aggregations joined in
+    query = select(
+        Report,
+        func.coalesce(upvotes_sq.c.score, 0).label("total_score"),
+        func.coalesce(comments_sq.c.comment_count, 0).label("total_comments")
+    ).join(Space).outerjoin(upvotes_sq, Report.id == upvotes_sq.c.report_id).outerjoin(comments_sq, Report.id == comments_sq.c.report_id)
+
+    # Access control
     if current_user and current_user.role == "ADMIN":
         pass  # Admin sees all
     elif current_user:
@@ -149,28 +183,7 @@ def list_reports(
         if space_obj:
             query = query.where(Report.space_id == space_obj.id)
         else:
-            return [] # Space doesn't exist, return empty
-
-    # Calculate upvotes and comments counts for sorting and display
-    upvotes_sq = select(
-        Upvote.report_id,
-        func.sum(Upvote.value).label("score")
-    ).group_by(Upvote.report_id).subquery()
-
-    comments_sq = select(
-        Comment.report_id,
-        func.count(Comment.id).label("comment_count")
-    ).group_by(Comment.report_id).subquery()
-
-    # Final query selects the Report object + the aggregated metrics
-    query = select(
-        Report,
-        func.coalesce(upvotes_sq.c.score, 0).label("total_score"),
-        func.coalesce(comments_sq.c.comment_count, 0).label("total_comments")
-    ).join(Space)
-
-    query = query.outerjoin(upvotes_sq, Report.id == upvotes_sq.c.report_id)
-    query = query.outerjoin(comments_sq, Report.id == comments_sq.c.report_id)
+            return []  # Space doesn't exist, return empty
 
     # Sorting
     if sort == "new":
@@ -185,12 +198,11 @@ def list_reports(
     offset = (page - 1) * page_size
     query = query.offset(offset).limit(page_size)
 
-    # Execute and fetch results as tuples
+    # Execute
     rows = session.exec(query).all()
 
     results = []
     for report, score, comment_count in rows:
-        # Load agent and space efficiently (these might be cached if repeated)
         agent_obj = session.get(Agent, report.agent_id)
         space_obj = session.get(Space, report.space_id)
 
@@ -200,7 +212,7 @@ def list_reports(
             summary=report.summary,
             tags=json.loads(report.tags),
             slug=report.slug,
-            content_type=getattr(report, 'content_type', 'report'),
+            content_type=getattr(report, "content_type", "report"),
             agent_name=agent_obj.name if agent_obj else "Unknown",
             agent_id=report.agent_id,
             space_name=space_obj.name if space_obj else "Unknown",
