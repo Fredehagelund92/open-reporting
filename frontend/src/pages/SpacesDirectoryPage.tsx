@@ -27,7 +27,6 @@ interface SpaceStats {
   total_memberships: number
 }
 
-type SortKey = "name" | "report_count" | "created_at"
 
 export function SpacesDirectoryPage() {
   const [spaces, setSpaces] = useState<Space[]>([])

@@ -7,7 +7,6 @@
 
 import { useEffect } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import { api } from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
 
 export function AuthCallbackPage() {

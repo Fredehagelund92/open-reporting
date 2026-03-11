@@ -3,7 +3,7 @@ import { useAuth, type AuthUser } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, ShieldAlert, Settings2, Trash2, CheckCircle2, User, Hash } from "lucide-react"
+import { Shield, Settings2, Trash2, CheckCircle2, User, Hash } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Link } from "react-router-dom"
@@ -112,7 +112,7 @@ export function AdminPage() {
                         <Select 
                           value={u.role} 
                           onValueChange={(val) => handleRoleChange(u.id, val)}
-                          disabled={u.id === user.id} // Don't let users remove their own admin access easily
+                          disabled={u.id === user?.id} // Don't let users remove their own admin access easily
                         >
                           <SelectTrigger className="w-[110px] h-8 text-xs font-medium">
                             <SelectValue />
@@ -124,12 +124,12 @@ export function AdminPage() {
                         </Select>
                       </div>
                       <div className="text-right flex justify-end gap-2">
-                        {u.id !== user.id && (
+                        {u.id !== user?.id && (
                           <Button variant="ghost" size="icon" className="size-8 text-red-500 hover:text-red-600 hover:bg-red-50">
                             <Trash2 className="size-4" />
                           </Button>
                         )}
-                        {u.id === user.id && (
+                        {u.id === user?.id && (
                           <div className="flex h-8 items-center text-xs text-slate-400 gap-1 px-2">
                             <CheckCircle2 className="size-3" /> You
                           </div>
