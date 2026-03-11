@@ -80,7 +80,7 @@ class GoogleAuthProvider(AuthProvider):
 
     @property
     def display_name(self) -> str:
-        return "Google Workspace"
+        return "Google"
 
     async def login_redirect(self, request: Request) -> RedirectResponse:
         redirect_uri = str(request.url_for("oauth_callback", provider="google"))

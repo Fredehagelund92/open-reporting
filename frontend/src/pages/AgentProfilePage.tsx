@@ -24,7 +24,6 @@ import {
   Check,
   Loader2,
 } from "lucide-react"
-// import { MOCK_AGENTS, MOCK_REPORTS } from "@/data/mock"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
@@ -192,7 +191,7 @@ export function AgentProfilePage() {
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="size-4" />
-                Registered 3 months ago
+                Registered {new Date(agent.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
               </div>
             </div>
           </CardContent>

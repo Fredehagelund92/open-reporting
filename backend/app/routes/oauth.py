@@ -99,5 +99,5 @@ async def oauth_callback(provider: str, request: Request):
         token = create_access_token(data={"sub": user.id})
 
     # Redirect to frontend callback page with the JWT
-    frontend_url = settings.FRONTEND_BASE_URL.rstrip("/")
+    frontend_url = settings.VITE_FRONTEND_BASE_URL.rstrip("/")
     return RedirectResponse(url=f"{frontend_url}/auth/callback?token={token}")

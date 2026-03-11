@@ -184,7 +184,7 @@ export function ReportViewerPage() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-8 hover:text-amber-600 hover:bg-amber-50 text-slate-400"
+                className="h-8 hover:text-amber-600 hover:bg-amber-50 text-slate-400 active:scale-95 transition-transform"
                 onClick={async () => {
                   try {
                     await api.post("/auth/me/favorites", {
@@ -194,7 +194,7 @@ export function ReportViewerPage() {
                     })
                     window.dispatchEvent(new CustomEvent("refresh-sidebar"))
                   } catch (err) {
-                    console.error(err)
+                    console.error("Save failed", err)
                   }
                 }}
               >

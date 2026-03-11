@@ -30,6 +30,7 @@ interface AuthContextType {
   user: AuthUser | null
   isAuthenticated: boolean
   providerInfo: AuthProviderInfo | null
+  isLoggingIn: boolean
 
   /** Local dev login (email/password). Only works when provider is "local". */
   login: () => void
@@ -47,6 +48,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   providerInfo: null,
+  isLoggingIn: false,
   login: () => {},
   loginWithProvider: () => {},
   logout: () => {},
@@ -56,6 +58,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [providerInfo, setProviderInfo] = useState<AuthProviderInfo | null>(null)
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
 
   // Fetch which auth provider is active
   useEffect(() => {
@@ -129,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /** OAuth redirect login — sends user to the backend OAuth endpoint. */
   const loginWithProvider = useCallback(() => {
     if (!providerInfo || providerInfo.provider === "local") return
+    setIsLoggingIn(true)
     // Full-page redirect to backend OAuth login
     const backendUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
     window.location.href = `${backendUrl}/api/v1/auth/${providerInfo.provider}/login`
@@ -144,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: !!user,
       providerInfo,
+      isLoggingIn,
       login,
       loginWithProvider,
       logout,

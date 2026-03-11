@@ -22,13 +22,23 @@ class SpaceCreateRequest(BaseModel):
     description: Optional[str] = None
     is_private: bool = False
 
+class InviteRequest(BaseModel):
+    user_email: str
+
 
 class SpaceResponse(BaseModel):
     id: str
     name: str
     description: Optional[str]
     is_private: bool
+    owner_id: Optional[str]
     created_at: str
+    report_count: int = 0
+
+class SpaceStatsResponse(BaseModel):
+    total_spaces: int
+    total_reports: int
+    total_memberships: int
 
 
 # --- Routes ---
@@ -51,45 +61,87 @@ def create_space(
 
     return SpaceResponse(
         id=space.id, name=space.name, description=space.description,
-        is_private=space.is_private, created_at=space.created_at.isoformat(),
+        is_private=space.is_private, owner_id=space.owner_id,
+        created_at=space.created_at.isoformat(),
+        report_count=0
+    )
+
+
+@router.get("/stats", response_model=SpaceStatsResponse)
+def get_space_stats(session: Session = Depends(get_session)):
+    """Get global platform-wide statistics."""
+    from app.models import Report
+    from sqlalchemy import func
+    
+    total_spaces = session.exec(select(func.count(Space.id))).one()
+    total_reports = session.exec(select(func.count(Report.id))).one()
+    total_memberships = session.exec(select(func.count(SpaceAccess.id))).one()
+    
+    return SpaceStatsResponse(
+        total_spaces=total_spaces,
+        total_reports=total_reports,
+        total_memberships=total_memberships
     )
 
 
 @router.get("/", response_model=list[SpaceResponse])
 def list_spaces(
+    sort: Optional[str] = None,
     session: Session = Depends(get_session),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """List all spaces the user has access to."""
+    from sqlalchemy import func
+    from app.models import Report
+
+    # Base query for counts
+    count_sq = select(Report.space_id, func.count(Report.id).label("cnt")).group_by(Report.space_id).subquery()
+
+    # Expression for report count
+    report_count_expr = func.coalesce(count_sq.c.cnt, 0).label("report_count")
+
     if current_user and current_user.role == "ADMIN":
-        query = select(Space)
+        query = select(Space, report_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id)
     elif current_user:
         access_sq = select(SpaceAccess.space_id).where(SpaceAccess.user_id == current_user.id)
-        query = select(Space).where(or_(
+        query = select(Space, report_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id).where(or_(
             Space.is_private == False,
             Space.owner_id == current_user.id,
             col(Space.id).in_(access_sq)
         ))
     else:
-        query = select(Space).where(Space.is_private == False)
+        query = select(Space, report_count_expr).outerjoin(count_sq, Space.id == count_sq.c.space_id).where(Space.is_private == False)
+    
+    if sort == "popularity":
+        query = query.order_by(report_count_expr.desc())
+    else:
+        query = query.order_by(Space.name)
         
-    spaces = session.exec(query).all()
+    results = session.exec(query).all()
     
     return [
         SpaceResponse(
             id=s.id, name=s.name, description=s.description,
-            is_private=s.is_private, created_at=s.created_at.isoformat(),
+            is_private=s.is_private, owner_id=s.owner_id,
+            created_at=s.created_at.isoformat(),
+            report_count=rc
         )
-        for s in spaces
+        for s, rc in results
     ]
 
 
 @router.get("/{space_id}", response_model=SpaceResponse)
-def get_space(space: Space = Depends(require_space_access)):
+def get_space(space: Space = Depends(require_space_access), session: Session = Depends(get_session)):
     """Get details of a specific space."""
+    from app.models import Report
+    from sqlalchemy import func
+    cnt = session.exec(select(func.count(Report.id)).where(Report.space_id == space.id)).one()
+    
     return SpaceResponse(
         id=space.id, name=space.name, description=space.description,
-        is_private=space.is_private, created_at=space.created_at.isoformat(),
+        is_private=space.is_private, owner_id=space.owner_id,
+        created_at=space.created_at.isoformat(),
+        report_count=cnt
     )
 
 

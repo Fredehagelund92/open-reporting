@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth, type AuthUser } from "@/context/AuthContext"
+import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, ShieldAlert, Settings2, Trash2, CheckCircle2, User, Hash } from "lucide-react"
@@ -14,39 +15,42 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MOCK_CURRENT_USER, MOCK_SPACES } from "@/data/mock"
 
 export function AdminPage() {
   const { user } = useAuth()
-  const [users, setUsers] = useState<AuthUser[]>([
-    MOCK_CURRENT_USER,
-    { id: "u2", name: "Alice Security", email: "alice@example.com", role: "USER", avatar: "", joinedAt: "2023-11-02T12:00:00Z" },
-    { id: "u3", name: "Bob Manager", email: "bob@example.com", role: "USER", avatar: "", joinedAt: "2023-11-02T12:00:00Z" }
-  ])
-  
-  // In a real application we would fetch all users on mount
-  // useEffect(() => {
-  //   fetchUsers()
-  // }, [])
+  const [users, setUsers] = useState<AuthUser[]>([])
+  const [spaces, setSpaces] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  if (!user || user.role !== "ADMIN") {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/50 p-8">
-        <ShieldAlert className="size-16 text-red-500 mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-        <p className="text-slate-500 text-center max-w-md">
-          You do not have permission to view the admin dashboard. This area is restricted to administrators.
-        </p>
-      </div>
-    )
+  useEffect(() => {
+    if (user && user.role === "ADMIN") {
+      fetchAdminData()
+    }
+  }, [user])
+
+  const fetchAdminData = async () => {
+    setLoading(true)
+    try {
+      const [usersRes, spacesRes] = await Promise.all([
+        api.get("/users/"),
+        api.get("/spaces/")
+      ])
+      setUsers(usersRes.data)
+      setSpaces(spacesRes.data)
+    } catch (err) {
+      console.error("Failed to fetch admin data", err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleRoleChange = async (userId: string, newRole: string) => {
-    // Optimistic UI update
-    setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
-    
-    // Perform API call
-    // await api.patch(`/api/v1/users/${userId}/role`, { role: newRole })
+    try {
+      await api.patch(`/users/${userId}/role`, { role: newRole })
+      setUsers(users.map(u => u.id === userId ? { ...u, role: newRole as any } : u))
+    } catch (err) {
+      console.error("Failed to update role", err)
+    }
   }
 
   return (
@@ -166,16 +170,18 @@ export function AdminPage() {
                       <div>Privacy</div>
                       <div className="text-right">Actions</div>
                     </div>
-                    {MOCK_SPACES.map((s) => (
+                    {loading ? (
+                      <div className="p-12 text-center text-slate-400">Loading spaces...</div>
+                    ) : spaces.map((s) => (
                       <div key={s.id} className="grid grid-cols-[2fr_3fr_1fr_1fr] p-3 items-center text-sm">
                         <div className="font-medium text-slate-900 flex items-center gap-2">
-                          <div className="size-6 rounded bg-amber-100 text-amber-700 flex items-center justify-center text-[10px] uppercase">{s.name.split("/")[1][0]}</div>
+                          <div className="size-6 rounded bg-amber-100 text-amber-700 flex items-center justify-center text-[10px] uppercase">{s.name.split("/")[1]?.[0] || "O"}</div>
                           {s.name}
                         </div>
                         <div className="text-slate-500 truncate">{s.description}</div>
                         <div>
-                          <Badge variant={s.isPrivate ? "secondary" : "outline"} className="font-normal">
-                            {s.isPrivate ? "Private" : "Public"}
+                          <Badge variant={s.is_private ? "secondary" : "outline"} className="font-normal">
+                            {s.is_private ? "Private" : "Public"}
                           </Badge>
                         </div>
                         <div className="text-right flex justify-end gap-2">

@@ -1,5 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { useQueryClient } from "@tanstack/react-query"
+import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,6 +21,7 @@ import { SidebarMenuButton } from "@/components/ui/sidebar"
 
 export function CreateSpaceDialog() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   
   const [name, setName] = useState("")
@@ -34,13 +37,22 @@ export function CreateSpaceDialog() {
 
     try {
       // Ensure it starts with "o/"
-      const formattedName = name.startsWith("o/") ? name : `o/${name.trim()}`
+      const formattedName = name.startsWith("o/") ? name.trim() : `o/${name.trim()}`
       
-      // In a real app we'd call the API:
-      // const res = await api.post("/api/v1/spaces/", { name: formattedName, description, is_private: isPrivate })
+      // Call the real API
+      const res = await api.post("/spaces/", { 
+        name: formattedName, 
+        description, 
+        is_private: isPrivate 
+      })
       
-      // Simulate network request
-      await new Promise(resolve => setTimeout(resolve, 800))
+      const newSpace = res.data
+      
+      // Invalidate queries to refresh UI
+      queryClient.invalidateQueries({ queryKey: ["spaces"] })
+      
+      // Trigger sidebar refresh
+      window.dispatchEvent(new CustomEvent("refresh-sidebar"))
       
       setOpen(false)
       // Reset form
@@ -48,11 +60,12 @@ export function CreateSpaceDialog() {
       setDescription("")
       setIsPrivate(false)
       
-      // Navigate to the newly created space
-      navigate(`/space/${formattedName.replace("o/", "")}`)
+      // Navigate to the newly created space using its primary name (remove o/)
+      navigate(`/space/${newSpace.name.replace("o/", "")}`)
       
-    } catch (err) {
-      setError("Failed to create space. It may already exist.")
+    } catch (err: any) {
+      console.error("Failed to create space:", err)
+      setError(err.response?.data?.detail || "Failed to create space. It may already exist.")
     } finally {
       setIsSubmitting(false)
     }

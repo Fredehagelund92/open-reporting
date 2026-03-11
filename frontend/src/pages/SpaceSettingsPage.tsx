@@ -29,16 +29,13 @@ import {
   Globe,
   Lock,
 } from "lucide-react"
-import { MOCK_SPACES } from "@/data/mock"
 import { api } from "@/lib/api"
 
 export function SpaceSettingsPage() {
   const { spaceName } = useParams<{ spaceName: string }>()
   const navigate = useNavigate()
 
-  // Find space by name (mock data for initial load)
-  const mockSpace = MOCK_SPACES.find(s => s.name.replace("o/", "") === spaceName)
-  
+  // Find space by name (mock data for initial load) - REMOVING MOCK DEPENDENCY
   const [space, setSpace] = useState<any>(null)
   const [members, setMembers] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -57,22 +54,28 @@ export function SpaceSettingsPage() {
   const fetchSpaceData = async () => {
     setIsLoading(true)
     try {
-      // In real app, fetch from backend by name
-      // const res = await api.get(`/spaces/name/${spaceName}`)
-      // For now, use mock or find in list
-      const actualSpace = mockSpace as any || { id: "unknown", name: "o/" + spaceName, description: "", isPrivate: false }
-      setSpace(actualSpace)
-      setName(actualSpace.name)
-      setDescription(actualSpace.description || "")
-      setIsPrivate(actualSpace.isPrivate || actualSpace.is_private || false)
+      const res = await api.get("/spaces/")
+      const foundSpace = res.data.find((s: any) => s.name.replace("o/", "") === spaceName)
       
-      // Fetch members if private
-      if (actualSpace.isPrivate || actualSpace.is_private) {
-        // const resSub = await api.get(`/spaces/${actualSpace.id}/access`)
-        // setMembers(resSub.data)
-        setMembers([
-          { user_id: "u1", user_name: "Alex PM", user_email: "alex@company.io", granted_at: new Date().toISOString() }
-        ])
+      if (!foundSpace) {
+        setSpace(null)
+        setIsLoading(false)
+        return
+      }
+
+      setSpace(foundSpace)
+      setName(foundSpace.name)
+      setDescription(foundSpace.description || "")
+      setIsPrivate(foundSpace.is_private || false)
+      
+      // Fetch members if private and user has permission
+      if (foundSpace.is_private) {
+        try {
+          const accessRes = await api.get(`/spaces/${foundSpace.id}/access`)
+          setMembers(accessRes.data)
+        } catch (e) {
+          console.warn("Could not fetch space access (maybe not owner/admin)")
+        }
       }
     } catch (err) {
       console.error(err)
@@ -105,20 +108,24 @@ export function SpaceSettingsPage() {
   }
 
   const handleInvite = async () => {
-    if (!inviteEmail) return
+    if (!inviteEmail || !space) return
+    setIsSaving(true)
     try {
       await api.post(`/spaces/${space.id}/invite`, { user_email: inviteEmail })
       setInviteEmail("")
       fetchSpaceData()
     } catch (err) {
       console.error(err)
+    } finally {
+      setIsSaving(false)
     }
   }
 
   const handleRevoke = async (userId: string) => {
+    if (!space) return
     try {
       await api.delete(`/spaces/${space.id}/access/${userId}`)
-      fetchSpaceData()
+      setMembers(members.filter(m => m.user_id !== userId))
     } catch (err) {
       console.error(err)
     }

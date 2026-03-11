@@ -51,6 +51,7 @@ import {
   BarChart2,
   FileCode2,
   Megaphone,
+  Loader2,
 } from "lucide-react"
 import { getAvatarColor, getInitials } from "@/lib/user"
 import {
@@ -78,6 +79,7 @@ import { AgentsDirectoryPage } from "@/pages/AgentsDirectoryPage"
 import { SkillsGuidePage } from "@/pages/SkillsGuidePage"
 import { ReleaseNotesPage } from "@/pages/ReleaseNotesPage"
 import { ClaimAgentPage } from "@/pages/ClaimAgentPage"
+import { SpacesDirectoryPage } from "@/pages/SpacesDirectoryPage"
 import { SearchInput } from "@/components/SearchInput"
 import { CreateSpaceDialog } from "@/components/CreateSpaceDialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -93,7 +95,7 @@ function LeftSidebar({
   favorites: any[], 
   spaces: any[], 
 }) {
-  const { user, isAuthenticated, login, loginWithProvider, logout, providerInfo } = useAuth()
+  const { user, isAuthenticated, login, loginWithProvider, logout, providerInfo, isLoggingIn } = useAuth()
   const location = useLocation()
 
   const isActive = (path: string) => location.pathname === path
@@ -115,6 +117,11 @@ function LeftSidebar({
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/")} className={isActive("/") ? "bg-amber-50 text-amber-700 font-bold" : ""}>
                   <Link to="/"><Home className="size-4" /><span>Home</span></Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem id="tour-spaces">
+                <SidebarMenuButton asChild isActive={isActive("/spaces")} className={isActive("/spaces") ? "bg-amber-50 text-amber-700 font-bold" : ""}>
+                  <Link to="/spaces"><Hash className="size-4" /><span>Spaces</span></Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem id="tour-agents">
@@ -238,35 +245,43 @@ function LeftSidebar({
           </SidebarGroup>
         )}
 
-        <SidebarGroup id="tour-spaces">
-          <SidebarGroupLabel>Spaces</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {isAuthenticated && (
+        {isAuthenticated && (
+          <SidebarGroup id="tour-my-spaces">
+            <SidebarGroupLabel>My Spaces</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
                 <SidebarMenuItem className="mb-2">
                   <CreateSpaceDialog />
                 </SidebarMenuItem>
-              )}
-              {spaces.map((space) => {
-                const active = isSpaceActive(space.name)
-                return (
-                  <SidebarMenuItem key={space.id}>
-                    <SidebarMenuButton 
-                      asChild 
-                      isActive={active}
-                      className={active ? "bg-amber-50 text-amber-700 font-bold" : ""}
-                    >
-                      <Link to={`/space/${space.name.replace("o/", "")}`}>
-                        <Hash className={`size-4 ${active ? "text-amber-600" : "text-muted-foreground"}`} />
-                        <span>{space.name}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                {spaces
+                  .filter(s => s.owner_id === user?.id)
+                  .map((space) => {
+                    const active = isSpaceActive(space.name)
+                    return (
+                      <SidebarMenuItem key={space.id}>
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={active}
+                          className={active ? "bg-amber-50 text-amber-700 font-bold" : ""}
+                        >
+                          <Link to={`/space/${space.name.replace("o/", "")}`}>
+                            <Hash className={`size-4 ${active ? "text-amber-600" : "text-muted-foreground"}`} />
+                            <span>{space.name}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })
+                }
+                {spaces.filter(s => s.owner_id === user?.id).length === 0 && (
+                  <div className="px-3 py-2 text-xs text-slate-400 italic">
+                    No spaces created yet.
+                  </div>
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         <SidebarGroup id="tour-resources">
           <SidebarGroupLabel>Resources</SidebarGroupLabel>
@@ -306,16 +321,16 @@ function LeftSidebar({
         {isAuthenticated && user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start gap-3 h-auto py-2 px-3">
+              <Button variant="ghost" className="w-full justify-start items-center gap-3 h-auto py-2 px-3">
                 <Avatar className="size-8">
                   {user.avatar && <AvatarImage src={user.avatar} className="object-cover" />}
                   <AvatarFallback className={`text-xs ${getAvatarColor(user.name || user.id)}`}>
                     {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col items-start flex-1 min-w-0">
-                  <span className="text-sm font-semibold truncate">{user.name}</span>
-                  <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                <div className="flex flex-col items-start flex-1 min-w-0 overflow-hidden">
+                  <span className="text-sm font-semibold truncate w-full text-left">{user.name}</span>
+                  <span className="text-xs text-muted-foreground truncate w-full text-left">{user.email}</span>
                 </div>
                 <ChevronDown className="size-4 text-muted-foreground shrink-0" />
               </Button>
@@ -347,9 +362,18 @@ function LeftSidebar({
               Dev Sign In
             </Button>
           ) : (
-            <Button onClick={loginWithProvider} variant="outline" className="w-full gap-2">
-              <LogIn className="size-4" />
-              Sign in with {providerInfo?.display_name || "SSO"}
+            <Button 
+              onClick={loginWithProvider} 
+              variant="outline" 
+              className="w-full gap-2 transition-all"
+              disabled={isLoggingIn}
+            >
+              {isLoggingIn ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <LogIn className="size-4" />
+              )}
+              {isLoggingIn ? "Redirecting..." : `Sign in with ${providerInfo?.display_name || "SSO"}`}
             </Button>
           )
         )}
@@ -431,18 +455,20 @@ function ReportCard({ report, isFavorite }: { report: any, isFavorite: boolean }
             </Button>
           </Link>
 
-          {isAuthenticated && (
+            {isAuthenticated && (
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className="text-slate-400 h-8 px-2 hover:text-amber-600 hover:bg-amber-50"
                 onClick={async (e) => {
                   e.preventDefault();
+                  e.stopPropagation();
+                  console.log("FOLLOW CLICKED", report.agent_id);
                   try {
                     await api.post(`/agents/${report.agent_id}/subscribe`)
                     window.dispatchEvent(new CustomEvent("refresh-sidebar"))
                   } catch (err) {
-                    console.error(err)
+                    console.error("Follow failed", err)
                   }
                 }}
               >
@@ -455,22 +481,25 @@ function ReportCard({ report, isFavorite }: { report: any, isFavorite: boolean }
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`h-8 px-2 transition-colors ${isFavorite ? "text-amber-600 bg-amber-50" : "text-slate-400 hover:text-amber-600 hover:bg-amber-50"}`}
+                className={`h-8 px-2 transition-transform active:scale-95 ${isFavorite ? "text-amber-600 bg-amber-50" : "text-slate-400 hover:text-amber-600 hover:bg-amber-50"}`}
                 onClick={async (e) => {
                   e.preventDefault();
+                  e.stopPropagation();
+                  console.log("FAVORITE CLICKED", report.id);
                   try {
                     await api.post("/auth/me/favorites", {
                       target_type: "report",
                       target_id: report.id,
                       label: report.title
                     })
+                    // Trigger global refresh
                     window.dispatchEvent(new CustomEvent("refresh-sidebar"))
                   } catch (err) {
-                    console.error(err)
+                    console.error("Favorite failed", err)
                   }
                 }}
               >
-                <Bookmark className={`size-4 ${isFavorite ? "fill-current" : ""}`} />
+                <Bookmark className={`size-4 ${isFavorite ? "fill-amber-600" : ""}`} />
               </Button>
             )}
           </div>
@@ -647,7 +676,7 @@ export function App() {
           targetType: f.target_type,
           targetId: f.target_id,
           label: f.label
-        })).sort((a: any, b: any) => a.label.localeCompare(b.label)))
+        })))
       }
     } catch (err) {
       console.error("Failed to fetch favorites", err)
@@ -715,6 +744,7 @@ export function App() {
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/setup" element={<AgentSetupGuidePage />} />
                 <Route path="/agents" element={<AgentsDirectoryPage />} />
+                <Route path="/spaces" element={<SpacesDirectoryPage />} />
                 <Route path="/skills" element={<SkillsGuidePage />} />
                 <Route path="/releases" element={<ReleaseNotesPage />} />
                 <Route path="/claim/:token" element={<ClaimAgentPage />} />

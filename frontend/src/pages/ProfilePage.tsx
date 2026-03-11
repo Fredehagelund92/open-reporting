@@ -1,8 +1,3 @@
-/**
- * ProfilePage — User profile and settings page.
- * Shows the current user's profile, their favorites, and account controls.
- */
-
 import { Link } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -20,11 +15,42 @@ import {
   Calendar,
 } from "lucide-react"
 
+import { useState, useEffect } from "react"
 import { useAuth } from "@/context/AuthContext"
-import { MOCK_PINNED, MOCK_REPORTS, MOCK_COMMENTS, MOCK_SAVED_REPORTS } from "@/data/mock"
+import { api } from "@/lib/api"
 
 export function ProfilePage() {
   const { user, isAuthenticated, logout } = useAuth()
+  const [stats, setStats] = useState({
+    comments_count: 0,
+    favorites_count: 0,
+    upvotes_given: 0,
+    reports_viewed: 0
+  })
+  const [favorites, setFavorites] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchProfileData()
+    }
+  }, [isAuthenticated, user])
+
+  const fetchProfileData = async () => {
+    setLoading(true)
+    try {
+      const [statsRes, favsRes] = await Promise.all([
+        api.get("/auth/me/stats"),
+        api.get("/auth/me/favorites")
+      ])
+      setStats(statsRes.data)
+      setFavorites(favsRes.data)
+    } catch (err) {
+      console.error("Failed to fetch profile data", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (!isAuthenticated || !user) {
     return (
@@ -39,10 +65,6 @@ export function ProfilePage() {
     )
   }
 
-  // Count user interactions from mock data
-  const userComments = MOCK_COMMENTS.filter(c => c.author === user.name).length
-  const userFavorites = MOCK_PINNED.length + MOCK_SAVED_REPORTS.length
-  const userReportInteractions = userComments * 3 + MOCK_SAVED_REPORTS.length * 2
   const joinedString = new Date(user.joinedAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })
 
   return (
@@ -92,15 +114,15 @@ export function ProfilePage() {
         {/* Stats Row */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <Card className="text-center p-4">
-            <p className="text-3xl font-bold text-slate-900">{userFavorites}</p>
+            <p className="text-3xl font-bold text-slate-900">{stats.favorites_count}</p>
             <p className="text-sm text-muted-foreground">Favorites</p>
           </Card>
           <Card className="text-center p-4">
-            <p className="text-3xl font-bold text-slate-900">{userReportInteractions}</p>
-            <p className="text-sm text-muted-foreground">Reports Viewed</p>
+            <p className="text-3xl font-bold text-slate-900">{stats.upvotes_given}</p>
+            <p className="text-sm text-muted-foreground">Upvotes Given</p>
           </Card>
           <Card className="text-center p-4">
-            <p className="text-3xl font-bold text-slate-900">{userComments}</p>
+            <p className="text-3xl font-bold text-slate-900">{stats.comments_count}</p>
             <p className="text-sm text-muted-foreground">Comments</p>
           </Card>
         </div>
@@ -114,24 +136,30 @@ export function ProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <ul className="divide-y">
-              {MOCK_PINNED.map((fav) => (
-                <li key={fav.id}>
-                  <Link
-                    to={fav.type === "space" ? `/space/${fav.label.replace("o/", "")}` : `/report/${MOCK_REPORTS.find(r => r.id === fav.targetId)?.slug || fav.targetId}`}
-                    className="flex items-center gap-3 px-6 py-3 hover:bg-slate-50 transition-colors"
-                  >
-                    {fav.type === "space" ? (
-                      <Star className="size-4 text-amber-500 fill-amber-500 shrink-0" />
-                    ) : (
-                      <FileText className="size-4 text-amber-500 shrink-0" />
-                    )}
-                    <span className="text-sm font-medium text-slate-700">{fav.label}</span>
-                    <Badge variant="outline" className="ml-auto text-xs capitalize">{fav.type}</Badge>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            {loading ? (
+              <div className="p-8 text-center text-slate-400">Loading favorites...</div>
+            ) : favorites.length > 0 ? (
+              <ul className="divide-y">
+                {favorites.map((fav) => (
+                  <li key={fav.id}>
+                    <Link
+                      to={fav.target_type === "space" ? `/space/${fav.label.replace("o/", "")}` : `/report/${fav.target_id}`}
+                      className="flex items-center gap-3 px-6 py-3 hover:bg-slate-50 transition-colors"
+                    >
+                      {fav.target_type === "space" ? (
+                        <Star className="size-4 text-amber-500 fill-amber-500 shrink-0" />
+                      ) : (
+                        <FileText className="size-4 text-amber-500 shrink-0" />
+                      )}
+                      <span className="text-sm font-medium text-slate-700">{fav.label}</span>
+                      <Badge variant="outline" className="ml-auto text-xs capitalize">{fav.target_type}</Badge>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="p-8 text-center text-slate-400 text-sm">No favorites yet.</div>
+            )}
           </CardContent>
         </Card>
 
@@ -145,7 +173,7 @@ export function ProfilePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-900">Sign out</p>
-                  <p className="text-xs text-muted-foreground">You are signed in via Google Workspace</p>
+                  <p className="text-xs text-muted-foreground">You are signed in via Google</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={logout} className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 gap-2">
                   <LogOut className="size-4" />

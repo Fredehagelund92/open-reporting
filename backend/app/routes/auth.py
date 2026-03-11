@@ -60,6 +60,12 @@ class SubscriptionToggle(BaseModel):
     target_id: str
     label: str
 
+class UserStats(BaseModel):
+    comments_count: int
+    favorites_count: int
+    upvotes_given: int
+    reports_viewed: int
+
 # ---------------------------------------------------------------------------
 # Auth Endpoints
 # ---------------------------------------------------------------------------
@@ -120,6 +126,17 @@ def read_users_me(current_user: User = Depends(get_current_user)):
         created_at=current_user.created_at,
         avatar_url=current_user.avatar_url,
         provider=current_user.provider,
+    )
+
+
+@router.get("/me/stats", response_model=UserStats)
+def get_my_stats(current_user: User = Depends(get_current_user)):
+    """Get activity stats for the current user."""
+    return UserStats(
+        comments_count=len(current_user.comments),
+        favorites_count=len(current_user.favorites),
+        upvotes_given=len(current_user.upvotes),
+        reports_viewed=0
     )
 
 

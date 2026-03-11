@@ -3,7 +3,7 @@
  * URL: /space/:spaceName (e.g., /space/o/marketing)
  */
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams, Link } from "react-router-dom"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -20,7 +20,8 @@ import {
   Settings,
   ArrowLeft,
   Star,
-  FileText
+  FileText,
+  Loader2
 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 import { InviteUserDialog } from "@/components/InviteUserDialog"
@@ -50,6 +51,35 @@ export function SpacePage() {
     },
     enabled: !!space
   })
+
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
+
+  useEffect(() => {
+    if (user && space?.id) {
+      api.get("/auth/me/favorites").then(res => {
+        setIsFavorited(res.data.some((f: any) => f.target_type === "space" && f.target_id === space.id))
+      }).catch(err => console.error(err))
+    }
+  }, [user, space?.id])
+
+  const handleToggleFavorite = async () => {
+    if (!space || !user) return
+    setIsFavoriteLoading(true)
+    try {
+      await api.post("/auth/me/favorites", {
+        target_type: "space",
+        target_id: space.id,
+        label: space.name
+      })
+      setIsFavorited(!isFavorited)
+      window.dispatchEvent(new CustomEvent("refresh-sidebar"))
+    } catch (err) {
+      console.error("Failed to favorite space", err)
+    } finally {
+      setIsFavoriteLoading(false)
+    }
+  }
 
   if (loadingSpaces || loadingReports) {
     return <div className="p-12 text-center text-slate-500">Loading...</div>
@@ -87,12 +117,14 @@ export function SpacePage() {
             </div>
             <div className="ml-auto flex gap-2">
               <Button 
-                variant="outline" 
+                variant={isFavorited ? "default" : "outline"}
                 size="sm" 
-                className="gap-2 h-9 px-4 border-amber-200 hover:bg-amber-50 hover:text-amber-600"
+                className={`gap-2 h-9 px-4 ${isFavorited ? "bg-amber-500 hover:bg-amber-600 text-white" : "border-amber-200 hover:bg-amber-50 hover:text-amber-600"}`}
+                onClick={handleToggleFavorite}
+                disabled={isFavoriteLoading}
               >
-                <Star className="size-4" />
-                Favorite
+                {isFavoriteLoading ? <Loader2 className="size-4 animate-spin" /> : <Star className={`size-4 ${isFavorited ? "fill-current" : ""}`} />}
+                {isFavorited ? "Favorited" : "Favorite"}
               </Button>
               <Button 
                 variant="outline" 
