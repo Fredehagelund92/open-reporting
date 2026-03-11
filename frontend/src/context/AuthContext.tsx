@@ -1,14 +1,15 @@
 /**
  * AuthContext — manages user session state.
  *
- * In production, this will be backed by a real Google Workspace OAuth2 flow.
- * For now, it uses mock data to demonstrate the UI flow.
+ * Supports multiple auth modes via the backend's /auth/providers endpoint:
+ * - "local":  email/password login (for dev / self-hosted)
+ * - "google": Google Workspace OAuth redirect
+ * - future:   any provider the backend registers
  *
- * The Provider pattern here is designed for extensibility:
- * swap `mockLogin()` with a real `googleLogin()` or `oktaLogin()` later.
+ * All providers converge to a JWT stored in localStorage.
  */
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import { api } from "@/lib/api"
 
 export interface AuthUser {
@@ -20,22 +21,48 @@ export interface AuthUser {
   joinedAt: string
 }
 
+export interface AuthProviderInfo {
+  provider: string       // "local" | "google" | ...
+  display_name: string   // "Email & Password" | "Google Workspace" | ...
+}
+
 interface AuthContextType {
   user: AuthUser | null
   isAuthenticated: boolean
+  providerInfo: AuthProviderInfo | null
+
+  /** Local dev login (email/password). Only works when provider is "local". */
   login: () => void
+
+  /** OAuth login — redirects to the backend's OAuth login endpoint. */
+  loginWithProvider: () => void
+
   logout: () => void
+
+  /** Called by AuthCallbackPage to hydrate the user from a fresh JWT. */
+  setUserFromToken: (token: string) => void
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
+  providerInfo: null,
   login: () => {},
+  loginWithProvider: () => {},
   logout: () => {},
+  setUserFromToken: () => {},
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
+  const [providerInfo, setProviderInfo] = useState<AuthProviderInfo | null>(null)
+
+  // Fetch which auth provider is active
+  useEffect(() => {
+    api.get("/auth/providers")
+      .then((res: any) => setProviderInfo(res.data))
+      .catch(() => setProviderInfo({ provider: "local", display_name: "Email & Password" }))
+  }, [])
   
   // Verify token on load
   useEffect(() => {
@@ -43,7 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) {
       api.get("/auth/me")
         .then((res: any) => {
-          // Map backend UserProfile to AuthUser expected by frontend
           setUser({
             ...res.data,
             avatar: res.data.avatar_url || "",
@@ -57,6 +83,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  /** Hydrate user after OAuth callback sets token. */
+  const setUserFromToken = useCallback(async (token: string) => {
+    localStorage.setItem("token", token)
+    try {
+      const res = await api.get("/auth/me")
+      setUser({
+        ...res.data,
+        avatar: res.data.avatar_url || "",
+        joinedAt: res.data.created_at
+      })
+      window.dispatchEvent(new CustomEvent("refresh-sidebar"))
+    } catch {
+      localStorage.removeItem("token")
+      setUser(null)
+    }
+  }, [])
+
+  /** Local email/password login (dev mode). */
   const login = async () => {
     try {
       const params = new URLSearchParams()
@@ -70,7 +114,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = res.data.access_token
       localStorage.setItem("token", token)
       
-      // Fetch user profile
       const meRes = await api.get("/auth/me")
       setUser({
         ...meRes.data,
@@ -83,13 +126,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  /** OAuth redirect login — sends user to the backend OAuth endpoint. */
+  const loginWithProvider = useCallback(() => {
+    if (!providerInfo || providerInfo.provider === "local") return
+    // Full-page redirect to backend OAuth login
+    const backendUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+    window.location.href = `${backendUrl}/api/v1/auth/${providerInfo.provider}/login`
+  }, [providerInfo])
+
   const logout = () => {
     localStorage.removeItem("token")
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated: !!user,
+      providerInfo,
+      login,
+      loginWithProvider,
+      logout,
+      setUserFromToken,
+    }}>
       {children}
     </AuthContext.Provider>
   )

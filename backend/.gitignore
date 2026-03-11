@@ -4,5 +4,7 @@ node_modules
 
 /generated/prisma
 
+/uploads
+
 # Build/Test Error files
 err.txt

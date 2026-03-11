@@ -131,6 +131,7 @@ class Report(SQLModel, table=True):
     tags: str = Field(default="[]")  # JSON string array
     slug: str = Field(unique=True, index=True)
     html_body: str  # The actual HTML content payload
+    content_type: str = Field(default="report")  # "report" or "slideshow"
     
     embedding: Optional[List[float]] = Field(default=None, sa_column=Column(VectorType))
 

@@ -14,7 +14,8 @@ from sqlmodel import Session, select, func
 import os
 
 from app.database import create_db_and_tables, get_session
-from app.routes import agents, reports, spaces, curation, auth, search, users, notifications
+from app.routes import agents, reports, spaces, curation, auth, search, users, notifications, oauth
+from app.auth.security import SECRET_KEY
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,7 +31,7 @@ app = FastAPI(
 )
 
 # CORS - allow the Vite frontend to call the API
-origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173").split(",")
 allow_origins = [origin.strip() for origin in origins if origin.strip()]
 
 app.add_middleware(
@@ -43,6 +44,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Session middleware — required by authlib for OAuth state management
+from starlette.middleware.sessions import SessionMiddleware
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
 # Register route modules
 app.include_router(agents.router)
 app.include_router(reports.router)
@@ -52,6 +57,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(search.router)
 app.include_router(notifications.router)
+app.include_router(oauth.router)
 
 
 @app.get("/", tags=["Health"])

@@ -36,6 +36,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import DOMPurify from "dompurify"
+import { SlideshowViewer } from "@/components/SlideshowViewer"
 
 export function ReportViewerPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -138,6 +140,11 @@ export function ReportViewerPage() {
             <span>{report.time || new Date(report.created_at).toLocaleDateString()}</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-3">{report.title}</h1>
+          {report.content_type === "slideshow" && (
+            <Badge variant="secondary" className="bg-violet-100 text-violet-700 border-violet-200 font-medium">
+              Presentation
+            </Badge>
+          )}
           <div className="flex gap-2 mb-4">
             {report.tags.map((tag: string) => (
               <Badge key={tag} variant="secondary" className="font-normal bg-slate-100 text-slate-600">{tag}</Badge>
@@ -218,10 +225,14 @@ export function ReportViewerPage() {
             
             <Card className="mx-auto shadow-2xl border-slate-200 overflow-hidden bg-white max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0">
               <CardContent className="p-12 md:p-24 overflow-x-auto">
-                <div
-                  className="prose prose-slate prose-lg prose-headings:text-slate-900 prose-headings:font-bold prose-p:text-slate-600 prose-a:text-amber-600 max-w-none"
-                  dangerouslySetInnerHTML={{ __html: report.html_body }}
-                />
+                {report.content_type === "slideshow" ? (
+                  <SlideshowViewer htmlBody={report.html_body} isFullscreen={true} />
+                ) : (
+                  <div
+                    className="prose prose-slate prose-lg prose-headings:text-slate-900 prose-headings:font-bold prose-p:text-slate-600 prose-a:text-amber-600 max-w-none"
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(report.html_body, { ADD_TAGS: ['canvas'], ADD_ATTR: ['style'] }) }}
+                  />
+                )}
               </CardContent>
               <div className="bg-slate-50 px-8 py-4 border-t flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
                 <span>Open Reporting Generated Artifact</span>
@@ -234,10 +245,14 @@ export function ReportViewerPage() {
         <div className="mb-10 bg-slate-50/50 p-6 md:p-12 rounded-xl border border-dashed border-slate-200">
           <Card className="mx-auto shadow-xl border-slate-200 overflow-hidden bg-white ring-1 ring-slate-900/5 max-w-5xl">
             <CardContent className="p-8 md:p-16 overflow-x-auto">
-              <div
-                className="prose prose-slate prose-headings:text-slate-900 prose-headings:font-bold prose-p:text-slate-600 prose-a:text-amber-600 max-w-none"
-                dangerouslySetInnerHTML={{ __html: report.html_body }}
-              />
+              {report.content_type === "slideshow" ? (
+                <SlideshowViewer htmlBody={report.html_body} />
+              ) : (
+                <div
+                  className="prose prose-slate prose-headings:text-slate-900 prose-headings:font-bold prose-p:text-slate-600 prose-a:text-amber-600 max-w-none"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(report.html_body, { ADD_TAGS: ['canvas'], ADD_ATTR: ['style'] }) }}
+                />
+              )}
             </CardContent>
             {/* Document Footer/Branding */}
             <div className="bg-slate-50 px-8 py-4 border-t flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest font-medium">

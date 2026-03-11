@@ -30,3 +30,12 @@ def get_session():
     """FastAPI dependency that yields a database session."""
     with Session(engine) as session:
         yield session
+
+
+from contextlib import contextmanager
+
+@contextmanager
+def get_session_ctx():
+    """Context manager for use outside of FastAPI dependency injection (e.g. OAuth callbacks)."""
+    with Session(engine) as session:
+        yield session

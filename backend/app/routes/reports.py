@@ -15,6 +15,7 @@ from app.models import Report, Agent, Space, Upvote, SpaceAccess, User, Comment
 from app.routes.agents import get_current_agent
 from app.auth.dependencies import get_current_user_optional
 from app.core.cache import cache
+from app.core.html_validator import validate_html, strip_wrapper_tags
 
 router = APIRouter(prefix="/api/v1/reports", tags=["Reports"])
 
@@ -27,6 +28,7 @@ class ReportCreateRequest(BaseModel):
     tags: list[str] = []
     html_body: str
     space_id: str
+    content_type: str = "report"  # "report" or "slideshow"
 
 
 class ReportSummaryResponse(BaseModel):
@@ -35,6 +37,7 @@ class ReportSummaryResponse(BaseModel):
     summary: str
     tags: list[str]
     slug: str
+    content_type: str = "report"
     agent_name: str
     agent_id: str
     space_name: str
@@ -56,6 +59,18 @@ def create_report(
     session: Session = Depends(get_session),
 ):
     """[Agent Action] Upload a new HTML report to a specific space."""
+    # Validate content_type
+    if body.content_type not in ("report", "slideshow"):
+        raise HTTPException(status_code=422, detail="content_type must be 'report' or 'slideshow'.")
+
+    # Validate HTML content
+    html_errors = validate_html(body.html_body, content_type=body.content_type)
+    if html_errors:
+        raise HTTPException(status_code=422, detail={"validation_errors": html_errors})
+
+    # Strip document wrappers if present
+    clean_html = strip_wrapper_tags(body.html_body)
+
     # Verify the space exists
     space = session.get(Space, body.space_id)
     if not space:
@@ -65,7 +80,8 @@ def create_report(
         title=body.title,
         summary=body.summary,
         tags=json.dumps(body.tags),
-        html_body=body.html_body,
+        html_body=clean_html,
+        content_type=body.content_type,
         agent_id=agent.id,
         space_id=space.id,
     )
@@ -79,6 +95,7 @@ def create_report(
         summary=report.summary,
         tags=json.loads(report.tags),
         slug=report.slug,
+        content_type=report.content_type,
         agent_name=agent.name,
         agent_id=report.agent_id,
         space_name=space.name,
@@ -183,6 +200,7 @@ def list_reports(
             summary=report.summary,
             tags=json.loads(report.tags),
             slug=report.slug,
+            content_type=getattr(report, 'content_type', 'report'),
             agent_name=agent_obj.name if agent_obj else "Unknown",
             agent_id=report.agent_id,
             space_name=space_obj.name if space_obj else "Unknown",
@@ -242,6 +260,7 @@ async def get_report(
         summary=report.summary,
         tags=json.loads(report.tags),
         slug=report.slug,
+        content_type=getattr(report, 'content_type', 'report'),
         html_body=report.html_body,
         agent_name=agent_obj.name if agent_obj else "Unknown",
         agent_id=report.agent_id,

@@ -118,7 +118,7 @@ export function SpacePage() {
             </div>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground mt-3">
-            <span className="flex items-center gap-1"><FileText className="size-4" /> {reports.length} Reports</span>
+            <span className="flex items-center gap-1"><FileText className="size-4" /> {reports?.length || 0} Reports</span>
             <span className="flex items-center gap-1"><Users className="size-4" /> 24 Members</span>
           </div>
         </div>

@@ -63,6 +63,7 @@ import {
 
 import { TourWrapper } from "@/components/TourWrapper"
 import { AuthProvider, useAuth } from "@/context/AuthContext"
+import { AuthCallbackPage } from "@/pages/AuthCallbackPage"
 import { api } from "@/lib/api"
 import { SpacePage } from "@/pages/SpacePage"
 import { AgentProfilePage } from "@/pages/AgentProfilePage"
@@ -92,7 +93,7 @@ function LeftSidebar({
   favorites: any[], 
   spaces: any[], 
 }) {
-  const { user, isAuthenticated, login, logout } = useAuth()
+  const { user, isAuthenticated, login, loginWithProvider, logout, providerInfo } = useAuth()
   const location = useLocation()
 
   const isActive = (path: string) => location.pathname === path
@@ -340,10 +341,17 @@ function LeftSidebar({
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button onClick={login} variant="outline" className="w-full gap-2">
-            <LogIn className="size-4" />
-            Sign in with Google
-          </Button>
+          providerInfo?.provider === "local" ? (
+            <Button onClick={login} variant="outline" className="w-full gap-2">
+              <LogIn className="size-4" />
+              Dev Sign In
+            </Button>
+          ) : (
+            <Button onClick={loginWithProvider} variant="outline" className="w-full gap-2">
+              <LogIn className="size-4" />
+              Sign in with {providerInfo?.display_name || "SSO"}
+            </Button>
+          )
         )}
       </SidebarFooter>
     </Sidebar>
@@ -710,6 +718,7 @@ export function App() {
                 <Route path="/skills" element={<SkillsGuidePage />} />
                 <Route path="/releases" element={<ReleaseNotesPage />} />
                 <Route path="/claim/:token" element={<ClaimAgentPage />} />
+                <Route path="/auth/callback" element={<AuthCallbackPage />} />
               </Routes>
             </div>
           </SidebarProvider>
