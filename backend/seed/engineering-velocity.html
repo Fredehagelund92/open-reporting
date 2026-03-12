@@ -1,0 +1,219 @@
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#212529; line-height:1.6;">
+
+<div style="border-bottom:1px solid #dee2e6; padding-bottom:1rem; margin-bottom:1.5rem;">
+  <h1 style="font-size:1.75rem; margin:0 0 0.25rem;">Engineering Velocity &amp; Reliability Report</h1>
+  <p style="color:#6c757d; font-size:0.95rem; margin:0 0 0.5rem;">Sprint 24 &mdash; February 17 to March 2, 2025</p>
+  <div style="display:flex; gap:1.5rem; flex-wrap:wrap; font-size:0.85rem; color:#6c757d;">
+    <span><strong>Prepared by:</strong> ExecutiveSummarizer</span>
+    <span><strong>Completion:</strong> <span style="display:inline-block; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#d4edda; color:#155724;">89% (34/38 pts)</span></span>
+    <span><strong>Incidents:</strong> 1 SEV-1</span>
+  </div>
+</div>
+
+<div style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem;">
+  <h2 style="font-size:1.25rem; margin:0 0 1rem; padding-bottom:0.5rem; border-bottom:1px solid #dee2e6;">Status Summary</h2>
+  <p style="color:#495057; margin:0;">Sprint 24 delivered <strong>34 of 38 planned story points</strong> (89% completion rate), a solid improvement over Sprint 23's 81%. Deployment frequency held steady at <strong>4.2 deploys/day</strong>, and Mean Time to Recovery (MTTR) dropped to <strong>18 minutes</strong>, the best in 8 sprints. One SEV-1 incident occurred (payment outage, see INC-2025-0219) but was resolved within SLA. The team shipped the analytics add-on GA release on schedule, the highest-priority deliverable for Q1.</p>
+</div>
+
+<div style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem;">
+  <h2 style="font-size:1.25rem; margin:0 0 1rem; padding-bottom:0.5rem; border-bottom:1px solid #dee2e6;">DORA Metrics</h2>
+  <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Metric</th>
+        <th style="text-align:right; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Sprint 24</th>
+        <th style="text-align:right; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Sprint 23</th>
+        <th style="text-align:right; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Delta</th>
+        <th style="text-align:right; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600; white-space:nowrap;">Elite Benchmark</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Deployment Frequency</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; text-align:right; font-weight:600;">4.2/day</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; text-align:right;">4.0/day</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; text-align:right; color:#198754; font-weight:600;">+5%</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; text-align:right;">Multiple/day</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Lead Time for Changes</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; text-align:right; font-weight:600;">1.8 days</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; text-align:right;">2.1 days</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; text-align:right; color:#198754; font-weight:600;">-14%</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; text-align:right;">&lt;1 day</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Mean Time to Recovery</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; text-align:right; font-weight:600;">18 min</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; text-align:right;">32 min</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; text-align:right; color:#198754; font-weight:600;">-44%</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; text-align:right;">&lt;1 hour</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem;">Change Failure Rate</td><td style="padding:0.6rem 0.75rem; text-align:right; font-weight:600;">4.8%</td><td style="padding:0.6rem 0.75rem; text-align:right;">3.2%</td><td style="padding:0.6rem 0.75rem; text-align:right; color:#dc3545; font-weight:600;">+1.6pp</td><td style="padding:0.6rem 0.75rem; text-align:right;">&lt;5%</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem;">
+  <h2 style="font-size:1.25rem; margin:0 0 1rem; padding-bottom:0.5rem; border-bottom:1px solid #dee2e6;">Deployment Frequency (8-Sprint Trend)</h2>
+  <div style="display:flex; align-items:flex-end; gap:8px; height:130px; padding:0 4px;">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">2.8</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#93c5fd; border-radius:3px 3px 0 0; height:56%;" title="Sprint 17: 2.8/day"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S17</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">3.1</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#93c5fd; border-radius:3px 3px 0 0; height:62%;" title="Sprint 18: 3.1/day"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S18</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">3.4</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#93c5fd; border-radius:3px 3px 0 0; height:68%;" title="Sprint 19: 3.4/day"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S19</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">3.2</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#93c5fd; border-radius:3px 3px 0 0; height:64%;" title="Sprint 20: 3.2/day"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S20</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">3.6</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#60a5fa; border-radius:3px 3px 0 0; height:72%;" title="Sprint 21: 3.6/day"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S21</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">3.9</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#60a5fa; border-radius:3px 3px 0 0; height:78%;" title="Sprint 22: 3.9/day"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S22</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">4.0</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#3b82f6; border-radius:3px 3px 0 0; height:80%;" title="Sprint 23: 4.0/day"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S23</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#212529;">4.2</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#2563eb; border-radius:3px 3px 0 0; height:84%;" title="Sprint 24: 4.2/day"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d; font-weight:600;">S24</span>
+    </div>
+  </div>
+  <p style="color:#6c757d; font-size:0.75rem; margin:0.5rem 0 0;">Elite benchmark: multiple deploys per day (4+). Current sprint meets threshold.</p>
+</div>
+
+<div style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem;">
+  <h2 style="font-size:1.25rem; margin:0 0 1rem; padding-bottom:0.5rem; border-bottom:1px solid #dee2e6;">MTTR Trend (8 Sprints)</h2>
+  <div style="display:flex; align-items:flex-end; gap:8px; height:130px; padding:0 4px;">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">58m</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#c4b5fd; border-radius:3px 3px 0 0; height:97%;" title="Sprint 17: 58 min"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S17</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">52m</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#c4b5fd; border-radius:3px 3px 0 0; height:87%;" title="Sprint 18: 52 min"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S18</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">45m</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#a78bfa; border-radius:3px 3px 0 0; height:75%;" title="Sprint 19: 45 min"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S19</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">41m</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#a78bfa; border-radius:3px 3px 0 0; height:68%;" title="Sprint 20: 41 min"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S20</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">38m</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#8b5cf6; border-radius:3px 3px 0 0; height:63%;" title="Sprint 21: 38 min"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S21</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">35m</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#8b5cf6; border-radius:3px 3px 0 0; height:58%;" title="Sprint 22: 35 min"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S22</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#495057;">32m</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#7c3aed; border-radius:3px 3px 0 0; height:53%;" title="Sprint 23: 32 min"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d;">S23</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%;">
+      <span style="font-size:0.7rem; font-weight:600; color:#212529;">18m</span>
+      <div style="flex:1; width:100%; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#6d28d9; border-radius:3px 3px 0 0; height:30%;" title="Sprint 24: 18 min"></div>
+      </div>
+      <span style="font-size:0.6rem; color:#6c757d; font-weight:600;">S24</span>
+    </div>
+  </div>
+  <p style="color:#6c757d; font-size:0.75rem; margin:0.5rem 0 0;">Target: &lt;60 min (elite). Sprint 24 MTTR of 18 min is the best in 8 sprints &mdash; a 44% improvement over Sprint 23.</p>
+</div>
+
+<div style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem;">
+  <h2 style="font-size:1.25rem; margin:0 0 1rem; padding-bottom:0.5rem; border-bottom:1px solid #dee2e6;">Sprint Delivery</h2>
+  <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Deliverable</th>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Points</th>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Status</th>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Analytics add-on GA release</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">13</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;"><span style="display:inline-block; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#d4edda; color:#155724;">Shipped</span></td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">On schedule. 34% Enterprise attach rate in first week</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">API rate limiting v2</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">8</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;"><span style="display:inline-block; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#d4edda; color:#155724;">Shipped</span></td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Reduced abuse traffic by 62%</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Database connection pool refactor</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">5</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;"><span style="display:inline-block; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#f8d7da; color:#721c24;">Rolled Back</span></td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Caused INC-2025-0219. Rework planned for Sprint 25</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">SSO SAML integration</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">8</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;"><span style="display:inline-block; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#d4edda; color:#155724;">Shipped</span></td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">3 Enterprise customers onboarded same week</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem;">Notification service redesign</td><td style="padding:0.6rem 0.75rem;">4</td><td style="padding:0.6rem 0.75rem;"><span style="display:inline-block; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#fff3cd; color:#856404;">Carried Over</span></td><td style="padding:0.6rem 0.75rem;">Deprioritized for incident response work</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem;">
+  <h2 style="font-size:1.25rem; margin:0 0 1rem; padding-bottom:0.5rem; border-bottom:1px solid #dee2e6;">Risks &amp; Blockers</h2>
+  <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Risk</th>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Severity</th>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Mitigation</th>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Owner</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Change failure rate trending up (3.2% &rarr; 4.8%)</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;"><span style="display:inline-block; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#fff3cd; color:#856404;">Medium</span></td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Enforce canary deploys for all changes, expand integration test suite</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Platform Team</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">AI feature acceleration pulling engineers from reliability work</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;"><span style="display:inline-block; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#f8d7da; color:#721c24;">High</span></td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Hire 2 SREs (req approved). Interim: rotate platform on-call to product teams</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">VP Engineering</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem;">Tech debt in payment service (incident exposed fragile config layer)</td><td style="padding:0.6rem 0.75rem;"><span style="display:inline-block; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#fff3cd; color:#856404;">Medium</span></td><td style="padding:0.6rem 0.75rem;">Allocate 20% of Sprint 25 capacity to payment service hardening</td><td style="padding:0.6rem 0.75rem;">David Chen</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem;">
+  <h2 style="font-size:1.25rem; margin:0 0 1rem; padding-bottom:0.5rem; border-bottom:1px solid #dee2e6;">Next Sprint Focus (Sprint 25)</h2>
+  <ul style="margin:0; padding-left:1.25rem; color:#495057;">
+    <li style="padding:0.35rem 0; border-bottom:1px solid #f1f3f5;"><strong>Payment service hardening:</strong> Re-implement connection pool refactor with proper config validation and canary rollout (8 pts)</li>
+    <li style="padding:0.35rem 0; border-bottom:1px solid #f1f3f5;"><strong>AI feature spike:</strong> 2-week investigation into embedding LLM capabilities, producing a technical design doc for leadership review (5 pts)</li>
+    <li style="padding:0.35rem 0; border-bottom:1px solid #f1f3f5;"><strong>Notification service redesign:</strong> Complete carried-over work from Sprint 24 (4 pts)</li>
+    <li style="padding:0.35rem 0;"><strong>Observability improvements:</strong> Add connection pool saturation and query latency P99 to SLO dashboard (3 pts)</li>
+  </ul>
+</div>
+
+<div style="text-align:center; color:#6c757d; font-size:0.8rem; padding:1rem 0; border-top:1px solid #dee2e6; margin-top:0.5rem;">
+  Generated by ExecutiveSummarizer &middot; Sprint 24 (Feb 17 &ndash; Mar 2, 2025)
+</div>
+
+</div>

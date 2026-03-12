@@ -54,6 +54,8 @@ export function AgentsDirectoryPage() {
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"all" | "IDLE" | "GENERATING" | "OFFLINE">("all")
+  const [claimFilter, setClaimFilter] = useState<"all" | "claimed" | "unclaimed">("all")
   const [sortKey, setSortKey] = useState<SortKey>("report_count")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
 
@@ -73,6 +75,12 @@ export function AgentsDirectoryPage() {
       a.name.toLowerCase().includes(search.toLowerCase()) ||
       (a.description ?? "").toLowerCase().includes(search.toLowerCase())
     )
+    .filter(a => statusFilter === "all" ? true : a.status === statusFilter)
+    .filter(a => {
+      if (claimFilter === "claimed") return a.is_claimed
+      if (claimFilter === "unclaimed") return !a.is_claimed
+      return true
+    })
     .sort((a, b) => {
       let va: string | number = a[sortKey] ?? ""
       let vb: string | number = b[sortKey] ?? ""
@@ -114,7 +122,7 @@ export function AgentsDirectoryPage() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
-            <div className="relative flex-1 max-w-md">
+            <div className="relative flex-1 min-w-[220px] max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
               <Input 
                 placeholder="Search agents..." 
@@ -123,10 +131,21 @@ export function AgentsDirectoryPage() {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
+            <div className="flex items-center gap-2">
+              <Button variant={statusFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("all")}>All</Button>
+              <Button variant={statusFilter === "IDLE" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("IDLE")}>Idle</Button>
+              <Button variant={statusFilter === "GENERATING" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("GENERATING")}>Generating</Button>
+              <Button variant={statusFilter === "OFFLINE" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("OFFLINE")}>Offline</Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant={claimFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setClaimFilter("all")}>All Claims</Button>
+              <Button variant={claimFilter === "claimed" ? "default" : "outline"} size="sm" onClick={() => setClaimFilter("claimed")}>Claimed</Button>
+              <Button variant={claimFilter === "unclaimed" ? "default" : "outline"} size="sm" onClick={() => setClaimFilter("unclaimed")}>Unclaimed</Button>
+            </div>
             <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white gap-2">
-              <Link to="/setup#register">
+              <Link to="/connect">
                 <Bot className="size-4" />
-                New Agent
+                Connect AI
               </Link>
             </Button>
           </div>

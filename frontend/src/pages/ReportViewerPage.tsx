@@ -3,8 +3,8 @@
  * URL: /report/:reportId
  */
 
-import { useState } from "react"
-import { useParams, Link } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { useParams, Link, useNavigate } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
 import {
   Card,
@@ -27,6 +27,7 @@ import {
   Maximize2,
   Minimize2,
   Smile,
+  Trash2,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -34,14 +35,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import DOMPurify from "dompurify"
 import { SlideshowViewer } from "@/components/SlideshowViewer"
 
 export function ReportViewerPage() {
   const { slug } = useParams<{ slug: string }>()
+  const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
+  const queryClient = useQueryClient()
   
   const { data: report, isLoading: loadingReport } = useQuery({
     queryKey: ["report", slug],
@@ -69,12 +72,38 @@ export function ReportViewerPage() {
   const [mentionQuery, setMentionQuery] = useState("")
   const [showMentions, setShowMentions] = useState(false)
   const [mentionIndex, setMentionIndex] = useState(-1)
+  const [isVoting, setIsVoting] = useState(false)
+  const [currentScore, setCurrentScore] = useState<number | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState("")
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  useEffect(() => {
+    if (!report) return
+    setVote(report.user_vote ?? 0)
+    setCurrentScore(report.upvote_score ?? 0)
+  }, [report?.id, report?.user_vote, report?.upvote_score])
   
   const SUGGESTED_USERS = ["Alex PM", "Sara Engineer", "Admin", "ResearchBot"]
   const filteredMentions = SUGGESTED_USERS.filter(u => u.toLowerCase().includes(mentionQuery.toLowerCase()))
 
   const handleToggleFullscreen = (val: boolean) => {
     setIsFullscreen(val)
+  }
+
+  const handleVote = async (direction: 1 | -1) => {
+    if (!isAuthenticated || !report || isVoting) return
+    setIsVoting(true)
+    try {
+      const endpoint = direction === 1 ? "upvote" : "downvote"
+      const res = await api.post(`/reports/${report.id}/${endpoint}`)
+      setVote(res.data.user_vote ?? 0)
+      setCurrentScore(res.data.total_score ?? currentScore ?? report.upvote_score ?? 0)
+    } catch (err) {
+      console.error("Vote failed", err)
+    } finally {
+      setIsVoting(false)
+    }
   }
 
   if (loadingReport) {
@@ -100,7 +129,8 @@ export function ReportViewerPage() {
     try {
       await api.post(`/reports/${report.id}/comments`, { text: commentText.trim() })
       setCommentText("")
-      // ideally invalidate comments query to refetch
+      await queryClient.invalidateQueries({ queryKey: ["comments", report.id] })
+      await queryClient.invalidateQueries({ queryKey: ["report", slug] })
     } catch (err) {
       console.error(err)
     }
@@ -129,6 +159,17 @@ export function ReportViewerPage() {
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
             <Link to={`/space/${(report.space || report.space_name || "").replace("o/", "")}`} className="font-semibold text-slate-900 hover:text-amber-600">{report.space || report.space_name}</Link>
             <span>•</span>
+            <Badge
+              variant="secondary"
+              className={
+                report.content_type === "slideshow"
+                  ? "h-5 px-2 py-0 bg-violet-100 text-violet-700 border-violet-200 font-medium"
+                  : "h-5 px-2 py-0 bg-blue-100 text-blue-700 border-blue-200 font-medium"
+              }
+            >
+              {report.content_type === "slideshow" ? "Presentation" : "Report"}
+            </Badge>
+            <span>•</span>
             <span className="flex items-center gap-1">
               Posted by
               <Avatar className="size-4 ml-1">
@@ -140,14 +181,11 @@ export function ReportViewerPage() {
             <span>{report.time || new Date(report.created_at).toLocaleDateString()}</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-3">{report.title}</h1>
-          {report.content_type === "slideshow" && (
-            <Badge variant="secondary" className="bg-violet-100 text-violet-700 border-violet-200 font-medium">
-              Presentation
-            </Badge>
-          )}
           <div className="flex gap-2 mb-4">
             {report.tags.map((tag: string) => (
-              <Badge key={tag} variant="secondary" className="font-normal bg-slate-100 text-slate-600">{tag}</Badge>
+              <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
+                <Badge variant="secondary" className="font-normal bg-slate-100 text-slate-600">{tag}</Badge>
+              </Link>
             ))}
           </div>
 
@@ -156,19 +194,21 @@ export function ReportViewerPage() {
             <Button
               variant="ghost"
               size="sm"
+              disabled={!isAuthenticated || isVoting}
               className={`h-8 hover:text-amber-600 hover:bg-amber-50 ${vote === 1 ? "text-amber-600" : "text-slate-400"}`}
-              onClick={() => setVote(vote === 1 ? 0 : 1)}
+              onClick={() => handleVote(1)}
             >
               <ArrowBigUp className="size-5 mr-1" /> Upvote
             </Button>
             <span className={`text-sm font-bold ${vote === 1 ? "text-amber-600" : vote === -1 ? "text-blue-600" : "text-slate-700"}`}>
-              {(report.upvote_score || 0) + vote}
+              {currentScore ?? report.upvote_score ?? 0}
             </span>
             <Button
               variant="ghost"
               size="sm"
+              disabled={!isAuthenticated || isVoting}
               className={`h-8 hover:text-blue-600 hover:bg-blue-50 ${vote === -1 ? "text-blue-600" : "text-slate-400"}`}
-              onClick={() => setVote(vote === -1 ? 0 : -1)}
+              onClick={() => handleVote(-1)}
             >
               <ArrowBigDown className="size-5 mr-1" /> Downvote
             </Button>
@@ -184,8 +224,11 @@ export function ReportViewerPage() {
               <Button 
                 variant="ghost" 
                 size="sm" 
+                disabled={isSaving}
                 className="h-8 hover:text-amber-600 hover:bg-amber-50 text-slate-400 active:scale-95 transition-transform"
                 onClick={async () => {
+                  setIsSaving(true)
+                  setSaveMessage("")
                   try {
                     await api.post("/auth/me/favorites", {
                       target_type: "report",
@@ -193,14 +236,44 @@ export function ReportViewerPage() {
                       label: report.title
                     })
                     window.dispatchEvent(new CustomEvent("refresh-sidebar"))
+                    setSaveMessage("Saved to bookmarks")
                   } catch (err) {
                     console.error("Save failed", err)
+                    setSaveMessage("Could not save report")
+                  } finally {
+                    setIsSaving(false)
                   }
                 }}
               >
                 <Bookmark className="size-5 mr-1" /> Save
               </Button>
             )}
+            {isAuthenticated && report.can_delete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={isDeleting}
+                className="h-8 hover:text-red-600 hover:bg-red-50 text-slate-400"
+                onClick={async () => {
+                  if (!confirm("Delete this report permanently? This action cannot be undone.")) return
+                  setIsDeleting(true)
+                  try {
+                    await api.delete(`/reports/${report.id}`)
+                    await queryClient.invalidateQueries({ queryKey: ["reports"] })
+                    await queryClient.invalidateQueries({ queryKey: ["spaces"] })
+                    window.dispatchEvent(new CustomEvent("refresh-sidebar"))
+                    navigate(report.space_name ? `/space/${report.space_name.replace("o/", "")}` : "/")
+                  } catch (err) {
+                    console.error("Delete failed", err)
+                  } finally {
+                    setIsDeleting(false)
+                  }
+                }}
+              >
+                <Trash2 className="size-5 mr-1" /> Delete
+              </Button>
+            )}
+            {saveMessage && <span className="text-xs text-slate-500">{saveMessage}</span>}
             <span className="ml-auto flex items-center text-sm text-muted-foreground">
               <MessageSquare className="size-4 mr-1" />
               {comments.length} Comments
@@ -211,34 +284,52 @@ export function ReportViewerPage() {
 
         {/* Fullscreen Overlay */}
         {isFullscreen && (
-          <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm overflow-y-auto p-4 md:p-12 animate-in fade-in duration-300">
-            <div className="fixed top-4 right-8 z-[110]">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleToggleFullscreen(false)}
-                className="bg-white/90 backdrop-blur shadow-md gap-2 text-slate-700 hover:text-slate-900"
-              >
-                <Minimize2 className="size-4" /> Exit Fullscreen
-              </Button>
+          report.content_type === "slideshow" ? (
+            <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm overflow-hidden animate-in fade-in duration-300">
+              <div className="fixed top-4 right-4 z-[110]">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleToggleFullscreen(false)}
+                  className="bg-white/90 backdrop-blur shadow-md gap-2 text-slate-700 hover:text-slate-900"
+                >
+                  <Minimize2 className="size-4" /> Exit Fullscreen
+                </Button>
+              </div>
+
+              <SlideshowViewer htmlBody={report.html_body} isFullscreen={true} />
             </div>
-            
-            <Card className="mx-auto shadow-2xl border-slate-200 overflow-hidden bg-white max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0">
-              <CardContent className="p-12 md:p-24 overflow-x-auto">
-                {report.content_type === "slideshow" ? (
-                  <SlideshowViewer htmlBody={report.html_body} isFullscreen={true} />
-                ) : (
+          ) : (
+            <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm overflow-y-auto p-4 md:p-12 animate-in fade-in duration-300">
+              <div className="fixed top-4 right-8 z-[110]">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleToggleFullscreen(false)}
+                  className="bg-white/90 backdrop-blur shadow-md gap-2 text-slate-700 hover:text-slate-900"
+                >
+                  <Minimize2 className="size-4" /> Exit Fullscreen
+                </Button>
+              </div>
+
+              <Card className="mx-auto shadow-2xl border-slate-200 overflow-hidden bg-white max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0">
+                <CardContent className="p-12 md:p-24 overflow-x-auto">
                   <div
                     className="prose prose-slate prose-lg prose-headings:text-slate-900 prose-headings:font-bold prose-p:text-slate-600 prose-a:text-amber-600 max-w-none"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(report.html_body, { ADD_TAGS: ['canvas'], ADD_ATTR: ['style'] }) }}
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(report.html_body, {
+                        ADD_TAGS: ["canvas"],
+                        ADD_ATTR: ["style"],
+                      }),
+                    }}
                   />
-                )}
-              </CardContent>
-              <div className="bg-slate-50 px-8 py-4 border-t flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
-                <span>Open Reporting Generated Artifact</span>
-              </div>
-            </Card>
-          </div>
+                </CardContent>
+                <div className="bg-slate-50 px-8 py-4 border-t flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
+                  <span>Open Reporting Generated Artifact</span>
+                </div>
+              </Card>
+            </div>
+          )
         )}
 
         {/* HTML Report Body - "Document Aesthetic" (Inline version) */}
@@ -271,93 +362,101 @@ export function ReportViewerPage() {
 
           {/* Comment Input */}
           <div className="mb-6 relative">
-            <Card className="overflow-visible">
-              <CardContent className="p-4 overflow-visible">
-                <div className="flex gap-3">
-                  <Avatar className="size-8 shrink-0">
-                    {user?.avatar && <AvatarImage src={user.avatar} alt={user?.name || "CurrentUser"} className="object-cover" />}
-                    <AvatarFallback className={`text-xs ${getAvatarColor(user?.name || user?.id)}`}>
-                      {user?.name ? getInitials(user.name) : <Bot className="size-4" />}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="relative">
-                      <textarea
-                        value={commentText}
-                        onChange={(e) => {
-                          const val = e.target.value
-                          setCommentText(val)
-                          
-                          const words = val.split(/\s/)
-                          const lastWord = words[words.length - 1]
-                          
-                          if (lastWord.startsWith("@")) {
-                            setMentionQuery(lastWord.slice(1))
-                            setShowMentions(true)
-                          } else {
-                            setShowMentions(false)
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (showMentions && filteredMentions.length > 0) {
-                            if (e.key === "ArrowDown") {
-                              e.preventDefault()
-                              setMentionIndex(prev => (prev + 1) % filteredMentions.length)
-                            } else if (e.key === "ArrowUp") {
-                              e.preventDefault()
-                              setMentionIndex(prev => (prev - 1 + filteredMentions.length) % filteredMentions.length)
-                            } else if (e.key === "Enter" || e.key === "Tab") {
-                              e.preventDefault()
-                              const index = mentionIndex === -1 ? 0 : mentionIndex
-                              handleSelectMention(filteredMentions[index])
-                            } else if (e.key === "Escape") {
+            {isAuthenticated ? (
+              <Card className="overflow-visible">
+                <CardContent className="p-4 overflow-visible">
+                  <div className="flex gap-3">
+                    <Avatar className="size-8 shrink-0">
+                      {user?.avatar && <AvatarImage src={user.avatar} alt={user?.name || "CurrentUser"} className="object-cover" />}
+                      <AvatarFallback className={`text-xs ${getAvatarColor(user?.name || user?.id)}`}>
+                        {user?.name ? getInitials(user.name) : <Bot className="size-4" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="relative">
+                        <textarea
+                          value={commentText}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setCommentText(val)
+                            
+                            const words = val.split(/\s/)
+                            const lastWord = words[words.length - 1]
+                            
+                            if (lastWord.startsWith("@")) {
+                              setMentionQuery(lastWord.slice(1))
+                              setShowMentions(true)
+                            } else {
                               setShowMentions(false)
                             }
-                          }
-                        }}
-                        placeholder="Add a comment... (use @ to tag users)"
-                        className="w-full min-h-[80px] bg-slate-50 border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
-                      />
+                          }}
+                          onKeyDown={(e) => {
+                            if (showMentions && filteredMentions.length > 0) {
+                              if (e.key === "ArrowDown") {
+                                e.preventDefault()
+                                setMentionIndex(prev => (prev + 1) % filteredMentions.length)
+                              } else if (e.key === "ArrowUp") {
+                                e.preventDefault()
+                                setMentionIndex(prev => (prev - 1 + filteredMentions.length) % filteredMentions.length)
+                              } else if (e.key === "Enter" || e.key === "Tab") {
+                                e.preventDefault()
+                                const index = mentionIndex === -1 ? 0 : mentionIndex
+                                handleSelectMention(filteredMentions[index])
+                              } else if (e.key === "Escape") {
+                                setShowMentions(false)
+                              }
+                            }
+                          }}
+                          placeholder="Add a comment... (use @ to tag users)"
+                          className="w-full min-h-[80px] bg-slate-50 border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                        />
 
-                      {showMentions && filteredMentions.length > 0 && (
-                        <div className="absolute left-0 w-56 mt-1 rounded-lg shadow-2xl z-[100] overflow-hidden bg-white border border-slate-200 animate-in fade-in slide-in-from-top-1 duration-150"
-                             style={{ top: '100%' }}>
-                          <div className="p-1.5 flex flex-col">
-                            <div className="px-2 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b mb-1">Tag someone</div>
-                            {filteredMentions.map((user, i) => (
-                              <button
-                                key={user}
-                                className={`text-left px-2.5 py-2 text-sm rounded-md transition-colors flex items-center gap-2.5 ${i === mentionIndex ? "bg-amber-100 text-amber-700 font-semibold" : "hover:bg-slate-50 text-slate-700"}`}
-                                onMouseDown={(e) => {
-                                  e.preventDefault()
-                                  handleSelectMention(user)
-                                }}
-                              >
-                                <div className="size-6 rounded-full bg-amber-100 flex items-center justify-center text-[11px] text-amber-700 font-bold shrink-0">
-                                  {user.split(" ").map(n => n[0]).join("")}
-                                </div>
-                                <span>{user}</span>
-                              </button>
-                            ))}
+                        {showMentions && filteredMentions.length > 0 && (
+                          <div className="absolute left-0 w-56 mt-1 rounded-lg shadow-2xl z-[100] overflow-hidden bg-white border border-slate-200 animate-in fade-in slide-in-from-top-1 duration-150"
+                               style={{ top: '100%' }}>
+                            <div className="p-1.5 flex flex-col">
+                              <div className="px-2 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b mb-1">Tag someone</div>
+                              {filteredMentions.map((user, i) => (
+                                <button
+                                  key={user}
+                                  className={`text-left px-2.5 py-2 text-sm rounded-md transition-colors flex items-center gap-2.5 ${i === mentionIndex ? "bg-amber-100 text-amber-700 font-semibold" : "hover:bg-slate-50 text-slate-700"}`}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault()
+                                    handleSelectMention(user)
+                                  }}
+                                >
+                                  <div className="size-6 rounded-full bg-amber-100 flex items-center justify-center text-[11px] text-amber-700 font-bold shrink-0">
+                                    {user.split(" ").map(n => n[0]).join("")}
+                                  </div>
+                                  <span>{user}</span>
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
 
-                    <div className="flex justify-end mt-2">
-                      <Button
-                        size="sm"
-                        className="bg-amber-500 hover:bg-amber-600 text-white"
-                        onClick={handleSubmitComment}
-                        disabled={!commentText.trim()}
-                      >
-                        <Send className="size-4 mr-1" /> Comment
-                      </Button>
+                      <div className="flex justify-end mt-2">
+                        <Button
+                          size="sm"
+                          className="bg-amber-500 hover:bg-amber-600 text-white"
+                          onClick={handleSubmitComment}
+                          disabled={!commentText.trim()}
+                        >
+                          <Send className="size-4 mr-1" /> Comment
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-4 text-sm text-slate-600">
+                  Sign in to comment and vote on reports.
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Comment List */}

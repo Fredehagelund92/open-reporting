@@ -16,7 +16,6 @@ import {
   MessageSquare,
   Bot,
   Users,
-  Bell,
   Settings,
   ArrowLeft,
   Star,
@@ -24,14 +23,15 @@ import {
   Loader2
 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
-import { InviteUserDialog } from "@/components/InviteUserDialog"
-import { useQuery } from "@tanstack/react-query"
+import { CreateReportDialog } from "@/components/CreateReportDialog"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 
 export function SpacePage() {
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const { spaceName } = useParams<{ spaceName: string }>()
   const fullName = `o/${spaceName}`
+  const queryClient = useQueryClient()
 
   const { data: spaces, isLoading: loadingSpaces } = useQuery({
     queryKey: ["spaces"], 
@@ -116,6 +116,12 @@ export function SpacePage() {
               <p className="text-sm text-muted-foreground">{space.description}</p>
             </div>
             <div className="ml-auto flex gap-2">
+              {isAuthenticated && (
+                <CreateReportDialog
+                  spaceName={fullName}
+                  onCreated={() => queryClient.invalidateQueries({ queryKey: ["reports", fullName] })}
+                />
+              )}
               <Button 
                 variant={isFavorited ? "default" : "outline"}
                 size="sm" 
@@ -126,21 +132,7 @@ export function SpacePage() {
                 {isFavoriteLoading ? <Loader2 className="size-4 animate-spin" /> : <Star className={`size-4 ${isFavorited ? "fill-current" : ""}`} />}
                 {isFavorited ? "Favorited" : "Favorite"}
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-2 h-9 px-4 text-slate-400 border-slate-200 cursor-not-allowed opacity-60"
-                disabled
-              >
-                <Bell className="size-4" />
-                Coming Soon
-              </Button>
-              
-              {space.isPrivate && (user?.role === "ADMIN" || space.ownerId === user?.id) && (
-                <InviteUserDialog spaceId={space.id} spaceName={space.name} />
-              )}
-
-              {(user?.role === "ADMIN" || space.ownerId === user?.id) && (
+              {(user?.role === "ADMIN" || space.owner_id === user?.id) && (
                 <Link to={`/space/${spaceName}/settings`}>
                   <Button variant="ghost" size="sm" className="gap-2 h-9 px-3 text-slate-600 hover:text-amber-600">
                     <Settings className="size-4" />
@@ -172,7 +164,30 @@ export function SpacePage() {
 }
 
 function SpaceReportCard({ report }: { report: any }) {
-  const [vote, setVote] = useState(0)
+  const { isAuthenticated } = useAuth()
+  const [vote, setVote] = useState(report.user_vote ?? 0)
+  const [score, setScore] = useState(report.upvote_score ?? report.upvotes ?? 0)
+  const [isVoting, setIsVoting] = useState(false)
+
+  useEffect(() => {
+    setVote(report.user_vote ?? 0)
+    setScore(report.upvote_score ?? report.upvotes ?? 0)
+  }, [report.id, report.user_vote, report.upvote_score, report.upvotes])
+
+  const handleVote = async (direction: 1 | -1) => {
+    if (!isAuthenticated || isVoting) return
+    setIsVoting(true)
+    try {
+      const endpoint = direction === 1 ? "upvote" : "downvote"
+      const res = await api.post(`/reports/${report.id}/${endpoint}`)
+      setVote(res.data.user_vote ?? 0)
+      setScore(res.data.total_score ?? score)
+    } catch (err) {
+      console.error("Vote failed", err)
+    } finally {
+      setIsVoting(false)
+    }
+  }
 
   return (
     <Card className="flex flex-row overflow-hidden hover:border-slate-300 transition-colors">
@@ -180,19 +195,21 @@ function SpaceReportCard({ report }: { report: any }) {
         <Button
           variant="ghost"
           size="icon"
+          disabled={!isAuthenticated || isVoting}
           className={`size-8 hover:text-amber-600 hover:bg-amber-50 ${vote === 1 ? "text-amber-600" : "text-slate-400"}`}
-          onClick={() => setVote(vote === 1 ? 0 : 1)}
+          onClick={() => handleVote(1)}
         >
           <ArrowBigUp className="size-5" />
         </Button>
         <span className={`text-sm font-bold my-1 ${vote === 1 ? "text-amber-600" : vote === -1 ? "text-blue-600" : "text-slate-700"}`}>
-          {(report.upvotes || 0) + vote}
+          {score}
         </span>
         <Button
           variant="ghost"
           size="icon"
+          disabled={!isAuthenticated || isVoting}
           className={`size-8 hover:text-blue-600 hover:bg-blue-50 ${vote === -1 ? "text-blue-600" : "text-slate-400"}`}
-          onClick={() => setVote(vote === -1 ? 0 : -1)}
+          onClick={() => handleVote(-1)}
         >
           <ArrowBigDown className="size-5" />
         </Button>
@@ -200,6 +217,17 @@ function SpaceReportCard({ report }: { report: any }) {
 
       <div className="p-4 flex-1 flex flex-col min-w-0">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+          <Badge
+            variant="secondary"
+            className={
+              report.content_type === "slideshow"
+                ? "h-5 px-2 py-0 bg-violet-100 text-violet-700 border-violet-200 font-medium"
+                : "h-5 px-2 py-0 bg-blue-100 text-blue-700 border-blue-200 font-medium"
+            }
+          >
+            {report.content_type === "slideshow" ? "Presentation" : "Report"}
+          </Badge>
+          <span>•</span>
           <span className="flex items-center gap-1">
             Posted by
             <Avatar className="size-4 ml-1">
@@ -220,7 +248,9 @@ function SpaceReportCard({ report }: { report: any }) {
         <div className="flex items-center gap-4 mt-auto">
           <div className="flex gap-2">
             {report.tags.map((tag: any) => (
-              <Badge key={tag} variant="secondary" className="font-normal bg-slate-100 text-slate-600 hover:bg-slate-200">{tag}</Badge>
+              <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
+                <Badge variant="secondary" className="font-normal bg-slate-100 text-slate-600 hover:bg-slate-200">{tag}</Badge>
+              </Link>
             ))}
           </div>
           <Link to={`/report/${report.slug}`} className="ml-auto">

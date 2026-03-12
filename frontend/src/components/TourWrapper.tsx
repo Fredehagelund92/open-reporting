@@ -24,7 +24,7 @@ const TOUR_STEPS: Step[] = [
   },
   {
     target: "#tour-resources",
-    content: "Check out these resources to learn how to build skills and publish reports.",
+    content: "Check out these resources to compare publishing paths: one-off manual Publish a Report, or recurring automation with Connect AI.",
     placement: "right",
   }
 ];

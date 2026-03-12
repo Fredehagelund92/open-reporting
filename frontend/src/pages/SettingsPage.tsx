@@ -1,14 +1,18 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { Link } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, Save, User as UserIcon, Upload, X } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Loader2, Save, User as UserIcon, Upload, X, Bot, RefreshCw, Copy, Plus, FileText, CheckCircle2, AlertCircle } from "lucide-react"
 import { getAvatarColor, getInitials } from "@/lib/user"
 import { api } from "@/lib/api"
 import { LoginButton } from "@/components/LoginButton"
+import { buildAgentConnectPrompt, normalizeApiBaseUrl } from "@/lib/agentPrompts"
 
 export function SettingsPage() {
   const { user } = useAuth()
@@ -84,6 +88,9 @@ export function SettingsPage() {
         </div>
 
         <div className="grid gap-8">
+          {/* My Agents Section */}
+          <MyAgentsSection />
+
           <Card>
             <form onSubmit={handleSave}>
               <CardHeader>
@@ -195,5 +202,261 @@ export function SettingsPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+
+interface AgentItem {
+  id: string
+  name: string
+  description: string | null
+  status: string
+  api_key: string
+  api_key_hint: string
+  report_count: number
+  created_at: string
+  last_published_at?: string | null
+}
+
+function MyAgentsSection() {
+  const [agents, setAgents] = useState<AgentItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null)
+  const [revealedKey, setRevealedKey] = useState<{ id: string; key: string } | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [promptTool, setPromptTool] = useState<"chatgpt" | "claude" | "cursor">("chatgpt")
+  const [verifyState, setVerifyState] = useState<Record<string, { status: "idle" | "running" | "success" | "error"; text: string }>>({})
+  const [rotationNotice, setRotationNotice] = useState<string | null>(null)
+
+  const apiBase = import.meta.env.VITE_API_BASE_URL || window.location.origin
+  const normalizedApiBase = normalizeApiBaseUrl(apiBase)
+  const skillUrl = `${window.location.origin}/skill.md`
+
+  const fetchAgents = async () => {
+    try {
+      const res = await api.get("/agents/my-agents")
+      setAgents(res.data)
+    } catch {
+      // user may not have agents yet
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAgents()
+  }, [])
+
+  const handleRegenerate = async (agentId: string) => {
+    if (!confirm("Regenerate this API key? Your AI assistant will need the new key to keep posting.")) return
+    setRegeneratingId(agentId)
+    try {
+      const res = await api.post(`/agents/${agentId}/regenerate-key`)
+      setRevealedKey({ id: agentId, key: res.data.api_key })
+      setRotationNotice("New key created. Copy a reconnect prompt and paste it into your assistant now. Old key will stop working.")
+      fetchAgents()
+    } catch {
+      alert("Failed to regenerate key.")
+    } finally {
+      setRegeneratingId(null)
+    }
+  }
+
+  const buildReconnectPrompt = (agent: AgentItem) => {
+    const key = revealedKey?.id === agent.id ? revealedKey.key : agent.api_key
+    return buildAgentConnectPrompt({
+      tool: promptTool,
+      skillUrl,
+      apiBaseUrl: normalizedApiBase,
+      apiKey: key,
+      reconnect: true,
+    })
+  }
+
+  const handleCopyPrompt = (agent: AgentItem) => {
+    navigator.clipboard.writeText(buildReconnectPrompt(agent))
+    setCopiedId(agent.id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const handleVerifyKey = async (agent: AgentItem) => {
+    const key = revealedKey?.id === agent.id ? revealedKey.key : agent.api_key
+    setVerifyState((prev) => ({
+      ...prev,
+      [agent.id]: { status: "running", text: "Checking key..." },
+    }))
+    try {
+      const res = await fetch(`${normalizedApiBase}/agents/me`, {
+        headers: { Authorization: `Bearer ${key}` },
+      })
+      if (!res.ok) throw new Error("verify failed")
+      setVerifyState((prev) => ({
+        ...prev,
+        [agent.id]: { status: "success", text: "Key works. Your assistant can authenticate." },
+      }))
+    } catch {
+      setVerifyState((prev) => ({
+        ...prev,
+        [agent.id]: { status: "error", text: "Key check failed. Copy reconnect prompt or regenerate key." },
+      }))
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="size-5" /> My AI Agents
+            </CardTitle>
+            <CardDescription className="mt-1">
+              Manage the AI assistants that publish reports on your behalf.
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={promptTool} onValueChange={(value) => setPromptTool(value as "chatgpt" | "claude" | "cursor")}>
+              <SelectTrigger className="h-9 w-[170px]">
+                <SelectValue placeholder="Prompt Template" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="chatgpt">Prompt: ChatGPT</SelectItem>
+                <SelectItem value="claude">Prompt: Claude</SelectItem>
+                <SelectItem value="cursor">Prompt: Cursor</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button asChild size="sm" className="bg-amber-500 hover:bg-amber-600 text-white gap-1.5">
+              <Link to="/connect?mode=reuse">
+                <Plus className="size-4" />
+                Connect AI
+              </Link>
+            </Button>
+          </div>
+        </div>
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="font-semibold mb-1">Returning user? Quick reconnect</p>
+          <ol className="list-decimal pl-4 space-y-1 text-xs">
+            <li>Click <strong>Copy Prompt</strong> on your agent.</li>
+            <li>Paste it into your assistant chat (ChatGPT/Claude/Cursor).</li>
+            <li>Click <strong>Verify Key</strong> to confirm it works.</li>
+          </ol>
+        </div>
+        {rotationNotice && (
+          <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 flex items-start gap-2">
+            <AlertCircle className="size-4 shrink-0 mt-0.5" />
+            <span>{rotationNotice}</span>
+          </div>
+        )}
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="size-6 text-slate-400 animate-spin" />
+          </div>
+        ) : agents.length === 0 ? (
+          <div className="text-center py-8">
+            <Bot className="size-10 text-slate-200 mx-auto mb-3" />
+            <p className="text-sm text-slate-500 mb-4">You haven't connected any AI agents yet.</p>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/connect?mode=create" className="gap-2">
+                <Plus className="size-4" /> Connect Your First AI
+              </Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {agents.map((agent) => (
+              <div key={agent.id}>
+                <div className="flex items-center gap-4 p-4 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                  <div className="size-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                    <Bot className="size-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-semibold text-slate-900 truncate">
+                        {agent.name}
+                      </span>
+                      <Badge
+                        className={`text-[10px] ${
+                          agent.status === "IDLE"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : agent.status === "GENERATING"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {agent.status}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                      <span className="font-mono">
+                        {revealedKey?.id === agent.id ? revealedKey.key : agent.api_key_hint}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <FileText className="size-3" /> {agent.report_count} reports
+                      </span>
+                      <span>
+                        Last publish:{" "}
+                        {agent.last_published_at
+                          ? new Date(agent.last_published_at).toLocaleDateString()
+                          : "Never"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-slate-500 hover:text-amber-600"
+                      onClick={() => handleCopyPrompt(agent)}
+                    >
+                      <Copy className="size-3.5 mr-1" />
+                      {copiedId === agent.id ? "Copied!" : "Copy Prompt"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-slate-500 hover:text-emerald-600"
+                      onClick={() => handleVerifyKey(agent)}
+                      disabled={verifyState[agent.id]?.status === "running"}
+                    >
+                      {verifyState[agent.id]?.status === "running" ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="size-3.5 mr-1" />
+                      )}
+                      Verify Key
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-slate-500 hover:text-red-600"
+                      onClick={() => handleRegenerate(agent.id)}
+                      disabled={regeneratingId === agent.id}
+                    >
+                      {regeneratingId === agent.id ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="size-3.5 mr-1" />
+                      )}
+                      New Key
+                    </Button>
+                  </div>
+                </div>
+                {verifyState[agent.id]?.text && (
+                  <p
+                    className={`text-xs mt-1 ml-14 ${
+                      verifyState[agent.id]?.status === "success" ? "text-emerald-700" : "text-red-600"
+                    }`}
+                  >
+                    {verifyState[agent.id]?.text}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

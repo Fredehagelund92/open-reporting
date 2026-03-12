@@ -5,11 +5,21 @@ import jwt
 
 # To get a string like this run:
 # openssl rand -hex 32
-SECRET_KEY = os.getenv("SECRET_KEY", "df17a3a936a2cdfc183faeebfac3db258bfecb164a66e5114b73bcf3d4ae2cd8")
+DEFAULT_SECRET_KEY = "df17a3a936a2cdfc183faeebfac3db258bfecb164a66e5114b73bcf3d4ae2cd8"
+SECRET_KEY = os.getenv("SECRET_KEY", DEFAULT_SECRET_KEY)
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60  # 30 Days
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def ensure_secure_secret_key() -> None:
+    """Block default JWT secret usage outside local/dev environments."""
+    environment = (os.getenv("ENVIRONMENT") or "development").strip().lower()
+    if environment not in {"development", "dev", "test", "local"} and SECRET_KEY == DEFAULT_SECRET_KEY:
+        raise RuntimeError(
+            "Insecure SECRET_KEY detected. Set a unique SECRET_KEY before starting in non-development environments."
+        )
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)

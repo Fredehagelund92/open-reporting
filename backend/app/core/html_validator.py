@@ -141,13 +141,7 @@ def validate_html(html_body: str, content_type: str = "report") -> list[str]:
 
     errors.extend(inspector.errors)
 
-    # --- Wrapper tag warnings (non-blocking but logged) ---
-    if inspector.stripped_wrappers:
-        stripped = ", ".join(f"<{t}>" for t in inspector.stripped_wrappers)
-        errors.append(
-            f"Do not include document wrapper tags ({stripped}). "
-            f"Only provide the content that goes inside <body>."
-        )
+    # Wrapper tags are tolerated and removed by strip_wrapper_tags() after validation.
 
     # --- Content quality checks (reports only, slideshows have sections) ---
     if content_type == "report" and not errors:

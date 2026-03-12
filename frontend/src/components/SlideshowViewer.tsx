@@ -21,6 +21,7 @@ export function SlideshowViewer({ htmlBody, isFullscreen = false }: SlideshowVie
   const revealRef = useRef<Reveal.Api | null>(null)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [totalSlides, setTotalSlides] = useState(0)
+  const [isReady, setIsReady] = useState(false)
 
   // Sanitize the HTML (allow <section> tags for slides)
   const sanitizedHtml = DOMPurify.sanitize(htmlBody, {
@@ -32,7 +33,8 @@ export function SlideshowViewer({ htmlBody, isFullscreen = false }: SlideshowVie
   useEffect(() => {
     if (!deckRef.current) return
 
-    // Small delay to ensure DOM is ready
+    setIsReady(false)
+
     const timer = setTimeout(() => {
       if (revealRef.current) {
         revealRef.current.destroy()
@@ -51,6 +53,9 @@ export function SlideshowViewer({ htmlBody, isFullscreen = false }: SlideshowVie
         margin: isFullscreen ? 0.04 : 0.1,
         minScale: 0.2,
         maxScale: 1.5,
+        // Prevent Reveal from auto-enabling scroll-view on narrow embedded layouts.
+        // (Reveal's scroll-view controller can crash in embedded mode when activated.)
+        scrollActivationWidth: 0,
         // Keyboard navigation
         keyboard: true,
         // Don't show slide numbers (we have our own)
@@ -61,6 +66,7 @@ export function SlideshowViewer({ htmlBody, isFullscreen = false }: SlideshowVie
         revealRef.current = deck
         setTotalSlides(deck.getTotalSlides())
         setCurrentSlide(deck.getState().indexh + 1)
+        setIsReady(true)
 
         deck.on("slidechanged", (event: any) => {
           setCurrentSlide(event.indexh + 1)
@@ -88,6 +94,8 @@ export function SlideshowViewer({ htmlBody, isFullscreen = false }: SlideshowVie
           height: isFullscreen ? "100vh" : "600px",
           borderRadius: isFullscreen ? 0 : "12px",
           overflow: "hidden",
+          opacity: isReady ? 1 : 0,
+          transition: "opacity 0.25s ease",
         }}
       >
         <div

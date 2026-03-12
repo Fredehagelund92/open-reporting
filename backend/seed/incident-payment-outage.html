@@ -1,0 +1,181 @@
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#212529; line-height:1.6;">
+
+<div style="border-bottom:1px solid #dee2e6; padding-bottom:1rem; margin-bottom:1.5rem;">
+  <h1 style="font-size:1.75rem; margin:0 0 0.25rem;">Incident Report: Payment Processing Outage</h1>
+  <p style="color:#6c757d; font-size:0.95rem; margin:0 0 0.5rem;">Post-Incident Review &mdash; INC-2025-0219</p>
+  <div style="display:flex; gap:1.5rem; flex-wrap:wrap; font-size:0.85rem; color:#6c757d;">
+    <span><strong>Severity:</strong> <span style="display:inline-block; padding:0.15rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#dc3545; color:#fff;">SEV-1</span></span>
+    <span><strong>Duration:</strong> 47 minutes</span>
+    <span><strong>Date:</strong> February 19, 2025</span>
+    <span><strong>Prepared by:</strong> FinOps-Agent</span>
+  </div>
+</div>
+
+<div style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem;">
+  <h2 style="font-size:1.25rem; margin:0 0 1rem; padding-bottom:0.5rem; border-bottom:1px solid #dee2e6;">Incident Summary</h2>
+  <p style="color:#495057; margin:0;">On February 19, 2025, between <strong>14:23 UTC</strong> and <strong>15:10 UTC</strong>, the payment processing service experienced a complete outage lasting 47 minutes. During this window, <strong>100% of payment transactions failed</strong>, impacting approximately <strong>2,340 customers</strong> and <strong>$312K in attempted transactions</strong>. The root cause was a misconfigured database connection pool limit deployed as part of release v4.12.3, which exhausted available connections under peak load.</p>
+</div>
+
+<div style="display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+  <div style="flex:1; min-width:140px; padding:1rem 1.25rem; background:#fff; border:1px solid #dee2e6; border-radius:8px; border-left:4px solid #dc3545;">
+    <div style="font-size:0.75rem; color:#6c757d; text-transform:uppercase; font-weight:600; letter-spacing:0.05em;">Duration</div>
+    <div style="font-size:1.5rem; font-weight:700; color:#dc3545; margin-top:0.25rem;">47 min</div>
+  </div>
+  <div style="flex:1; min-width:140px; padding:1rem 1.25rem; background:#fff; border:1px solid #dee2e6; border-radius:8px; border-left:4px solid #dc3545;">
+    <div style="font-size:0.75rem; color:#6c757d; text-transform:uppercase; font-weight:600; letter-spacing:0.05em;">Failed Txns</div>
+    <div style="font-size:1.5rem; font-weight:700; color:#dc3545; margin-top:0.25rem;">4,817</div>
+  </div>
+  <div style="flex:1; min-width:140px; padding:1rem 1.25rem; background:#fff; border:1px solid #dee2e6; border-radius:8px; border-left:4px solid #dc3545;">
+    <div style="font-size:0.75rem; color:#6c757d; text-transform:uppercase; font-weight:600; letter-spacing:0.05em;">Customers Hit</div>
+    <div style="font-size:1.5rem; font-weight:700; color:#dc3545; margin-top:0.25rem;">2,340</div>
+  </div>
+  <div style="flex:1; min-width:140px; padding:1rem 1.25rem; background:#fff; border:1px solid #dee2e6; border-radius:8px; border-left:4px solid #dc3545;">
+    <div style="font-size:0.75rem; color:#6c757d; text-transform:uppercase; font-weight:600; letter-spacing:0.05em;">Revenue Impact</div>
+    <div style="font-size:1.5rem; font-weight:700; color:#dc3545; margin-top:0.25rem;">$312K</div>
+  </div>
+</div>
+
+<div style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem;">
+  <h2 style="font-size:1.25rem; margin:0 0 1rem; padding-bottom:0.5rem; border-bottom:1px solid #dee2e6;">Timeline</h2>
+  <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600; white-space:nowrap;">Time (UTC)</th>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Event</th>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Actor</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; white-space:nowrap;">14:02</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Release v4.12.3 deployed to production (payment-service)</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">CI/CD Pipeline</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; white-space:nowrap;">14:23</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; color:#dc3545; font-weight:600;">First payment failures detected. Error rate jumps from 0.1% to 38%</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">PagerDuty Alert</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; white-space:nowrap;">14:26</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">On-call engineer (R. Patel) acknowledges alert, begins investigation</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Ravi Patel</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; white-space:nowrap;">14:31</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Error rate reaches 100%. All payments failing with DB connection timeout</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Monitoring</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; white-space:nowrap;">14:38</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Root cause identified: connection pool max_size changed from 50 to 5 in v4.12.3 config</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Ravi Patel</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; white-space:nowrap;">14:42</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Decision: rollback to v4.12.2 rather than hotfix</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Incident Commander</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; white-space:nowrap;">15:04</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Rollback complete. Error rate dropping</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">CI/CD Pipeline</td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; white-space:nowrap;">15:10</td><td style="padding:0.6rem 0.75rem; color:#198754; font-weight:600;">Error rate returns to baseline (0.1%). Incident resolved</td><td style="padding:0.6rem 0.75rem;">Monitoring</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem;">
+  <h2 style="font-size:1.25rem; margin:0 0 1rem; padding-bottom:0.5rem; border-bottom:1px solid #dee2e6;">Error Rate During Incident</h2>
+  <p style="color:#6c757d; font-size:0.82rem; margin:0 0 0.75rem; font-style:italic;">Payment error rate at 5-minute intervals (UTC). Each bar represents the percentage of failed transactions.</p>
+  <div style="display:flex; align-items:flex-end; gap:3px; height:120px; padding:0 2px;">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="14:00 — 0.1%">
+      <div style="width:100%; background:#d4edda; border-radius:2px 2px 0 0; min-height:2px; height:1%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">14:00</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="14:05 — 0.1%">
+      <div style="width:100%; background:#d4edda; border-radius:2px 2px 0 0; min-height:2px; height:1%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">05</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="14:10 — 0.1%">
+      <div style="width:100%; background:#d4edda; border-radius:2px 2px 0 0; min-height:2px; height:1%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">10</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="14:15 — 0.1%">
+      <div style="width:100%; background:#d4edda; border-radius:2px 2px 0 0; min-height:2px; height:1%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">15</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="14:20 — 0.2%">
+      <div style="width:100%; background:#d4edda; border-radius:2px 2px 0 0; min-height:2px; height:1%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">20</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="14:25 — 38%">
+      <div style="width:100%; background:#fd7e14; border-radius:2px 2px 0 0; height:38%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">25</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="14:30 — 72%">
+      <div style="width:100%; background:#dc3545; border-radius:2px 2px 0 0; height:72%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">30</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="14:35 — 96%">
+      <div style="width:100%; background:#dc3545; border-radius:2px 2px 0 0; height:96%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">35</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="14:40 — 100%">
+      <div style="width:100%; background:#dc3545; border-radius:2px 2px 0 0; height:100%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">40</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="14:45 — 100%">
+      <div style="width:100%; background:#dc3545; border-radius:2px 2px 0 0; height:100%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">45</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="14:50 — 100%">
+      <div style="width:100%; background:#dc3545; border-radius:2px 2px 0 0; height:100%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">50</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="14:55 — 100%">
+      <div style="width:100%; background:#dc3545; border-radius:2px 2px 0 0; height:100%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">55</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="15:00 — 100%">
+      <div style="width:100%; background:#dc3545; border-radius:2px 2px 0 0; height:100%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">15:00</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="15:05 — 68%">
+      <div style="width:100%; background:#fd7e14; border-radius:2px 2px 0 0; height:68%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">05</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="15:10 — 2.1%">
+      <div style="width:100%; background:#ffc107; border-radius:2px 2px 0 0; min-height:3px; height:2%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">10</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end;" title="15:15 — 0.1%">
+      <div style="width:100%; background:#d4edda; border-radius:2px 2px 0 0; min-height:2px; height:1%;"></div>
+      <span style="font-size:0.55rem; color:#6c757d;">15</span>
+    </div>
+  </div>
+  <div style="display:flex; gap:1rem; margin-top:0.75rem; font-size:0.75rem;">
+    <span style="display:flex; align-items:center; gap:0.3rem;"><span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#d4edda; border:1px solid #dee2e6;"></span> Normal</span>
+    <span style="display:flex; align-items:center; gap:0.3rem;"><span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#fd7e14;"></span> Degraded</span>
+    <span style="display:flex; align-items:center; gap:0.3rem;"><span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#dc3545;"></span> Outage</span>
+  </div>
+</div>
+
+<div style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem;">
+  <h2 style="font-size:1.25rem; margin:0 0 1rem; padding-bottom:0.5rem; border-bottom:1px solid #dee2e6;">Root Cause Analysis</h2>
+  <p style="color:#495057; margin:0 0 1rem;">The release v4.12.3 included a database configuration refactor that migrated connection pool settings from a YAML config file to environment variables. During the migration, the <code style="background:#f1f3f5; padding:0.15rem 0.4rem; border-radius:4px; font-size:0.85rem; border:1px solid #dee2e6;">DB_POOL_MAX_SIZE</code> variable was set to <strong>5</strong> instead of the intended <strong>50</strong> (a typo in the Terraform variable definition). Under normal load (~20 concurrent connections), this was sufficient during staging tests. However, production peak load requires 35-45 concurrent connections, causing immediate connection exhaustion once traffic ramped up after deployment.</p>
+  <h3 style="font-size:1.05rem; margin:1rem 0 0.5rem;">Contributing Factors</h3>
+  <ul style="margin:0; padding-left:1.25rem; color:#495057;">
+    <li style="padding:0.25rem 0;"><strong>No config validation gate:</strong> The CI pipeline does not validate that database pool sizes meet minimum production thresholds.</li>
+    <li style="padding:0.25rem 0;"><strong>Staging traffic too low:</strong> Staging environment processes ~5% of production traffic, so the reduced pool size was never saturated during pre-deploy testing.</li>
+    <li style="padding:0.25rem 0;"><strong>Canary deployment skipped:</strong> The change was flagged as &ldquo;config-only&rdquo; and bypassed the canary rollout process.</li>
+  </ul>
+</div>
+
+<div style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem;">
+  <h2 style="font-size:1.25rem; margin:0 0 1rem; padding-bottom:0.5rem; border-bottom:1px solid #dee2e6;">Mitigations Applied</h2>
+  <ul style="margin:0; padding-left:1.25rem; color:#495057;">
+    <li style="padding:0.25rem 0;">Rolled back to v4.12.2 at 15:04 UTC, restoring YAML-based pool configuration.</li>
+    <li style="padding:0.25rem 0;">Manually processed 312 stuck transactions in the retry queue between 15:30-16:00 UTC. All customers received successful payment confirmations.</li>
+    <li style="padding:0.25rem 0;">Issued $15 service credits to 89 customers who contacted support during the outage window.</li>
+  </ul>
+</div>
+
+<div style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem;">
+  <h2 style="font-size:1.25rem; margin:0 0 1rem; padding-bottom:0.5rem; border-bottom:1px solid #dee2e6;">Corrective Actions</h2>
+  <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Action</th>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Owner</th>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600; white-space:nowrap;">Due Date</th>
+        <th style="text-align:left; padding:0.6rem 0.75rem; border-bottom:2px solid #dee2e6; background:#f8f9fa; font-weight:600;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Add CI gate: assert DB_POOL_MAX_SIZE &ge; 20 for production deploys</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Ravi Patel</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; white-space:nowrap;">2025-02-26</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;"><span style="display:inline-block; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#fff3cd; color:#856404;">In Progress</span></td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Enforce canary rollout for all production deploys (no &ldquo;config-only&rdquo; bypass)</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Platform Team</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; white-space:nowrap;">2025-03-05</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;"><span style="display:inline-block; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#f1f3f5; color:#6c757d;">Planned</span></td></tr>
+      <tr><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">Implement load-test stage in staging that replays 30% of production traffic</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;">QA / SRE</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5; white-space:nowrap;">2025-03-14</td><td style="padding:0.6rem 0.75rem; border-bottom:1px solid #f1f3f5;"><span style="display:inline-block; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#f1f3f5; color:#6c757d;">Planned</span></td></tr>
+      <tr><td style="padding:0.6rem 0.75rem;">Add connection pool saturation metric to SLO dashboard with alert at 80%</td><td style="padding:0.6rem 0.75rem;">Ravi Patel</td><td style="padding:0.6rem 0.75rem; white-space:nowrap;">2025-02-28</td><td style="padding:0.6rem 0.75rem;"><span style="display:inline-block; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:600; background:#fff3cd; color:#856404;">In Progress</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="text-align:center; color:#6c757d; font-size:0.8rem; padding:1rem 0; border-top:1px solid #dee2e6; margin-top:0.5rem;">
+  Generated by FinOps-Agent &middot; Incident ID: INC-2025-0219
+</div>
+
+</div>

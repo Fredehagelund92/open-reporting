@@ -12,10 +12,12 @@ interface SearchResult {
 }
 
 export function SearchInput() {
+  const RECENT_KEY = "open-reporting:recent-searches"
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [recentSearches, setRecentSearches] = useState<string[]>([])
   const navigate = useNavigate()
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -30,6 +32,28 @@ export function SearchInput() {
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(RECENT_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) {
+          setRecentSearches(parsed.filter((v) => typeof v === "string"))
+        }
+      }
+    } catch {
+      // no-op for malformed local storage
+    }
+  }, [])
+
+  const saveRecentSearch = (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) return
+    const next = [trimmed, ...recentSearches.filter((s) => s.toLowerCase() !== trimmed.toLowerCase())].slice(0, 6)
+    setRecentSearches(next)
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next))
+  }
 
   const handleSearch = async (val: string) => {
     if (!val.trim()) {
@@ -79,6 +103,12 @@ export function SearchInput() {
     }
   }
 
+  const groupedResults = {
+    report: results.filter((r) => r.type === "report"),
+    space: results.filter((r) => r.type === "space"),
+    agent: results.filter((r) => r.type === "agent"),
+  }
+
   return (
     <div className="relative w-full" ref={containerRef}>
       <div className="relative">
@@ -88,7 +118,7 @@ export function SearchInput() {
           placeholder="Search spaces, reports, or agents..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => query.trim() && setIsOpen(true)}
+          onFocus={() => setIsOpen(true)}
           className="w-full bg-slate-100 border-none rounded-md pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all font-medium"
         />
       </div>
@@ -100,33 +130,69 @@ export function SearchInput() {
               <Loader2 className="size-4 animate-spin mr-2" />
               Searching Open Reporting...
             </div>
-          ) : results.length > 0 ? (
+          ) : !query.trim() && recentSearches.length > 0 ? (
             <div className="py-1 overflow-y-auto">
-              <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Search Results</div>
-              {results.map((res) => (
+              <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                <span>Recent Searches</span>
                 <button
-                  key={`${res.type}-${res.id}`}
+                  className="text-[10px] text-slate-400 hover:text-slate-600"
                   onClick={() => {
-                    navigate(res.url)
-                    setIsOpen(false)
-                    setQuery("")
+                    setRecentSearches([])
+                    localStorage.removeItem(RECENT_KEY)
                   }}
-                  className="w-full text-left px-3 py-2.5 hover:bg-slate-50 flex items-start gap-3 transition-colors group"
                 >
-                  <div className="mt-0.5 shrink-0 bg-slate-100 p-2 rounded-md group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">
-                    {getIcon(res.type)}
-                  </div>
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold text-slate-900 truncate group-hover:text-amber-700 transition-colors">{res.label}</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 uppercase shrink-0">{res.type}</span>
-                    </div>
-                    {res.description && (
-                      <span className="text-xs text-slate-500 line-clamp-1">{res.description}</span>
-                    )}
-                  </div>
+                  Clear
+                </button>
+              </div>
+              {recentSearches.map((term) => (
+                <button
+                  key={term}
+                  onClick={() => {
+                    setQuery(term)
+                    handleSearch(term)
+                  }}
+                  className="w-full text-left px-3 py-2.5 hover:bg-slate-50 transition-colors text-sm text-slate-700"
+                >
+                  {term}
                 </button>
               ))}
+            </div>
+          ) : results.length > 0 ? (
+            <div className="py-1 overflow-y-auto">
+              {(["report", "space", "agent"] as const).map((type) =>
+                groupedResults[type].length > 0 ? (
+                  <div key={type}>
+                    <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      {type === "report" ? "Reports" : type === "space" ? "Spaces" : "Agents"}
+                    </div>
+                    {groupedResults[type].map((res) => (
+                      <button
+                        key={`${res.type}-${res.id}`}
+                        onClick={() => {
+                          saveRecentSearch(query)
+                          navigate(res.url)
+                          setIsOpen(false)
+                          setQuery("")
+                        }}
+                        className="w-full text-left px-3 py-2.5 hover:bg-slate-50 flex items-start gap-3 transition-colors group"
+                      >
+                        <div className="mt-0.5 shrink-0 bg-slate-100 p-2 rounded-md group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">
+                          {getIcon(res.type)}
+                        </div>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-semibold text-slate-900 truncate group-hover:text-amber-700 transition-colors">{res.label}</span>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 uppercase shrink-0">{res.type}</span>
+                          </div>
+                          {res.description && (
+                            <span className="text-xs text-slate-500 line-clamp-1">{res.description}</span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : null
+              )}
             </div>
           ) : query.trim() ? (
             <div className="p-8 text-sm text-slate-500 text-center flex flex-col items-center gap-2">

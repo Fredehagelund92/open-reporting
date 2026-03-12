@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "brainstorming": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "91fefe5ab922b18ffaeb0425f6909aa5e951df5e3e2dc29a61aeed67e661a0e6"
+    },
     "documentation-writer": {
       "source": "github/awesome-copilot",
       "sourceType": "github",

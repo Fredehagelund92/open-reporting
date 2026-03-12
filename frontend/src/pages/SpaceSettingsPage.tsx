@@ -3,8 +3,9 @@
  * URL: /space/:spaceName/settings
  */
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
+import { useAuth } from "@/context/AuthContext"
 import {
   Card,
   CardContent,
@@ -28,106 +29,176 @@ import {
   ChevronRight,
   Globe,
   Lock,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react"
 import { api } from "@/lib/api"
+
+interface SpaceRecord {
+  id: string
+  name: string
+  description: string | null
+  is_private: boolean
+  owner_id: string | null
+}
+
+interface SpaceMember {
+  user_id: string
+  user_name: string
+  user_email: string
+  granted_at: string
+}
+
+interface GovernanceEvent {
+  id: string
+  action: string
+  actor_name: string | null
+  target_name: string | null
+  created_at: string
+}
+
+interface ApiErrorLike {
+  response?: {
+    data?: {
+      detail?: string
+    }
+  }
+}
 
 export function SpaceSettingsPage() {
   const { spaceName } = useParams<{ spaceName: string }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
 
-  // Find space by name (mock data for initial load) - REMOVING MOCK DEPENDENCY
-  const [space, setSpace] = useState<any>(null)
-  const [members, setMembers] = useState<any[]>([])
+  const [space, setSpace] = useState<SpaceRecord | null>(null)
+  const [members, setMembers] = useState<SpaceMember[]>([])
+  const [events, setEvents] = useState<GovernanceEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  
-  // Form state
+  const [canManage, setCanManage] = useState(false)
+  const [fatalError, setFatalError] = useState("")
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [isPrivate, setIsPrivate] = useState(false)
   const [inviteEmail, setInviteEmail] = useState("")
 
-  useEffect(() => {
-    fetchSpaceData()
-  }, [spaceName])
+  const getErrorMessage = (err: unknown, fallback: string) => {
+    const e = err as ApiErrorLike
+    return e.response?.data?.detail || fallback
+  }
 
-  const fetchSpaceData = async () => {
+  const fetchSpaceData = useCallback(async () => {
     setIsLoading(true)
+    setFatalError("")
     try {
       const res = await api.get("/spaces/")
-      const foundSpace = res.data.find((s: any) => s.name.replace("o/", "") === spaceName)
-      
+      const foundSpace = (res.data as SpaceRecord[]).find((s) => s.name.replace("o/", "") === spaceName)
+
       if (!foundSpace) {
         setSpace(null)
-        setIsLoading(false)
+        setFatalError("Space not found or you no longer have access.")
         return
       }
 
       setSpace(foundSpace)
       setName(foundSpace.name)
       setDescription(foundSpace.description || "")
-      setIsPrivate(foundSpace.is_private || false)
-      
-      // Fetch members if private and user has permission
-      if (foundSpace.is_private) {
+      setIsPrivate(foundSpace.is_private)
+
+      const allowed = user?.role === "ADMIN" || foundSpace.owner_id === user?.id
+      setCanManage(Boolean(allowed))
+
+      if (foundSpace.is_private && allowed) {
         try {
           const accessRes = await api.get(`/spaces/${foundSpace.id}/access`)
           setMembers(accessRes.data)
-        } catch (e) {
-          console.warn("Could not fetch space access (maybe not owner/admin)")
+        } catch {
+          setMembers([])
         }
+      } else {
+        setMembers([])
+      }
+
+      if (allowed) {
+        try {
+          const eventsRes = await api.get(`/spaces/${foundSpace.id}/governance-events?limit=20`)
+          setEvents(eventsRes.data)
+        } catch {
+          setEvents([])
+        }
+      } else {
+        setEvents([])
       }
     } catch (err) {
-      console.error(err)
+      setFatalError(getErrorMessage(err, "Could not load space settings."))
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [spaceName, user?.id, user?.role])
+
+  useEffect(() => {
+    fetchSpaceData()
+  }, [fetchSpaceData])
 
   const handleUpdateSpace = async () => {
+    if (!space || !canManage) return
     setIsSaving(true)
+    setMessage(null)
     try {
       await api.patch(`/spaces/${space.id}`, { name, description, is_private: isPrivate })
-      // Success logic: notify user or just stay on page
+      setMessage({ type: "success", text: "Space settings saved." })
+      const nextPath = `/space/${name.replace("o/", "")}/settings`
+      await fetchSpaceData()
+      if (space.name !== name) {
+        navigate(nextPath)
+      }
     } catch (err) {
-      console.error(err)
+      setMessage({ type: "error", text: getErrorMessage(err, "Failed to save changes.") })
     } finally {
       setIsSaving(false)
     }
   }
 
   const handleDeleteSpace = async () => {
+    if (!space || !canManage) return
     if (!confirm(`Are you sure you want to delete ${space.name}? This action is irreversible.`)) return
-    
     try {
       await api.delete(`/spaces/${space.id}`)
-      navigate("/")
+      window.dispatchEvent(new CustomEvent("refresh-sidebar"))
+      navigate("/spaces")
     } catch (err) {
-      console.error(err)
+      setMessage({ type: "error", text: getErrorMessage(err, "Failed to delete space.") })
     }
   }
 
   const handleInvite = async () => {
-    if (!inviteEmail || !space) return
+    if (!inviteEmail || !space || !canManage) return
     setIsSaving(true)
+    setMessage(null)
     try {
       await api.post(`/spaces/${space.id}/invite`, { user_email: inviteEmail })
       setInviteEmail("")
-      fetchSpaceData()
+      setMessage({ type: "success", text: "Member invited." })
+      await fetchSpaceData()
     } catch (err) {
-      console.error(err)
+      setMessage({ type: "error", text: getErrorMessage(err, "Could not invite that user.") })
     } finally {
       setIsSaving(false)
     }
   }
 
   const handleRevoke = async (userId: string) => {
-    if (!space) return
+    if (!space || !canManage) return
+    setMessage(null)
     try {
       await api.delete(`/spaces/${space.id}/access/${userId}`)
-      setMembers(members.filter(m => m.user_id !== userId))
+      setMembers((prev) => prev.filter((m) => m.user_id !== userId))
+      setMessage({ type: "success", text: "Member access revoked." })
+      await fetchSpaceData()
     } catch (err) {
-      console.error(err)
+      setMessage({ type: "error", text: getErrorMessage(err, "Could not revoke member access.") })
     }
   }
 
@@ -135,6 +206,30 @@ export function SpaceSettingsPage() {
     return (
       <div className="flex flex-1 items-center justify-center">
         <Loader2 className="size-8 animate-spin text-amber-500" />
+      </div>
+    )
+  }
+
+  if (fatalError || !space) {
+    return (
+      <div className="flex-1 bg-slate-50/50 p-6 md:p-10 overflow-auto">
+        <div className="max-w-3xl mx-auto">
+          <Card className="border-red-200">
+            <CardHeader>
+              <CardTitle className="text-lg text-red-700 flex items-center gap-2">
+                <AlertCircle className="size-5" /> Could not open settings
+              </CardTitle>
+              <CardDescription>{fatalError || "This space is unavailable."}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link to="/spaces">
+                <Button variant="outline">
+                  <ArrowLeft className="mr-2 size-4" /> Back to Spaces
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
@@ -163,8 +258,25 @@ export function SpaceSettingsPage() {
           </Link>
         </div>
 
+        {!canManage && (
+          <Card className="mb-6 border-red-200 bg-red-50/30">
+            <CardContent className="py-4 text-sm text-red-700 flex items-center gap-2">
+              <AlertCircle className="size-4" />
+              You can view this page, but only the space owner or an admin can manage settings.
+            </CardContent>
+          </Card>
+        )}
+
+        {message && (
+          <Card className={`mb-6 ${message.type === "success" ? "border-emerald-200 bg-emerald-50/40" : "border-red-200 bg-red-50/30"}`}>
+            <CardContent className={`py-3 text-sm flex items-center gap-2 ${message.type === "success" ? "text-emerald-700" : "text-red-700"}`}>
+              {message.type === "success" ? <CheckCircle2 className="size-4" /> : <AlertCircle className="size-4" />}
+              {message.text}
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid gap-8 pb-12">
-          {/* General Metadata */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">General Information</CardTitle>
@@ -173,24 +285,24 @@ export function SpaceSettingsPage() {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Space Name</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    id="name" 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. o/marketing"
-                  />
-                </div>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. o/marketing"
+                  disabled={!canManage}
+                />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea 
-                  id="description" 
+                <Textarea
+                  id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What is this space for?"
                   rows={3}
+                  disabled={!canManage}
                 />
               </div>
 
@@ -204,14 +316,11 @@ export function SpaceSettingsPage() {
                     Private spaces are only visible to members you invite.
                   </p>
                 </div>
-                <Switch 
-                  checked={isPrivate} 
-                  onCheckedChange={setIsPrivate} 
-                />
+                <Switch checked={isPrivate} onCheckedChange={setIsPrivate} disabled={!canManage} />
               </div>
 
               <div className="flex justify-end border-t pt-6">
-                <Button onClick={handleUpdateSpace} disabled={isSaving} className="bg-amber-500 hover:bg-amber-600 text-white">
+                <Button onClick={handleUpdateSpace} disabled={isSaving || !canManage} className="bg-amber-500 hover:bg-amber-600 text-white">
                   {isSaving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
                   Save Changes
                 </Button>
@@ -219,8 +328,7 @@ export function SpaceSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Member Management */}
-          <Card className={!isPrivate ? "opacity-50 pointer-events-none grayscale" : ""}>
+          <Card className={!isPrivate ? "opacity-70" : ""}>
             <CardHeader>
               <CardTitle className="text-lg flex items-center justify-between">
                 <span>Manage Members</span>
@@ -230,12 +338,13 @@ export function SpaceSettingsPage() {
             </CardHeader>
             <CardContent>
               <div className="flex gap-2 mb-6">
-                <Input 
-                  placeholder="user@company.io" 
+                <Input
+                  placeholder="user@company.io"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
+                  disabled={!isPrivate || !canManage}
                 />
-                <Button onClick={handleInvite} className="bg-slate-900 border-slate-800 text-white hover:bg-slate-800">
+                <Button onClick={handleInvite} disabled={!isPrivate || !canManage || isSaving} className="bg-slate-900 border-slate-800 text-white hover:bg-slate-800">
                   <UserPlus className="mr-2 size-4" /> Invite
                 </Button>
               </div>
@@ -247,16 +356,17 @@ export function SpaceSettingsPage() {
                   <div>Granted</div>
                   <div className="text-right">Action</div>
                 </div>
-                {members.length > 0 ? members.map(m => (
+                {members.length > 0 ? members.map((m) => (
                   <div key={m.user_id} className="grid grid-cols-[1.5fr_2fr_1fr_0.5fr] p-3 items-center text-sm">
                     <div className="font-medium text-slate-900 truncate">{m.user_name}</div>
                     <div className="text-muted-foreground truncate">{m.user_email}</div>
                     <div className="text-xs text-muted-foreground">{new Date(m.granted_at).toLocaleDateString()}</div>
                     <div className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 text-xs"
+                        disabled={!canManage}
                         onClick={() => handleRevoke(m.user_id)}
                       >
                         Revoke
@@ -272,7 +382,32 @@ export function SpaceSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Danger Zone */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Governance Activity</CardTitle>
+              <CardDescription>Recent management actions for this space.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {events.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No governance events yet.</p>
+              ) : (
+                <div className="divide-y border rounded-md">
+                  {events.map((event) => (
+                    <div key={event.id} className="p-3 text-sm flex items-center justify-between gap-4">
+                      <div>
+                        <p className="font-medium text-slate-900">{event.action.replaceAll("_", " ")}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {event.actor_name || "Unknown"}{event.target_name ? ` -> ${event.target_name}` : ""}
+                        </p>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{new Date(event.created_at).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="border-red-200 bg-red-50/10">
             <CardHeader>
               <CardTitle className="text-lg text-red-700">Danger Zone</CardTitle>
@@ -284,7 +419,7 @@ export function SpaceSettingsPage() {
                   <h4 className="font-semibold text-slate-900">Delete this space</h4>
                   <p className="text-sm text-muted-foreground">Once deleted, all reports and discussions will be lost.</p>
                 </div>
-                <Button onClick={handleDeleteSpace} variant="destructive">
+                <Button onClick={handleDeleteSpace} variant="destructive" disabled={!canManage}>
                   <Trash2 className="mr-2 size-4" /> Delete Space
                 </Button>
               </div>

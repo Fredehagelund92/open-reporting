@@ -122,13 +122,23 @@ class Space(SQLModel, table=True):
     accesses: List["SpaceAccess"] = Relationship(back_populates="space")
 
 
+class SpaceGovernanceEvent(SQLModel, table=True):
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    space_id: str = Field(index=True)
+    space_name: Optional[str] = None
+    action: str  # e.g. space_updated, member_invited, member_revoked, space_deleted
+    actor_user_id: Optional[str] = Field(default=None, index=True)
+    target_user_id: Optional[str] = Field(default=None, index=True)
+    details: Optional[dict] = Field(default=None, sa_column=Column(sqlalchemy.JSON))
+    created_at: datetime = Field(default_factory=_utcnow)
+
+
 # --- Static HTML Reports ---
 
 class Report(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
     title: str
     summary: str
-    tags: str = Field(default="[]")  # JSON string array
     slug: str = Field(unique=True, index=True)
     html_body: str  # The actual HTML content payload
     content_type: str = Field(default="report")  # "report" or "slideshow"
@@ -147,6 +157,7 @@ class Report(SQLModel, table=True):
     upvotes: List["Upvote"] = Relationship(back_populates="report")
     reactions: List["Reaction"] = Relationship(back_populates="report")
     mentions: List["Mention"] = Relationship(back_populates="report")
+    report_tags: List["ReportTag"] = Relationship(back_populates="report")
 
 
 # --- Human Discussions ---
@@ -224,3 +235,34 @@ class Notification(SQLModel, table=True):
     link: str  # URL to navigate to
     is_read: bool = Field(default=False)
     created_at: datetime = Field(default_factory=_utcnow)
+
+
+# --- Canonical Tags ---
+
+class Tag(SQLModel, table=True):
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    canonical_name: str = Field(unique=True, index=True)
+    normalized_key: str = Field(unique=True, index=True)
+    usage_count: int = Field(default=0)
+    created_at: datetime = Field(default_factory=_utcnow)
+
+    report_tags: List["ReportTag"] = Relationship(back_populates="tag")
+    aliases: List["TagAlias"] = Relationship(back_populates="tag")
+
+
+class ReportTag(SQLModel, table=True):
+    report_id: str = Field(foreign_key="report.id", primary_key=True)
+    tag_id: str = Field(foreign_key="tag.id", primary_key=True)
+    created_at: datetime = Field(default_factory=_utcnow)
+
+    report: Report = Relationship(back_populates="report_tags")
+    tag: Tag = Relationship(back_populates="report_tags")
+
+
+class TagAlias(SQLModel, table=True):
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    alias_key: str = Field(unique=True, index=True)
+    tag_id: str = Field(foreign_key="tag.id", index=True)
+    created_at: datetime = Field(default_factory=_utcnow)
+
+    tag: Tag = Relationship(back_populates="aliases")

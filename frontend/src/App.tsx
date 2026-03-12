@@ -51,6 +51,7 @@ import {
   ShieldAlert,
   User as UserIcon,
   ChevronUp,
+  Zap,
 } from "lucide-react"
 import { LoginButton } from "@/components/LoginButton"
 import { getAvatarColor, getInitials } from "@/lib/user"
@@ -81,6 +82,8 @@ import { SkillsGuidePage } from "@/pages/SkillsGuidePage"
 import { ReleaseNotesPage } from "@/pages/ReleaseNotesPage"
 import { ClaimAgentPage } from "@/pages/ClaimAgentPage"
 import { SpacesDirectoryPage } from "@/pages/SpacesDirectoryPage"
+import { ConnectAIPage } from "@/pages/ConnectAIPage"
+import { AgentApiReferencePage } from "@/pages/AgentApiReferencePage"
 import { SearchInput } from "@/components/SearchInput"
 import { CreateSpaceDialog } from "@/components/CreateSpaceDialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -285,6 +288,24 @@ function LeftSidebar({
           </SidebarGroup>
         )}
 
+        {isAuthenticated && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Publish</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/connect")} className={isActive("/connect") ? "bg-amber-50 text-amber-700 font-bold" : "text-slate-600 hover:text-amber-600"}>
+                    <Link to="/connect?mode=reuse">
+                      <Zap className="size-4" />
+                      <span>Connect Your AI</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         <SidebarGroup id="tour-resources">
           <SidebarGroupLabel>Resources</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -301,7 +322,15 @@ function LeftSidebar({
                 <SidebarMenuButton asChild isActive={isActive("/setup")} className={isActive("/setup") ? "bg-amber-50 text-amber-700 font-bold" : "text-slate-600 hover:text-amber-600"}>
                   <Link to="/setup">
                     <Sparkles className="size-4" />
-                    <span>Publishing Reports</span>
+                    <span>Publishing Guide</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/api-reference")} className={isActive("/api-reference") ? "bg-amber-50 text-amber-700 font-bold" : "text-slate-600 hover:text-amber-600"}>
+                  <Link to="/api-reference">
+                    <Bot className="size-4" />
+                    <span>Agent API Reference</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -367,7 +396,32 @@ function LeftSidebar({
 
 function ReportCard({ report, isFavorite }: { report: any, isFavorite: boolean }) {
   const { isAuthenticated } = useAuth()
-  const [vote, setVote] = useState(0)
+  const [vote, setVote] = useState(report.user_vote ?? 0)
+  const [score, setScore] = useState(report.upvote_score || 0)
+  const [isVoting, setIsVoting] = useState(false)
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [actionMessage, setActionMessage] = useState("")
+
+  useEffect(() => {
+    setVote(report.user_vote ?? 0)
+    setScore(report.upvote_score || 0)
+  }, [report.id, report.user_vote, report.upvote_score])
+
+  const handleVote = async (direction: 1 | -1) => {
+    if (!isAuthenticated || isVoting) return
+    setIsVoting(true)
+    try {
+      const endpoint = direction === 1 ? "upvote" : "downvote"
+      const res = await api.post(`/reports/${report.id}/${endpoint}`)
+      setVote(res.data.user_vote ?? 0)
+      setScore(res.data.total_score ?? score)
+    } catch (err) {
+      console.error("Vote failed", err)
+    } finally {
+      setIsVoting(false)
+    }
+  }
 
   return (
     <Card className="flex flex-row overflow-hidden hover:border-slate-300 transition-colors">
@@ -376,19 +430,21 @@ function ReportCard({ report, isFavorite }: { report: any, isFavorite: boolean }
         <Button
           variant="ghost"
           size="icon"
+          disabled={!isAuthenticated || isVoting}
           className={`size-8 hover:text-amber-600 hover:bg-amber-50 ${vote === 1 ? "text-amber-600" : "text-slate-400"}`}
-          onClick={() => setVote(vote === 1 ? 0 : 1)}
+          onClick={() => handleVote(1)}
         >
           <ArrowBigUp className="size-5" />
         </Button>
         <span className={`text-sm font-bold my-1 ${vote === 1 ? "text-amber-600" : vote === -1 ? "text-blue-600" : "text-slate-700"}`}>
-          {(report.upvote_score || 0) + vote}
+          {score}
         </span>
         <Button
           variant="ghost"
           size="icon"
+          disabled={!isAuthenticated || isVoting}
           className={`size-8 hover:text-blue-600 hover:bg-blue-50 ${vote === -1 ? "text-blue-600" : "text-slate-400"}`}
-          onClick={() => setVote(vote === -1 ? 0 : -1)}
+          onClick={() => handleVote(-1)}
         >
           <ArrowBigDown className="size-5" />
         </Button>
@@ -398,6 +454,17 @@ function ReportCard({ report, isFavorite }: { report: any, isFavorite: boolean }
       <div className="p-4 flex-1 flex flex-col min-w-0">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
           <Link to={`/space/${report.space_name.replace("o/", "")}`} className="font-semibold text-slate-900 hover:underline">{report.space_name}</Link>
+          <span>•</span>
+          <Badge
+            variant="secondary"
+            className={
+              report.content_type === "slideshow"
+                ? "h-5 px-2 py-0 bg-violet-100 text-violet-700 border-violet-200 font-medium"
+                : "h-5 px-2 py-0 bg-blue-100 text-blue-700 border-blue-200 font-medium"
+            }
+          >
+            {report.content_type === "slideshow" ? "Presentation" : "Report"}
+          </Badge>
           <span>•</span>
           <span className="flex items-center gap-1">
             Posted by
@@ -423,9 +490,11 @@ function ReportCard({ report, isFavorite }: { report: any, isFavorite: boolean }
         <div className="flex items-center gap-4 mt-auto">
           <div className="flex gap-2">
             {report.tags.map((tag: string) => (
-              <Badge key={tag} variant="secondary" className="font-normal bg-slate-100 text-slate-600 hover:bg-slate-200">
-                {tag}
-              </Badge>
+              <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
+                <Badge variant="secondary" className="font-normal bg-slate-100 text-slate-600 hover:bg-slate-200">
+                  {tag}
+                </Badge>
+              </Link>
             ))}
           </div>
 
@@ -440,16 +509,22 @@ function ReportCard({ report, isFavorite }: { report: any, isFavorite: boolean }
               <Button 
                 variant="ghost" 
                 size="sm" 
+                disabled={isFollowing}
                 className="text-slate-400 h-8 px-2 hover:text-amber-600 hover:bg-amber-50"
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log("FOLLOW CLICKED", report.agent_id);
+                  setIsFollowing(true)
+                  setActionMessage("")
                   try {
                     await api.post(`/agents/${report.agent_id}/subscribe`)
                     window.dispatchEvent(new CustomEvent("refresh-sidebar"))
+                    setActionMessage("Following agent")
                   } catch (err) {
                     console.error("Follow failed", err)
+                    setActionMessage("Could not follow agent")
+                  } finally {
+                    setIsFollowing(false)
                   }
                 }}
               >
@@ -462,11 +537,13 @@ function ReportCard({ report, isFavorite }: { report: any, isFavorite: boolean }
               <Button 
                 variant="ghost" 
                 size="sm" 
+                disabled={isSaving}
                 className={`h-8 px-2 transition-transform active:scale-95 ${isFavorite ? "text-amber-600 bg-amber-50" : "text-slate-400 hover:text-amber-600 hover:bg-amber-50"}`}
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log("FAVORITE CLICKED", report.id);
+                  setIsSaving(true)
+                  setActionMessage("")
                   try {
                     await api.post("/auth/me/favorites", {
                       target_type: "report",
@@ -475,14 +552,19 @@ function ReportCard({ report, isFavorite }: { report: any, isFavorite: boolean }
                     })
                     // Trigger global refresh
                     window.dispatchEvent(new CustomEvent("refresh-sidebar"))
+                    setActionMessage("Saved to bookmarks")
                   } catch (err) {
                     console.error("Favorite failed", err)
+                    setActionMessage("Could not save report")
+                  } finally {
+                    setIsSaving(false)
                   }
                 }}
               >
                 <Bookmark className={`size-4 ${isFavorite ? "fill-amber-600" : ""}`} />
               </Button>
             )}
+            {actionMessage && <span className="text-xs text-slate-500">{actionMessage}</span>}
           </div>
       </div>
     </Card>
@@ -539,16 +621,19 @@ function RightSidebar() {
 // --- Home Page ---
 
 function HomePage({ favorites }: { favorites: any[] }) {
+  const location = useLocation()
   const [reports, setReports] = useState<any[]>([])
   const [activeSort, setActiveSort] = useState("hot")
+  const tagFilter = new URLSearchParams(location.search).get("tag")
 
   useEffect(() => {
     fetchReports()
-  }, [activeSort])
+  }, [activeSort, tagFilter])
 
   const fetchReports = async () => {
     try {
-      const res = await api.get(`/reports/?sort=${activeSort}`)
+      const tagParam = tagFilter ? `&tag=${encodeURIComponent(tagFilter)}` : ""
+      const res = await api.get(`/reports/?sort=${activeSort}${tagParam}`)
       if (Array.isArray(res.data)) {
         setReports(res.data)
       }
@@ -562,7 +647,15 @@ function HomePage({ favorites }: { favorites: any[] }) {
       <ScrollArea className="flex-1 bg-white">
         <main id="tour-feed" className="max-w-4xl mx-auto p-6 md:p-8">
           <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Feed</h1>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Feed</h1>
+              {tagFilter && (
+                <div className="text-xs text-slate-500 mt-1">
+                  Filtered by tag: <span className="font-semibold">{tagFilter}</span>{" "}
+                  <Link to="/" className="text-amber-600 hover:underline">clear</Link>
+                </div>
+              )}
+            </div>
             <div className="flex items-center bg-slate-100 p-1 rounded-lg">
               <Button 
                 variant="ghost" 
@@ -728,6 +821,8 @@ export function App() {
                 <Route path="/spaces" element={<SpacesDirectoryPage />} />
                 <Route path="/skills" element={<SkillsGuidePage />} />
                 <Route path="/releases" element={<ReleaseNotesPage />} />
+                <Route path="/connect" element={<ConnectAIPage />} />
+                <Route path="/api-reference" element={<AgentApiReferencePage />} />
                 <Route path="/claim/:token" element={<ClaimAgentPage />} />
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />
               </Routes>

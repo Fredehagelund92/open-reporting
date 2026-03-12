@@ -193,6 +193,124 @@ def check_claim_status(agent: Agent = Depends(get_current_agent)):
     return {"is_claimed": agent.is_claimed}
 
 
+# --- Business-Friendly Endpoints ---
+
+
+class RegisterForMeResponse(BaseModel):
+    agent: dict
+    prompt: str
+
+
+@router.post("/register-for-me", response_model=RegisterForMeResponse, status_code=status.HTTP_201_CREATED)
+def register_agent_for_user(
+    body: AgentRegisterRequest,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Register a new agent that is immediately claimed by the current user.
+    No claim URL or polling required -- ideal for business users setting up
+    agents through the frontend wizard."""
+    existing = session.exec(select(Agent).where(Agent.name == body.name)).first()
+    if existing:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Agent name '{body.name}' is already taken.")
+
+    api_key = _generate_api_key()
+
+    agent = Agent(
+        name=body.name,
+        description=body.description,
+        api_key=api_key,
+        claim_url_token=None,
+        owner_id=current_user.id,
+        is_claimed=True,
+    )
+    session.add(agent)
+    session.commit()
+    session.refresh(agent)
+
+    prompt = (
+        f"You are my reporting assistant on Open Reporting. "
+        f"Your API key is {api_key} . "
+        f"Use the Open Reporting API at {{BASE_URL}}/api/v1 to publish HTML reports. "
+        f"Always use Authorization: Bearer {api_key} for requests."
+    )
+
+    return RegisterForMeResponse(
+        agent={
+            "id": agent.id,
+            "name": agent.name,
+            "api_key": api_key,
+        },
+        prompt=prompt,
+    )
+
+
+class MyAgentItem(BaseModel):
+    id: str
+    name: str
+    description: Optional[str]
+    status: str
+    api_key: str
+    api_key_hint: str
+    report_count: int
+    created_at: str
+    last_published_at: Optional[str] = None
+
+
+@router.get("/my-agents", response_model=list[MyAgentItem])
+def list_my_agents(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """List all agents owned by the current user with masked API keys."""
+    agents = session.exec(
+        select(Agent).where(Agent.owner_id == current_user.id)
+    ).all()
+    return [
+        MyAgentItem(
+            id=a.id,
+            name=a.name,
+            description=a.description,
+            status=a.status,
+            api_key=a.api_key,
+            api_key_hint=f"{a.api_key[:12]}...{a.api_key[-4:]}",
+            report_count=len(a.reports) if a.reports else 0,
+            created_at=a.created_at.isoformat(),
+            last_published_at=max((r.created_at for r in a.reports), default=None).isoformat() if a.reports else None,
+        )
+        for a in agents
+    ]
+
+
+class RegenerateKeyResponse(BaseModel):
+    api_key: str
+    message: str
+
+
+@router.post("/{agent_id}/regenerate-key", response_model=RegenerateKeyResponse)
+def regenerate_agent_key(
+    agent_id: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Regenerate the API key for an agent owned by the current user."""
+    agent = session.get(Agent, agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found.")
+    if agent.owner_id != current_user.id and current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="You do not own this agent.")
+
+    new_key = _generate_api_key()
+    agent.api_key = new_key
+    session.add(agent)
+    session.commit()
+
+    return RegenerateKeyResponse(
+        api_key=new_key,
+        message="API key regenerated. Update your AI assistant with the new key.",
+    )
+
+
 @router.get("/", response_model=list[AgentProfileResponse])
 def list_agents(
     session: Session = Depends(get_session),

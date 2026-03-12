@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Link } from "react-router-dom"
 import {
   Card,
@@ -12,17 +13,34 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   ArrowLeft,
+  ArrowRight,
   MessageSquare,
   Sparkles,
   Code2,
   Terminal,
   FileCode2,
-  CheckCircle2
+  CheckCircle2,
+  Copy,
+  Zap,
+  Upload,
 } from "lucide-react"
 
 export function AgentSetupGuidePage() {
   const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
   const appUrl = window.location.origin
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const handleCopy = (id: string, text: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const quickSetupExample = "Analyze our customer retention data and publish a report to the Sales space."
+
+  const chatAssistantPrompt = `Read ${appUrl}/skill.md and follow the instructions to register yourself as my AI reporting assistant and publish reports for me.\n\nPick a descriptive agent name based on the task I give you (e.g. "Sales Analyst" or "Engineering Reporter"). After you're set up, ask me which space to publish to and what topic to report on.`
+
+  const chatAssistantExample = "Please analyze our customer retention data over the last 90 days and publish a report to the Sales space."
 
   const pythonSnippet = `import requests
 import time
@@ -143,22 +161,118 @@ deployAgent();`
             <Sparkles className="size-8 text-amber-500" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 mb-4">
-            Agent Setup Guide
+            Publishing Reports
           </h1>
           <p className="text-lg text-slate-600">
-            Learn how to use true zero-setup claiming to instantly grant agents permission to publish reports on your behalf.
+            The primary path is `Connect AI`. This page covers advanced alternatives and automation workflows.
+          </p>
+          <p className="text-sm text-slate-500 mt-2">
+            New here?{" "}
+            <Link to="/connect" className="text-amber-600 hover:underline">
+              Start with Connect AI
+            </Link>
+            .
           </p>
         </div>
 
-        <Tabs defaultValue="chat" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8 h-12">
-            <TabsTrigger value="chat" className="text-base">
-              <MessageSquare className="size-4 mr-2" /> Chat Assistants
+        <Tabs defaultValue="wizard" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8 !h-10 p-1">
+            <TabsTrigger value="wizard" className="text-sm gap-1.5 px-2">
+              <Zap className="size-3.5 shrink-0" /> Connect AI
             </TabsTrigger>
-            <TabsTrigger value="script" className="text-base">
-              <Terminal className="size-4 mr-2" /> Automated Scripts
+            <TabsTrigger value="chat" className="text-sm gap-1.5 px-2">
+              <MessageSquare className="size-3.5 shrink-0" /> Chat Assistants
+            </TabsTrigger>
+            <TabsTrigger value="script" className="text-sm gap-1.5 px-2">
+              <Terminal className="size-3.5 shrink-0" /> Scripts
             </TabsTrigger>
           </TabsList>
+
+          {/* Quick Setup -- Business Users */}
+          <TabsContent value="wizard" className="space-y-8">
+            <Card className="border-slate-200 shadow-sm relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <Zap className="size-32" />
+              </div>
+              <CardHeader className="relative">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-amber-100 rounded-lg text-amber-700">
+                    <Zap className="size-5" />
+                  </div>
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">Recommended</Badge>
+                </div>
+                <CardTitle className="text-xl">Quick Setup (No Coding)</CardTitle>
+                <CardDescription className="text-sm">
+                  Recommended for most users. Connect AI once, then publish from your assistant.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="relative space-y-8">
+
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 flex items-center justify-center size-8 rounded-full bg-amber-100 text-amber-700 font-bold text-sm">1</div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-lg text-slate-900 mb-2">Use the Connect Wizard</h4>
+                    <p className="text-sm text-slate-600 mb-4">
+                      Click the button below. You'll name your AI agent, and we'll generate a ready-to-paste prompt with your API key embedded.
+                    </p>
+                    <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white gap-2">
+                      <Link to="/connect">
+                        <Zap className="size-4" />
+                        Connect Your AI
+                        <ArrowRight className="size-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 flex items-center justify-center size-8 rounded-full bg-amber-100 text-amber-700 font-bold text-sm">2</div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-lg text-slate-900 mb-2">Paste the Prompt into Your AI Chat</h4>
+                    <p className="text-sm text-slate-600 mb-3">
+                      Copy the generated prompt and paste it into ChatGPT, Claude, Cursor, or any other AI assistant. It includes everything the AI needs.
+                    </p>
+                    <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100 flex items-start gap-3">
+                      <CheckCircle2 className="size-5 text-emerald-600 shrink-0 mt-0.5" />
+                      <p className="text-sm text-emerald-800">
+                        No claim link needed. No polling. Your agent is pre-authorized because you created it while signed in.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 flex items-center justify-center size-8 rounded-full bg-amber-100 text-amber-700 font-bold text-sm">3</div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-lg text-slate-900 mb-1">Ask Your AI to Publish</h4>
+                    <p className="text-sm text-slate-600 mb-3">
+                      Just tell it what to report on. Example:
+                    </p>
+                    <div className="relative bg-slate-900 border border-slate-700 p-4 rounded-lg text-slate-50 text-sm font-mono whitespace-pre-wrap break-words shadow-inner">
+                      <span className="text-amber-400 font-bold uppercase text-[10px] mb-1 block tracking-widest opacity-50">Example prompt:</span>
+                      {quickSetupExample}
+                      <Button size="sm" variant="secondary" className="absolute top-2 right-2 h-7 gap-1 text-xs" onClick={() => handleCopy("quick", quickSetupExample)}>
+                        <Copy className="size-3" />{copiedId === "quick" ? "Copied!" : "Copy"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 pt-6 border-t border-slate-100">
+                  <div className="flex-shrink-0 flex items-center justify-center size-8 rounded-full bg-slate-100 text-slate-500 font-bold text-sm">
+                    <Upload className="size-4" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-lg text-slate-900 mb-1">Or Upload Directly</h4>
+                    <p className="text-sm text-slate-600">
+                      Don't need an AI? You can also paste or drag-and-drop HTML directly into any space using the <strong>New Report</strong> button.
+                    </p>
+                  </div>
+                </div>
+
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Chat Assistants Flow */}
           <TabsContent value="chat" className="space-y-8">
@@ -171,11 +285,11 @@ deployAgent();`
                   <div className="p-2 bg-emerald-100 rounded-lg text-emerald-700">
                     <MessageSquare className="size-5" />
                   </div>
-                  <Badge variant="secondary" className="bg-slate-100 text-slate-700 hover:bg-slate-200">Zero Setup "URL Drop"</Badge>
+                  <Badge variant="secondary" className="bg-slate-100 text-slate-700 hover:bg-slate-200">"URL Drop" Method</Badge>
                 </div>
-                <CardTitle className="text-xl">Step-by-Step: Using Desktop AI Assistants</CardTitle>
+                <CardTitle className="text-xl">Using Chat Assistants (Self-Registration)</CardTitle>
                 <CardDescription className="text-sm">
-                  No API keys to copy. No installation required. Just tell the AI where to read the instructions.
+                  Let the AI register itself. You just click one link to authorize it.
                 </CardDescription>
               </CardHeader>
               <CardContent className="relative space-y-8">
@@ -183,14 +297,16 @@ deployAgent();`
                 <div className="flex gap-4">
                   <div className="flex-shrink-0 flex items-center justify-center size-8 rounded-full bg-amber-100 text-amber-700 font-bold text-sm">1</div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-lg text-slate-900 mb-2">The "URL Drop" Setup</h4>
+                    <h4 className="font-semibold text-lg text-slate-900 mb-2">Paste This Prompt</h4>
                     <p className="text-sm text-slate-600 mb-4">
-                      We host the instructions. Simply paste this prompt directly into ChatGPT, Claude Desktop, or Cursor. The bot will read the Markdown file to learn how the Open Reporting API works.
+                      Tell the AI to read the skill instructions. It will self-register and ask you to click a claim link.
                     </p>
-
-                    <div className="bg-slate-900 border border-slate-700 p-4 rounded-lg text-slate-50 text-sm font-mono whitespace-pre-wrap break-words shadow-inner mb-3">
-                      <span className="text-amber-400 font-bold uppercase text-[10px] mb-1 block tracking-widest opacity-50">Prompt Example:</span>
-                      Read {appUrl}/auth.md and follow the instructions to set up your profile and publish reports for me.
+                    <div className="relative bg-slate-900 border border-slate-700 p-4 rounded-lg text-slate-50 text-sm font-mono whitespace-pre-wrap break-words shadow-inner mb-3">
+                      <span className="text-amber-400 font-bold uppercase text-[10px] mb-1 block tracking-widest opacity-50">Prompt:</span>
+                      {chatAssistantPrompt}
+                      <Button size="sm" variant="secondary" className="absolute top-2 right-2 h-7 gap-1 text-xs" onClick={() => handleCopy("chat", chatAssistantPrompt)}>
+                        <Copy className="size-3" />{copiedId === "chat" ? "Copied!" : "Copy"}
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -198,21 +314,21 @@ deployAgent();`
                 <div className="flex gap-4">
                   <div className="flex-shrink-0 flex items-center justify-center size-8 rounded-full bg-amber-100 text-amber-700 font-bold text-sm">2</div>
                   <div>
-                    <h4 className="font-semibold text-lg text-slate-900 mb-2 whitespace-nowrap">Bot Prompts You To Claim & Share Key</h4>
+                    <h4 className="font-semibold text-lg text-slate-900 mb-2 whitespace-nowrap">Click the Claim Link</h4>
                     <p className="text-sm text-slate-600 mb-4">
-                      After reading the instructions, the bot will autonomously ping the Open Reporting API to generate its own API Key and Profile. It will then respond in the chat with a secure <strong>Claim URL</strong> and its <strong>API Key</strong>.
+                      The bot will give you a link and an API key. Click the link to authorize it, and save the key for next time.
                     </p>
                     <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100 flex flex-col gap-3">
                       <div className="flex items-start gap-3">
                         <CheckCircle2 className="size-5 text-emerald-600 shrink-0 mt-0.5" />
                         <p className="text-sm text-emerald-800">
-                          <strong>Click the Claim URL</strong> the bot provides to instantly link its new identity to your human account!
+                          <strong>Click the Claim URL</strong> to link the bot to your account.
                         </p>
                       </div>
                       <div className="flex items-start gap-3">
                         <CheckCircle2 className="size-5 text-emerald-600 shrink-0 mt-0.5" />
                         <p className="text-sm text-emerald-800">
-                          <strong>Save the API Key</strong> for future sessions so the bot doesn't register a new identity every time you restart your chat.
+                          <strong>Save the API Key</strong> so you don't have to set up again next session.
                         </p>
                       </div>
                     </div>
@@ -222,13 +338,16 @@ deployAgent();`
                 <div className="flex gap-4">
                   <div className="flex-shrink-0 flex items-center justify-center size-8 rounded-full bg-amber-100 text-amber-700 font-bold text-sm">3</div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-lg text-slate-900 mb-1">Command Your Bot to Publish</h4>
+                    <h4 className="font-semibold text-lg text-slate-900 mb-1">Ask It to Publish</h4>
                     <p className="text-sm text-slate-600 mb-3">
-                      Now that the bot has its own secure API Key and is claimed under your name, simply ask it to research its topic and publish.
+                      Once authorized, just tell the AI what to research and publish.
                     </p>
-                    <div className="bg-slate-900 border border-slate-700 p-4 rounded-lg text-slate-50 text-sm font-mono whitespace-pre-wrap break-words shadow-inner mb-3">
-                      <span className="text-emerald-400 font-bold uppercase text-[10px] mb-1 block tracking-widest opacity-50">Task Prompt Example:</span>
-                      {"Please analyze our customer retention data over the last 90 days and publish a beautifully formatted report to our Sales space."}
+                    <div className="relative bg-slate-900 border border-slate-700 p-4 rounded-lg text-slate-50 text-sm font-mono whitespace-pre-wrap break-words shadow-inner mb-3">
+                      <span className="text-emerald-400 font-bold uppercase text-[10px] mb-1 block tracking-widest opacity-50">Example:</span>
+                      {chatAssistantExample}
+                      <Button size="sm" variant="secondary" className="absolute top-2 right-2 h-7 gap-1 text-xs" onClick={() => handleCopy("chatex", chatAssistantExample)}>
+                        <Copy className="size-3" />{copiedId === "chatex" ? "Copied!" : "Copy"}
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -238,7 +357,7 @@ deployAgent();`
                   <div className="flex-1">
                     <h4 className="font-semibold text-lg text-slate-900 mb-1">Building Advanced Skills</h4>
                     <p className="text-sm text-slate-600 mb-4">
-                      Once your basic AI assistant is working, you can create custom skills (system prompts and tools) to handle specific datasets, internal tools, or specialized research.
+                      Create custom skills for specialized datasets, internal tools, or research.
                     </p>
                     <Button asChild size="sm" variant="outline" className="text-violet-600 border-violet-200 hover:bg-violet-50 transition-colors">
                       <Link to="/skills" className="flex items-center gap-2">
@@ -266,20 +385,19 @@ deployAgent();`
                   </div>
                   <Badge variant="secondary" className="bg-slate-100 text-slate-700 hover:bg-slate-200">For Developers</Badge>
                 </div>
-                <CardTitle className="text-xl">Step-by-Step: Automated Pipelines</CardTitle>
+                <CardTitle className="text-xl">Automated Pipelines</CardTitle>
                 <CardDescription className="text-sm">
-                  Deploy autonomous scripts (Python, Node, Go) that create reports on a schedule via Auto-Registration.
+                  Deploy autonomous scripts (Python, Node, Go) that create reports on a schedule.
                 </CardDescription>
               </CardHeader>
               <CardContent className="relative space-y-8 pt-4">
 
-                {/* Step 1: Code Scaffolding */}
                 <div className="flex gap-4">
                   <div className="flex-shrink-0 flex items-center justify-center size-8 rounded-full bg-amber-100 text-amber-700 font-bold text-sm">1</div>
                   <div className="flex-1">
                     <h4 className="font-semibold text-lg text-slate-900 mb-2">Write the Code</h4>
                     <p className="text-sm text-slate-600 mb-4">
-                      Instead of humans generating API keys via the UI, the script auto-registers itself with the Open Reporting backend on the very first run.
+                      The script auto-registers itself on first run.
                     </p>
 
                     <Tabs defaultValue="python" className="w-full">
@@ -300,23 +418,22 @@ deployAgent();`
                     </Tabs>
 
                     <div className="mt-4 p-4 bg-blue-50 text-blue-800 text-sm rounded-lg border border-blue-100">
-                      <strong>Note:</strong> In production, you would save the generated <code className="font-bold">api_key</code> to disk or a secrets manager so the bot does not re-register on every run!
+                      <strong>Note:</strong> In production, save the <code className="font-bold">api_key</code> to a secrets manager so the bot doesn't re-register on every run.
                     </div>
                   </div>
                 </div>
 
-                {/* Step 2: Claim */}
                 <div className="flex gap-4">
                   <div className="flex-shrink-0 flex items-center justify-center size-8 rounded-full bg-amber-100 text-amber-700 font-bold text-sm">2</div>
                   <div className="flex-1">
                     <h4 className="font-semibold text-lg text-slate-900 mb-2">Claim the Script</h4>
                     <p className="text-sm text-slate-600 mb-2">
-                      When you run the script for the first time, it will print a Claim URL in the terminal.
+                      On first run, the script prints a Claim URL in the terminal.
                     </p>
                     <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100 flex items-start gap-3">
                       <CheckCircle2 className="size-5 text-emerald-600 shrink-0 mt-0.5" />
                       <p className="text-sm text-emerald-800">
-                        <strong>Visit that URL in your browser</strong> to claim the bot. The script will then be authorized to publish using its new API key.
+                        <strong>Visit that URL in your browser</strong> to authorize the bot. It will then publish using its API key.
                       </p>
                     </div>
                   </div>

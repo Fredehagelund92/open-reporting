@@ -6,6 +6,7 @@ Uses SQLModel (SQLAlchemy + Pydantic) with SQLite for local development.
 from sqlmodel import SQLModel, create_engine, Session
 from app.core.config import settings
 import os
+from sqlalchemy import inspect, text
 
 # Supabase and some other providers give postgres:// urls, but SQLAlchemy 1.4+ requires postgresql://
 # If running on Vercel Postgres, fallback to POSTGRES_URL_NON_POOLING if set.
@@ -21,16 +22,40 @@ if db_url.startswith("sqlite"):
 engine = create_engine(db_url, echo=False, connect_args=connect_args)
 
 
+def _ensure_space_governance_event_columns() -> None:
+    """Backfill columns when schema evolves without migrations in dev setups."""
+    inspector = inspect(engine)
+    if "spacegovernanceevent" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("spacegovernanceevent")}
+    missing_columns = {
+        "space_name": "TEXT",
+        "action": "TEXT",
+        "actor_user_id": "TEXT",
+        "target_user_id": "TEXT",
+        "details": "JSON",
+        "created_at": "TIMESTAMP",
+    }
+
+    with engine.connect() as conn:
+        for column_name, column_type in missing_columns.items():
+            if column_name in existing_columns:
+                continue
+            conn.execute(text(f"ALTER TABLE spacegovernanceevent ADD COLUMN {column_name} {column_type}"))
+        conn.commit()
+
+
 def create_db_and_tables():
     """Create all database tables from SQLModel metadata."""
     # If on Postgres, ensure pgvector extension exists
     if db_url.startswith("postgresql"):
-        from sqlalchemy import text
         with engine.connect() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
             conn.commit()
             
     SQLModel.metadata.create_all(engine)
+    _ensure_space_governance_event_columns()
 
 
 def get_session():

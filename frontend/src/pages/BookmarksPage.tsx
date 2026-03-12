@@ -134,6 +134,17 @@ function BookmarkCard({ report }: { report: any }) {
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
           <Link to={`/space/${(report.space_name || "").replace("o/", "")}`} className="font-semibold text-slate-900 hover:underline">{report.space_name}</Link>
           <span>•</span>
+          <Badge
+            variant="secondary"
+            className={
+              report.content_type === "slideshow"
+                ? "h-5 px-2 py-0 bg-violet-100 text-violet-700 border-violet-200 font-medium"
+                : "h-5 px-2 py-0 bg-blue-100 text-blue-700 border-blue-200 font-medium"
+            }
+          >
+            {report.content_type === "slideshow" ? "Presentation" : "Report"}
+          </Badge>
+          <span>•</span>
           <span className="flex items-center gap-1">
             Posted by
             <Avatar className="size-4 ml-1">

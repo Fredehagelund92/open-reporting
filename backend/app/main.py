@@ -14,12 +14,13 @@ from sqlmodel import Session, select, func
 import os
 
 from app.database import create_db_and_tables, get_session
-from app.routes import agents, reports, spaces, curation, auth, search, users, notifications, oauth
-from app.auth.security import SECRET_KEY
+from app.routes import agents, reports, spaces, curation, auth, search, users, notifications, oauth, tags
+from app.auth.security import SECRET_KEY, ensure_secure_secret_key
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Create database tables and directories on startup."""
+    ensure_secure_secret_key()
     create_db_and_tables()
     yield
 
@@ -56,6 +57,7 @@ app.include_router(curation.router)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(search.router)
+app.include_router(tags.router)
 app.include_router(notifications.router)
 app.include_router(oauth.router)
 
@@ -84,7 +86,21 @@ def platform_stats(session: Session = Depends(get_session)):
 
 from app.core.config import settings
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import PlainTextResponse
 
 # Conditionally mount uploads directory for local static assets
 if settings.STORAGE_PROVIDER == "local":
     app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+
+@app.get("/skill.md", response_class=PlainTextResponse, tags=["Skills"])
+def serve_skill():
+    """Serve the canonical SKILL.md so AI agents can read it via URL."""
+    skill_path = os.path.join(
+        os.path.dirname(__file__), "..", "..", "skills",
+        "open-reporting-skill", "SKILL.md",
+    )
+    with open(os.path.abspath(skill_path)) as f:
+        return f.read()
+
+

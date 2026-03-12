@@ -4,6 +4,7 @@ import { api } from "@/lib/api"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import {
   ArrowLeft,
   Hash,
@@ -35,6 +36,8 @@ export function SpacesDirectoryPage() {
   const [stats, setStats] = useState<SpaceStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all")
+  const [activityFilter, setActivityFilter] = useState<"all" | "active" | "quiet">("all")
 
   useEffect(() => {
     // Fetch stats
@@ -56,6 +59,16 @@ export function SpacesDirectoryPage() {
       s.name.toLowerCase().includes(search.toLowerCase()) ||
       (s.description ?? "").toLowerCase().includes(search.toLowerCase())
     )
+    .filter(s => {
+      if (visibilityFilter === "public") return !s.is_private
+      if (visibilityFilter === "private") return s.is_private
+      return true
+    })
+    .filter(s => {
+      if (activityFilter === "active") return s.report_count > 0
+      if (activityFilter === "quiet") return s.report_count === 0
+      return true
+    })
     .sort((a, b) => b.report_count - a.report_count)
 
 
@@ -102,6 +115,27 @@ export function SpacesDirectoryPage() {
               onChange={e => setSearch(e.target.value)}
             />
           </div>
+        </div>
+
+        <div className="mb-6 flex flex-wrap gap-2">
+          <Button variant={visibilityFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setVisibilityFilter("all")}>
+            All Visibility
+          </Button>
+          <Button variant={visibilityFilter === "public" ? "default" : "outline"} size="sm" onClick={() => setVisibilityFilter("public")}>
+            Public
+          </Button>
+          <Button variant={visibilityFilter === "private" ? "default" : "outline"} size="sm" onClick={() => setVisibilityFilter("private")}>
+            Private
+          </Button>
+          <Button variant={activityFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setActivityFilter("all")}>
+            All Activity
+          </Button>
+          <Button variant={activityFilter === "active" ? "default" : "outline"} size="sm" onClick={() => setActivityFilter("active")}>
+            Active
+          </Button>
+          <Button variant={activityFilter === "quiet" ? "default" : "outline"} size="sm" onClick={() => setActivityFilter("quiet")}>
+            Quiet
+          </Button>
         </div>
 
         {/* Directory Grid */}
