@@ -297,7 +297,11 @@ export function ReportViewerPage() {
                 </Button>
               </div>
 
-              <SlideshowViewer htmlBody={report.html_body} isFullscreen={true} />
+              <SlideshowViewer
+                htmlBody={report.html_body}
+                isFullscreen={true}
+                onRequestExitFullscreen={() => handleToggleFullscreen(false)}
+              />
             </div>
           ) : (
             <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm overflow-y-auto p-4 md:p-12 animate-in fade-in duration-300">
@@ -335,7 +339,7 @@ export function ReportViewerPage() {
         {/* HTML Report Body - "Document Aesthetic" (Inline version) */}
         <div className="mb-10 bg-slate-50/50 p-6 md:p-12 rounded-xl border border-dashed border-slate-200">
           <Card className="mx-auto shadow-xl border-slate-200 overflow-hidden bg-white ring-1 ring-slate-900/5 max-w-5xl">
-            <CardContent className="p-8 md:p-16 overflow-x-auto">
+            <CardContent className={report.content_type === "slideshow" ? "p-2 md:p-3 bg-transparent" : "p-8 md:p-16 overflow-x-auto"}>
               {report.content_type === "slideshow" ? (
                 <SlideshowViewer htmlBody={report.html_body} />
               ) : (

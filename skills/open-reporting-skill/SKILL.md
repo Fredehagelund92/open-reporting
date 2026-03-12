@@ -119,6 +119,7 @@ Use this framework to produce consistent, high-quality outputs across categories
 
 **Always do this:**
 - Keep structure explicit with `<h1>`, `<h2>`, `<h3>` (or slide-level headings for slideshows).
+- For visual storytelling, prefer semantic HTML first, then enrich with tables, inline SVG, and card/callout blocks.
 - Ground every important claim in a metric, trend delta, or citation link.
 - If data is missing, state it explicitly and list the exact data needed next cycle.
 - Run a lightweight self-check before final output:
@@ -229,10 +230,20 @@ Variants (same section order):
 - **Exec-heavy**: shorter KPI table, stronger emphasis on Decisions and Action Plan.
 - **Metric-heavy**: expanded KPI and trend detail, shorter Executive Summary.
 
-### 4.4 Weekly Business Review Contract (Reveal.js Slideshow)
+### 4.4 Weekly Business Review Contract (Slideshow)
 
 Use `content_type: "slideshow"` and wrap each slide in `<section>...</section>`.
 Minimum 2 slides, recommended 5-6 slides.
+
+Viewer capabilities (handled automatically by Open Reporting viewer):
+- Slide content is vertically centered by default.
+- The first slide is treated as a title/cover slide with centered text.
+- `data-background-color` on `<section>` sets the slide background color.
+- Dark backgrounds automatically switch to light viewer typography.
+- If slide content overflows, the slide body scrolls vertically.
+
+Authoring note:
+- Do NOT add your own vertical-centering wrappers. Focus on content structure, inline spacing, and color hierarchy.
 
 Narrative flow:
 1. Title/Context
@@ -245,44 +256,86 @@ Slide quality constraints:
 - One primary message per slide.
 - Prefer up to 5 bullets per slide.
 - Every major claim references a metric, trend, or source.
+- Use visual hierarchy and layout patterns so slides are more than one centered text block.
+
+Title slide recommendation:
+- Use a contrasting background color on the first slide (e.g. `data-background-color="#0f172a"` for dark) to catch attention and signal the start of the presentation. Use light text colors (`color:#f8fafc`, `color:#cbd5e1`) on dark backgrounds.
+
+Recommended slide design patterns:
+- **KPI cards**: use `display:flex`, `gap`, bordered cards, and clear value/delta hierarchy.
+- **Callout boxes**: use soft background + left accent border for key decisions or warnings.
+- **Tables**: use compact tables for exact values when precision matters.
+- **SVG visuals**: use inline `<svg>` for simple bar charts, timelines, or icons.
+- **Multi-column layouts**: use flex rows for side-by-side comparisons (drivers vs risks, etc.).
+- **Progress bars**: use nested `<div>` bars for intensity/progress indicators.
 
 Weekly slideshow skeleton:
 
 ```html
-<section>
+<section data-background-color="#0f172a">
   <h1>Weekly Business Review</h1>
   <p>Team/Function - YYYY-MM-DD to YYYY-MM-DD</p>
+  <p style="color:#64748b;">Context and data source line.</p>
 </section>
 
 <section>
   <h2>KPI Highlights</h2>
-  <ul>
-    <li>Metric 1: current vs previous (delta).</li>
-    <li>Metric 2: current vs previous (delta).</li>
-    <li>Metric 3: current vs previous (delta).</li>
-  </ul>
+  <div style="display:flex; gap:12px; flex-wrap:wrap;">
+    <div style="flex:1 1 180px; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+      <p style="margin:0; font-size:12px; color:#64748b;">Revenue</p>
+      <p style="margin:6px 0 0; font-size:26px; font-weight:700;">$0</p>
+      <p style="margin:4px 0 0; color:#15803d;">+0% WoW</p>
+    </div>
+    <div style="flex:1 1 180px; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">...</div>
+    <div style="flex:1 1 180px; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">...</div>
+  </div>
 </section>
 
 <section>
   <h2>What Changed and Why</h2>
-  <ul>
-    <li>Change statement + likely driver + implication.</li>
-  </ul>
+  <div style="display:flex; gap:16px; flex-wrap:wrap;">
+    <div style="flex:1 1 280px;">
+      <ul>
+        <li>Change statement + likely driver + implication.</li>
+        <li>Change statement + likely driver + implication.</li>
+      </ul>
+    </div>
+    <div style="flex:1 1 280px;">
+      <svg viewBox="0 0 360 180" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trend chart">
+        <rect x="0" y="0" width="360" height="180" fill="#f8fafc" rx="8"></rect>
+        <line x1="40" y1="30" x2="40" y2="145" stroke="#cbd5e1"></line>
+        <line x1="40" y1="145" x2="330" y2="145" stroke="#cbd5e1"></line>
+        <polyline points="40,130 95,110 150,115 205,88 260,95 315,70" fill="none" stroke="#2563eb" stroke-width="3"></polyline>
+      </svg>
+    </div>
+  </div>
 </section>
 
-<section>
+<section data-background-color="#f8fafc">
   <h2>Risks and Decisions Needed</h2>
-  <ul>
-    <li>Risk/opportunity summary.</li>
-    <li>Decision request + recommendation.</li>
-  </ul>
+  <div style="padding:12px; border-left:4px solid #dc2626; background:#fef2f2; border-radius:8px; margin-bottom:10px;">
+    <strong>Top risk:</strong> Risk/opportunity summary with impact and timing.
+  </div>
+  <div style="padding:12px; border-left:4px solid #2563eb; background:#eff6ff; border-radius:8px;">
+    <strong>Decision request:</strong> Decision request + recommendation + owner.
+  </div>
 </section>
 
 <section>
   <h2>Actions and Next Week Focus</h2>
-  <ul>
-    <li>Action | Owner | Due date | Expected impact</li>
-  </ul>
+  <table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:8px;">Action</th>
+        <th style="text-align:left; padding:8px;">Owner</th>
+        <th style="text-align:left; padding:8px;">Due</th>
+        <th style="text-align:left; padding:8px;">Impact</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:8px;">Action</td><td style="padding:8px;">Owner</td><td style="padding:8px;">YYYY-MM-DD</td><td style="padding:8px;">Expected impact</td></tr>
+    </tbody>
+  </table>
 </section>
 ```
 

@@ -43,9 +43,23 @@ FORBIDDEN_CSS_PROPERTIES = frozenset({
 # Allowlisted CDN hosts for <script src="...">
 ALLOWED_SCRIPT_CDNS = frozenset({
     "cdn.jsdelivr.net/npm/chart.js",
-    "cdn.jsdelivr.net/npm/reveal.js",
     "cdnjs.cloudflare.com/ajax/libs/Chart.js",
-    "cdnjs.cloudflare.com/ajax/libs/reveal.js",
+})
+
+# SVG tags considered visual content quality signals.
+ALLOWED_SVG_TAGS = frozenset({
+    "svg",
+    "path",
+    "circle",
+    "rect",
+    "line",
+    "polyline",
+    "polygon",
+    "text",
+    "g",
+    "defs",
+    "clippath",
+    "use",
 })
 
 
@@ -105,7 +119,7 @@ class _HtmlInspector(HTMLParser):
         # --- Track content quality signals ---
         if tag_lower in ("h1", "h2", "h3"):
             self.has_heading = True
-        if tag_lower in ("svg", "canvas", "table", "img"):
+        if tag_lower in ALLOWED_SVG_TAGS or tag_lower in ("canvas", "table", "img"):
             self.has_visual = True
 
     def handle_endtag(self, tag: str) -> None:
