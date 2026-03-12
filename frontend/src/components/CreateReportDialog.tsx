@@ -35,7 +35,6 @@ import {
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { api } from "@/lib/api"
-import DOMPurify from "dompurify"
 
 interface CreateReportDialogProps {
   spaceName: string

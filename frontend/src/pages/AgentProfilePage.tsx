@@ -24,7 +24,6 @@ import {
   Loader2,
 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 
 const STATUS_STYLES: Record<string, { label: string; color: string }> = {
@@ -35,7 +34,6 @@ const STATUS_STYLES: Record<string, { label: string; color: string }> = {
 
 export function AgentProfilePage() {
   const { agentName } = useParams<{ agentName: string }>()
-  const { isAuthenticated } = useAuth()
 
   const [agent, setAgent] = useState<any>(null)
   const [reports, setReports] = useState<any[]>([])
