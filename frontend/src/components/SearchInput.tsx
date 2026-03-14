@@ -96,9 +96,9 @@ export function SearchInput() {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case "space": return <Hash className="size-3.5 text-slate-400" />
-      case "agent": return <Bot className="size-3.5 text-slate-400" />
-      case "report": return <FileText className="size-3.5 text-slate-400" />
+      case "space": return <Hash className="size-3.5 text-muted-foreground" />
+      case "agent": return <Bot className="size-3.5 text-muted-foreground" />
+      case "report": return <FileText className="size-3.5 text-muted-foreground" />
       default: return null
     }
   }
@@ -119,23 +119,23 @@ export function SearchInput() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsOpen(true)}
-          className="w-full bg-slate-100 border-none rounded-md pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all font-medium"
+          className="w-full bg-muted border-none rounded-sm pl-9 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
         />
       </div>
 
       {isOpen && (
-        <div className="absolute top-full left-0 w-full mt-1 bg-white border rounded-lg shadow-xl z-50 max-h-[440px] overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-full left-0 w-full mt-1 bg-popover border border-border rounded-sm shadow-xl z-50 max-h-[440px] overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2 duration-200">
           {isLoading ? (
-            <div className="p-4 flex items-center justify-center text-sm text-slate-500">
+            <div className="p-4 flex items-center justify-center text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin mr-2" />
               Searching Open Reporting...
             </div>
           ) : !query.trim() && recentSearches.length > 0 ? (
             <div className="py-1 overflow-y-auto">
-              <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              <div className="px-3 py-1.5 text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                 <span>Recent Searches</span>
                 <button
-                  className="text-[10px] text-slate-400 hover:text-slate-600"
+                  className="text-[10px] text-muted-foreground hover:text-foreground"
                   onClick={() => {
                     setRecentSearches([])
                     localStorage.removeItem(RECENT_KEY)
@@ -151,7 +151,7 @@ export function SearchInput() {
                     setQuery(term)
                     handleSearch(term)
                   }}
-                  className="w-full text-left px-3 py-2.5 hover:bg-slate-50 transition-colors text-sm text-slate-700"
+                  className="w-full text-left px-3 py-2.5 hover:bg-muted transition-colors text-sm text-foreground"
                 >
                   {term}
                 </button>
@@ -162,7 +162,7 @@ export function SearchInput() {
               {(["report", "space", "agent"] as const).map((type) =>
                 groupedResults[type].length > 0 ? (
                   <div key={type}>
-                    <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <div className="px-3 py-1.5 text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">
                       {type === "report" ? "Reports" : type === "space" ? "Spaces" : "AI Assistants"}
                     </div>
                     {groupedResults[type].map((res) => (
@@ -174,18 +174,18 @@ export function SearchInput() {
                           setIsOpen(false)
                           setQuery("")
                         }}
-                        className="w-full text-left px-3 py-2.5 hover:bg-slate-50 flex items-start gap-3 transition-colors group"
+                        className="w-full text-left px-3 py-2.5 hover:bg-muted flex items-start gap-3 transition-colors group"
                       >
-                        <div className="mt-0.5 shrink-0 bg-slate-100 p-2 rounded-md group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">
+                        <div className="mt-0.5 shrink-0 bg-muted p-2 rounded-sm group-hover:bg-primary/15 group-hover:text-primary transition-colors">
                           {getIcon(res.type)}
                         </div>
                         <div className="flex flex-col min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-sm font-semibold text-slate-900 truncate group-hover:text-amber-700 transition-colors">{res.label}</span>
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 uppercase shrink-0">{res.type}</span>
+                            <span className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">{res.label}</span>
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground uppercase shrink-0">{res.type}</span>
                           </div>
                           {res.description && (
-                            <span className="text-xs text-slate-500 line-clamp-1">{res.description}</span>
+                            <span className="text-xs text-muted-foreground line-clamp-1">{res.description}</span>
                           )}
                         </div>
                       </button>
@@ -195,12 +195,12 @@ export function SearchInput() {
               )}
             </div>
           ) : query.trim() ? (
-            <div className="p-8 text-sm text-slate-500 text-center flex flex-col items-center gap-2">
-              <div className="bg-slate-50 p-3 rounded-full">
-                <Search className="size-5 text-slate-300" />
+            <div className="p-8 text-sm text-muted-foreground text-center flex flex-col items-center gap-2">
+              <div className="bg-muted p-3 rounded-full">
+                <Search className="size-5 text-muted-foreground/50" />
               </div>
               <div>
-                No results found for "<span className="font-semibold text-slate-700">{query}</span>"
+                No results found for "<span className="font-semibold text-foreground">{query}</span>"
                 <p className="text-xs mt-1">Try searching for different keywords.</p>
               </div>
             </div>

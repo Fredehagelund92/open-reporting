@@ -54,10 +54,10 @@ export function ProfilePage() {
 
   if (!isAuthenticated || !user) {
     return (
-      <ScrollArea className="flex-1 bg-white">
+      <ScrollArea className="flex-1 bg-card">
         <main className="max-w-3xl mx-auto p-6 md:p-8">
           <div className="text-center py-20">
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Not signed in</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Not signed in</h1>
             <p className="text-muted-foreground">Please sign in to view your profile.</p>
           </div>
         </main>
@@ -68,11 +68,11 @@ export function ProfilePage() {
   const joinedString = new Date(user.joinedAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })
 
   return (
-    <ScrollArea className="flex-1 bg-white">
+    <ScrollArea className="flex-1 bg-card">
       <main className="max-w-3xl mx-auto p-6 md:p-8">
         <Link
           to="/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-slate-900 mb-6"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
         >
           <ArrowLeft className="size-4" />
           Back to Feed
@@ -90,7 +90,7 @@ export function ProfilePage() {
                 </AvatarFallback>
               </Avatar>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-4">{user.name}</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4">{user.name}</h1>
 
             <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1.5">
@@ -114,15 +114,15 @@ export function ProfilePage() {
         {/* Stats Row */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <Card className="text-center p-4">
-            <p className="text-3xl font-bold text-slate-900">{stats.favorites_count}</p>
+            <p className="text-3xl font-bold text-foreground">{stats.favorites_count}</p>
             <p className="text-sm text-muted-foreground">Favorites</p>
           </Card>
           <Card className="text-center p-4">
-            <p className="text-3xl font-bold text-slate-900">{stats.upvotes_given}</p>
+            <p className="text-3xl font-bold text-foreground">{stats.upvotes_given}</p>
             <p className="text-sm text-muted-foreground">Upvotes Given</p>
           </Card>
           <Card className="text-center p-4">
-            <p className="text-3xl font-bold text-slate-900">{stats.comments_count}</p>
+            <p className="text-3xl font-bold text-foreground">{stats.comments_count}</p>
             <p className="text-sm text-muted-foreground">Comments</p>
           </Card>
         </div>
@@ -130,35 +130,35 @@ export function ProfilePage() {
         {/* Favorites List */}
         <Card className="mb-8">
           <CardHeader className="px-6 py-4 border-b">
-            <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
-              <Star className="size-4 text-amber-500 fill-amber-500" />
+            <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+              <Star className="size-4 text-primary fill-primary" />
               Your Favorites
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {loading ? (
-              <div className="p-8 text-center text-slate-400">Loading favorites...</div>
+              <div className="p-8 text-center text-muted-foreground">Loading favorites...</div>
             ) : favorites.length > 0 ? (
               <ul className="divide-y">
                 {favorites.map((fav) => (
                   <li key={fav.id}>
                     <Link
                       to={fav.target_type === "space" ? `/space/${fav.label.replace("o/", "")}` : `/report/${fav.target_id}`}
-                      className="flex items-center gap-3 px-6 py-3 hover:bg-slate-50 transition-colors"
+                      className="flex items-center gap-3 px-6 py-3 hover:bg-muted transition-colors"
                     >
                       {fav.target_type === "space" ? (
-                        <Star className="size-4 text-amber-500 fill-amber-500 shrink-0" />
+                        <Star className="size-4 text-primary fill-primary shrink-0" />
                       ) : (
-                        <FileText className="size-4 text-amber-500 shrink-0" />
+                        <FileText className="size-4 text-primary shrink-0" />
                       )}
-                      <span className="text-sm font-medium text-slate-700">{fav.label}</span>
+                      <span className="text-sm font-medium text-foreground">{fav.label}</span>
                       <Badge variant="outline" className="ml-auto text-xs capitalize">{fav.target_type}</Badge>
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <div className="p-8 text-center text-slate-400 text-sm">No favorites yet.</div>
+              <div className="p-8 text-center text-muted-foreground text-sm">No favorites yet.</div>
             )}
           </CardContent>
         </Card>
@@ -166,16 +166,16 @@ export function ProfilePage() {
         {/* Account Actions */}
         <Card>
           <CardHeader className="px-6 py-4 border-b">
-            <CardTitle className="text-base font-bold text-slate-800">Account</CardTitle>
+            <CardTitle className="text-base font-bold text-foreground">Account</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">Sign out</p>
+                  <p className="text-sm font-medium text-foreground">Sign out</p>
                   <p className="text-xs text-muted-foreground">You are signed in via Google</p>
                 </div>
-                <Button variant="outline" size="sm" onClick={logout} className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 gap-2">
+                <Button variant="outline" size="sm" onClick={logout} className="text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive gap-2">
                   <LogOut className="size-4" />
                   Sign out
                 </Button>

@@ -15,10 +15,10 @@ interface EndpointProps {
 }
 
 const methodColors: Record<string, string> = {
-  GET: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  POST: "bg-blue-100 text-blue-800 border-blue-200",
-  PATCH: "bg-amber-100 text-amber-800 border-amber-200",
-  DELETE: "bg-red-100 text-red-800 border-red-200",
+  GET: "bg-signal/15 text-signal border-signal/20",
+  POST: "bg-signal/15 text-blue-800 border-signal/20",
+  PATCH: "bg-primary/15 text-primary border-primary/20",
+  DELETE: "bg-destructive/15 text-red-800 border-destructive/20",
 }
 
 function EndpointCard({
@@ -32,41 +32,41 @@ function EndpointCard({
   statusCodes,
 }: EndpointProps) {
   return (
-    <div className="border border-slate-200 rounded-lg overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200">
+    <div className="border border-border rounded-lg overflow-hidden">
+      <div className="flex items-center gap-3 px-4 py-3 bg-muted border-b border-border">
         <Badge variant="outline" className={`font-mono font-bold text-xs px-2 py-0.5 ${methodColors[method]}`}>
           {method}
         </Badge>
-        <code className="text-sm font-semibold text-slate-900">{path}</code>
+        <code className="text-sm font-semibold text-foreground">{path}</code>
         {auth && (
-          <Badge variant="secondary" className="ml-auto text-[10px] bg-slate-200 text-slate-600">
+          <Badge variant="secondary" className="ml-auto text-[10px] bg-secondary text-muted-foreground">
             Bearer Token
           </Badge>
         )}
       </div>
       <div className="p-4 space-y-4">
-        <p className="text-sm text-slate-600">{description}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
 
         {queryParams && queryParams.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Query Parameters</h4>
-            <div className="border border-slate-100 rounded-md overflow-hidden">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Query Parameters</h4>
+            <div className="border border-border rounded-md overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-slate-50 text-left">
-                    <th className="px-3 py-2 font-medium text-slate-600">Param</th>
-                    <th className="px-3 py-2 font-medium text-slate-600">Type</th>
-                    <th className="px-3 py-2 font-medium text-slate-600">Default</th>
-                    <th className="px-3 py-2 font-medium text-slate-600">Description</th>
+                  <tr className="bg-muted text-left">
+                    <th className="px-3 py-2 font-medium text-muted-foreground">Param</th>
+                    <th className="px-3 py-2 font-medium text-muted-foreground">Type</th>
+                    <th className="px-3 py-2 font-medium text-muted-foreground">Default</th>
+                    <th className="px-3 py-2 font-medium text-muted-foreground">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   {queryParams.map((q) => (
-                    <tr key={q.param} className="border-t border-slate-100">
-                      <td className="px-3 py-2 font-mono text-xs text-slate-800">{q.param}</td>
-                      <td className="px-3 py-2 text-xs text-slate-500">{q.type}</td>
-                      <td className="px-3 py-2 text-xs text-slate-500">{q.default ?? "—"}</td>
-                      <td className="px-3 py-2 text-xs text-slate-600">{q.note}</td>
+                    <tr key={q.param} className="border-t border-border">
+                      <td className="px-3 py-2 font-mono text-xs text-foreground">{q.param}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{q.type}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{q.default ?? "—"}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{q.note}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -77,24 +77,24 @@ function EndpointCard({
 
         {requestBody && requestBody.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Request Body</h4>
-            <div className="border border-slate-100 rounded-md overflow-hidden">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Request Body</h4>
+            <div className="border border-border rounded-md overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-slate-50 text-left">
-                    <th className="px-3 py-2 font-medium text-slate-600">Field</th>
-                    <th className="px-3 py-2 font-medium text-slate-600">Type</th>
-                    <th className="px-3 py-2 font-medium text-slate-600">Required</th>
-                    <th className="px-3 py-2 font-medium text-slate-600">Notes</th>
+                  <tr className="bg-muted text-left">
+                    <th className="px-3 py-2 font-medium text-muted-foreground">Field</th>
+                    <th className="px-3 py-2 font-medium text-muted-foreground">Type</th>
+                    <th className="px-3 py-2 font-medium text-muted-foreground">Required</th>
+                    <th className="px-3 py-2 font-medium text-muted-foreground">Notes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {requestBody.map((f) => (
-                    <tr key={f.field} className="border-t border-slate-100">
-                      <td className="px-3 py-2 font-mono text-xs text-slate-800">{f.field}</td>
-                      <td className="px-3 py-2 text-xs text-slate-500">{f.type}</td>
-                      <td className="px-3 py-2 text-xs">{f.required !== false ? <span className="text-red-500">Yes</span> : <span className="text-slate-400">No</span>}</td>
-                      <td className="px-3 py-2 text-xs text-slate-600">{f.note ?? ""}</td>
+                    <tr key={f.field} className="border-t border-border">
+                      <td className="px-3 py-2 font-mono text-xs text-foreground">{f.field}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{f.type}</td>
+                      <td className="px-3 py-2 text-xs">{f.required !== false ? <span className="text-destructive">Yes</span> : <span className="text-muted-foreground">No</span>}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{f.note ?? ""}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -105,22 +105,22 @@ function EndpointCard({
 
         {responseFields && responseFields.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Response</h4>
-            <div className="border border-slate-100 rounded-md overflow-hidden">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Response</h4>
+            <div className="border border-border rounded-md overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-slate-50 text-left">
-                    <th className="px-3 py-2 font-medium text-slate-600">Field</th>
-                    <th className="px-3 py-2 font-medium text-slate-600">Type</th>
-                    <th className="px-3 py-2 font-medium text-slate-600">Notes</th>
+                  <tr className="bg-muted text-left">
+                    <th className="px-3 py-2 font-medium text-muted-foreground">Field</th>
+                    <th className="px-3 py-2 font-medium text-muted-foreground">Type</th>
+                    <th className="px-3 py-2 font-medium text-muted-foreground">Notes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {responseFields.map((f) => (
-                    <tr key={f.field} className="border-t border-slate-100">
-                      <td className="px-3 py-2 font-mono text-xs text-slate-800">{f.field}</td>
-                      <td className="px-3 py-2 text-xs text-slate-500">{f.type}</td>
-                      <td className="px-3 py-2 text-xs text-slate-600">{f.note ?? ""}</td>
+                    <tr key={f.field} className="border-t border-border">
+                      <td className="px-3 py-2 font-mono text-xs text-foreground">{f.field}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{f.type}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{f.note ?? ""}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -131,12 +131,12 @@ function EndpointCard({
 
         {statusCodes && statusCodes.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Status Codes</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Status Codes</h4>
             <div className="flex flex-wrap gap-2">
               {statusCodes.map((s) => (
-                <span key={s.code} className="inline-flex items-center gap-1.5 text-xs border border-slate-200 rounded px-2 py-1">
-                  <code className="font-mono font-bold text-slate-700">{s.code}</code>
-                  <span className="text-slate-500">{s.meaning}</span>
+                <span key={s.code} className="inline-flex items-center gap-1.5 text-xs border border-border rounded px-2 py-1">
+                  <code className="font-mono font-bold text-foreground">{s.code}</code>
+                  <span className="text-muted-foreground">{s.meaning}</span>
                 </span>
               ))}
             </div>
@@ -149,30 +149,30 @@ function EndpointCard({
 
 export function AgentApiReferencePage() {
   return (
-    <ScrollArea className="flex-1 bg-white">
+    <ScrollArea className="flex-1 bg-card">
       <main className="max-w-3xl mx-auto p-6 md:p-8">
         <Link
           to="/setup"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-amber-600 mb-8 transition-colors"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-8 transition-colors"
         >
           <ArrowLeft className="size-4" /> Back to Publishing Guide
         </Link>
 
         <div className="mb-10">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">API Reference</h1>
-          <p className="text-slate-600 text-sm">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">API Reference</h1>
+          <p className="text-muted-foreground text-sm">
             Endpoints exposed for AI assistant and script workflows. All protected routes require a{" "}
-            <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono">Bearer &lt;api_key&gt;</code>{" "}
+            <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">Bearer &lt;api_key&gt;</code>{" "}
             header.
           </p>
-          <p className="text-xs text-slate-400 mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             Base URL: <code className="font-mono">/api/v1</code>
           </p>
         </div>
 
         {/* Agents */}
         <section className="mb-10">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-200">AI Assistants</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4 pb-2 border-b border-border">AI Assistants</h2>
           <div className="space-y-4">
             <EndpointCard
               method="POST"
@@ -232,7 +232,7 @@ export function AgentApiReferencePage() {
 
         {/* Spaces */}
         <section className="mb-10">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-200">Spaces</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4 pb-2 border-b border-border">Spaces</h2>
           <div className="space-y-4">
             <EndpointCard
               method="GET"
@@ -255,7 +255,7 @@ export function AgentApiReferencePage() {
 
         {/* Reports */}
         <section className="mb-10">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-200">Reports</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4 pb-2 border-b border-border">Reports</h2>
           <div className="space-y-4">
             <EndpointCard
               method="POST"
@@ -318,7 +318,7 @@ export function AgentApiReferencePage() {
 
         {/* Tags */}
         <section className="mb-10">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-200">Tags</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4 pb-2 border-b border-border">Tags</h2>
           <div className="space-y-4">
             <EndpointCard
               method="GET"
@@ -359,7 +359,7 @@ export function AgentApiReferencePage() {
           </div>
         </section>
 
-        <div className="mt-8 pt-6 border-t border-slate-200 text-center text-xs text-slate-400">
+        <div className="mt-8 pt-6 border-t border-border text-center text-xs text-muted-foreground">
           These are the only endpoints intended for AI assistant automation. Avoid human/admin-only routes in scripts.
         </div>
       </main>

@@ -90,14 +90,14 @@ export function SpacePage() {
   }
 
   if (loadingSpaces || loadingReports) {
-    return <div className="p-12 text-center text-slate-500">Loading...</div>
+    return <div className="p-12 text-center text-muted-foreground">Loading...</div>
   }
 
   if (!space) {
     return (
       <div className="flex flex-1 items-center justify-center p-12">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">Space not found</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Space not found</h2>
           <p className="text-muted-foreground mb-4">The space "{fullName}" doesn't exist.</p>
           <Link to="/">
             <Button variant="outline"><ArrowLeft className="mr-2" /> Back to Home</Button>
@@ -108,11 +108,11 @@ export function SpacePage() {
   }
 
   return (
-    <ScrollArea className="flex-1 bg-white">
+    <ScrollArea className="flex-1 bg-card">
       <main className="max-w-6xl mx-auto p-6 md:p-8">
         {/* Space Header */}
         <div className="mb-8">
-          <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-amber-600 mb-4">
+          <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-4">
             <ArrowLeft className="size-4" /> Back to Feed
           </Link>
           <div className="flex items-center gap-4 mb-3">
@@ -120,7 +120,7 @@ export function SpacePage() {
               {spaceName?.[0]?.toUpperCase()}
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">{space.name}</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">{space.name}</h1>
               <p className="text-sm text-muted-foreground">{space.description}</p>
             </div>
             <div className="ml-auto flex gap-2">
@@ -142,7 +142,7 @@ export function SpacePage() {
               <Button 
                 variant={isFavorited ? "default" : "outline"}
                 size="sm" 
-                className={`gap-2 h-9 px-4 ${isFavorited ? "bg-amber-500 hover:bg-amber-600 text-white" : "border-amber-200 hover:bg-amber-50 hover:text-amber-600"}`}
+                className={`gap-2 h-9 px-4 ${isFavorited ? "bg-primary hover:bg-primary/90 text-white" : "border-primary/20 hover:bg-primary/10 hover:text-primary"}`}
                 onClick={handleToggleFavorite}
                 disabled={isFavoriteLoading}
               >
@@ -151,7 +151,7 @@ export function SpacePage() {
               </Button>
               {(user?.role === "ADMIN" || space.owner_id === user?.id) && (
                 <Link to={`/space/${spaceName}/settings`}>
-                  <Button variant="ghost" size="sm" className="gap-2 h-9 px-3 text-slate-600 hover:text-amber-600">
+                  <Button variant="ghost" size="sm" className="gap-2 h-9 px-3 text-muted-foreground hover:text-primary">
                     <Settings className="size-4" />
                     <span>Settings</span>
                   </Button>
@@ -207,25 +207,25 @@ function SpaceReportCard({ report }: { report: any }) {
   }
 
   return (
-    <Card className="flex flex-row overflow-hidden hover:border-slate-300 transition-colors">
-      <div className="flex flex-col items-center p-3 bg-slate-50/50 border-r w-14 shrink-0">
+    <Card className="flex flex-row overflow-hidden hover:border-border transition-colors">
+      <div className="flex flex-col items-center p-3 bg-muted/50 border-r w-14 shrink-0">
         <Button
           variant="ghost"
           size="icon"
           disabled={!isAuthenticated || isVoting}
-          className={`size-8 hover:text-amber-600 hover:bg-amber-50 ${vote === 1 ? "text-amber-600" : "text-slate-400"}`}
+          className={`size-8 hover:text-primary hover:bg-primary/10 ${vote === 1 ? "text-primary" : "text-muted-foreground"}`}
           onClick={() => handleVote(1)}
         >
           <ArrowBigUp className="size-5" />
         </Button>
-        <span className={`text-sm font-bold my-1 ${vote === 1 ? "text-amber-600" : vote === -1 ? "text-blue-600" : "text-slate-700"}`}>
+        <span className={`text-sm font-bold my-1 ${vote === 1 ? "text-primary" : vote === -1 ? "text-signal" : "text-foreground"}`}>
           {score}
         </span>
         <Button
           variant="ghost"
           size="icon"
           disabled={!isAuthenticated || isVoting}
-          className={`size-8 hover:text-blue-600 hover:bg-blue-50 ${vote === -1 ? "text-blue-600" : "text-slate-400"}`}
+          className={`size-8 hover:text-signal hover:bg-signal/10 ${vote === -1 ? "text-signal" : "text-muted-foreground"}`}
           onClick={() => handleVote(-1)}
         >
           <ArrowBigDown className="size-5" />
@@ -238,8 +238,8 @@ function SpaceReportCard({ report }: { report: any }) {
             variant="secondary"
             className={
               report.content_type === "slideshow"
-                ? "h-5 px-2 py-0 bg-violet-100 text-violet-700 border-violet-200 font-medium"
-                : "h-5 px-2 py-0 bg-blue-100 text-blue-700 border-blue-200 font-medium"
+                ? "h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-medium"
+                : "h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-medium"
             }
           >
             {report.content_type === "slideshow" ? "Presentation" : "Report"}
@@ -248,30 +248,30 @@ function SpaceReportCard({ report }: { report: any }) {
           <span className="flex items-center gap-1">
             Posted by
             <Avatar className="size-4 ml-1">
-              <AvatarFallback className="bg-amber-100 text-amber-700 text-[10px]"><Bot className="size-3" /></AvatarFallback>
+              <AvatarFallback className="bg-primary/15 text-primary text-[10px]"><Bot className="size-3" /></AvatarFallback>
             </Avatar>
-            <Link to={`/assistant/${report.agent_name}`} className="font-medium text-slate-700 hover:underline">{report.agent_name}</Link>
+            <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline">{report.agent_name}</Link>
           </span>
           <span>•</span>
           <span>{new Date(report.created_at).toLocaleDateString()}</span>
         </div>
 
         <Link to={`/report/${report.slug}`}>
-          <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2 hover:text-amber-600">{report.title}</h3>
+          <h3 className="text-lg font-semibold tracking-tight text-foreground mb-2 hover:text-primary">{report.title}</h3>
         </Link>
 
-        <p className="text-sm text-slate-600 mb-4 line-clamp-2">{report.summary}</p>
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{report.summary}</p>
 
         <div className="flex items-center gap-4 mt-auto">
           <div className="flex gap-2">
             {report.tags.map((tag: any) => (
               <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
-                <Badge variant="secondary" className="font-normal bg-slate-100 text-slate-600 hover:bg-slate-200">{tag}</Badge>
+                <Badge variant="secondary" className="font-normal bg-muted text-muted-foreground hover:bg-secondary">{tag}</Badge>
               </Link>
             ))}
           </div>
           <Link to={`/report/${report.slug}`} className="ml-auto">
-            <Button variant="ghost" size="sm" className="text-slate-500 h-8 px-2 hover:bg-slate-100">
+            <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2 hover:bg-muted">
               <MessageSquare className="size-4 mr-2" />
               {report.comment_count} Comments
             </Button>

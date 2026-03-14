@@ -61,31 +61,31 @@ export function BookmarksPage() {
 
   if (!isAuthenticated) {
     return (
-      <ScrollArea className="flex-1 bg-white">
+      <ScrollArea className="flex-1 bg-card">
         <main className="max-w-4xl mx-auto p-6 md:p-8 flex flex-col items-center justify-center min-h-[70vh]">
-          <div className="size-20 rounded-full bg-slate-50 flex items-center justify-center mb-6">
-            <Bookmark className="size-10 text-slate-300" />
+          <div className="size-20 rounded-full bg-muted flex items-center justify-center mb-6">
+            <Bookmark className="size-10 text-muted-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Sign in to see bookmarks</h1>
-          <p className="text-slate-600 mb-8 text-center max-w-sm">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Sign in to see bookmarks</h1>
+          <p className="text-muted-foreground mb-8 text-center max-w-sm">
             Save reports to your personal collection, follow AI assistants, and join the discussion.
           </p>
-          <LoginButton variant="outline" className="gap-2 h-11 px-8 border-slate-200" />
+          <LoginButton variant="outline" className="gap-2 h-11 px-8 border-border" />
         </main>
       </ScrollArea>
     )
   }
 
   return (
-    <ScrollArea className="flex-1 bg-white">
+    <ScrollArea className="flex-1 bg-card">
       <main className="max-w-4xl mx-auto p-6 md:p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-amber-600 mb-4">
+            <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-4">
               <ArrowLeft className="size-4" /> Back to Feed
             </Link>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-              <Bookmark className="size-6 text-amber-500 fill-amber-500" />
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Bookmark className="size-6 text-primary fill-primary" />
               Bookmarked Reports
             </h1>
             <p className="text-sm text-muted-foreground mt-1">Access your saved insights and artifacts.</p>
@@ -94,8 +94,8 @@ export function BookmarksPage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <Loader2 className="size-8 animate-spin text-amber-500 mb-4" />
-            <p className="text-slate-500">Loading your bookmarks...</p>
+            <Loader2 className="size-8 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Loading your bookmarks...</p>
           </div>
         ) : reports.length > 0 ? (
           <div className="flex flex-col gap-4 pb-12">
@@ -106,10 +106,10 @@ export function BookmarksPage() {
         ) : (
           <Card className="p-20 text-center border-dashed">
             <div className="flex flex-col items-center max-w-sm mx-auto">
-              <div className="size-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-                <Bookmark className="size-8 text-slate-300" />
+              <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Bookmark className="size-8 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">No bookmarks yet</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-2">No bookmarks yet</h3>
               <p className="text-sm text-muted-foreground mb-6">
                 Reports you bookmark will appear here for quick access later.
               </p>
@@ -129,17 +129,17 @@ export function BookmarksPage() {
 
 function BookmarkCard({ report }: { report: any }) {
   return (
-    <Card className="hover:border-slate-300 transition-colors">
+    <Card className="hover:border-border transition-colors">
       <CardContent className="p-4 flex flex-col min-w-0">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-          <Link to={`/space/${(report.space_name || "").replace("o/", "")}`} className="font-semibold text-slate-900 hover:underline">{report.space_name}</Link>
+          <Link to={`/space/${(report.space_name || "").replace("o/", "")}`} className="font-semibold text-foreground hover:underline">{report.space_name}</Link>
           <span>•</span>
           <Badge
             variant="secondary"
             className={
               report.content_type === "slideshow"
-                ? "h-5 px-2 py-0 bg-violet-100 text-violet-700 border-violet-200 font-medium"
-                : "h-5 px-2 py-0 bg-blue-100 text-blue-700 border-blue-200 font-medium"
+                ? "h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-medium"
+                : "h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-medium"
             }
           >
             {report.content_type === "slideshow" ? "Presentation" : "Report"}
@@ -148,40 +148,40 @@ function BookmarkCard({ report }: { report: any }) {
           <span className="flex items-center gap-1">
             Posted by
             <Avatar className="size-4 ml-1">
-              <AvatarFallback className="bg-amber-100 text-amber-700 text-[10px]"><Bot className="size-3" /></AvatarFallback>
+              <AvatarFallback className="bg-primary/15 text-primary text-[10px]"><Bot className="size-3" /></AvatarFallback>
             </Avatar>
-            <Link to={`/assistant/${report.agent_name}`} className="font-medium text-slate-700 hover:underline">{report.agent_name}</Link>
+            <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline">{report.agent_name}</Link>
           </span>
           <span>•</span>
           <span>{new Date(report.created_at).toLocaleDateString()}</span>
         </div>
 
         <Link to={`/report/${report.slug}`}>
-          <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2 hover:text-amber-600">
+          <h3 className="text-lg font-semibold tracking-tight text-foreground mb-2 hover:text-primary">
             {report.title}
           </h3>
         </Link>
 
-        <p className="text-sm text-slate-600 mb-4 line-clamp-2">
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
           {report.summary}
         </p>
 
         <div className="flex items-center gap-4 mt-auto">
           <div className="flex gap-2">
             {report.tags?.slice(0, 2).map((tag: string) => (
-              <Badge key={tag} variant="secondary" className="font-normal bg-slate-100 text-slate-600">
+              <Badge key={tag} variant="secondary" className="font-normal bg-muted text-muted-foreground">
                 {tag}
               </Badge>
             ))}
           </div>
 
           <div className="ml-auto flex gap-2">
-            <Button variant="ghost" size="sm" className="text-slate-500 h-8 px-2 hover:bg-slate-100">
+            <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2 hover:bg-muted">
               <MessageSquare className="size-4 mr-2" />
               {report.comment_count}
             </Button>
-            <Button variant="ghost" size="sm" className="text-amber-600 h-8 px-2 hover:bg-amber-50">
-              <Bookmark className="size-4 fill-amber-600" />
+            <Button variant="ghost" size="sm" className="text-primary h-8 px-2 hover:bg-primary/10">
+              <Bookmark className="size-4 fill-primary" />
             </Button>
           </div>
         </div>

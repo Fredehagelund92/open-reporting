@@ -70,10 +70,10 @@ export function SettingsPage() {
 
   if (!user) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-slate-50/50 p-8">
+      <div className="flex-1 flex items-center justify-center bg-muted/50 p-8">
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2">Not Signed In</h2>
-          <p className="text-slate-500 mb-4">You need to be signed in to view settings.</p>
+          <p className="text-muted-foreground mb-4">You need to be signed in to view settings.</p>
           <LoginButton />
         </div>
       </div>
@@ -81,11 +81,11 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="flex-1 overflow-auto bg-slate-50/50">
+    <div className="flex-1 overflow-auto bg-muted/50">
       <main className="max-w-3xl mx-auto p-6 md:p-8">
-        <div className="mb-8 pb-4 border-b border-slate-200">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Settings</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage your account settings and preferences.</p>
+        <div className="mb-8 pb-4 border-b border-border">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Settings</h1>
+          <p className="text-muted-foreground text-sm mt-1">Manage your account settings and preferences.</p>
         </div>
 
         <div className="grid gap-8">
@@ -114,7 +114,7 @@ export function SettingsPage() {
                     <Label>Profile Picture</Label>
                     <div className="flex items-center gap-3">
                       <Label htmlFor="avatar-upload" className="cursor-pointer">
-                        <div className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 disabled:pointer-events-none disabled:opacity-50 border border-slate-200 bg-white shadow-sm hover:bg-slate-100 hover:text-slate-900 h-9 px-4 py-2 gap-2">
+                        <div className="inline-flex items-center justify-center whitespace-nowrap rounded-sm text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-border bg-card shadow-sm hover:bg-muted hover:text-foreground h-9 px-4 py-2 gap-2">
                           <Upload className="size-4" />
                           Upload Image
                         </div>
@@ -131,14 +131,14 @@ export function SettingsPage() {
                           type="button" 
                           variant="ghost" 
                           size="sm" 
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
                           onClick={handleRemoveAvatar}
                         >
                           <X className="size-4 mr-1" /> Remove
                         </Button>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500">Supported formats: JPG, PNG, GIF. Max size 5MB.</p>
+                    <p className="text-xs text-muted-foreground">Supported formats: JPG, PNG, GIF. Max size 5MB.</p>
                   </div>
                 </div>
 
@@ -160,15 +160,15 @@ export function SettingsPage() {
                       id="email" 
                       value={user.email} 
                       disabled 
-                      className="bg-slate-50 text-slate-500"
+                      className="bg-muted text-muted-foreground"
                     />
-                    <p className="text-xs text-slate-500">Your email address is managed by your identity provider.</p>
+                    <p className="text-xs text-muted-foreground">Your email address is managed by your identity provider.</p>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label>Role</Label>
+                  <div className="space-y-3">
+                    <Label className="text-muted-foreground/70 uppercase text-[10px] font-mono font-bold tracking-widest">Role</Label>
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10 uppercase tracking-wider">
+                      <span className="inline-flex items-center rounded-sm bg-muted px-2.5 py-1 text-xs font-mono font-medium text-muted-foreground ring-1 ring-inset ring-border uppercase tracking-wider">
                         {user.role}
                       </span>
                     </div>
@@ -176,10 +176,10 @@ export function SettingsPage() {
                 </div>
               </CardContent>
 
-              <CardFooter className="flex justify-between border-t bg-slate-50/50 px-6 py-4">
+              <CardFooter className="flex justify-between border-t bg-muted/50 px-6 py-4">
                 <div className="text-sm">
                   {message.text && (
-                    <span className={message.type === "success" ? "text-emerald-600" : "text-red-600"}>
+                    <span className={message.type === "success" ? "text-signal" : "text-destructive"}>
                       {message.text}
                     </span>
                   )}
@@ -324,7 +324,7 @@ function MyAgentsSection() {
           </div>
           <div className="flex items-center gap-2">
             <div className="grid gap-1">
-              <span className="text-[11px] text-slate-500 inline-flex items-center gap-1.5">
+              <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
                 Prompt Template
                 <HelpTip text="This picks which instructions format you copy for your AI chat tool." />
               </span>
@@ -339,7 +339,7 @@ function MyAgentsSection() {
                 </SelectContent>
               </Select>
             </div>
-            <Button asChild size="sm" className="bg-amber-500 hover:bg-amber-600 text-white gap-1.5">
+            <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-white gap-1.5">
               <Link to="/connect?mode=reuse">
                 <Plus className="size-4" />
                 Connect AI
@@ -347,7 +347,7 @@ function MyAgentsSection() {
             </Button>
           </div>
         </div>
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <div className="rounded-md border border-primary/20 bg-primary/10 p-3 text-sm text-primary">
           <p className="font-semibold mb-1">Returning user? Quick reconnect</p>
           <ol className="list-decimal pl-4 space-y-1 text-xs">
             <li>Click <strong>Copy Prompt</strong> on your AI assistant.</li>
@@ -356,7 +356,7 @@ function MyAgentsSection() {
           </ol>
         </div>
         {rotationNotice && (
-          <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 flex items-start gap-2">
+          <div className="rounded-md border border-signal/20 bg-signal/10 p-3 text-xs text-signal flex items-start gap-2">
             <AlertCircle className="size-4 shrink-0 mt-0.5" />
             <span>{rotationNotice}</span>
           </div>
@@ -365,12 +365,12 @@ function MyAgentsSection() {
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="size-6 text-slate-400 animate-spin" />
+            <Loader2 className="size-6 text-muted-foreground animate-spin" />
           </div>
         ) : agents.length === 0 ? (
           <div className="text-center py-8">
-            <Bot className="size-10 text-slate-200 mx-auto mb-3" />
-            <p className="text-sm text-slate-500 mb-4">You haven&apos;t connected any AI assistants yet.</p>
+            <Bot className="size-10 text-muted mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground mb-4">You haven&apos;t connected any AI assistants yet.</p>
             <Button asChild variant="outline" size="sm">
               <Link to="/connect?mode=create" className="gap-2">
                 <Plus className="size-4" /> Connect Your First AI
@@ -381,28 +381,28 @@ function MyAgentsSection() {
           <div className="space-y-3">
             {agents.map((agent) => (
               <div key={agent.id}>
-                <div className="flex items-center gap-4 p-4 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                  <div className="size-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-4 p-4 rounded-lg border border-border bg-muted/50 hover:bg-muted transition-colors">
+                  <div className="size-10 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
                     <Bot className="size-5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-semibold text-slate-900 truncate">
+                      <span className="font-semibold text-foreground truncate">
                         {agent.name}
                       </span>
                       <Badge
                         className={`text-[10px] ${
                           agent.status === "IDLE"
-                            ? "bg-emerald-100 text-emerald-700"
+                            ? "bg-signal/15 text-signal"
                             : agent.status === "GENERATING"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-slate-100 text-slate-500"
+                            ? "bg-primary/15 text-primary"
+                            : "bg-muted text-muted-foreground"
                         }`}
                       >
                         {formatStatusLabel(agent.status)}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="font-mono inline-flex items-center gap-1.5">
                         {revealedKey?.id === agent.id ? revealedKey.key : agent.api_key_hint}
                         <HelpTip text="This masked key hint helps you identify which connection key this assistant is using." />
@@ -422,7 +422,7 @@ function MyAgentsSection() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 px-2 text-slate-500 hover:text-amber-600"
+                      className="h-8 px-2 text-muted-foreground hover:text-primary"
                       onClick={() => handleCopyPrompt(agent)}
                     >
                       <Copy className="size-3.5 mr-1" />
@@ -431,7 +431,7 @@ function MyAgentsSection() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 px-2 text-slate-500 hover:text-emerald-600"
+                      className="h-8 px-2 text-muted-foreground hover:text-signal"
                       onClick={() => handleVerifyKey(agent)}
                       disabled={verifyState[agent.id]?.status === "running"}
                     >
@@ -445,7 +445,7 @@ function MyAgentsSection() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 px-2 text-slate-500 hover:text-red-600"
+                      className="h-8 px-2 text-muted-foreground hover:text-destructive"
                       onClick={() => handleRegenerate(agent.id)}
                       disabled={regeneratingId === agent.id}
                     >
@@ -461,7 +461,7 @@ function MyAgentsSection() {
                 {verifyState[agent.id]?.text && (
                   <p
                     className={`text-xs mt-1 ml-14 ${
-                      verifyState[agent.id]?.status === "success" ? "text-emerald-700" : "text-red-600"
+                      verifyState[agent.id]?.status === "success" ? "text-signal" : "text-destructive"
                     }`}
                   >
                     {verifyState[agent.id]?.text}

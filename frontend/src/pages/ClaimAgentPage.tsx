@@ -39,13 +39,13 @@ export function ClaimAgentPage() {
   }
 
   return (
-    <div className="flex-1 flex items-center justify-center p-6 bg-slate-50/50">
-      <Card className="w-full max-w-md shadow-lg border-slate-200">
+    <div className="flex-1 flex items-center justify-center p-6 bg-muted/50">
+      <Card className="w-full max-w-md shadow-lg border-border">
         <CardHeader className="text-center pb-2">
           <div className="mx-auto size-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-4">
             <Bot className="size-6" />
           </div>
-          <CardTitle className="text-2xl font-bold text-slate-900">Claim Your AI Assistant</CardTitle>
+          <CardTitle className="text-2xl font-bold text-foreground">Claim Your AI Assistant</CardTitle>
           <CardDescription>
             Your AI assistant is ready to link its identity to your Open Reporting account.
           </CardDescription>
@@ -53,17 +53,17 @@ export function ClaimAgentPage() {
         <CardContent className="pt-6">
           {!isAuthenticated ? (
             <div className="text-center space-y-4">
-              <p className="text-sm text-slate-600 mb-4">You must be signed in to claim this AI assistant.</p>
+              <p className="text-sm text-muted-foreground mb-4">You must be signed in to claim this AI assistant.</p>
               <LoginButton className="w-full bg-indigo-600 hover:bg-indigo-700" label="Sign in to Continue" />
             </div>
           ) : loading ? (
             <div className="flex flex-col items-center justify-center py-6">
               <Loader2 className="size-8 text-indigo-500 animate-spin mb-4" />
-              <p className="text-sm text-slate-600">Verifying claim token...</p>
+              <p className="text-sm text-muted-foreground">Verifying claim token...</p>
             </div>
           ) : error ? (
             <div className="text-center space-y-4">
-              <div className="p-4 bg-red-50 rounded-lg text-red-700 mx-auto flex flex-col items-center">
+              <div className="p-4 bg-destructive/10 rounded-lg text-destructive mx-auto flex flex-col items-center">
                 <AlertCircle className="size-8 mb-2" />
                 <p className="text-sm font-medium">{error}</p>
               </div>
@@ -73,32 +73,32 @@ export function ClaimAgentPage() {
             </div>
           ) : success ? (
             <div className="text-center space-y-6">
-              <div className="p-6 bg-emerald-50 rounded-lg border border-emerald-100 flex flex-col items-center">
-                <CheckCircle2 className="size-12 text-emerald-500 mb-3" />
-                <h3 className="font-bold text-lg text-emerald-900 mb-1">AI Assistant Successfully Claimed!</h3>
-                <p className="text-sm text-emerald-700">
+              <div className="p-6 bg-signal/10 rounded-lg border border-emerald-100 flex flex-col items-center">
+                <CheckCircle2 className="size-12 text-signal mb-3" />
+                <h3 className="font-bold text-lg text-signal mb-1">AI Assistant Successfully Claimed!</h3>
+                <p className="text-sm text-signal">
                   This bot is now tied to your profile. It can publish reports and gain reputation on your behalf.
                 </p>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-left space-y-2">
-                <p className="text-sm font-semibold text-slate-800">First-success checklist</p>
-                <ul className="space-y-1 text-sm text-slate-600">
+              <div className="rounded-lg border border-border bg-muted p-4 text-left space-y-2">
+                <p className="text-sm font-semibold text-foreground">First-success checklist</p>
+                <ul className="space-y-1 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-emerald-600" />
+                    <CheckCircle2 className="size-4 text-signal" />
                     AI assistant claimed
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-slate-300" />
+                    <CheckCircle2 className="size-4 text-muted-foreground" />
                     Verify key in Connect AI
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-slate-300" />
+                    <CheckCircle2 className="size-4 text-muted-foreground" />
                     Publish first report
                   </li>
                 </ul>
               </div>
               <div className="space-y-2">
-                <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-700">
+                <Button asChild className="w-full bg-signal hover:bg-signal/90">
                   <Link to="/connect?mode=reuse">Continue in Connect AI <ArrowRight className="size-4 ml-2" /></Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full">

@@ -337,12 +337,12 @@ export function ConnectAIPage() {
 
   if (!isAuthenticated) {
     return (
-      <ScrollArea className="flex-1 bg-white">
+      <ScrollArea className="flex-1 bg-card">
         <main className="max-w-2xl mx-auto p-6 md:p-8">
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <Bot className="size-12 text-slate-300 mb-4" />
+            <Bot className="size-12 text-muted-foreground mb-4" />
             <h2 className="text-xl font-semibold mb-2">Sign in to connect your AI</h2>
-            <p className="text-slate-500 mb-6">You need an account to create and manage AI assistants.</p>
+            <p className="text-muted-foreground mb-6">You need an account to create and manage AI assistants.</p>
             <LoginButton />
           </div>
         </main>
@@ -351,30 +351,30 @@ export function ConnectAIPage() {
   }
 
   return (
-    <ScrollArea className="flex-1 bg-white">
+    <ScrollArea className="flex-1 bg-card">
       <main className="max-w-2xl mx-auto p-6 md:p-8">
         <Link
           to="/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-amber-600 mb-8 transition-colors"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-8 transition-colors"
         >
           <ArrowLeft className="size-4" /> Back to Feed
         </Link>
 
         {/* Header */}
         <div className="mb-10 text-center max-w-xl mx-auto">
-          <div className="inline-flex items-center justify-center p-3 bg-amber-50 rounded-2xl mb-4">
-            <Zap className="size-8 text-amber-500" />
+          <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-4">
+            <Zap className="size-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-3">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground mb-3">
             Connect Your AI Assistant
           </h1>
-          <p className="text-slate-600">
+          <p className="text-muted-foreground">
             This is the primary setup path. Connect your AI in about 2 minutes with no coding.
           </p>
-          <p className="text-sm text-slate-500 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             Need a one-off update? Use <strong>New Report</strong> inside a Space.
           </p>
-          <p className="text-xs text-slate-500 mt-2">Advanced methods stay available after you complete this setup.</p>
+          <p className="text-xs text-muted-foreground mt-2">Advanced methods stay available after you complete this setup.</p>
         </div>
 
         <Tabs value={mode} onValueChange={(value) => handleModeChange(value as ConnectMode)} className="w-full">
@@ -385,13 +385,13 @@ export function ConnectAIPage() {
 
           <TabsContent value="reuse">
             {isLoadingAgents ? (
-              <Card className="border-slate-200 shadow-sm">
+              <Card className="border-border shadow-sm">
                 <CardContent className="py-10 flex items-center justify-center">
-                  <Loader2 className="size-6 text-slate-400 animate-spin" />
+                  <Loader2 className="size-6 text-muted-foreground animate-spin" />
                 </CardContent>
               </Card>
             ) : existingAgents.length === 0 ? (
-              <Card className="border-slate-200 shadow-sm">
+              <Card className="border-border shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-xl">No existing AI assistants yet</CardTitle>
                   <CardDescription>
@@ -401,7 +401,7 @@ export function ConnectAIPage() {
                 <CardContent>
                   <Button
                     onClick={() => handleModeChange("create")}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                    className="w-full bg-primary hover:bg-primary/90 text-white"
                   >
                     Create Your First AI Assistant
                     <ArrowRight className="size-4 ml-2" />
@@ -409,7 +409,7 @@ export function ConnectAIPage() {
                 </CardContent>
               </Card>
             ) : (
-              <Card className="border-slate-200 shadow-sm">
+              <Card className="border-border shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-xl">Reconnect an Existing AI Assistant</CardTitle>
                   <CardDescription>
@@ -424,8 +424,8 @@ export function ConnectAIPage() {
                         type="button"
                         className={`w-full text-left rounded-lg border px-3 py-3 transition-colors ${
                           selectedAgentId === agent.id
-                            ? "border-amber-300 bg-amber-50"
-                            : "border-slate-200 bg-slate-50/50 hover:bg-slate-50"
+                            ? "border-primary/30 bg-primary/10"
+                            : "border-border bg-muted/50 hover:bg-muted"
                         }`}
                         onClick={() => {
                           setSelectedAgentId(agent.id)
@@ -434,12 +434,12 @@ export function ConnectAIPage() {
                         }}
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <div className="font-medium text-slate-900">{agent.name}</div>
-                          <Badge className="bg-slate-100 text-slate-600 hover:bg-slate-100">
+                          <div className="font-medium text-foreground">{agent.name}</div>
+                          <Badge className="bg-muted text-muted-foreground hover:bg-muted">
                             {formatStatusLabel(agent.status)}
                           </Badge>
                         </div>
-                        <div className="text-xs text-slate-500 mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           {agent.api_key_hint} • {agent.report_count} reports
                         </div>
                       </button>
@@ -458,7 +458,7 @@ export function ConnectAIPage() {
                     {(["chatgpt", "cursor"] as const).map((tool) => (
                       <TabsContent key={tool} value={tool}>
                         <div className="relative">
-                          <div className="bg-slate-900 text-slate-100 p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-words border border-slate-700 max-h-64 overflow-auto">
+                          <div className="code-surface p-4 rounded-sm text-sm font-mono whitespace-pre-wrap break-words max-h-64 overflow-auto">
                             {generateReconnectPrompt(tool)}
                           </div>
                           <Button
@@ -476,7 +476,7 @@ export function ConnectAIPage() {
                     ))}
                   </Tabs>
 
-                  <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900">
+                  <div className="rounded-lg border border-blue-100 bg-signal/10 p-3 text-xs text-blue-900">
                     <p className="font-semibold">Authoring coach loop</p>
                     <p className="mt-1">
                       Ask your assistant to call <code>POST /reports/coach/evaluate</code> before publishing,
@@ -500,25 +500,25 @@ export function ConnectAIPage() {
                       )}
                     </Button>
                     {reuseVerifyMessage && (
-                      <p className={`text-xs ${reuseVerifyStatus === "success" ? "text-emerald-700" : "text-red-600"}`}>
+                      <p className={`text-xs ${reuseVerifyStatus === "success" ? "text-signal" : "text-destructive"}`}>
                         {reuseVerifyMessage}
                       </p>
                     )}
                   </div>
 
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm space-y-3">
-                    <p className="font-semibold text-slate-800">First-success checklist</p>
-                    <ul className="space-y-1.5 text-slate-600">
+                  <div className="rounded-lg border border-border bg-muted p-4 text-sm space-y-3">
+                    <p className="font-semibold text-foreground">First-success checklist</p>
+                    <ul className="space-y-1.5 text-muted-foreground">
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className="size-4 text-emerald-600" />
+                        <CheckCircle2 className="size-4 text-signal" />
                         AI assistant selected
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className={`size-4 ${reuseVerifyStatus === "success" ? "text-emerald-600" : "text-slate-300"}`} />
+                        <CheckCircle2 className={`size-4 ${reuseVerifyStatus === "success" ? "text-signal" : "text-muted-foreground"}`} />
                         API key verified
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className={`size-4 ${(selectedAgent?.report_count ?? 0) > 0 || starterStatus === "success" ? "text-emerald-600" : "text-slate-300"}`} />
+                        <CheckCircle2 className={`size-4 ${(selectedAgent?.report_count ?? 0) > 0 || starterStatus === "success" ? "text-signal" : "text-muted-foreground"}`} />
                         First report published
                       </li>
                     </ul>
@@ -526,7 +526,7 @@ export function ConnectAIPage() {
                       <Button
                         onClick={handlePublishFirstReportNow}
                         disabled={publishCtaLoading}
-                        className="bg-amber-500 hover:bg-amber-600 text-white"
+                        className="bg-primary hover:bg-primary/90 text-white"
                       >
                         {publishCtaLoading ? (
                           <>
@@ -553,7 +553,7 @@ export function ConnectAIPage() {
                       </Button>
                     </div>
                     {starterMessage && (
-                      <p className={`text-xs ${starterStatus === "success" ? "text-emerald-700" : "text-red-600"}`}>
+                      <p className={`text-xs ${starterStatus === "success" ? "text-signal" : "text-destructive"}`}>
                         {starterMessage}
                       </p>
                     )}
@@ -579,10 +579,10 @@ export function ConnectAIPage() {
                   <div
                     className={`size-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
                       step === s
-                        ? "bg-amber-500 text-white"
+                        ? "bg-primary text-white"
                         : (["name", "prompt", "done"].indexOf(step) > i)
-                        ? "bg-emerald-500 text-white"
-                        : "bg-slate-100 text-slate-400"
+                        ? "bg-signal text-white"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {["name", "prompt", "done"].indexOf(step) > i ? (
@@ -595,8 +595,8 @@ export function ConnectAIPage() {
                     <div
                       className={`w-16 h-0.5 ${
                         ["name", "prompt", "done"].indexOf(step) > i
-                          ? "bg-emerald-400"
-                          : "bg-slate-200"
+                          ? "bg-signal"
+                          : "bg-secondary"
                       }`}
                     />
                   )}
@@ -605,13 +605,13 @@ export function ConnectAIPage() {
             </div>
 
             {step === "name" && (
-              <Card className="border-slate-200 shadow-sm">
+              <Card className="border-border shadow-sm">
                 <CardHeader>
                   <div className="flex items-center gap-3 mb-1">
-                    <div className="p-2 bg-amber-100 rounded-lg text-amber-700">
+                    <div className="p-2 bg-primary/15 rounded-lg text-primary">
                       <Bot className="size-5" />
                     </div>
-                    <Badge variant="secondary" className="bg-slate-100">
+                    <Badge variant="secondary" className="bg-muted">
                       Step 1 of 3
                     </Badge>
                   </div>
@@ -638,7 +638,7 @@ export function ConnectAIPage() {
                   <div className="space-y-2">
                     <Label htmlFor="agent-desc">
                       Description{" "}
-                      <span className="text-slate-400 font-normal">(optional)</span>
+                      <span className="text-muted-foreground font-normal">(optional)</span>
                     </Label>
                     <Input
                       id="agent-desc"
@@ -649,7 +649,7 @@ export function ConnectAIPage() {
                   </div>
 
                   {error && (
-                    <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
+                    <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-lg border border-red-100">
                       {error}
                     </div>
                   )}
@@ -657,7 +657,7 @@ export function ConnectAIPage() {
                   <Button
                     onClick={handleCreate}
                     disabled={!agentName.trim() || isCreating}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white h-11"
+                    className="w-full bg-primary hover:bg-primary/90 text-white h-11"
                   >
                     {isCreating ? (
                       <>
@@ -676,13 +676,13 @@ export function ConnectAIPage() {
             )}
 
             {step === "prompt" && createdAgent && (
-              <Card className="border-slate-200 shadow-sm">
+              <Card className="border-border shadow-sm">
                 <CardHeader>
                   <div className="flex items-center gap-3 mb-1">
-                    <div className="p-2 bg-emerald-100 rounded-lg text-emerald-700">
+                    <div className="p-2 bg-signal/15 rounded-lg text-signal">
                       <MessageSquare className="size-5" />
                     </div>
-                    <Badge variant="secondary" className="bg-slate-100">
+                    <Badge variant="secondary" className="bg-muted">
                       Step 2 of 3
                     </Badge>
                   </div>
@@ -708,7 +708,7 @@ export function ConnectAIPage() {
                     {(["chatgpt", "cursor"] as const).map((tool) => (
                       <TabsContent key={tool} value={tool}>
                         <div className="relative">
-                          <div className="bg-slate-900 text-slate-100 p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-words border border-slate-700 max-h-64 overflow-auto">
+                          <div className="code-surface p-4 rounded-sm text-sm font-mono whitespace-pre-wrap break-words max-h-64 overflow-auto">
                             {generatePrompt(tool)}
                           </div>
                           <Button
@@ -725,7 +725,7 @@ export function ConnectAIPage() {
                     ))}
                   </Tabs>
 
-                  <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900">
+                  <div className="rounded-lg border border-blue-100 bg-signal/10 p-3 text-xs text-blue-900">
                     <p className="font-semibold">Authoring coach loop</p>
                     <p className="mt-1">
                       The generated prompt includes a quality loop. Your assistant should run
@@ -734,7 +734,7 @@ export function ConnectAIPage() {
                     </p>
                   </div>
 
-                  <div className="p-4 bg-amber-50 rounded-lg border border-amber-100 text-sm text-amber-800">
+                  <div className="p-4 bg-primary/10 rounded-lg border border-primary/15 text-sm text-primary">
                     <strong className="inline-flex items-center gap-1.5">
                       Tip:
                       <HelpTip text="An API key is a secret password that lets your AI assistant post reports on your behalf." />
@@ -746,7 +746,7 @@ export function ConnectAIPage() {
 
                   <Button
                     onClick={() => setStep("done")}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white h-11"
+                    className="w-full bg-primary hover:bg-primary/90 text-white h-11"
                   >
                     I've Pasted It
                     <ArrowRight className="size-4 ml-2" />
@@ -756,37 +756,37 @@ export function ConnectAIPage() {
             )}
 
             {step === "done" && createdAgent && (
-              <Card className="border-slate-200 shadow-sm">
+              <Card className="border-border shadow-sm">
                 <CardContent className="pt-8 pb-8 text-center space-y-6">
-                  <div className="inline-flex items-center justify-center p-4 bg-emerald-50 rounded-full">
-                    <CheckCircle2 className="size-12 text-emerald-500" />
+                  <div className="inline-flex items-center justify-center p-4 bg-signal/10 rounded-full">
+                    <CheckCircle2 className="size-12 text-signal" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                    <h2 className="text-2xl font-bold text-foreground mb-2">
                       You're All Set!
                     </h2>
-                    <p className="text-slate-600 max-w-md mx-auto">
+                    <p className="text-muted-foreground max-w-md mx-auto">
                       <strong>{createdAgent.name}</strong> is ready to publish
                       reports. Just ask your AI to create a report and it will
                       appear on the platform.
                     </p>
                   </div>
 
-                  <div className="p-4 bg-slate-50 rounded-lg text-left text-sm space-y-2 max-w-sm mx-auto">
+                  <div className="p-4 bg-muted rounded-lg text-left text-sm space-y-2 max-w-sm mx-auto">
                     <div className="flex justify-between">
-                      <span className="text-slate-500">AI Assistant Name</span>
-                      <span className="font-medium text-slate-900">
+                      <span className="text-muted-foreground">AI Assistant Name</span>
+                      <span className="font-medium text-foreground">
                         {createdAgent.name}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Status</span>
-                      <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                      <span className="text-muted-foreground">Status</span>
+                      <Badge className="bg-signal/15 text-signal hover:bg-signal/15">
                         Active
                       </Badge>
                     </div>
                     <div className="border-t pt-2 mt-2">
-                      <div className="text-slate-500 mb-1">Connection Check</div>
+                      <div className="text-muted-foreground mb-1">Connection Check</div>
                       <Button
                         type="button"
                         variant="outline"
@@ -805,31 +805,31 @@ export function ConnectAIPage() {
                         )}
                       </Button>
                       {verifyMessage && (
-                        <p className={`text-xs mt-2 ${verifyStatus === "success" ? "text-emerald-700" : "text-red-600"}`}>
+                        <p className={`text-xs mt-2 ${verifyStatus === "success" ? "text-signal" : "text-destructive"}`}>
                           {verifyMessage}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="w-full max-w-sm mx-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-left space-y-3">
-                    <p className="text-sm font-semibold text-slate-800">First-success checklist</p>
-                    <ul className="space-y-1.5 text-sm text-slate-600">
+                  <div className="w-full max-w-sm mx-auto rounded-lg border border-border bg-muted p-4 text-left space-y-3">
+                    <p className="text-sm font-semibold text-foreground">First-success checklist</p>
+                    <ul className="space-y-1.5 text-sm text-muted-foreground">
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className="size-4 text-emerald-600" />
+                        <CheckCircle2 className="size-4 text-signal" />
                         AI assistant connected
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className={`size-4 ${verifyStatus === "success" ? "text-emerald-600" : "text-slate-300"}`} />
+                        <CheckCircle2 className={`size-4 ${verifyStatus === "success" ? "text-signal" : "text-muted-foreground"}`} />
                         API key verified
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className={`size-4 ${hasPublishedReport ? "text-emerald-600" : "text-slate-300"}`} />
+                        <CheckCircle2 className={`size-4 ${hasPublishedReport ? "text-signal" : "text-muted-foreground"}`} />
                         First report published
                       </li>
                     </ul>
                     {starterMessage && (
-                      <p className={`text-xs ${starterStatus === "success" ? "text-emerald-700" : "text-red-600"}`}>
+                      <p className={`text-xs ${starterStatus === "success" ? "text-signal" : "text-destructive"}`}>
                         {starterMessage}
                       </p>
                     )}
@@ -845,7 +845,7 @@ export function ConnectAIPage() {
                     <Button
                       onClick={handlePublishFirstReportNow}
                       disabled={publishCtaLoading}
-                      className="bg-amber-500 hover:bg-amber-600 text-white"
+                      className="bg-primary hover:bg-primary/90 text-white"
                     >
                       {publishCtaLoading ? (
                         <>

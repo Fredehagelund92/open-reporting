@@ -205,18 +205,18 @@ export function SpaceSettingsPage() {
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-amber-500" />
+        <Loader2 className="size-8 animate-spin text-primary" />
       </div>
     )
   }
 
   if (fatalError || !space) {
     return (
-      <div className="flex-1 bg-slate-50/50 p-6 md:p-10 overflow-auto">
+      <div className="flex-1 bg-muted/50 p-6 md:p-10 overflow-auto">
         <div className="max-w-3xl mx-auto">
-          <Card className="border-red-200">
+          <Card className="border-destructive/20">
             <CardHeader>
-              <CardTitle className="text-lg text-red-700 flex items-center gap-2">
+              <CardTitle className="text-lg text-destructive flex items-center gap-2">
                 <AlertCircle className="size-5" /> Could not open settings
               </CardTitle>
               <CardDescription>{fatalError || "This space is unavailable."}</CardDescription>
@@ -235,18 +235,18 @@ export function SpaceSettingsPage() {
   }
 
   return (
-    <div className="flex-1 bg-slate-50/50 p-6 md:p-10 overflow-auto">
+    <div className="flex-1 bg-muted/50 p-6 md:p-10 overflow-auto">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-          <Link to={`/space/${spaceName}`} className="hover:text-amber-600">o/{spaceName}</Link>
+          <Link to={`/space/${spaceName}`} className="hover:text-primary">o/{spaceName}</Link>
           <ChevronRight className="size-3" />
-          <span className="text-slate-900 font-medium">Settings</span>
+          <span className="text-foreground font-medium">Settings</span>
         </div>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
-              <Settings className="size-8 text-amber-500" />
+            <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+              <Settings className="size-8 text-primary" />
               Space Settings
             </h1>
             <p className="text-muted-foreground mt-1">Manage configuration and access for this space.</p>
@@ -259,8 +259,8 @@ export function SpaceSettingsPage() {
         </div>
 
         {!canManage && (
-          <Card className="mb-6 border-red-200 bg-red-50/30">
-            <CardContent className="py-4 text-sm text-red-700 flex items-center gap-2">
+          <Card className="mb-6 border-destructive/20 bg-destructive/10/30">
+            <CardContent className="py-4 text-sm text-destructive flex items-center gap-2">
               <AlertCircle className="size-4" />
               You can view this page, but only the space owner or an admin can manage settings.
             </CardContent>
@@ -268,8 +268,8 @@ export function SpaceSettingsPage() {
         )}
 
         {message && (
-          <Card className={`mb-6 ${message.type === "success" ? "border-emerald-200 bg-emerald-50/40" : "border-red-200 bg-red-50/30"}`}>
-            <CardContent className={`py-3 text-sm flex items-center gap-2 ${message.type === "success" ? "text-emerald-700" : "text-red-700"}`}>
+          <Card className={`mb-6 ${message.type === "success" ? "border-signal/20 bg-signal/10/40" : "border-destructive/20 bg-destructive/10/30"}`}>
+            <CardContent className={`py-3 text-sm flex items-center gap-2 ${message.type === "success" ? "text-signal" : "text-destructive"}`}>
               {message.type === "success" ? <CheckCircle2 className="size-4" /> : <AlertCircle className="size-4" />}
               {message.text}
             </CardContent>
@@ -306,11 +306,11 @@ export function SpaceSettingsPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+              <div className="flex items-center justify-between p-4 bg-muted rounded-lg border border-border">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <Label className="text-base font-semibold">Private Space</Label>
-                    {isPrivate ? <Lock className="size-3.5 text-amber-600" /> : <Globe className="size-3.5 text-emerald-600" />}
+                    {isPrivate ? <Lock className="size-3.5 text-primary" /> : <Globe className="size-3.5 text-signal" />}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Private spaces are only visible to members you invite.
@@ -320,7 +320,7 @@ export function SpaceSettingsPage() {
               </div>
 
               <div className="flex justify-end border-t pt-6">
-                <Button onClick={handleUpdateSpace} disabled={isSaving || !canManage} className="bg-amber-500 hover:bg-amber-600 text-white">
+                <Button onClick={handleUpdateSpace} disabled={isSaving || !canManage} className="bg-primary hover:bg-primary/90 text-white">
                   {isSaving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
                   Save Changes
                 </Button>
@@ -344,13 +344,13 @@ export function SpaceSettingsPage() {
                   onChange={(e) => setInviteEmail(e.target.value)}
                   disabled={!isPrivate || !canManage}
                 />
-                <Button onClick={handleInvite} disabled={!isPrivate || !canManage || isSaving} className="bg-slate-900 border-slate-800 text-white hover:bg-slate-800">
+                <Button onClick={handleInvite} disabled={!isPrivate || !canManage || isSaving} className="bg-foreground border-border text-white hover:bg-foreground">
                   <UserPlus className="mr-2 size-4" /> Invite
                 </Button>
               </div>
 
               <div className="border rounded-md divide-y">
-                <div className="grid grid-cols-[1.5fr_2fr_1fr_0.5fr] p-3 text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50/50">
+                <div className="grid grid-cols-[1.5fr_2fr_1fr_0.5fr] p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">
                   <div>User</div>
                   <div>Email</div>
                   <div>Granted</div>
@@ -358,14 +358,14 @@ export function SpaceSettingsPage() {
                 </div>
                 {members.length > 0 ? members.map((m) => (
                   <div key={m.user_id} className="grid grid-cols-[1.5fr_2fr_1fr_0.5fr] p-3 items-center text-sm">
-                    <div className="font-medium text-slate-900 truncate">{m.user_name}</div>
+                    <div className="font-medium text-foreground truncate">{m.user_name}</div>
                     <div className="text-muted-foreground truncate">{m.user_email}</div>
                     <div className="text-xs text-muted-foreground">{new Date(m.granted_at).toLocaleDateString()}</div>
                     <div className="text-right">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 text-xs"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 text-xs"
                         disabled={!canManage}
                         onClick={() => handleRevoke(m.user_id)}
                       >
@@ -395,7 +395,7 @@ export function SpaceSettingsPage() {
                   {events.map((event) => (
                     <div key={event.id} className="p-3 text-sm flex items-center justify-between gap-4">
                       <div>
-                        <p className="font-medium text-slate-900">{event.action.replaceAll("_", " ")}</p>
+                        <p className="font-medium text-foreground">{event.action.replaceAll("_", " ")}</p>
                         <p className="text-xs text-muted-foreground">
                           {event.actor_name || "Unknown"}{event.target_name ? ` -> ${event.target_name}` : ""}
                         </p>
@@ -408,15 +408,15 @@ export function SpaceSettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-red-200 bg-red-50/10">
+          <Card className="border-destructive/20 bg-destructive/10/10">
             <CardHeader>
-              <CardTitle className="text-lg text-red-700">Danger Zone</CardTitle>
+              <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
               <CardDescription>Irreversible administrative actions.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between border-t border-red-100 pt-6">
                 <div>
-                  <h4 className="font-semibold text-slate-900">Delete this space</h4>
+                  <h4 className="font-semibold text-foreground">Delete this space</h4>
                   <p className="text-sm text-muted-foreground">Once deleted, all reports and discussions will be lost.</p>
                 </div>
                 <Button onClick={handleDeleteSpace} variant="destructive" disabled={!canManage}>

@@ -87,18 +87,18 @@ export function AdminPage() {
   }
 
   return (
-    <div className="flex-1 overflow-auto bg-slate-50/50">
+    <div className="flex-1 overflow-auto bg-muted/50">
       <main className="max-w-5xl mx-auto p-6 md:p-8">
-        <div className="flex items-center gap-3 mb-8 pb-4 border-b border-slate-200 text-slate-900">
-          <Shield className="size-8 text-amber-500" />
+        <div className="flex items-center gap-3 mb-8 pb-4 border-b border-border text-foreground">
+          <Shield className="size-8 text-primary" />
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-            <p className="text-slate-500 text-sm mt-1">Manage users, roles, and platform settings.</p>
+            <p className="text-muted-foreground text-sm mt-1">Manage users, roles, and platform settings.</p>
           </div>
         </div>
 
         {message && (
-          <div className={`mb-6 rounded-md border p-3 text-sm flex items-center gap-2 ${message.type === "error" ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+          <div className={`mb-6 rounded-md border p-3 text-sm flex items-center gap-2 ${message.type === "error" ? "border-destructive/20 bg-destructive/10 text-destructive" : "border-signal/20 bg-signal/10 text-signal"}`}>
             {message.type === "error" ? <AlertCircle className="size-4" /> : <CheckCircle2 className="size-4" />}
             {message.text}
           </div>
@@ -122,7 +122,7 @@ export function AdminPage() {
               <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Settings2 className="size-5 text-slate-500" />
+                <Settings2 className="size-5 text-muted-foreground" />
                 User Management
               </CardTitle>
               <CardDescription>
@@ -131,7 +131,7 @@ export function AdminPage() {
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
-                <div className="grid grid-cols-[1fr_2fr_1fr_1fr] p-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b bg-slate-50">
+                <div className="grid grid-cols-[1fr_2fr_1fr_1fr] p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b bg-muted">
                   <div>User</div>
                   <div>Email</div>
                   <div>Role</div>
@@ -144,13 +144,13 @@ export function AdminPage() {
                       <div className="flex items-center gap-3 font-medium">
                         <Avatar className="size-8 border">
                           <AvatarImage src={u.avatar} />
-                          <AvatarFallback className="bg-amber-100 text-amber-700 text-xs">
+                          <AvatarFallback className="bg-primary/15 text-primary text-xs">
                             {u.name.split(" ").map(n => n[0]).join("")}
                           </AvatarFallback>
                         </Avatar>
                         <span className="truncate">{u.name}</span>
                       </div>
-                      <div className="text-slate-500 truncate">{u.email}</div>
+                      <div className="text-muted-foreground truncate">{u.email}</div>
                       <div>
                         <Select 
                           value={u.role} 
@@ -168,12 +168,12 @@ export function AdminPage() {
                       </div>
                       <div className="text-right flex justify-end gap-2">
                         {u.id !== user?.id && (
-                          <Button variant="ghost" size="icon" className="size-8 text-red-500 hover:text-red-600 hover:bg-red-50">
+                          <Button variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10">
                             <Trash2 className="size-4" />
                           </Button>
                         )}
                         {u.id === user?.id && (
-                          <div className="flex h-8 items-center text-xs text-slate-400 gap-1 px-2">
+                          <div className="flex h-8 items-center text-xs text-muted-foreground gap-1 px-2">
                             <CheckCircle2 className="size-3" /> You
                           </div>
                         )}
@@ -182,7 +182,7 @@ export function AdminPage() {
                   ))}
                   
                   {users.length === 0 && (
-                     <div className="p-8 text-center text-slate-500 text-sm">
+                     <div className="p-8 text-center text-muted-foreground text-sm">
                        No users found.
                      </div>
                   )}
@@ -198,7 +198,7 @@ export function AdminPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Hash className="size-5 text-slate-500" />
+                    <Hash className="size-5 text-muted-foreground" />
                     All Spaces
                   </CardTitle>
                   <CardDescription>
@@ -207,7 +207,7 @@ export function AdminPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="rounded-md border divide-y">
-                    <div className="grid grid-cols-[2fr_3fr_1fr_1fr_1fr] p-3 text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50">
+                    <div className="grid grid-cols-[2fr_3fr_1fr_1fr_1fr] p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted">
                       <div>Space</div>
                       <div>Description</div>
                       <div>Owner</div>
@@ -215,15 +215,15 @@ export function AdminPage() {
                       <div className="text-right">Actions</div>
                     </div>
                     {loading ? (
-                      <div className="p-12 text-center text-slate-400">Loading spaces...</div>
+                      <div className="p-12 text-center text-muted-foreground">Loading spaces...</div>
                     ) : spaces.map((s) => (
                       <div key={s.id} className="grid grid-cols-[2fr_3fr_1fr_1fr_1fr] p-3 items-center text-sm">
-                        <div className="font-medium text-slate-900 flex items-center gap-2">
-                          <div className="size-6 rounded bg-amber-100 text-amber-700 flex items-center justify-center text-[10px] uppercase">{s.name.split("/")[1]?.[0] || "O"}</div>
+                        <div className="font-medium text-foreground flex items-center gap-2">
+                          <div className="size-6 rounded bg-primary/15 text-primary flex items-center justify-center text-[10px] uppercase">{s.name.split("/")[1]?.[0] || "O"}</div>
                           {s.name}
                         </div>
-                        <div className="text-slate-500 truncate">{s.description}</div>
-                        <div className="text-slate-500 truncate">{ownerLabel(s.owner_id)}</div>
+                        <div className="text-muted-foreground truncate">{s.description}</div>
+                        <div className="text-muted-foreground truncate">{ownerLabel(s.owner_id)}</div>
                         <div>
                           <Badge variant={s.is_private ? "secondary" : "outline"} className="font-normal">
                             {s.is_private ? "Private" : "Public"}
@@ -238,7 +238,7 @@ export function AdminPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                            className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => handleDeleteSpace(s)}
                           >
                             <Trash2 className="size-4" />
@@ -256,32 +256,32 @@ export function AdminPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Activity className="size-5 text-slate-500" />
+                  <Activity className="size-5 text-muted-foreground" />
                   Recent Governance Events
                 </CardTitle>
                 <CardDescription>Recent owner/admin space management activity.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md border divide-y">
-                  <div className="grid grid-cols-[2fr_2fr_2fr_2fr] p-3 text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50">
+                  <div className="grid grid-cols-[2fr_2fr_2fr_2fr] p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted">
                     <div>Action</div>
                     <div>Space</div>
                     <div>Actor</div>
                     <div>When</div>
                   </div>
                   {events.length === 0 ? (
-                    <div className="p-8 text-center text-slate-500 text-sm">
+                    <div className="p-8 text-center text-muted-foreground text-sm">
                       No governance events yet.
                     </div>
                   ) : events.map((event) => (
                     <div key={event.id} className="grid grid-cols-[2fr_2fr_2fr_2fr] p-3 items-center text-sm">
-                      <div className="font-medium text-slate-900">{event.action.replaceAll("_", " ")}</div>
-                      <div className="text-slate-500 truncate">{event.space_name || event.space_id}</div>
-                      <div className="text-slate-500 truncate">
+                      <div className="font-medium text-foreground">{event.action.replaceAll("_", " ")}</div>
+                      <div className="text-muted-foreground truncate">{event.space_name || event.space_id}</div>
+                      <div className="text-muted-foreground truncate">
                         {event.actor_name || "Unknown"}
                         {event.target_name ? ` -> ${event.target_name}` : ""}
                       </div>
-                      <div className="text-slate-500">{new Date(event.created_at).toLocaleString()}</div>
+                      <div className="text-muted-foreground">{new Date(event.created_at).toLocaleString()}</div>
                     </div>
                   ))}
                 </div>

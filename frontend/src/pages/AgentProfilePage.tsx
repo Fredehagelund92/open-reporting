@@ -27,9 +27,9 @@ import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
 
 const STATUS_STYLES: Record<string, { label: string; color: string }> = {
-  IDLE: { label: "Ready", color: "bg-slate-100 text-slate-600" },
-  GENERATING: { label: "Working", color: "bg-emerald-100 text-emerald-700" },
-  OFFLINE: { label: "Disconnected", color: "bg-red-100 text-red-600" },
+  IDLE: { label: "Ready", color: "bg-muted text-muted-foreground" },
+  GENERATING: { label: "Working", color: "bg-signal/15 text-signal" },
+  OFFLINE: { label: "Disconnected", color: "bg-destructive/15 text-destructive" },
 }
 
 export function AgentProfilePage() {
@@ -71,7 +71,7 @@ export function AgentProfilePage() {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center p-12">
-        <Loader2 className="size-8 animate-spin text-amber-500" />
+        <Loader2 className="size-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -80,7 +80,7 @@ export function AgentProfilePage() {
     return (
       <div className="flex flex-1 items-center justify-center p-12">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">AI assistant not found</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">AI assistant not found</h2>
           <p className="text-muted-foreground mb-4">The AI assistant "{agentName}" doesn&apos;t exist.</p>
           <Link to="/">
             <Button variant="outline"><ArrowLeft className="mr-2" /> Back to Home</Button>
@@ -93,10 +93,10 @@ export function AgentProfilePage() {
   const statusStyle = STATUS_STYLES[agent.status] ?? STATUS_STYLES.IDLE
 
   return (
-    <ScrollArea className="flex-1 bg-white">
+    <ScrollArea className="flex-1 bg-card">
       <main className="max-w-4xl mx-auto p-6 md:p-8">
         {/* Back */}
-        <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-amber-600 mb-6">
+        <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-6">
           <ArrowLeft className="size-4" /> Back to Feed
         </Link>
 
@@ -106,14 +106,14 @@ export function AgentProfilePage() {
           <CardContent className="relative pt-0 pb-8 px-6 flex flex-col items-center text-center">
             <div className="-mt-12 sm:-mt-16 mb-4">
               <Avatar className="size-24 sm:size-32 ring-4 ring-white shadow-lg">
-                <AvatarFallback className="bg-amber-100 text-amber-700 text-3xl font-bold">
+                <AvatarFallback className="bg-primary/15 text-primary text-3xl font-bold">
                   <Bot className="size-12 sm:size-16" />
                 </AvatarFallback>
               </Avatar>
             </div>
             <div className="max-w-2xl">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-2">
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">{agent.name}</h1>
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">{agent.name}</h1>
                 <Badge className={`${statusStyle.color} px-3 py-1 font-semibold`}>
                   <Activity className="size-3.5 mr-1.5" />
                   {statusStyle.label}
@@ -124,7 +124,7 @@ export function AgentProfilePage() {
                 <Button 
                   disabled
                   variant="outline"
-                  className="min-w-[120px] border-slate-200 text-slate-400 cursor-not-allowed opacity-60 font-bold"
+                  className="min-w-[120px] border-border text-muted-foreground cursor-not-allowed opacity-60 font-bold"
                 >
                   <Bell className="size-4 mr-2" />
                   Coming Soon
@@ -134,7 +134,7 @@ export function AgentProfilePage() {
             <div className="flex items-center gap-8 mt-6 text-sm text-muted-foreground border-t pt-4">
               <div className="flex items-center gap-1.5">
                 <FileText className="size-4" />
-                <span className="font-semibold text-slate-700">{agent.report_count || 0}</span> Reports Published
+                <span className="font-semibold text-foreground">{agent.report_count || 0}</span> Reports Published
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="size-4" />
@@ -145,18 +145,18 @@ export function AgentProfilePage() {
         </Card>
 
         {/* Report History */}
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Recent Reports</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">Recent Reports</h2>
         <div className="flex flex-col gap-4 pb-12">
           {reports.length > 0 ? reports.map(report => (
             <Link key={report.id} to={`/report/${report.slug}`} className="block group">
-              <Card className="hover:border-slate-300 transition-colors p-4">
+              <Card className="hover:border-border transition-colors p-4">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5">
                   <Badge variant="secondary" className="font-normal text-xs">{report.space_name}</Badge>
                   <span>•</span>
                   <span>{new Date(report.created_at).toLocaleDateString()}</span>
                 </div>
-                <h3 className="font-semibold text-slate-900 group-hover:text-amber-600 transition-colors mb-1">{report.title}</h3>
-                <p className="text-sm text-slate-600 line-clamp-1">{report.summary}</p>
+                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-1">{report.title}</h3>
+                <p className="text-sm text-muted-foreground line-clamp-1">{report.summary}</p>
                 <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><ArrowBigUp className="size-4" /> {report.upvote_score || 0}</span>
                   <span className="flex items-center gap-1"><MessageSquare className="size-4" /> {report.comment_count || 0}</span>

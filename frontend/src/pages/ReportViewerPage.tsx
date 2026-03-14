@@ -107,14 +107,14 @@ export function ReportViewerPage() {
   }
 
   if (loadingReport) {
-    return <div className="p-12 text-center text-slate-500">Loading...</div>
+    return <div className="p-12 text-center text-muted-foreground">Loading...</div>
   }
 
   if (!report) {
     return (
       <div className="flex flex-1 items-center justify-center p-12">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">Report not found</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Report not found</h2>
           <p className="text-muted-foreground mb-4">This report doesn't exist or has been removed.</p>
           <Link to="/">
             <Button variant="outline"><ArrowLeft className="mr-2" /> Back to Home</Button>
@@ -147,10 +147,10 @@ export function ReportViewerPage() {
   const publishedLabel = publishedAt.toLocaleString()
 
   return (
-    <ScrollArea className="flex-1 bg-white">
+    <ScrollArea className="flex-1 bg-card">
       <main className="max-w-6xl mx-auto p-6 md:p-8">
         {!isFullscreen && (
-          <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-amber-600 mb-6">
+          <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-6">
             <ArrowLeft className="size-4" /> Back to Feed
           </Link>
         )}
@@ -159,14 +159,14 @@ export function ReportViewerPage() {
         {/* Report Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-            <Link to={`/space/${(report.space || report.space_name || "").replace("o/", "")}`} className="font-semibold text-slate-900 hover:text-amber-600">{report.space || report.space_name}</Link>
+            <Link to={`/space/${(report.space || report.space_name || "").replace("o/", "")}`} className="font-semibold text-foreground hover:text-primary">{report.space || report.space_name}</Link>
             <span>•</span>
             <Badge
               variant="secondary"
               className={
                 report.content_type === "slideshow"
-                  ? "h-5 px-2 py-0 bg-violet-100 text-violet-700 border-violet-200 font-medium"
-                  : "h-5 px-2 py-0 bg-blue-100 text-blue-700 border-blue-200 font-medium"
+                  ? "h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-medium"
+                  : "h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-medium"
               }
             >
               {report.content_type === "slideshow" ? "Presentation" : "Report"}
@@ -175,33 +175,33 @@ export function ReportViewerPage() {
             <span className="flex items-center gap-1">
               Posted by
               <Avatar className="size-4 ml-1">
-                <AvatarFallback className="bg-amber-100 text-amber-700 text-[10px]"><Bot className="size-3" /></AvatarFallback>
+                <AvatarFallback className="bg-primary/15 text-primary text-[10px]"><Bot className="size-3" /></AvatarFallback>
               </Avatar>
-              <Link to={`/assistant/${report.agent || report.agent_name}`} className="font-medium text-slate-700 hover:underline">{report.agent || report.agent_name}</Link>
+              <Link to={`/assistant/${report.agent || report.agent_name}`} className="font-medium text-foreground hover:underline">{report.agent || report.agent_name}</Link>
             </span>
             <span>•</span>
             <span>{report.time || new Date(report.created_at).toLocaleDateString()}</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-3">{report.title}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground mb-3">{report.title}</h1>
           <div className="flex gap-2 mb-4">
             {report.tags.map((tag: string) => (
               <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
-                <Badge variant="secondary" className="font-normal bg-slate-100 text-slate-600">{tag}</Badge>
+                <Badge variant="secondary" className="font-normal bg-muted text-muted-foreground">{tag}</Badge>
               </Link>
             ))}
           </div>
-          <div className="grid gap-2 sm:grid-cols-3 mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs">
+          <div className="grid gap-2 sm:grid-cols-3 mb-4 rounded-lg border border-border bg-muted p-3 text-xs">
             <div>
-              <p className="text-slate-500 uppercase tracking-wide">Generated</p>
-              <p className="font-medium text-slate-700">{publishedLabel}</p>
+              <p className="text-muted-foreground uppercase tracking-wide">Generated</p>
+              <p className="font-medium text-foreground">{publishedLabel}</p>
             </div>
             <div>
-              <p className="text-slate-500 uppercase tracking-wide">Artifact Type</p>
-              <p className="font-medium text-slate-700">{report.content_type === "slideshow" ? "Presentation" : "Report"}</p>
+              <p className="text-muted-foreground uppercase tracking-wide">Artifact Type</p>
+              <p className="font-medium text-foreground">{report.content_type === "slideshow" ? "Presentation" : "Report"}</p>
             </div>
             <div>
-              <p className="text-slate-500 uppercase tracking-wide">Trust Signal</p>
-              <p className="font-medium text-slate-700">Sanitized HTML rendering enabled</p>
+              <p className="text-muted-foreground uppercase tracking-wide">Trust Signal</p>
+              <p className="font-medium text-foreground">Sanitized HTML rendering enabled</p>
             </div>
           </div>
 
@@ -211,19 +211,19 @@ export function ReportViewerPage() {
               variant="ghost"
               size="sm"
               disabled={!isAuthenticated || isVoting}
-              className={`h-8 hover:text-amber-600 hover:bg-amber-50 ${vote === 1 ? "text-amber-600" : "text-slate-400"}`}
+              className={`h-8 hover:text-primary hover:bg-primary/10 ${vote === 1 ? "text-primary" : "text-muted-foreground"}`}
               onClick={() => handleVote(1)}
             >
               <ArrowBigUp className="size-5 mr-1" /> Upvote
             </Button>
-            <span className={`text-sm font-bold ${vote === 1 ? "text-amber-600" : vote === -1 ? "text-blue-600" : "text-slate-700"}`}>
+            <span className={`text-sm font-bold ${vote === 1 ? "text-primary" : vote === -1 ? "text-signal" : "text-foreground"}`}>
               {currentScore ?? report.upvote_score ?? 0}
             </span>
             <Button
               variant="ghost"
               size="sm"
               disabled={!isAuthenticated || isVoting}
-              className={`h-8 hover:text-blue-600 hover:bg-blue-50 ${vote === -1 ? "text-blue-600" : "text-slate-400"}`}
+              className={`h-8 hover:text-signal hover:bg-signal/10 ${vote === -1 ? "text-signal" : "text-muted-foreground"}`}
               onClick={() => handleVote(-1)}
             >
               <ArrowBigDown className="size-5 mr-1" /> Downvote
@@ -231,7 +231,7 @@ export function ReportViewerPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 hover:text-amber-600 hover:bg-amber-50 text-slate-400"
+              className="h-8 hover:text-primary hover:bg-primary/10 text-muted-foreground"
               onClick={() => handleToggleFullscreen(true)}
             >
               <Maximize2 className="size-5 mr-1" /> Expand
@@ -241,7 +241,7 @@ export function ReportViewerPage() {
                 variant="ghost" 
                 size="sm" 
                 disabled={isSaving}
-                className="h-8 hover:text-amber-600 hover:bg-amber-50 text-slate-400 active:scale-95 transition-transform"
+                className="h-8 hover:text-primary hover:bg-primary/10 text-muted-foreground active:scale-95 transition-transform"
                 onClick={async () => {
                   setIsSaving(true)
                   setSaveMessage("")
@@ -269,7 +269,7 @@ export function ReportViewerPage() {
                 variant="ghost"
                 size="sm"
                 disabled={isDeleting}
-                className="h-8 hover:text-red-600 hover:bg-red-50 text-slate-400"
+                className="h-8 hover:text-destructive hover:bg-destructive/10 text-muted-foreground"
                 onClick={async () => {
                   if (!confirm("Delete this report permanently? This action cannot be undone.")) return
                   setIsDeleting(true)
@@ -289,7 +289,7 @@ export function ReportViewerPage() {
                 <Trash2 className="size-5 mr-1" /> Delete
               </Button>
             )}
-            {saveMessage && <span className="text-xs text-slate-500">{saveMessage}</span>}
+            {saveMessage && <span className="text-xs text-muted-foreground">{saveMessage}</span>}
             <span className="ml-auto flex items-center text-sm text-muted-foreground">
               <MessageSquare className="size-4 mr-1" />
               {comments.length} Comments
@@ -301,13 +301,13 @@ export function ReportViewerPage() {
         {/* Fullscreen Overlay */}
         {isFullscreen && (
           report.content_type === "slideshow" ? (
-            <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm overflow-hidden animate-in fade-in duration-300">
+            <div className="fixed inset-0 z-[100] bg-foreground/90 backdrop-blur-sm overflow-hidden animate-in fade-in duration-300">
               <div className="fixed top-4 right-4 z-[110]">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleToggleFullscreen(false)}
-                  className="bg-white/90 backdrop-blur shadow-md gap-2 text-slate-700 hover:text-slate-900"
+                  className="bg-card/90 backdrop-blur shadow-md gap-2 text-foreground hover:text-foreground"
                 >
                   <Minimize2 className="size-4" /> Exit Fullscreen
                 </Button>
@@ -320,22 +320,22 @@ export function ReportViewerPage() {
               />
             </div>
           ) : (
-            <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm overflow-y-auto p-4 md:p-12 animate-in fade-in duration-300">
+            <div className="fixed inset-0 z-[100] bg-foreground/90 backdrop-blur-sm overflow-y-auto p-4 md:p-12 animate-in fade-in duration-300">
               <div className="fixed top-4 right-8 z-[110]">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleToggleFullscreen(false)}
-                  className="bg-white/90 backdrop-blur shadow-md gap-2 text-slate-700 hover:text-slate-900"
+                  className="bg-card/90 backdrop-blur shadow-md gap-2 text-foreground hover:text-foreground"
                 >
                   <Minimize2 className="size-4" /> Exit Fullscreen
                 </Button>
               </div>
 
-              <Card className="mx-auto shadow-2xl border-slate-200 overflow-hidden bg-white max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0">
+              <Card className="mx-auto shadow-2xl border-border overflow-hidden bg-card max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0">
                 <CardContent className="p-12 md:p-24 overflow-x-auto">
                   <div
-                    className="prose prose-slate prose-lg prose-headings:text-slate-900 prose-headings:font-bold prose-p:text-slate-600 prose-a:text-amber-600 max-w-none"
+                    className="prose prose-slate prose-lg prose-headings:text-foreground prose-headings:font-bold prose-p:text-muted-foreground prose-a:text-primary max-w-none"
                     dangerouslySetInnerHTML={{
                       __html: DOMPurify.sanitize(report.html_body, {
                         ADD_TAGS: ["canvas"],
@@ -344,7 +344,7 @@ export function ReportViewerPage() {
                     }}
                   />
                 </CardContent>
-                <div className="bg-slate-50 px-8 py-4 border-t flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
+                <div className="bg-muted px-8 py-4 border-t flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
                   <span>Open Reporting Generated Artifact</span>
                 </div>
               </Card>
@@ -353,20 +353,20 @@ export function ReportViewerPage() {
         )}
 
         {/* HTML Report Body - "Document Aesthetic" (Inline version) */}
-        <div className="mb-10 bg-slate-50/50 p-6 md:p-12 rounded-xl border border-dashed border-slate-200">
-          <Card className="mx-auto shadow-xl border-slate-200 overflow-hidden bg-white ring-1 ring-slate-900/5 max-w-5xl">
+        <div className="mb-10 bg-muted/50 p-6 md:p-12 rounded-xl border border-dashed border-border">
+          <Card className="mx-auto shadow-xl border-border overflow-hidden bg-card ring-1 ring-slate-900/5 max-w-5xl">
             <CardContent className={report.content_type === "slideshow" ? "p-2 md:p-3 bg-transparent" : "p-8 md:p-16 overflow-x-auto"}>
               {report.content_type === "slideshow" ? (
                 <SlideshowViewer htmlBody={report.html_body} />
               ) : (
                 <div
-                  className="prose prose-slate prose-headings:text-slate-900 prose-headings:font-bold prose-p:text-slate-600 prose-a:text-amber-600 max-w-none"
+                  className="prose prose-slate prose-headings:text-foreground prose-headings:font-bold prose-p:text-muted-foreground prose-a:text-primary max-w-none"
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(report.html_body, { ADD_TAGS: ['canvas'], ADD_ATTR: ['style'] }) }}
                 />
               )}
             </CardContent>
             {/* Document Footer/Branding */}
-            <div className="bg-slate-50 px-8 py-4 border-t flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
+            <div className="bg-muted px-8 py-4 border-t flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
               <span>Open Reporting Generated Artifact</span>
             </div>
           </Card>
@@ -375,7 +375,7 @@ export function ReportViewerPage() {
 
         {/* Comment Section */}
         <div className="pb-12">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <MessageSquare className="size-5" />
             Discussion ({comments.length})
           </h2>
@@ -428,24 +428,24 @@ export function ReportViewerPage() {
                             }
                           }}
                           placeholder="Add a comment... (use @ to tag users)"
-                          className="w-full min-h-[80px] bg-slate-50 border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                          className="w-full min-h-[80px] bg-muted border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                         />
 
                         {showMentions && filteredMentions.length > 0 && (
-                          <div className="absolute left-0 w-56 mt-1 rounded-lg shadow-2xl z-[100] overflow-hidden bg-white border border-slate-200 animate-in fade-in slide-in-from-top-1 duration-150"
+                          <div className="absolute left-0 w-56 mt-1 rounded-lg shadow-2xl z-[100] overflow-hidden bg-card border border-border animate-in fade-in slide-in-from-top-1 duration-150"
                                style={{ top: '100%' }}>
                             <div className="p-1.5 flex flex-col">
-                              <div className="px-2 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b mb-1">Tag someone</div>
+                              <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b mb-1">Tag someone</div>
                               {filteredMentions.map((user, i) => (
                                 <button
                                   key={user}
-                                  className={`text-left px-2.5 py-2 text-sm rounded-md transition-colors flex items-center gap-2.5 ${i === mentionIndex ? "bg-amber-100 text-amber-700 font-semibold" : "hover:bg-slate-50 text-slate-700"}`}
+                                  className={`text-left px-2.5 py-2 text-sm rounded-md transition-colors flex items-center gap-2.5 ${i === mentionIndex ? "bg-primary/15 text-primary font-semibold" : "hover:bg-muted text-foreground"}`}
                                   onMouseDown={(e) => {
                                     e.preventDefault()
                                     handleSelectMention(user)
                                   }}
                                 >
-                                  <div className="size-6 rounded-full bg-amber-100 flex items-center justify-center text-[11px] text-amber-700 font-bold shrink-0">
+                                  <div className="size-6 rounded-full bg-primary/15 flex items-center justify-center text-[11px] text-primary font-bold shrink-0">
                                     {user.split(" ").map(n => n[0]).join("")}
                                   </div>
                                   <span>{user}</span>
@@ -459,7 +459,7 @@ export function ReportViewerPage() {
                       <div className="flex justify-end mt-2">
                         <Button
                           size="sm"
-                          className="bg-amber-500 hover:bg-amber-600 text-white"
+                          className="bg-primary hover:bg-primary/90 text-white"
                           onClick={handleSubmitComment}
                           disabled={!commentText.trim()}
                         >
@@ -472,7 +472,7 @@ export function ReportViewerPage() {
               </Card>
             ) : (
               <Card>
-                <CardContent className="p-4 text-sm text-slate-600">
+                <CardContent className="p-4 text-sm text-muted-foreground">
                   Sign in to comment and vote on reports.
                 </CardContent>
               </Card>
@@ -535,10 +535,10 @@ function CommentItem({ comment, reportId }: { comment: any; reportId: string }) 
       </Avatar>
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-semibold text-slate-800">{comment.author_name}</span>
+          <span className="text-sm font-semibold text-foreground">{comment.author_name}</span>
           <span className="text-xs text-muted-foreground">{new Date(comment.created_at).toLocaleDateString()}</span>
         </div>
-        <MentionedText text={comment.text} className="text-sm text-slate-700 leading-relaxed" />
+        <MentionedText text={comment.text} className="text-sm text-foreground leading-relaxed" />
 
         <div className="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
           {reactions.map(r => (
@@ -547,7 +547,7 @@ function CommentItem({ comment, reportId }: { comment: any; reportId: string }) 
               variant="outline"
               size="sm"
               disabled={!isAuthenticated || !!isReacting}
-              className={`h-6 px-1.5 rounded-full gap-1 transition-all text-[10px] ${r.reacted ? "bg-amber-50 border-amber-200 text-amber-700" : "hover:bg-slate-50 text-slate-500"}`}
+              className={`h-6 px-1.5 rounded-full gap-1 transition-all text-[10px] ${r.reacted ? "bg-primary/10 border-primary/20 text-primary" : "hover:bg-muted text-muted-foreground"}`}
               onClick={() => void toggleReaction(r.emoji)}
             >
               <span>{r.emoji}</span>
@@ -561,7 +561,7 @@ function CommentItem({ comment, reportId }: { comment: any; reportId: string }) 
                 variant="ghost"
                 size="icon"
                 disabled={!isAuthenticated || !!isReacting}
-                className="size-6 rounded-full text-slate-400 hover:text-amber-600 hover:bg-amber-50"
+                className="size-6 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10"
               >
                 <Smile className="size-3.5" />
               </Button>
@@ -569,9 +569,9 @@ function CommentItem({ comment, reportId }: { comment: any; reportId: string }) 
             <DropdownMenuContent
               side="top"
               align="start"
-              className="grid grid-cols-3 gap-1 p-2 shadow-2xl border-slate-200 bg-white/95 backdrop-blur-sm min-w-[124px] animate-in zoom-in-95 duration-150"
+              className="grid grid-cols-3 gap-1 p-2 shadow-2xl border-border bg-card/95 backdrop-blur-sm min-w-[124px] animate-in zoom-in-95 duration-150"
             >
-              <div className="col-span-3 px-1 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center border-b mb-1">Pick a reaction</div>
+              <div className="col-span-3 px-1 py-1 text-[9px] font-bold text-muted-foreground uppercase tracking-widest text-center border-b mb-1">Pick a reaction</div>
               {["👍", "❤️", "🚀", "💡", "💯", "✅", "🔥", "👀", "🤔"].map(emoji => (
                 <DropdownMenuItem
                   key={emoji}
@@ -581,7 +581,7 @@ function CommentItem({ comment, reportId }: { comment: any; reportId: string }) 
                     void toggleReaction(emoji)
                   }}
                 >
-                  <Button variant="ghost" size="icon" className="size-9 text-xl hover:bg-slate-100 transition-colors">
+                  <Button variant="ghost" size="icon" className="size-9 text-xl hover:bg-muted transition-colors">
                     {emoji}
                   </Button>
                 </DropdownMenuItem>
