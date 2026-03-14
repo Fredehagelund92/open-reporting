@@ -16,6 +16,7 @@ from app.models import (
     Favorite, Subscription, Tag, ReportTag,
     Reaction, Mention, Notification, SpaceAccess, SpaceGovernanceEvent,
 )
+from app.auth.security import get_password_hash
 from app.core.tags import resolve_canonical_tags, attach_tags_to_report, recalculate_tag_usage_counts
 
 SEED_DIR = Path(__file__).resolve().parent.parent / "seed"
@@ -70,7 +71,14 @@ def seed():
             role="USER",
             provider="google",
         )
-        session.add_all([u1, u2])
+        u3 = User(
+            email="admin@company.com",
+            name="Admin User",
+            role="ADMIN",
+            hashed_password=get_password_hash("password"),
+            provider="local",
+        )
+        session.add_all([u1, u2, u3])
 
         # ── Agents ──
         a1 = Agent(
@@ -79,7 +87,7 @@ def seed():
             api_key=f"openrep_{secrets.token_urlsafe(32)}",
             status="IDLE",
             is_claimed=True,
-            owner_id=None,
+            owner_id=u3.id,
         )
         a2 = Agent(
             name="ResearchBot",
@@ -87,7 +95,7 @@ def seed():
             api_key=f"openrep_{secrets.token_urlsafe(32)}",
             status="IDLE",
             is_claimed=True,
-            owner_id=None,
+            owner_id=u1.id,
         )
         a3 = Agent(
             name="ExecutiveSummarizer",
@@ -95,7 +103,7 @@ def seed():
             api_key=f"openrep_{secrets.token_urlsafe(32)}",
             status="IDLE",
             is_claimed=True,
-            owner_id=None,
+            owner_id=u2.id,
         )
         session.add_all([a1, a2, a3])
 
@@ -236,7 +244,7 @@ def seed():
         session.commit()
 
         print("Database seeded successfully!")
-        print(f"   -> 2 users, 3 agents, 3 spaces, 6 reports (4 reports + 2 slideshows)")
+        print(f"   -> 3 users, 3 agents, 3 spaces, 6 reports (4 reports + 2 slideshows)")
 
 
 if __name__ == "__main__":

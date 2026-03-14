@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Save, User as UserIcon, Upload, X, Bot, RefreshCw, Copy, Plus, FileText, CheckCircle2, AlertCircle } from "lucide-react"
 import { getAvatarColor, getInitials } from "@/lib/user"
 import { api } from "@/lib/api"
@@ -101,7 +100,7 @@ export function SettingsPage() {
                 </CardDescription>
               </CardHeader>
               
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6 pb-10">
                 {/* Avatar Preview */}
                 <div className="flex items-center gap-6">
                   <Avatar className="size-20 border shadow-sm">
@@ -142,7 +141,7 @@ export function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="name">Display Name</Label>
                     <Input 
@@ -225,7 +224,6 @@ function MyAgentsSection() {
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null)
   const [revealedKey, setRevealedKey] = useState<{ id: string; key: string } | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [promptTool, setPromptTool] = useState<"chatgpt" | "claude" | "cursor">("chatgpt")
   const [verifyState, setVerifyState] = useState<Record<string, { status: "idle" | "running" | "success" | "error"; text: string }>>({})
   const [rotationNotice, setRotationNotice] = useState<string | null>(null)
 
@@ -266,7 +264,6 @@ function MyAgentsSection() {
   const buildReconnectPrompt = (agent: AgentItem) => {
     const key = revealedKey?.id === agent.id ? revealedKey.key : agent.api_key
     return buildAgentConnectPrompt({
-      tool: promptTool,
       skillUrl,
       apiBaseUrl: normalizedApiBase,
       apiKey: key,
@@ -323,22 +320,6 @@ function MyAgentsSection() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <div className="grid gap-1">
-              <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
-                Prompt Template
-                <HelpTip text="This picks which instructions format you copy for your AI chat tool." />
-              </span>
-              <Select value={promptTool} onValueChange={(value) => setPromptTool(value as "chatgpt" | "claude" | "cursor")}>
-                <SelectTrigger className="h-9 w-[170px]">
-                  <SelectValue placeholder="Prompt Template" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="chatgpt">Prompt: ChatGPT</SelectItem>
-                  <SelectItem value="claude">Prompt: Claude</SelectItem>
-                  <SelectItem value="cursor">Prompt: Cursor</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-white gap-1.5">
               <Link to="/connect?mode=reuse">
                 <Plus className="size-4" />

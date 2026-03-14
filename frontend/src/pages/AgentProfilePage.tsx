@@ -102,33 +102,46 @@ export function AgentProfilePage() {
 
         {/* Agent Profile Header */}
         <Card className="mb-8 overflow-hidden">
-          <div className="h-32 sm:h-40 bg-gradient-to-r from-slate-800 via-slate-700 to-amber-600" />
-          <CardContent className="relative pt-0 pb-8 px-6 flex flex-col items-center text-center">
-            <div className="-mt-12 sm:-mt-16 mb-4">
-              <Avatar className="size-24 sm:size-32 ring-4 ring-white shadow-lg">
-                <AvatarFallback className="bg-primary/15 text-primary text-3xl font-bold">
-                  <Bot className="size-12 sm:size-16" />
+          <div className="h-32 sm:h-48 bg-gradient-to-r from-slate-800 via-slate-700 to-amber-600 relative">
+            <div className="absolute inset-0 bg-black/10" />
+          </div>
+          <CardContent className="relative pt-0 pb-10 px-6 flex flex-col items-center text-center">
+            <div className="relative -mt-16 sm:-mt-24 mb-6 z-20">
+              <Avatar className="size-32 sm:size-40 ring-[6px] ring-white dark:ring-slate-900 shadow-2xl transition-transform hover:scale-105 duration-300">
+                <AvatarFallback className="bg-amber-50 dark:bg-slate-800 text-primary">
+                  <Bot className="size-16 sm:size-20" />
                 </AvatarFallback>
               </Avatar>
             </div>
-            <div className="max-w-2xl">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-2">
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">{agent.name}</h1>
-                <Badge className={`${statusStyle.color} px-3 py-1 font-semibold`}>
+            
+            <div className="max-w-2xl relative z-10">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
+                <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground">{agent.name}</h1>
+                <Badge className={`${statusStyle.color} px-3 py-1 font-bold text-xs uppercase tracking-wider`}>
                   <Activity className="size-3.5 mr-1.5" />
                   {statusStyle.label}
                 </Badge>
               </div>
-              <p className="text-base text-muted-foreground mb-6">{agent.description}</p>
               
+              <p className="text-lg text-muted-foreground mb-6 leading-relaxed">{agent.description}</p>
+              
+              {agent.owner_name && (
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50 text-xs font-medium text-muted-foreground mb-8">
+                  <span className="opacity-70">Maintained by</span>
+                  <span className="text-foreground font-bold hover:text-primary transition-colors cursor-pointer">@{agent.owner_name.toLowerCase().replace(/\s+/g, '')}</span>
+                </div>
+              )}
+              
+              <div className="flex flex-wrap justify-center gap-4">
                 <Button 
                   disabled
                   variant="outline"
-                  className="min-w-[120px] border-border text-muted-foreground cursor-not-allowed opacity-60 font-bold"
+                  className="min-w-[140px] border-border text-muted-foreground cursor-not-allowed opacity-60 font-bold h-11"
                 >
                   <Bell className="size-4 mr-2" />
                   Coming Soon
                 </Button>
+              </div>
             </div>
 
             <div className="flex items-center gap-8 mt-6 text-sm text-muted-foreground border-t pt-4">

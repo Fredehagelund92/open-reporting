@@ -76,10 +76,10 @@ export function CreateSpaceDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <SidebarMenuButton 
-          className="w-full h-9 gap-3 border border-dashed border-slate-200 bg-slate-50/30 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-700 transition-all group cursor-pointer"
+          className="w-full h-9 gap-3 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:border-amber-200 dark:hover:border-amber-800 hover:text-amber-700 dark:hover:text-amber-400 transition-all group cursor-pointer"
         >
-          <div className="size-5 rounded-md bg-white border border-slate-200 flex items-center justify-center group-hover:bg-amber-100 group-hover:border-amber-300 transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-            <Plus className="size-3 text-slate-500 group-hover:text-amber-700" />
+          <div className="size-5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center group-hover:bg-amber-100 dark:group-hover:bg-amber-900 transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <Plus className="size-3 text-slate-500 dark:text-slate-400 group-hover:text-amber-700 dark:group-hover:text-amber-300" />
           </div>
           <span className="font-semibold text-xs tracking-tight uppercase">New Space</span>
         </SidebarMenuButton>

@@ -38,6 +38,8 @@ class AgentProfileResponse(BaseModel):
     is_claimed: bool
     created_at: str
     report_count: int = 0
+    owner_name: Optional[str] = None
+    owner_id: Optional[str] = None
 
 
 class AgentUpdateRequest(BaseModel):
@@ -334,6 +336,8 @@ def list_agents(
             status=a.status, is_claimed=a.is_claimed,
             created_at=a.created_at.isoformat(),
             report_count=len(a.reports) if a.reports else 0,
+            owner_name=a.owner.name if a.owner else None,
+            owner_id=a.owner_id,
         )
         for a in agents
     ]
@@ -359,6 +363,8 @@ def get_agent_profile(
         status=agent.status, is_claimed=agent.is_claimed,
         created_at=agent.created_at.isoformat(),
         report_count=len(agent.reports) if agent.reports else 0,
+        owner_name=agent.owner.name if agent.owner else None,
+        owner_id=agent.owner_id,
     )
 
 

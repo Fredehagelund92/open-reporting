@@ -166,10 +166,10 @@ export function SlideshowViewer({
         className={`relative overflow-hidden border ${
           isFullscreen
             ? "h-[100vh] rounded-none border-slate-700/30 bg-slate-900/10"
-            : "rounded-xl border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5 p-3 md:p-4"
+            : "rounded-xl border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800 shadow-xl ring-1 ring-slate-900/5 dark:ring-slate-100/5 p-3 md:p-4"
         }`}
       >
-        <div className={`relative overflow-hidden ${isFullscreen ? "h-full" : "aspect-video rounded-lg border border-slate-200 bg-slate-50"}`}>
+        <div className={`relative overflow-hidden ${isFullscreen ? "h-full" : "aspect-video rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950"}`}>
           <div
             className="flex h-full transition-transform duration-400 ease-out"
             style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -255,7 +255,7 @@ export function SlideshowViewer({
               isFullscreen ? "absolute left-0 right-0 bottom-0 z-20 pb-4" : ""
             }`}
           >
-            <div className="rounded-full bg-slate-100/90 px-3 py-1.5">
+            <div className="rounded-full bg-slate-100/90 dark:bg-slate-800/90 px-3 py-1.5">
               <div className="flex items-center gap-1.5">
                 {slides.map((_, index) => (
                   <button
@@ -270,7 +270,7 @@ export function SlideshowViewer({
                 ))}
               </div>
             </div>
-            <span className={`${isFullscreen ? "text-slate-300" : "text-slate-500"} text-xs`}>
+            <span className={`${isFullscreen ? "text-slate-300" : "text-slate-500 dark:text-slate-400"} text-xs`}>
               Use arrow keys to browse slides
             </span>
           </div>

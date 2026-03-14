@@ -207,7 +207,7 @@ function SpaceReportCard({ report }: { report: any }) {
   }
 
   return (
-    <Card className="flex flex-row overflow-hidden hover:border-border transition-colors">
+    <Card className="flex flex-row overflow-hidden hover:border-border transition-colors py-0">
       <div className="flex flex-col items-center p-3 bg-muted/50 border-r w-14 shrink-0">
         <Button
           variant="ghost"
@@ -232,7 +232,7 @@ function SpaceReportCard({ report }: { report: any }) {
         </Button>
       </div>
 
-      <div className="p-4 flex-1 flex flex-col min-w-0">
+      <div className="px-4 py-3 flex-1 flex flex-col min-w-0">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
           <Badge
             variant="secondary"

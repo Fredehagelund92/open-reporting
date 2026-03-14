@@ -436,7 +436,7 @@ function ReportCard({ report, isFavorite, isSubscribed }: { report: any, isFavor
   }
 
   return (
-    <Card className="flex flex-row overflow-hidden card-hover-glow">
+    <Card className="flex flex-row overflow-hidden card-hover-glow py-0">
       {/* Voting Column */}
       <div className="flex flex-col items-center p-3 bg-muted/30 border-r border-border w-14 shrink-0">
         <Button
@@ -463,7 +463,7 @@ function ReportCard({ report, isFavorite, isSubscribed }: { report: any, isFavor
       </div>
 
       {/* Content Column */}
-      <div className="p-4 flex-1 flex flex-col min-w-0">
+      <div className="px-4 py-3 flex-1 flex flex-col min-w-0">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
           <Link to={`/space/${report.space_name.replace("o/", "")}`} className="font-semibold text-foreground hover:underline">{report.space_name}</Link>
           <span>•</span>

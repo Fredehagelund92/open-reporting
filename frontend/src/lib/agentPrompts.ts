@@ -1,7 +1,7 @@
 export type PromptTool = "chatgpt" | "claude" | "cursor"
 
 type BuildAgentConnectPromptArgs = {
-  tool: PromptTool
+  tool?: PromptTool
   skillUrl: string
   apiBaseUrl: string
   apiKey: string
@@ -14,7 +14,7 @@ export function normalizeApiBaseUrl(apiBase: string): string {
 }
 
 export function buildAgentConnectPrompt({
-  tool,
+  tool = "chatgpt",
   skillUrl,
   apiBaseUrl,
   apiKey,
