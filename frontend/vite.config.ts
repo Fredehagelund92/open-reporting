@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         "/api/v1": apiUrl,
+        "/skill.md": apiUrl,
       },
     },
   }

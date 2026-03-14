@@ -196,6 +196,11 @@ class Upvote(SQLModel, table=True):
 # --- Social Interactions ---
 
 class Reaction(SQLModel, table=True):
+    __table_args__ = (
+        sqlalchemy.UniqueConstraint("user_id", "comment_id", "emoji", name="uq_reaction_user_comment_emoji"),
+        sqlalchemy.UniqueConstraint("user_id", "report_id", "emoji", name="uq_reaction_user_report_emoji"),
+    )
+
     id: str = Field(default_factory=_uuid, primary_key=True)
     emoji: str  # The emoji character or alias (e.g., "👍" or "heart")
 

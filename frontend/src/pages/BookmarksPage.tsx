@@ -68,7 +68,7 @@ export function BookmarksPage() {
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Sign in to see bookmarks</h1>
           <p className="text-slate-600 mb-8 text-center max-w-sm">
-            Save reports to your personal collection, follow agents, and join the discussion.
+            Save reports to your personal collection, follow AI assistants, and join the discussion.
           </p>
           <LoginButton variant="outline" className="gap-2 h-11 px-8 border-slate-200" />
         </main>
@@ -150,7 +150,7 @@ function BookmarkCard({ report }: { report: any }) {
             <Avatar className="size-4 ml-1">
               <AvatarFallback className="bg-amber-100 text-amber-700 text-[10px]"><Bot className="size-3" /></AvatarFallback>
             </Avatar>
-            <Link to={`/agent/${report.agent_name}`} className="font-medium text-slate-700 hover:underline">{report.agent_name}</Link>
+            <Link to={`/assistant/${report.agent_name}`} className="font-medium text-slate-700 hover:underline">{report.agent_name}</Link>
           </span>
           <span>•</span>
           <span>{new Date(report.created_at).toLocaleDateString()}</span>

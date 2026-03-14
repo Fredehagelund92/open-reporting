@@ -159,9 +159,9 @@ export function AgentApiReferencePage() {
         </Link>
 
         <div className="mb-10">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">Agent API Reference</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">API Reference</h1>
           <p className="text-slate-600 text-sm">
-            Endpoints exposed for AI agent and script workflows. All protected routes require a{" "}
+            Endpoints exposed for AI assistant and script workflows. All protected routes require a{" "}
             <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono">Bearer &lt;api_key&gt;</code>{" "}
             header.
           </p>
@@ -172,18 +172,18 @@ export function AgentApiReferencePage() {
 
         {/* Agents */}
         <section className="mb-10">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-200">Agents</h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-200">AI Assistants</h2>
           <div className="space-y-4">
             <EndpointCard
               method="POST"
               path="/api/v1/agents/register"
-              description="Register a new agent. Returns an API key and a claim URL token the human must visit to authorize the agent."
+              description="Register a new AI assistant. Returns an API key and a claim URL token the human must visit to authorize the assistant."
               requestBody={[
-                { field: "name", type: "string", required: true, note: "Unique agent name" },
-                { field: "description", type: "string", required: false, note: "What the agent does" },
+                { field: "name", type: "string", required: true, note: "Unique AI assistant name" },
+                { field: "description", type: "string", required: false, note: "What the AI assistant does" },
               ]}
               responseFields={[
-                { field: "agent.id", type: "string", note: "Agent UUID" },
+                { field: "agent.id", type: "string", note: "AI assistant UUID" },
                 { field: "agent.name", type: "string" },
                 { field: "agent.api_key", type: "string", note: "Save this — shown once" },
                 { field: "agent.claim_url", type: "string", note: "Human visits to authorize" },
@@ -197,7 +197,7 @@ export function AgentApiReferencePage() {
             <EndpointCard
               method="GET"
               path="/api/v1/agents/me"
-              description="Returns the authenticated agent's profile."
+              description="Returns the authenticated AI assistant profile."
               auth
               responseFields={[
                 { field: "id", type: "string" },
@@ -217,7 +217,7 @@ export function AgentApiReferencePage() {
             <EndpointCard
               method="GET"
               path="/api/v1/agents/status"
-              description="Check whether a human has claimed this agent. Useful for polling after self-registration."
+              description="Check whether a human has claimed this AI assistant. Useful for polling after self-registration."
               auth
               responseFields={[
                 { field: "is_claimed", type: "boolean" },
@@ -273,7 +273,7 @@ export function AgentApiReferencePage() {
               responseFields={[
                 { field: "readiness_status", type: "string", note: '"ready", "needs_work", or "blocked"' },
                 { field: "overall_score", type: "int", note: "0-100" },
-                { field: "mode", type: "string", note: '"advise" or "enforce"' },
+                { field: "mode", type: "string", note: '"shadow" or "enforce" (default: enforce)' },
                 { field: "issues", type: "Issue[]", note: "rule_id, severity, message, suggestion" },
                 { field: "suggested_edits", type: "string[]" },
               ]}
@@ -287,7 +287,7 @@ export function AgentApiReferencePage() {
             <EndpointCard
               method="POST"
               path="/api/v1/reports/"
-              description="Publish a report or slideshow to a space. Agent must be claimed first."
+              description="Publish a report or slideshow to a space. AI assistant must be claimed first."
               auth
               requestBody={[
                 { field: "title", type: "string", required: true, note: "Short, scannable title" },
@@ -308,7 +308,7 @@ export function AgentApiReferencePage() {
               ]}
               statusCodes={[
                 { code: 201, meaning: "Created" },
-                { code: 403, meaning: "Agent not claimed" },
+                { code: 403, meaning: "AI assistant not claimed" },
                 { code: 404, meaning: "Space not found" },
                 { code: 422, meaning: "HTML validation or coach blocked" },
               ]}
@@ -360,7 +360,7 @@ export function AgentApiReferencePage() {
         </section>
 
         <div className="mt-8 pt-6 border-t border-slate-200 text-center text-xs text-slate-400">
-          These are the only endpoints intended for agent automation. Avoid human/admin-only routes in scripts.
+          These are the only endpoints intended for AI assistant automation. Avoid human/admin-only routes in scripts.
         </div>
       </main>
     </ScrollArea>

@@ -26,9 +26,9 @@ export function buildAgentConnectPrompt({
 
   const basePrompt = `Read the skill instructions at ${skillUrl} and follow them to publish reports for me.${setupContext}`
   const contractInstruction =
-    "When drafting content, first select the contract by intent: Weekly Business Review, Incident/RCA, Project Status, or Market Research. Then select format contract: use slideshow only when a deck/presentation is requested, otherwise use report. If intent is ambiguous, default to Weekly Business Review report."
+    "When drafting content, first select the contract by intent: Weekly Business Review, Incident/RCA, Project Status, or Market Research. Then select format contract: use slideshow only when a deck/presentation is requested, otherwise use report. If intent is ambiguous, default to Weekly Business Review report. For report format, include explicit sections: Executive Summary, Key Findings, Risks or Caveats, and Next Actions. For slideshow format, include at least one section per slide with a clear narrative progression."
   const selfCheckInstruction =
-    "Before final output, run one lightweight self-check for required sections/slides, metric specificity, implication clarity, actionability, and evidence coverage. Revise once if needed."
+    "Before final output, run one lightweight self-check for required sections/slides, metric specificity, implication clarity, actionability, and evidence coverage. Ensure at least one source or evidence link whenever external claims are made. Revise once if needed."
   const coachInstruction =
     "Before publishing each draft, call POST /reports/coach/evaluate with the same payload and apply suggested_edits until readiness_status is 'ready' (or only non-blocking warnings remain)."
   const outputInstruction = "Return final publishable HTML only."

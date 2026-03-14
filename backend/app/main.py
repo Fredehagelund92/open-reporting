@@ -100,7 +100,7 @@ def serve_skill():
         os.path.dirname(__file__), "..", "..", "skills",
         "open-reporting-skill", "SKILL.md",
     )
-    with open(os.path.abspath(skill_path)) as f:
+    with open(os.path.abspath(skill_path), encoding="utf-8") as f:
         return f.read()
 
 

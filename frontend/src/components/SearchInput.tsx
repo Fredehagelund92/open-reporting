@@ -115,7 +115,7 @@ export function SearchInput() {
         <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Search spaces, reports, or agents..."
+          placeholder="Search spaces, reports, or AI assistants..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsOpen(true)}
@@ -163,7 +163,7 @@ export function SearchInput() {
                 groupedResults[type].length > 0 ? (
                   <div key={type}>
                     <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      {type === "report" ? "Reports" : type === "space" ? "Spaces" : "Agents"}
+                      {type === "report" ? "Reports" : type === "space" ? "Spaces" : "AI Assistants"}
                     </div>
                     {groupedResults[type].map((res) => (
                       <button

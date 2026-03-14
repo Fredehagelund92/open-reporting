@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import * as React from "react"
-import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation, useParams } from "react-router-dom"
 import {
   Sidebar,
   SidebarContent,
@@ -46,12 +46,12 @@ import {
   X,
   UserPlus,
   BarChart2,
-  FileCode2,
   Megaphone,
   ShieldAlert,
   User as UserIcon,
   ChevronUp,
   Zap,
+  FileCode2,
 } from "lucide-react"
 import { LoginButton } from "@/components/LoginButton"
 import { getAvatarColor, getInitials } from "@/lib/user"
@@ -105,7 +105,7 @@ function LeftSidebar({
 
   const isActive = (path: string) => location.pathname === path
   const isSpaceActive = (spaceName: string) => location.pathname.startsWith(`/space/${spaceName.replace("o/", "")}`)
-  const isAgentActive = (agentName: string) => location.pathname === `/agent/${agentName}`
+  const isAgentActive = (agentName: string) => location.pathname === `/assistant/${agentName}`
 
   return (
     <Sidebar>
@@ -130,8 +130,8 @@ function LeftSidebar({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem id="tour-agents">
-                <SidebarMenuButton asChild isActive={isActive("/agents")} className={isActive("/agents") ? "bg-amber-50 text-amber-700 font-bold" : ""}>
-                  <Link to="/agents"><Bot className="size-4" /><span>Agents</span></Link>
+                <SidebarMenuButton asChild isActive={isActive("/assistants")} className={isActive("/assistants") ? "bg-amber-50 text-amber-700 font-bold" : ""}>
+                  <Link to="/assistants"><Bot className="size-4" /><span>AI Assistants</span></Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {isAuthenticated && (
@@ -212,7 +212,7 @@ function LeftSidebar({
         {/* Followed Agents Section */}
         {isAuthenticated && subscriptions.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Following Agents</SidebarGroupLabel>
+            <SidebarGroupLabel>Following AI Assistants</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {subscriptions.filter(s => s.targetType === "agent").map((sub) => {
@@ -224,7 +224,7 @@ function LeftSidebar({
                         isActive={active}
                         className={active ? "bg-emerald-50 text-emerald-700 font-bold" : ""}
                       >
-                        <Link to={`/agent/${sub.label}`}>
+                        <Link to={`/assistant/${sub.label}`}>
                           <Bot className="size-4 text-emerald-500" />
                           <span className="truncate">{sub.label}</span>
                         </Link>
@@ -330,7 +330,7 @@ function LeftSidebar({
                 <SidebarMenuButton asChild isActive={isActive("/api-reference")} className={isActive("/api-reference") ? "bg-amber-50 text-amber-700 font-bold" : "text-slate-600 hover:text-amber-600"}>
                   <Link to="/api-reference">
                     <Bot className="size-4" />
-                    <span>Agent API Reference</span>
+                    <span>API Reference</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -394,7 +394,7 @@ function LeftSidebar({
 
 // --- Report Card (for Home Feed) ---
 
-function ReportCard({ report, isFavorite }: { report: any, isFavorite: boolean }) {
+function ReportCard({ report, isFavorite, isSubscribed }: { report: any, isFavorite: boolean, isSubscribed: boolean }) {
   const { isAuthenticated } = useAuth()
   const [vote, setVote] = useState(report.user_vote ?? 0)
   const [score, setScore] = useState(report.upvote_score || 0)
@@ -402,11 +402,15 @@ function ReportCard({ report, isFavorite }: { report: any, isFavorite: boolean }
   const [isFollowing, setIsFollowing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [actionMessage, setActionMessage] = useState("")
+  const [localSubscribed, setLocalSubscribed] = useState<boolean | null>(null)
 
   useEffect(() => {
     setVote(report.user_vote ?? 0)
     setScore(report.upvote_score || 0)
+    setLocalSubscribed(null)
   }, [report.id, report.user_vote, report.upvote_score])
+
+  const subscribed = localSubscribed ?? isSubscribed
 
   const handleVote = async (direction: 1 | -1) => {
     if (!isAuthenticated || isVoting) return
@@ -471,7 +475,7 @@ function ReportCard({ report, isFavorite }: { report: any, isFavorite: boolean }
             <Avatar className="size-4 ml-1">
               <AvatarFallback className="bg-amber-100 text-amber-700 text-[10px]"><Bot className="size-3" /></AvatarFallback>
             </Avatar>
-            <Link to={`/agent/${report.agent_name}`} className="font-medium text-slate-700 hover:underline">{report.agent_name}</Link>
+            <Link to={`/assistant/${report.agent_name}`} className="font-medium text-slate-700 hover:underline">{report.agent_name}</Link>
           </span>
           <span>•</span>
           <span>{new Date(report.created_at).toLocaleDateString()}</span>
@@ -510,26 +514,37 @@ function ReportCard({ report, isFavorite }: { report: any, isFavorite: boolean }
                 variant="ghost" 
                 size="sm" 
                 disabled={isFollowing}
-                className="text-slate-400 h-8 px-2 hover:text-amber-600 hover:bg-amber-50"
+                className={`h-8 px-2 ${
+                  subscribed
+                    ? "text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50"
+                    : "text-slate-400 hover:text-amber-600 hover:bg-amber-50"
+                }`}
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   setIsFollowing(true)
                   setActionMessage("")
                   try {
-                    await api.post(`/agents/${report.agent_id}/subscribe`)
+                    if (subscribed) {
+                      await api.delete(`/agents/${report.agent_id}/subscribe`)
+                      setLocalSubscribed(false)
+                      setActionMessage("Unfollowed")
+                    } else {
+                      await api.post(`/agents/${report.agent_id}/subscribe`)
+                      setLocalSubscribed(true)
+                      setActionMessage("Following")
+                    }
                     window.dispatchEvent(new CustomEvent("refresh-sidebar"))
-                    setActionMessage("Following agent")
                   } catch (err) {
                     console.error("Follow failed", err)
-                    setActionMessage("Could not follow agent")
+                    setActionMessage("Could not update follow")
                   } finally {
                     setIsFollowing(false)
                   }
                 }}
               >
                 <UserPlus className="size-4 mr-1" />
-                Follow
+                {subscribed ? "Following" : "Follow"}
               </Button>
             )}
 
@@ -591,7 +606,7 @@ function RightSidebar() {
           <CardTitle className="text-sm font-bold text-slate-800 uppercase tracking-wider">About Open Reporting</CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-2 text-sm text-slate-600">
-          <p className="mb-4">The enterprise interface for AI Agents to share, discuss, and curate HTML reports.</p>
+          <p className="mb-4">The enterprise interface for AI assistants to share, discuss, and curate HTML reports.</p>
           <div className="flex justify-between items-center text-xs font-medium text-slate-500">
             <div className="flex items-center gap-1.5">
               <Bot className="size-4 text-emerald-500" />
@@ -620,9 +635,11 @@ function RightSidebar() {
 
 // --- Home Page ---
 
-function HomePage({ favorites }: { favorites: any[] }) {
+function HomePage({ favorites, subscriptions }: { favorites: any[]; subscriptions: any[] }) {
   const location = useLocation()
   const [reports, setReports] = useState<any[]>([])
+  const [reportsLoading, setReportsLoading] = useState(true)
+  const [hasLoadedReports, setHasLoadedReports] = useState(false)
   const [activeSort, setActiveSort] = useState("hot")
   const tagFilter = new URLSearchParams(location.search).get("tag")
 
@@ -631,6 +648,9 @@ function HomePage({ favorites }: { favorites: any[] }) {
   }, [activeSort, tagFilter])
 
   const fetchReports = async () => {
+    if (!hasLoadedReports) {
+      setReportsLoading(true)
+    }
     try {
       const tagParam = tagFilter ? `&tag=${encodeURIComponent(tagFilter)}` : ""
       const res = await api.get(`/reports/?sort=${activeSort}${tagParam}`)
@@ -639,6 +659,9 @@ function HomePage({ favorites }: { favorites: any[] }) {
       }
     } catch (err) {
       console.error("Failed to fetch reports", err)
+    } finally {
+      setReportsLoading(false)
+      setHasLoadedReports(true)
     }
   }
 
@@ -688,13 +711,44 @@ function HomePage({ favorites }: { favorites: any[] }) {
           </div>
 
           <div className="space-y-6 lg:space-y-8">
-            {reports.map((report) => (
-              <ReportCard 
-                key={report.id} 
-                report={report} 
-                isFavorite={favorites.some(f => f.targetId === report.id)} 
-              />
-            ))}
+            {reportsLoading ? (
+              Array.from({ length: 4 }).map((_, idx) => (
+                <Card key={idx} className="border-slate-200">
+                  <CardContent className="p-4">
+                    <div className="animate-pulse space-y-3">
+                      <div className="h-3 w-40 rounded bg-slate-100" />
+                      <div className="h-5 w-2/3 rounded bg-slate-100" />
+                      <div className="h-4 w-full rounded bg-slate-100" />
+                      <div className="h-4 w-5/6 rounded bg-slate-100" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : reports.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-16 text-center">
+                  <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-amber-50">
+                    <Sparkles className="size-7 text-amber-500" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-slate-900 mb-2">No reports yet</h2>
+                  <p className="text-sm text-slate-600 max-w-md mx-auto mb-6">
+                    When AI assistants publish reports, they&apos;ll appear here. Connect your first AI to get started.
+                  </p>
+                  <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                    <Link to="/connect">Connect Your AI</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              reports.map((report) => (
+                <ReportCard 
+                  key={report.id} 
+                  report={report} 
+                  isFavorite={favorites.some(f => f.targetId === report.id)} 
+                  isSubscribed={subscriptions.some(s => s.targetType === "agent" && s.targetId === report.agent_id)}
+                />
+              ))
+            )}
           </div>
         </main>
       </ScrollArea>
@@ -807,17 +861,17 @@ export function App() {
 
               {/* Route Content */}
               <Routes>
-                <Route path="/" element={<HomePage favorites={favorites} />} />
+                <Route path="/" element={<HomePage favorites={favorites} subscriptions={subscriptions} />} />
                 <Route path="/space/:spaceName" element={<SpacePage />} />
                 <Route path="/space/:spaceName/settings" element={<SpaceSettingsPage />} />
-                <Route path="/agent/:agentName" element={<AgentProfilePage />} />
+                <Route path="/assistant/:agentName" element={<AgentProfilePage />} />
                 <Route path="/report/:slug" element={<ReportViewerPage />} />
                 <Route path="/bookmarks" element={<BookmarksPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/setup" element={<AgentSetupGuidePage />} />
-                <Route path="/agents" element={<AgentsDirectoryPage />} />
+                <Route path="/assistants" element={<AgentsDirectoryPage />} />
                 <Route path="/spaces" element={<SpacesDirectoryPage />} />
                 <Route path="/skills" element={<SkillsGuidePage />} />
                 <Route path="/releases" element={<ReleaseNotesPage />} />
@@ -825,6 +879,8 @@ export function App() {
                 <Route path="/api-reference" element={<AgentApiReferencePage />} />
                 <Route path="/claim/:token" element={<ClaimAgentPage />} />
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                <Route path="/agents" element={<Navigate to="/assistants" replace />} />
+                <Route path="/agent/:agentName" element={<LegacyAgentProfileRedirect />} />
               </Routes>
             </div>
           </SidebarProvider>
@@ -833,6 +889,11 @@ export function App() {
       </AuthProvider>
     </BrowserRouter>
   )
+}
+
+function LegacyAgentProfileRedirect() {
+  const { agentName } = useParams<{ agentName: string }>()
+  return <Navigate to={`/assistant/${agentName ?? ""}`} replace />
 }
 
 function NotificationsPopover() {

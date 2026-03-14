@@ -13,6 +13,7 @@ import { getAvatarColor, getInitials } from "@/lib/user"
 import { api } from "@/lib/api"
 import { LoginButton } from "@/components/LoginButton"
 import { buildAgentConnectPrompt, normalizeApiBaseUrl } from "@/lib/agentPrompts"
+import { HelpTip } from "@/components/HelpTip"
 
 export function SettingsPage() {
   const { user } = useAuth()
@@ -88,7 +89,7 @@ export function SettingsPage() {
         </div>
 
         <div className="grid gap-8">
-          {/* My Agents Section */}
+          {/* My AI Assistants Section */}
           <MyAgentsSection />
 
           <Card>
@@ -302,29 +303,42 @@ function MyAgentsSection() {
     }
   }
 
+  const formatStatusLabel = (status: string) => {
+    if (status === "IDLE") return "Ready"
+    if (status === "GENERATING") return "Working"
+    if (status === "OFFLINE") return "Disconnected"
+    return status
+  }
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Bot className="size-5" /> My AI Agents
+              <Bot className="size-5" /> My AI Assistants
             </CardTitle>
             <CardDescription className="mt-1">
               Manage the AI assistants that publish reports on your behalf.
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Select value={promptTool} onValueChange={(value) => setPromptTool(value as "chatgpt" | "claude" | "cursor")}>
-              <SelectTrigger className="h-9 w-[170px]">
-                <SelectValue placeholder="Prompt Template" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="chatgpt">Prompt: ChatGPT</SelectItem>
-                <SelectItem value="claude">Prompt: Claude</SelectItem>
-                <SelectItem value="cursor">Prompt: Cursor</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid gap-1">
+              <span className="text-[11px] text-slate-500 inline-flex items-center gap-1.5">
+                Prompt Template
+                <HelpTip text="This picks which instructions format you copy for your AI chat tool." />
+              </span>
+              <Select value={promptTool} onValueChange={(value) => setPromptTool(value as "chatgpt" | "claude" | "cursor")}>
+                <SelectTrigger className="h-9 w-[170px]">
+                  <SelectValue placeholder="Prompt Template" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="chatgpt">Prompt: ChatGPT</SelectItem>
+                  <SelectItem value="claude">Prompt: Claude</SelectItem>
+                  <SelectItem value="cursor">Prompt: Cursor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button asChild size="sm" className="bg-amber-500 hover:bg-amber-600 text-white gap-1.5">
               <Link to="/connect?mode=reuse">
                 <Plus className="size-4" />
@@ -336,7 +350,7 @@ function MyAgentsSection() {
         <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           <p className="font-semibold mb-1">Returning user? Quick reconnect</p>
           <ol className="list-decimal pl-4 space-y-1 text-xs">
-            <li>Click <strong>Copy Prompt</strong> on your agent.</li>
+            <li>Click <strong>Copy Prompt</strong> on your AI assistant.</li>
             <li>Paste it into your assistant chat (ChatGPT/Claude/Cursor).</li>
             <li>Click <strong>Verify Key</strong> to confirm it works.</li>
           </ol>
@@ -356,7 +370,7 @@ function MyAgentsSection() {
         ) : agents.length === 0 ? (
           <div className="text-center py-8">
             <Bot className="size-10 text-slate-200 mx-auto mb-3" />
-            <p className="text-sm text-slate-500 mb-4">You haven't connected any AI agents yet.</p>
+            <p className="text-sm text-slate-500 mb-4">You haven&apos;t connected any AI assistants yet.</p>
             <Button asChild variant="outline" size="sm">
               <Link to="/connect?mode=create" className="gap-2">
                 <Plus className="size-4" /> Connect Your First AI
@@ -385,12 +399,13 @@ function MyAgentsSection() {
                             : "bg-slate-100 text-slate-500"
                         }`}
                       >
-                        {agent.status}
+                        {formatStatusLabel(agent.status)}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-slate-500">
-                      <span className="font-mono">
+                      <span className="font-mono inline-flex items-center gap-1.5">
                         {revealedKey?.id === agent.id ? revealedKey.key : agent.api_key_hint}
+                        <HelpTip text="This masked key hint helps you identify which connection key this assistant is using." />
                       </span>
                       <span className="flex items-center gap-1">
                         <FileText className="size-3" /> {agent.report_count} reports

@@ -35,10 +35,14 @@ import {
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { api } from "@/lib/api"
+import { HelpTip } from "@/components/HelpTip"
 
 interface CreateReportDialogProps {
   spaceName: string
   onCreated?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  hideTrigger?: boolean
 }
 
 interface TagItem {
@@ -83,8 +87,14 @@ function normalizeTagKey(raw: string) {
     .replace(/^-+|-+$/g, "")
 }
 
-export function CreateReportDialog({ spaceName, onCreated }: CreateReportDialogProps) {
-  const [open, setOpen] = useState(false)
+export function CreateReportDialog({
+  spaceName,
+  onCreated,
+  open,
+  onOpenChange,
+  hideTrigger = false,
+}: CreateReportDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
   const [title, setTitle] = useState("")
   const [summary, setSummary] = useState("")
   const [htmlBody, setHtmlBody] = useState("")
@@ -104,6 +114,14 @@ export function CreateReportDialog({ spaceName, onCreated }: CreateReportDialogP
   const [agentsLoading, setAgentsLoading] = useState(false)
   const [step, setStep] = useState<1 | 2>(1)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const dialogOpen = open ?? internalOpen
+
+  const setDialogOpen = (nextOpen: boolean) => {
+    if (open === undefined) {
+      setInternalOpen(nextOpen)
+    }
+    onOpenChange?.(nextOpen)
+  }
 
   const reset = () => {
     setTitle("")
@@ -123,7 +141,7 @@ export function CreateReportDialog({ spaceName, onCreated }: CreateReportDialogP
   const canProceedToStep2 = !!title.trim() && !!selectedAgentId
 
   useEffect(() => {
-    if (!open) return
+    if (!dialogOpen) return
 
     setAgentsLoading(true)
     api.get("/agents/my-agents")
@@ -150,7 +168,7 @@ export function CreateReportDialog({ spaceName, onCreated }: CreateReportDialogP
         setRecentTags([])
       }
     }
-  }, [open])
+  }, [dialogOpen])
 
   useEffect(() => {
     const query = normalizeTagKey(tagInput)
@@ -213,7 +231,7 @@ export function CreateReportDialog({ spaceName, onCreated }: CreateReportDialogP
         content_type: contentType,
       })
       reset()
-      setOpen(false)
+      setDialogOpen(false)
       const mergedRecent = [...tags, ...recentTags.filter((tag) => !tags.includes(tag))].slice(0, 16)
       setRecentTags(mergedRecent)
       localStorage.setItem(RECENT_TAGS_KEY, JSON.stringify(mergedRecent))
@@ -236,7 +254,7 @@ export function CreateReportDialog({ spaceName, onCreated }: CreateReportDialogP
   }
 
   useEffect(() => {
-    if (!open || !htmlBody.trim()) {
+    if (!dialogOpen || !htmlBody.trim()) {
       setCoachResult(null)
       setCoachError("")
       return
@@ -266,7 +284,7 @@ export function CreateReportDialog({ spaceName, onCreated }: CreateReportDialogP
       }
     }, 350)
     return () => clearTimeout(timer)
-  }, [open, title, summary, htmlBody, selectedTags, contentType, spaceName])
+  }, [dialogOpen, title, summary, htmlBody, selectedTags, contentType, spaceName])
 
   const preflightHints = (() => {
     const hints: string[] = []
@@ -285,21 +303,23 @@ export function CreateReportDialog({ spaceName, onCreated }: CreateReportDialogP
 
   return (
     <Dialog
-      open={open}
+      open={dialogOpen}
       onOpenChange={(v) => {
-        setOpen(v)
+        setDialogOpen(v)
         if (!v) reset()
       }}
     >
-      <DialogTrigger asChild>
-        <Button
-          size="sm"
-          className="gap-2 h-9 px-4 bg-amber-500 hover:bg-amber-600 text-white"
-        >
-          <Plus className="size-4" />
-          New Report
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button
+            size="sm"
+            className="gap-2 h-9 px-4 bg-amber-500 hover:bg-amber-600 text-white"
+          >
+            <Plus className="size-4" />
+            New Report
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl p-6">
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
@@ -308,7 +328,7 @@ export function CreateReportDialog({ spaceName, onCreated }: CreateReportDialogP
           </DialogTitle>
           <DialogDescription>
             Upload HTML content directly to <strong>{spaceName}</strong>,
-            published under one of your agents.
+            published under one of your AI assistants.
           </DialogDescription>
         </DialogHeader>
 
@@ -333,25 +353,25 @@ export function CreateReportDialog({ spaceName, onCreated }: CreateReportDialogP
               {agentsLoading ? (
                 <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
                   <Loader2 className="size-4 animate-spin" />
-                  Loading agents...
+                  Loading AI assistants...
                 </div>
               ) : myAgents.length === 0 ? (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
                   <div className="flex items-start gap-3">
                     <Bot className="size-5 text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium text-amber-800 mb-1">No agents yet</p>
+                      <p className="font-medium text-amber-800 mb-1">No AI assistants yet</p>
                       <p className="text-amber-700 mb-3">
-                        You need at least one agent to publish reports. Create one
+                        You need at least one AI assistant to publish reports. Create one
                         in a few seconds.
                       </p>
                       <Link
                         to="/connect?mode=reuse"
                         className="inline-flex items-center gap-1.5 text-amber-700 hover:text-amber-900 font-medium underline underline-offset-2"
-                        onClick={() => setOpen(false)}
+                        onClick={() => setDialogOpen(false)}
                       >
                         <Plus className="size-3.5" />
-                        Create an agent
+                        Create an AI assistant
                       </Link>
                     </div>
                   </div>
@@ -359,7 +379,7 @@ export function CreateReportDialog({ spaceName, onCreated }: CreateReportDialogP
               ) : (
                 <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select an agent" />
+                    <SelectValue placeholder="Select an AI assistant" />
                   </SelectTrigger>
                   <SelectContent>
                     {myAgents.map((agent) => (
@@ -402,7 +422,10 @@ export function CreateReportDialog({ spaceName, onCreated }: CreateReportDialogP
             </div>
 
             <div className="space-y-2">
-              <Label>Content Type</Label>
+              <Label className="inline-flex items-center gap-1.5">
+                Content Type
+                <HelpTip text='Choose "Standard Report" for a scrollable document or "Slideshow" for a presentation.' />
+              </Label>
               <Tabs
                 value={contentType}
                 onValueChange={(value) => setContentType(value as "report" | "slideshow")}
@@ -513,7 +536,10 @@ export function CreateReportDialog({ spaceName, onCreated }: CreateReportDialogP
             </div>
 
             <div className="space-y-2">
-              <Label>HTML Content</Label>
+              <Label className="inline-flex items-center gap-1.5">
+                HTML Content
+                <HelpTip text="The formatted content of your report. Your AI assistant usually generates this for you." />
+              </Label>
               <Tabs defaultValue="paste" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 h-9">
                   <TabsTrigger value="paste" className="text-sm gap-1.5">

@@ -72,13 +72,13 @@ class _StructureInspector(HTMLParser):
 def get_authoring_coach_mode() -> CoachMode:
     """
     Rollout toggle:
-    - shadow: never block publish based on coach-only rules.
-    - enforce: block publish when readiness_status == blocked.
+    - enforce: block publish when readiness_status == blocked (default).
+    - shadow: advisory mode, never blocks publish.
     """
-    raw = (os.getenv("AUTHORING_COACH_MODE") or "shadow").strip().lower()
-    if raw in {"enforce", "strict", "blocking"}:
-        return "enforce"
-    return "shadow"
+    raw = (os.getenv("AUTHORING_COACH_MODE") or "enforce").strip().lower()
+    if raw in {"shadow", "advisory", "off"}:
+        return "shadow"
+    return "enforce"
 
 
 def evaluate_authoring_quality(

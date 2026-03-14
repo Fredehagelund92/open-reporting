@@ -6,7 +6,7 @@ from sqlalchemy import inspect, text
 
 from app.main import app
 from app.database import engine
-from app.models import User, Space, Agent, Report, Upvote
+from app.models import User, Space, Agent, Report, Upvote, Comment, Reaction
 from app.auth.security import create_access_token
 
 client = TestClient(app)
@@ -886,6 +886,203 @@ def test_authoring_coach_enforce_mode_blocks_publish(monkeypatch):
     finally:
         monkeypatch.delenv("AUTHORING_COACH_MODE", raising=False)
         with Session(engine) as session:
+            if report_id:
+                obj = session.get(Report, report_id)
+                if obj:
+                    session.delete(obj)
+            if agent_id:
+                obj = session.get(Agent, agent_id)
+                if obj:
+                    session.delete(obj)
+            if space_id:
+                obj = session.get(Space, space_id)
+                if obj:
+                    session.delete(obj)
+            if user_id:
+                obj = session.get(User, user_id)
+                if obj:
+                    session.delete(obj)
+            session.commit()
+
+
+def test_authoring_coach_enforce_mode_blocks_user_upload(monkeypatch):
+    suffix = uuid4().hex[:8]
+    user_id = None
+    space_id = None
+    agent_id = None
+
+    monkeypatch.setenv("AUTHORING_COACH_MODE", "enforce")
+
+    try:
+        register_res = client.post(
+            "/api/v1/auth/register",
+            json={"name": f"Upload Coach {suffix}", "email": f"upload-coach-{suffix}@example.com", "password": "pass1234"},
+        )
+        assert register_res.status_code == 200
+        user_id = register_res.json()["id"]
+
+        token_res = client.post(
+            "/api/v1/auth/token",
+            data={"username": f"upload-coach-{suffix}@example.com", "password": "pass1234"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        assert token_res.status_code == 200
+        user_token = token_res.json()["access_token"]
+
+        space_res = client.post(
+            "/api/v1/spaces/",
+            json={"name": f"o/upload-coach-{suffix}", "description": "coach upload checks", "is_private": False},
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert space_res.status_code == 201
+        space_id = space_res.json()["id"]
+
+        agent_res = client.post(
+            "/api/v1/agents/register-for-me",
+            json={"name": f"upload-coach-agent-{suffix}", "description": "coach upload test"},
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert agent_res.status_code == 201
+        agent_id = agent_res.json()["agent"]["id"]
+
+        upload_res = client.post(
+            "/api/v1/reports/upload",
+            json={
+                "title": "tiny",
+                "summary": "short",
+                "tags": [],
+                "html_body": "<h2>Hello</h2><p>Small draft.</p>",
+                "space_name": f"o/upload-coach-{suffix}",
+                "agent_id": agent_id,
+                "content_type": "report",
+            },
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert upload_res.status_code == 422
+        detail = upload_res.json()["detail"]
+        assert detail["coach_blocked"] is True
+        assert detail["authoring_coach"]["readiness_status"] == "blocked"
+    finally:
+        monkeypatch.delenv("AUTHORING_COACH_MODE", raising=False)
+        with Session(engine) as session:
+            if agent_id:
+                obj = session.get(Agent, agent_id)
+                if obj:
+                    session.delete(obj)
+            if space_id:
+                obj = session.get(Space, space_id)
+                if obj:
+                    session.delete(obj)
+            if user_id:
+                obj = session.get(User, user_id)
+                if obj:
+                    session.delete(obj)
+            session.commit()
+
+
+def test_comment_reactions_toggle_and_list():
+    suffix = uuid4().hex[:8]
+    user_id = None
+    space_id = None
+    agent_id = None
+    report_id = None
+    comment_id = None
+    report_slug = f"reaction-flow-{suffix}"
+
+    try:
+        register_res = client.post(
+            "/api/v1/auth/register",
+            json={"name": f"Reaction User {suffix}", "email": f"reaction-{suffix}@example.com", "password": "pass1234"},
+        )
+        assert register_res.status_code == 200
+        user_id = register_res.json()["id"]
+
+        token_res = client.post(
+            "/api/v1/auth/token",
+            data={"username": f"reaction-{suffix}@example.com", "password": "pass1234"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        assert token_res.status_code == 200
+        user_token = token_res.json()["access_token"]
+
+        with Session(engine) as session:
+            user = session.get(User, user_id)
+            space = Space(name=f"o/reactions-{suffix}", description="reaction checks", is_private=False, owner_id=user.id)
+            agent = Agent(
+                name=f"reaction-agent-{suffix}",
+                description="reaction checks",
+                api_key=f"openrep_reactions_{suffix}",
+                owner_id=user.id,
+                is_claimed=True,
+                is_private=False,
+            )
+            report = Report(
+                title=f"Reactions {suffix}",
+                summary="reaction report",
+                slug=report_slug,
+                html_body="<h1>Reaction Check</h1><p>This report validates comment reaction persistence with deterministic counts and toggle state.</p><p><a href='https://example.com'>evidence</a></p>",
+                content_type="report",
+                agent_id=agent.id,
+                space_id=space.id,
+            )
+            session.add(space)
+            session.add(agent)
+            session.commit()
+            session.refresh(space)
+            session.refresh(agent)
+            space_id = space.id
+            agent_id = agent.id
+
+            session.add(report)
+            session.commit()
+            session.refresh(report)
+            report_id = report.id
+
+        comment_res = client.post(
+            f"/api/v1/reports/{report_id}/comments",
+            json={"text": "Looks good. Adding a reaction."},
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert comment_res.status_code == 201
+        comment_id = comment_res.json()["id"]
+
+        react_res = client.post(
+            f"/api/v1/reports/{report_id}/comments/{comment_id}/reactions",
+            json={"emoji": "👍"},
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert react_res.status_code == 200
+        assert react_res.json()["reacted"] is True
+        assert react_res.json()["total_count"] == 1
+
+        list_res = client.get(
+            f"/api/v1/reports/{report_id}/comments",
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert list_res.status_code == 200
+        items = list_res.json()
+        assert len(items) == 1
+        assert items[0]["reactions"][0]["emoji"] == "👍"
+        assert items[0]["reactions"][0]["count"] == 1
+        assert items[0]["reactions"][0]["reacted"] is True
+
+        unreact_res = client.post(
+            f"/api/v1/reports/{report_id}/comments/{comment_id}/reactions",
+            json={"emoji": "👍"},
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert unreact_res.status_code == 200
+        assert unreact_res.json()["reacted"] is False
+        assert unreact_res.json()["total_count"] == 0
+    finally:
+        with Session(engine) as session:
+            if comment_id:
+                reactions = session.exec(select(Reaction).where(Reaction.comment_id == comment_id)).all()
+                for reaction in reactions:
+                    session.delete(reaction)
+                comment = session.get(Comment, comment_id)
+                if comment:
+                    session.delete(comment)
             if report_id:
                 obj = session.get(Report, report_id)
                 if obj:

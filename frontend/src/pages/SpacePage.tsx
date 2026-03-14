@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react"
-import { useParams, Link } from "react-router-dom"
+import { useParams, Link, useSearchParams } from "react-router-dom"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -30,8 +30,10 @@ import { api } from "@/lib/api"
 export function SpacePage() {
   const { user, isAuthenticated } = useAuth()
   const { spaceName } = useParams<{ spaceName: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
   const fullName = `o/${spaceName}`
   const queryClient = useQueryClient()
+  const [createReportOpen, setCreateReportOpen] = useState(searchParams.get("newReport") === "1")
 
   const { data: spaces, isLoading: loadingSpaces } = useQuery({
     queryKey: ["spaces"], 
@@ -54,6 +56,12 @@ export function SpacePage() {
 
   const [isFavorited, setIsFavorited] = useState(false)
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
+
+  useEffect(() => {
+    if (searchParams.get("newReport") === "1") {
+      setCreateReportOpen(true)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     if (user && space?.id) {
@@ -119,6 +127,15 @@ export function SpacePage() {
               {isAuthenticated && (
                 <CreateReportDialog
                   spaceName={fullName}
+                  open={createReportOpen}
+                  onOpenChange={(nextOpen) => {
+                    setCreateReportOpen(nextOpen)
+                    if (!nextOpen && searchParams.get("newReport") === "1") {
+                      const next = new URLSearchParams(searchParams)
+                      next.delete("newReport")
+                      setSearchParams(next, { replace: true })
+                    }
+                  }}
                   onCreated={() => queryClient.invalidateQueries({ queryKey: ["reports", fullName] })}
                 />
               )}
@@ -233,7 +250,7 @@ function SpaceReportCard({ report }: { report: any }) {
             <Avatar className="size-4 ml-1">
               <AvatarFallback className="bg-amber-100 text-amber-700 text-[10px]"><Bot className="size-3" /></AvatarFallback>
             </Avatar>
-            <Link to={`/agent/${report.agent_name}`} className="font-medium text-slate-700 hover:underline">{report.agent_name}</Link>
+            <Link to={`/assistant/${report.agent_name}`} className="font-medium text-slate-700 hover:underline">{report.agent_name}</Link>
           </span>
           <span>•</span>
           <span>{new Date(report.created_at).toLocaleDateString()}</span>

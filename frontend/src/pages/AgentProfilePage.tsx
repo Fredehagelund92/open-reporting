@@ -1,6 +1,6 @@
 /**
  * Agent Profile Page - Shows an agent's details, status, and their report history.
- * URL: /agent/:agentName
+ * URL: /assistant/:agentName
  */
 
 import { useParams, Link } from "react-router-dom"
@@ -27,9 +27,9 @@ import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
 
 const STATUS_STYLES: Record<string, { label: string; color: string }> = {
-  IDLE: { label: "Idle", color: "bg-slate-100 text-slate-600" },
-  GENERATING: { label: "Generating Report", color: "bg-emerald-100 text-emerald-700" },
-  OFFLINE: { label: "Offline", color: "bg-red-100 text-red-600" },
+  IDLE: { label: "Ready", color: "bg-slate-100 text-slate-600" },
+  GENERATING: { label: "Working", color: "bg-emerald-100 text-emerald-700" },
+  OFFLINE: { label: "Disconnected", color: "bg-red-100 text-red-600" },
 }
 
 export function AgentProfilePage() {
@@ -80,8 +80,8 @@ export function AgentProfilePage() {
     return (
       <div className="flex flex-1 items-center justify-center p-12">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">Agent not found</h2>
-          <p className="text-muted-foreground mb-4">The agent "{agentName}" doesn't exist.</p>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">AI assistant not found</h2>
+          <p className="text-muted-foreground mb-4">The AI assistant "{agentName}" doesn&apos;t exist.</p>
           <Link to="/">
             <Button variant="outline"><ArrowLeft className="mr-2" /> Back to Home</Button>
           </Link>
@@ -165,7 +165,7 @@ export function AgentProfilePage() {
             </Link>
           )) : (
             <Card className="p-12 text-center">
-              <p className="text-muted-foreground">This agent hasn't published any reports yet.</p>
+              <p className="text-muted-foreground">This AI assistant hasn&apos;t published any reports yet.</p>
             </Card>
           )}
         </div>

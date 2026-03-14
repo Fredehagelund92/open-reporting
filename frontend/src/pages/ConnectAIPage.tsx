@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { Link, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import {
   Card,
   CardContent,
@@ -28,6 +28,7 @@ import { useAuth } from "@/context/AuthContext"
 import { LoginButton } from "@/components/LoginButton"
 import { api } from "@/lib/api"
 import { buildAgentConnectPrompt, normalizeApiBaseUrl, type PromptTool } from "@/lib/agentPrompts"
+import { HelpTip } from "@/components/HelpTip"
 
 type WizardStep = "name" | "prompt" | "done"
 type ConnectMode = "create" | "reuse"
@@ -45,7 +46,8 @@ interface AgentItem {
 }
 
 export function ConnectAIPage() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const apiBase = import.meta.env.VITE_API_BASE_URL || window.location.origin
   const normalizedApiBase = normalizeApiBaseUrl(apiBase)
@@ -72,6 +74,27 @@ export function ConnectAIPage() {
   const [copied, setCopied] = useState(false)
   const [verifyStatus, setVerifyStatus] = useState<"idle" | "running" | "success" | "error">("idle")
   const [verifyMessage, setVerifyMessage] = useState("")
+  const [starterStatus, setStarterStatus] = useState<"idle" | "running" | "success" | "error">("idle")
+  const [starterMessage, setStarterMessage] = useState("")
+  const [publishCtaLoading, setPublishCtaLoading] = useState(false)
+
+  const loadMyAgents = async () => {
+    setIsLoadingAgents(true)
+    try {
+      const res = await api.get("/agents/my-agents")
+      const agents = Array.isArray(res.data) ? (res.data as AgentItem[]) : []
+      setExistingAgents(agents)
+      if (agents.length > 0) {
+        setSelectedAgentId((current) => current || agents[0].id)
+      }
+      return agents
+    } catch {
+      setExistingAgents([])
+      return []
+    } finally {
+      setIsLoadingAgents(false)
+    }
+  }
 
   useEffect(() => {
     const requestedMode = searchParams.get("mode")
@@ -84,39 +107,36 @@ export function ConnectAIPage() {
       return
     }
 
-    const fetchAgents = async () => {
-      setIsLoadingAgents(true)
-      try {
-        const res = await api.get("/agents/my-agents")
-        const agents = Array.isArray(res.data) ? (res.data as AgentItem[]) : []
-        setExistingAgents(agents)
-        if (agents.length > 0) {
-          setSelectedAgentId((current) => current || agents[0].id)
-        }
-
-        const requestedMode = searchParams.get("mode")
-        if (!requestedMode) {
-          const defaultMode: ConnectMode = agents.length > 0 ? "reuse" : "create"
-          setMode(defaultMode)
-          setSearchParams({ mode: defaultMode }, { replace: true })
-        } else if (requestedMode === "reuse" && agents.length === 0) {
-          setMode("create")
-          setSearchParams({ mode: "create" }, { replace: true })
-        }
-      } catch {
-        setExistingAgents([])
-      } finally {
-        setIsLoadingAgents(false)
+    loadMyAgents().then((agents) => {
+      const requestedMode = searchParams.get("mode")
+      if (!requestedMode) {
+        const defaultMode: ConnectMode = agents.length > 0 ? "reuse" : "create"
+        setMode(defaultMode)
+        setSearchParams({ mode: defaultMode }, { replace: true })
+      } else if (requestedMode === "reuse" && agents.length === 0) {
+        setMode("create")
+        setSearchParams({ mode: "create" }, { replace: true })
       }
-    }
-
-    fetchAgents()
-  }, [isAuthenticated, searchParams, setSearchParams])
+    })
+    // Only load agents when auth changes; avoid re-fetch on tab switch (searchParams)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated])
 
   const selectedAgent = useMemo(
     () => existingAgents.find((agent) => agent.id === selectedAgentId) ?? null,
     [existingAgents, selectedAgentId],
   )
+  const activeAgent = createdAgent
+    ? existingAgents.find((agent) => agent.id === createdAgent.id) ?? null
+    : selectedAgent
+  const hasPublishedReport = (activeAgent?.report_count ?? 0) > 0 || starterStatus === "success"
+
+  const formatStatusLabel = (status: string) => {
+    if (status === "IDLE") return "Ready"
+    if (status === "GENERATING") return "Working"
+    if (status === "OFFLINE") return "Disconnected"
+    return status
+  }
 
   const handleModeChange = (nextMode: ConnectMode) => {
     setMode(nextMode)
@@ -133,13 +153,14 @@ export function ConnectAIPage() {
         description: agentDescription.trim() || undefined,
       })
       setCreatedAgent(res.data.agent)
+      await loadMyAgents()
       setStep("prompt")
     } catch (err: any) {
       const detail = err.response?.data?.detail
       if (typeof detail === "string") {
         setError(detail)
       } else {
-        setError("Failed to create agent. Please try again.")
+      setError("Failed to create AI assistant. Please try again.")
       }
     } finally {
       setIsCreating(false)
@@ -194,10 +215,105 @@ export function ConnectAIPage() {
       })
       if (!res.ok) throw new Error("Verification failed")
       setReuseVerifyStatus("success")
-      setReuseVerifyMessage("Key works. You can continue with this existing agent.")
+      setReuseVerifyMessage("Key works. You can continue with this existing AI assistant.")
     } catch {
       setReuseVerifyStatus("error")
       setReuseVerifyMessage("Verification failed. Try re-copying the prompt or regenerate the key in Settings.")
+    }
+  }
+
+  const resolvePrimarySpace = async () => {
+    const starterSpaceName = "o/getting-started"
+    const starterDescription = "Your starter workspace for first reports and quick experiments."
+    try {
+      const spacesRes = await api.get("/spaces/")
+      const spaces = Array.isArray(spacesRes.data) ? spacesRes.data : []
+      const owned = spaces.find((space: any) => space.owner_id === user?.id)
+      if (owned?.name) return owned.name as string
+      if (spaces.length > 0 && spaces[0].name) return spaces[0].name as string
+    } catch {
+      // Continue and create a starter space below.
+    }
+
+    try {
+      const createRes = await api.post("/spaces/", {
+        name: starterSpaceName,
+        description: starterDescription,
+        is_private: false,
+      })
+      window.dispatchEvent(new CustomEvent("refresh-sidebar"))
+      return createRes.data.name as string
+    } catch (err: any) {
+      if (err?.response?.status === 409) return starterSpaceName
+      throw err
+    }
+  }
+
+  const handlePublishFirstReportNow = async () => {
+    setPublishCtaLoading(true)
+    setStarterMessage("")
+    try {
+      const targetSpace = await resolvePrimarySpace()
+      navigate(`/space/${targetSpace.replace("o/", "")}?newReport=1`)
+    } catch {
+      setStarterStatus("error")
+      setStarterMessage("Could not open the publish flow. Please create a space first.")
+    } finally {
+      setPublishCtaLoading(false)
+    }
+  }
+
+  const handleCreateStarterContent = async () => {
+    const targetAgentId = createdAgent?.id || selectedAgent?.id
+    if (!targetAgentId) return
+
+    setStarterStatus("running")
+    setStarterMessage("")
+    try {
+      const targetSpace = await resolvePrimarySpace()
+      const startedAt = new Date()
+      const month = startedAt.toLocaleString("en-US", { month: "long", year: "numeric" })
+      const reportHtml = `
+<h1>${month} Getting Started Brief</h1>
+<p>This starter report confirms your Open Reporting workflow end-to-end. It demonstrates that your assistant identity, publishing credentials, and report rendering are all working correctly.</p>
+<h2>What is configured</h2>
+<ul>
+  <li>Your AI assistant is linked and ready to publish.</li>
+  <li>Your workspace has at least one destination space.</li>
+  <li>The report pipeline supports rich HTML, tags, comments, and voting.</li>
+</ul>
+<h2>Suggested next steps</h2>
+<ol>
+  <li>Replace this with your first real business update.</li>
+  <li>Add 2-4 tags that match your reporting domain.</li>
+  <li>Ask your assistant to include evidence links and concrete actions.</li>
+</ol>
+<p>Source reference: <a href="https://github.com/fhagelund/open-reporting">Open Reporting repository</a>.</p>
+      `.trim()
+
+      await api.post("/reports/upload", {
+        title: `${month} Starter Report`,
+        summary: "Starter content to verify publish flow and bootstrap your workspace.",
+        html_body: reportHtml,
+        space_name: targetSpace,
+        agent_id: targetAgentId,
+        tags: ["getting-started", "starter", "onboarding"],
+        content_type: "report",
+      })
+
+      await loadMyAgents()
+      setStarterStatus("success")
+      setStarterMessage("Starter space and sample report are ready. Opening your space now.")
+      window.dispatchEvent(new CustomEvent("refresh-sidebar"))
+      navigate(`/space/${targetSpace.replace("o/", "")}`)
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail
+      setStarterStatus("error")
+      if (typeof detail === "string") {
+        setStarterMessage(detail)
+      } else {
+        setStarterMessage("Could not generate starter content. You can still publish manually from a space.")
+      }
     }
   }
 
@@ -226,7 +342,7 @@ export function ConnectAIPage() {
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Bot className="size-12 text-slate-300 mb-4" />
             <h2 className="text-xl font-semibold mb-2">Sign in to connect your AI</h2>
-            <p className="text-slate-500 mb-6">You need an account to create and manage AI agents.</p>
+            <p className="text-slate-500 mb-6">You need an account to create and manage AI assistants.</p>
             <LoginButton />
           </div>
         </main>
@@ -258,19 +374,13 @@ export function ConnectAIPage() {
           <p className="text-sm text-slate-500 mt-2">
             Need a one-off update? Use <strong>New Report</strong> inside a Space.
           </p>
-          <p className="text-xs text-slate-500 mt-2">
-            Need script-based or self-registration flows?{" "}
-            <Link to="/setup" className="text-amber-600 hover:underline">
-              Use advanced publishing methods
-            </Link>
-            .
-          </p>
+          <p className="text-xs text-slate-500 mt-2">Advanced methods stay available after you complete this setup.</p>
         </div>
 
         <Tabs value={mode} onValueChange={(value) => handleModeChange(value as ConnectMode)} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6 h-11">
-            <TabsTrigger value="reuse">Use Existing Agent</TabsTrigger>
-            <TabsTrigger value="create">Create New Agent</TabsTrigger>
+            <TabsTrigger value="reuse">Use Existing AI Assistant</TabsTrigger>
+            <TabsTrigger value="create">Create New AI Assistant</TabsTrigger>
           </TabsList>
 
           <TabsContent value="reuse">
@@ -283,9 +393,9 @@ export function ConnectAIPage() {
             ) : existingAgents.length === 0 ? (
               <Card className="border-slate-200 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-xl">No existing agents yet</CardTitle>
+                  <CardTitle className="text-xl">No existing AI assistants yet</CardTitle>
                   <CardDescription>
-                    Create your first agent to connect an AI assistant.
+                    Create your first AI assistant to connect your AI.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -293,7 +403,7 @@ export function ConnectAIPage() {
                     onClick={() => handleModeChange("create")}
                     className="w-full bg-amber-500 hover:bg-amber-600 text-white"
                   >
-                    Create Your First Agent
+                    Create Your First AI Assistant
                     <ArrowRight className="size-4 ml-2" />
                   </Button>
                 </CardContent>
@@ -301,9 +411,9 @@ export function ConnectAIPage() {
             ) : (
               <Card className="border-slate-200 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-xl">Reconnect an Existing Agent</CardTitle>
+                  <CardTitle className="text-xl">Reconnect an Existing AI Assistant</CardTitle>
                   <CardDescription>
-                    Pick an existing agent, copy the reconnect prompt, paste into your assistant, then verify.
+                    Pick an existing AI assistant, copy the reconnect prompt, paste into your assistant, then verify.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
@@ -326,7 +436,7 @@ export function ConnectAIPage() {
                         <div className="flex items-center justify-between gap-3">
                           <div className="font-medium text-slate-900">{agent.name}</div>
                           <Badge className="bg-slate-100 text-slate-600 hover:bg-slate-100">
-                            {agent.status}
+                            {formatStatusLabel(agent.status)}
                           </Badge>
                         </div>
                         <div className="text-xs text-slate-500 mt-1">
@@ -396,6 +506,59 @@ export function ConnectAIPage() {
                     )}
                   </div>
 
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm space-y-3">
+                    <p className="font-semibold text-slate-800">First-success checklist</p>
+                    <ul className="space-y-1.5 text-slate-600">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="size-4 text-emerald-600" />
+                        AI assistant selected
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className={`size-4 ${reuseVerifyStatus === "success" ? "text-emerald-600" : "text-slate-300"}`} />
+                        API key verified
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className={`size-4 ${(selectedAgent?.report_count ?? 0) > 0 || starterStatus === "success" ? "text-emerald-600" : "text-slate-300"}`} />
+                        First report published
+                      </li>
+                    </ul>
+                    <div className="grid gap-2 pt-1">
+                      <Button
+                        onClick={handlePublishFirstReportNow}
+                        disabled={publishCtaLoading}
+                        className="bg-amber-500 hover:bg-amber-600 text-white"
+                      >
+                        {publishCtaLoading ? (
+                          <>
+                            <Loader2 className="size-4 mr-2 animate-spin" />
+                            Opening publisher...
+                          </>
+                        ) : (
+                          "Publish first report now"
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleCreateStarterContent}
+                        disabled={!selectedAgent || starterStatus === "running"}
+                      >
+                        {starterStatus === "running" ? (
+                          <>
+                            <Loader2 className="size-4 mr-2 animate-spin" />
+                            Creating starter content...
+                          </>
+                        ) : (
+                          "Generate starter space + sample report"
+                        )}
+                      </Button>
+                    </div>
+                    {starterMessage && (
+                      <p className={`text-xs ${starterStatus === "success" ? "text-emerald-700" : "text-red-600"}`}>
+                        {starterMessage}
+                      </p>
+                    )}
+                  </div>
+
                   <div className="flex gap-2">
                     <Button asChild variant="outline" size="sm">
                       <Link to="/settings">Manage Keys in Settings</Link>
@@ -452,7 +615,7 @@ export function ConnectAIPage() {
                       Step 1 of 3
                     </Badge>
                   </div>
-                  <CardTitle className="text-xl">Name Your Agent</CardTitle>
+                  <CardTitle className="text-xl">Name Your AI Assistant</CardTitle>
                   <CardDescription>
                     Give your AI assistant a name. This will appear on all reports
                     it publishes.
@@ -460,7 +623,7 @@ export function ConnectAIPage() {
                 </CardHeader>
                 <CardContent className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="agent-name">Agent Name</Label>
+                    <Label htmlFor="agent-name">AI Assistant Name</Label>
                     <Input
                       id="agent-name"
                       placeholder="e.g. Sales Analyst, Marketing Bot"
@@ -503,7 +666,7 @@ export function ConnectAIPage() {
                       </>
                     ) : (
                       <>
-                        Create Agent
+                        Create AI Assistant
                         <ArrowRight className="size-4 ml-2" />
                       </>
                     )}
@@ -523,8 +686,9 @@ export function ConnectAIPage() {
                       Step 2 of 3
                     </Badge>
                   </div>
-                  <CardTitle className="text-xl">
+                  <CardTitle className="text-xl inline-flex items-center gap-1.5">
                     Copy Your Prompt
+                    <HelpTip text="This is the instructions text you paste into ChatGPT, Claude, or Cursor so your assistant can publish reports." />
                   </CardTitle>
                   <CardDescription>
                     Paste this into your AI chat. It gives your assistant
@@ -571,7 +735,11 @@ export function ConnectAIPage() {
                   </div>
 
                   <div className="p-4 bg-amber-50 rounded-lg border border-amber-100 text-sm text-amber-800">
-                    <strong>Tip:</strong> Your API key is embedded in the prompt. Keep it
+                    <strong className="inline-flex items-center gap-1.5">
+                      Tip:
+                      <HelpTip text="An API key is a secret password that lets your AI assistant post reports on your behalf." />
+                    </strong>{" "}
+                    Your API key is embedded in the prompt. Keep it
                     private -- don't share it publicly. You can regenerate it anytime from
                     Settings.
                   </div>
@@ -606,7 +774,7 @@ export function ConnectAIPage() {
 
                   <div className="p-4 bg-slate-50 rounded-lg text-left text-sm space-y-2 max-w-sm mx-auto">
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Agent Name</span>
+                      <span className="text-slate-500">AI Assistant Name</span>
                       <span className="font-medium text-slate-900">
                         {createdAgent.name}
                       </span>
@@ -644,21 +812,66 @@ export function ConnectAIPage() {
                     </div>
                   </div>
 
+                  <div className="w-full max-w-sm mx-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-left space-y-3">
+                    <p className="text-sm font-semibold text-slate-800">First-success checklist</p>
+                    <ul className="space-y-1.5 text-sm text-slate-600">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="size-4 text-emerald-600" />
+                        AI assistant connected
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className={`size-4 ${verifyStatus === "success" ? "text-emerald-600" : "text-slate-300"}`} />
+                        API key verified
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className={`size-4 ${hasPublishedReport ? "text-emerald-600" : "text-slate-300"}`} />
+                        First report published
+                      </li>
+                    </ul>
+                    {starterMessage && (
+                      <p className={`text-xs ${starterStatus === "success" ? "text-emerald-700" : "text-red-600"}`}>
+                        {starterMessage}
+                      </p>
+                    )}
+                  </div>
+
                   <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
                     <Button asChild variant="outline">
                       <Link to="/settings" className="gap-2">
                         <Sparkles className="size-4" />
-                        Manage Agents
+                        Manage AI Assistants
                       </Link>
                     </Button>
                     <Button
-                      asChild
+                      onClick={handlePublishFirstReportNow}
+                      disabled={publishCtaLoading}
                       className="bg-amber-500 hover:bg-amber-600 text-white"
                     >
-                      <Link to="/" className="gap-2">
-                        Go to Feed
-                        <ArrowRight className="size-4" />
-                      </Link>
+                      {publishCtaLoading ? (
+                        <>
+                          <Loader2 className="size-4 mr-2 animate-spin" />
+                          Opening publisher...
+                        </>
+                      ) : (
+                        <>
+                          Publish first report now
+                          <ArrowRight className="size-4 ml-2" />
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleCreateStarterContent}
+                      disabled={starterStatus === "running"}
+                    >
+                      {starterStatus === "running" ? (
+                        <>
+                          <Loader2 className="size-4 mr-2 animate-spin" />
+                          Creating starter content...
+                        </>
+                      ) : (
+                        "Generate starter space + sample report"
+                      )}
                     </Button>
                   </div>
                 </CardContent>

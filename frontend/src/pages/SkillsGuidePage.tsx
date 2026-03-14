@@ -119,7 +119,7 @@ export function SkillsGuidePage() {
             Building Skills
           </h1>
           <p className="text-lg text-slate-600">
-            Skills are plain-text Markdown files that teach any AI agent how to perform a specific task — no code, no SDK, no deployment pipeline.
+            Skills are plain-text Markdown files that teach any AI assistant how to perform a specific task — no code, no SDK, no deployment pipeline.
           </p>
         </div>
 
@@ -183,7 +183,7 @@ export function SkillsGuidePage() {
                   icon: <Cpu className="size-5 text-blue-600" />,
                   bg: "bg-blue-50",
                   title: "Progressive Disclosure",
-                  body: "Skills are only loaded when relevant. Agents read the description to decide when to activate, keeping your context window efficient."
+                  body: "Skills are only loaded when relevant. AI assistants read the description to decide when to activate, keeping your context window efficient."
                 },
                 {
                   icon: <Wrench className="size-5 text-emerald-600" />,
@@ -206,7 +206,7 @@ export function SkillsGuidePage() {
 
         {/* Install Skills */}
         <div className="mb-14">
-          <h2 className="text-2xl font-bold text-slate-900 mb-2 border-b pb-2">Installing Skills on Your Agent</h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2 border-b pb-2">Installing Skills on Your AI Assistant</h2>
           <p className="text-slate-500 mb-6 text-sm">Install the <code className="bg-slate-100 text-violet-700 px-1 py-0.5 rounded">/learn</code> command to search and install 100,000+ skills from <a href="https://agentskill.sh" target="_blank" rel="noopener noreferrer" className="text-violet-600 underline">agentskill.sh</a> mid-conversation.</p>
 
           <div className="flex flex-wrap gap-2 mb-6">
@@ -272,8 +272,8 @@ export function SkillsGuidePage() {
               <div className="p-4 text-slate-300 relative group">
                 <div className="absolute right-4 top-4 text-xs font-sans text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">Body Instructions</div>
                 <span className="text-violet-400 font-bold"># Google Ads Weekly Analyzer</span><br /><br />
-                <span className="text-muted-foreground/60 italic">// Tell the agent which tools it MUST use</span><br />
-                You are a digital marketing agent. Use the following MCPs:<br />
+                <span className="text-muted-foreground/60 italic">// Tell the AI assistant which tools it MUST use</span><br />
+                You are a digital marketing AI assistant. Use the following MCPs:<br />
                 1. `google-ads-mcp` to pull campaign metrics for the last 7 days.<br />
                 2. `postgres-mcp` to cross-reference clicks with confirmed purchases.<br /><br />
                 <span className="text-violet-400 font-bold">## Output Format</span><br />
@@ -285,9 +285,9 @@ export function SkillsGuidePage() {
           <div className="space-y-5">
             {[
               { step: "1", title: "Initialize the File", body: "Create `.agents/skills/<your-skill-name>/SKILL.md` in your project. The folder name becomes the skill's slug." },
-              { step: "2", title: "Define the Trigger", body: "Write the YAML `description` carefully. This is how the agent knows *when* to activate this skill. Be specific — include trigger phrases like 'Use when the user asks for...'." },
+              { step: "2", title: "Define the Trigger", body: "Write the YAML `description` carefully. This is how the AI assistant knows *when* to activate this skill. Be specific — include trigger phrases like 'Use when the user asks for...'." },
               { step: "3", title: "Write Explicit Steps", body: "Numbered checklists work best. Instead of 'Analyze the DB', write '1. Query public.users WHERE active=true. 2. Group by signup_date. 3. Return the top 10 cohorts.'." },
-              { step: "4", title: "Publish to Open Reporting", body: "Tell the agent to format its final output as an Open Reporting HTML artifact and submit it here. Your reports become the institutional memory of your team." },
+              { step: "4", title: "Publish to Open Reporting", body: "Tell the AI assistant to format its final output as an Open Reporting HTML artifact and submit it here. Your reports become the institutional memory of your team." },
             ].map(item => (
               <div key={item.step} className="flex gap-4 items-start">
                 <div className="size-8 shrink-0 rounded-full bg-violet-100 text-violet-700 text-sm font-bold flex items-center justify-center mt-0.5 border border-violet-200">

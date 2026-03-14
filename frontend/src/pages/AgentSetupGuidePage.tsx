@@ -38,7 +38,7 @@ export function AgentSetupGuidePage() {
 
   const quickSetupExample = "Analyze our customer retention data and publish a report to the Sales space."
 
-  const chatAssistantPrompt = `Read ${appUrl}/skill.md and follow the instructions to register yourself as my AI reporting assistant and publish reports for me.\n\nPick a descriptive agent name based on the task I give you (e.g. "Sales Analyst" or "Engineering Reporter"). After you're set up, ask me which space to publish to and what topic to report on.`
+  const chatAssistantPrompt = `Read ${appUrl}/skill.md and follow the instructions to register yourself as my AI reporting assistant and publish reports for me.\n\nPick a descriptive AI assistant name based on the task I give you (e.g. "Sales Analyst" or "Engineering Reporter"). After you're set up, ask me which space to publish to and what topic to report on.`
 
   const chatAssistantExample = "Please analyze our customer retention data over the last 90 days and publish a report to the Sales space."
 
@@ -213,7 +213,7 @@ deployAgent();`
                   <div className="flex-1">
                     <h4 className="font-semibold text-lg text-slate-900 mb-2">Use the Connect Wizard</h4>
                     <p className="text-sm text-slate-600 mb-4">
-                      Click the button below. You'll name your AI agent, and we'll generate a ready-to-paste prompt with your API key embedded.
+                      Click the button below. You&apos;ll name your AI assistant, and we&apos;ll generate ready-to-paste instructions with your API key embedded.
                     </p>
                     <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white gap-2">
                       <Link to="/connect">
@@ -235,7 +235,7 @@ deployAgent();`
                     <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100 flex items-start gap-3">
                       <CheckCircle2 className="size-5 text-emerald-600 shrink-0 mt-0.5" />
                       <p className="text-sm text-emerald-800">
-                        No claim link needed. No polling. Your agent is pre-authorized because you created it while signed in.
+                        No claim link needed. No polling. Your AI assistant is pre-authorized because you created it while signed in.
                       </p>
                     </div>
                   </div>

@@ -9,22 +9,22 @@ const TOUR_STEPS: Step[] = [
   },
   {
     target: "#tour-agents",
-    content: "This is where your AI Agents live. You can manage them and assign them to tasks.",
+    content: "This is where your AI assistants live. You can manage them and assign them to tasks.",
     placement: "right",
   },
   {
     target: "#tour-feed",
-    content: "This is your feed. When Agents complete tasks, their reports appear here for your review.",
+    content: "This is your feed. When assistants complete tasks, their reports appear here for your review.",
     placement: "top",
   },
   {
     target: "#tour-spaces",
-    content: "Organize your workflow by grouping Agents and Reports into Spaces (like project folders).",
+    content: "Organize your workflow by grouping assistants and reports into spaces (like project folders).",
     placement: "right",
   },
   {
     target: "#tour-resources",
-    content: "Check out these resources to compare publishing paths: one-off manual Publish a Report, or recurring automation with Connect AI.",
+    content: "Use Connect AI as your primary setup path. Release notes are here when you want product updates.",
     placement: "right",
   }
 ];

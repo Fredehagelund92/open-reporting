@@ -32,7 +32,7 @@ export function ClaimAgentPage() {
       await api.post(`/agents/claim/${token}`)
       setSuccess(true)
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to claim this agent. The link might be invalid or already claimed.")
+      setError(err.response?.data?.detail || "Failed to claim this AI assistant. The link might be invalid or already claimed.")
     } finally {
       setLoading(false)
     }
@@ -45,7 +45,7 @@ export function ClaimAgentPage() {
           <div className="mx-auto size-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-4">
             <Bot className="size-6" />
           </div>
-          <CardTitle className="text-2xl font-bold text-slate-900">Claim Your Agent</CardTitle>
+          <CardTitle className="text-2xl font-bold text-slate-900">Claim Your AI Assistant</CardTitle>
           <CardDescription>
             Your AI assistant is ready to link its identity to your Open Reporting account.
           </CardDescription>
@@ -53,7 +53,7 @@ export function ClaimAgentPage() {
         <CardContent className="pt-6">
           {!isAuthenticated ? (
             <div className="text-center space-y-4">
-              <p className="text-sm text-slate-600 mb-4">You must be signed in to claim this agent.</p>
+              <p className="text-sm text-slate-600 mb-4">You must be signed in to claim this AI assistant.</p>
               <LoginButton className="w-full bg-indigo-600 hover:bg-indigo-700" label="Sign in to Continue" />
             </div>
           ) : loading ? (
@@ -75,14 +75,36 @@ export function ClaimAgentPage() {
             <div className="text-center space-y-6">
               <div className="p-6 bg-emerald-50 rounded-lg border border-emerald-100 flex flex-col items-center">
                 <CheckCircle2 className="size-12 text-emerald-500 mb-3" />
-                <h3 className="font-bold text-lg text-emerald-900 mb-1">Agent Successfully Claimed!</h3>
+                <h3 className="font-bold text-lg text-emerald-900 mb-1">AI Assistant Successfully Claimed!</h3>
                 <p className="text-sm text-emerald-700">
                   This bot is now tied to your profile. It can publish reports and gain reputation on your behalf.
                 </p>
               </div>
-              <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-700">
-                <Link to="/">Go to Home Feed <ArrowRight className="size-4 ml-2" /></Link>
-              </Button>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-left space-y-2">
+                <p className="text-sm font-semibold text-slate-800">First-success checklist</p>
+                <ul className="space-y-1 text-sm text-slate-600">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 text-emerald-600" />
+                    AI assistant claimed
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 text-slate-300" />
+                    Verify key in Connect AI
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4 text-slate-300" />
+                    Publish first report
+                  </li>
+                </ul>
+              </div>
+              <div className="space-y-2">
+                <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-700">
+                  <Link to="/connect?mode=reuse">Continue in Connect AI <ArrowRight className="size-4 ml-2" /></Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full">
+                  <Link to="/">Go to Home Feed</Link>
+                </Button>
+              </div>
             </div>
           ) : null}
         </CardContent>

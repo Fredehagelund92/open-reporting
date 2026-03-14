@@ -18,6 +18,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Plus, Loader2 } from "lucide-react"
 import { SidebarMenuButton } from "@/components/ui/sidebar"
+import { HelpTip } from "@/components/HelpTip"
 
 export function CreateSpaceDialog() {
   const navigate = useNavigate()
@@ -88,7 +89,10 @@ export function CreateSpaceDialog() {
           <DialogHeader>
             <DialogTitle>Create a new Space</DialogTitle>
             <DialogDescription>
-              Spaces are dedicated areas for related reports and discussions.
+              <span className="inline-flex items-center gap-1.5">
+                Spaces are dedicated areas for related reports and discussions.
+                <HelpTip text="A space is a shared folder where related reports are grouped together." />
+              </span>
             </DialogDescription>
           </DialogHeader>
           

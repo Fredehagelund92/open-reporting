@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, select, func, col
 
 from app.database import get_session
-from app.models import Report, Comment, Upvote, User, Space, SpaceAccess, Mention, Notification
+from app.models import Report, Comment, Upvote, User, Space, SpaceAccess, Mention, Notification, Reaction
 from app.auth.dependencies import get_current_user, get_current_user_optional
 
 router = APIRouter(prefix="/api/v1/reports", tags=["Curation & Comments"])
@@ -21,11 +21,30 @@ class CommentCreateRequest(BaseModel):
     text: str
 
 
+class CommentReactionSummary(BaseModel):
+    emoji: str
+    count: int
+    reacted: bool = False
+
+
 class CommentResponse(BaseModel):
     id: str
     text: str
     author_name: str
+    author_avatar: Optional[str] = None
     created_at: str
+    reactions: list[CommentReactionSummary] = []
+
+
+class ReactionToggleRequest(BaseModel):
+    emoji: str
+
+
+class ReactionToggleResponse(BaseModel):
+    comment_id: str
+    emoji: str
+    reacted: bool
+    total_count: int
 
 
 class UpvoteResponse(BaseModel):
@@ -65,14 +84,52 @@ def list_comments(
         select(Comment).where(Comment.report_id == report_id).order_by(Comment.created_at)
     ).all()
 
+    comment_ids = [comment.id for comment in comments]
+    reaction_counts: dict[str, dict[str, int]] = {}
+    user_reactions: set[tuple[str, str]] = set()
+    if comment_ids:
+        reaction_rows = session.exec(
+            select(Reaction.comment_id, Reaction.emoji, func.count(Reaction.id))
+            .where(col(Reaction.comment_id).in_(comment_ids))
+            .group_by(Reaction.comment_id, Reaction.emoji)
+        ).all()
+        for comment_id, emoji, total in reaction_rows:
+            if not comment_id:
+                continue
+            reaction_counts.setdefault(comment_id, {})[emoji] = int(total)
+
+        if current_user:
+            reacted_rows = session.exec(
+                select(Reaction.comment_id, Reaction.emoji).where(
+                    Reaction.user_id == current_user.id,
+                    col(Reaction.comment_id).in_(comment_ids),
+                )
+            ).all()
+            user_reactions = {
+                (comment_id, emoji)
+                for comment_id, emoji in reacted_rows
+                if comment_id
+            }
+
     results = []
     for c in comments:
         author = session.get(User, c.author_id)
+        per_comment_counts = reaction_counts.get(c.id, {})
+        reaction_items = [
+            CommentReactionSummary(
+                emoji=emoji,
+                count=count,
+                reacted=(c.id, emoji) in user_reactions,
+            )
+            for emoji, count in sorted(per_comment_counts.items(), key=lambda item: (-item[1], item[0]))
+        ]
         results.append(CommentResponse(
             id=c.id,
             text=c.text,
             author_name=author.name if author else "Unknown",
+            author_avatar=author.avatar_url if author else None,
             created_at=c.created_at.isoformat(),
+            reactions=reaction_items,
         ))
     return results
 
@@ -130,7 +187,71 @@ def create_comment(
         id=comment.id,
         text=comment.text,
         author_name=current_user.name,
+        author_avatar=current_user.avatar_url,
         created_at=comment.created_at.isoformat(),
+        reactions=[],
+    )
+
+
+@router.post("/{report_id}/comments/{comment_id}/reactions", response_model=ReactionToggleResponse)
+def toggle_comment_reaction(
+    report_id: str,
+    comment_id: str,
+    body: ReactionToggleRequest,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Toggle an emoji reaction on a comment."""
+    report = session.get(Report, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found.")
+
+    _check_report_access(report, current_user, session)
+
+    comment = session.get(Comment, comment_id)
+    if not comment or comment.report_id != report_id:
+        raise HTTPException(status_code=404, detail="Comment not found.")
+
+    emoji = body.emoji.strip()
+    if not emoji or len(emoji) > 16:
+        raise HTTPException(status_code=422, detail="Emoji must be between 1 and 16 characters.")
+
+    existing = session.exec(
+        select(Reaction).where(
+            Reaction.comment_id == comment_id,
+            Reaction.user_id == current_user.id,
+            Reaction.emoji == emoji,
+        )
+    ).first()
+
+    reacted = False
+    if existing:
+        session.delete(existing)
+    else:
+        session.add(
+            Reaction(
+                emoji=emoji,
+                user_id=current_user.id,
+                comment_id=comment_id,
+                report_id=report_id,
+            )
+        )
+        reacted = True
+
+    session.commit()
+
+    total = session.exec(
+        select(func.count(Reaction.id)).where(
+            Reaction.comment_id == comment_id,
+            Reaction.emoji == emoji,
+        )
+    ).one()
+
+    return ReactionToggleResponse(
+        comment_id=comment_id,
+        emoji=emoji,
+        reacted=reacted,
+        total_count=int(total),
     )
 
 

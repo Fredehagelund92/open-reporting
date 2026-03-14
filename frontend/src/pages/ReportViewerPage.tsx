@@ -143,6 +143,8 @@ export function ReportViewerPage() {
     setShowMentions(false)
     setMentionIndex(-1)
   }
+  const publishedAt = new Date(report.created_at)
+  const publishedLabel = publishedAt.toLocaleString()
 
   return (
     <ScrollArea className="flex-1 bg-white">
@@ -175,7 +177,7 @@ export function ReportViewerPage() {
               <Avatar className="size-4 ml-1">
                 <AvatarFallback className="bg-amber-100 text-amber-700 text-[10px]"><Bot className="size-3" /></AvatarFallback>
               </Avatar>
-              <Link to={`/agent/${report.agent || report.agent_name}`} className="font-medium text-slate-700 hover:underline">{report.agent || report.agent_name}</Link>
+              <Link to={`/assistant/${report.agent || report.agent_name}`} className="font-medium text-slate-700 hover:underline">{report.agent || report.agent_name}</Link>
             </span>
             <span>•</span>
             <span>{report.time || new Date(report.created_at).toLocaleDateString()}</span>
@@ -187,6 +189,20 @@ export function ReportViewerPage() {
                 <Badge variant="secondary" className="font-normal bg-slate-100 text-slate-600">{tag}</Badge>
               </Link>
             ))}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3 mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs">
+            <div>
+              <p className="text-slate-500 uppercase tracking-wide">Generated</p>
+              <p className="font-medium text-slate-700">{publishedLabel}</p>
+            </div>
+            <div>
+              <p className="text-slate-500 uppercase tracking-wide">Artifact Type</p>
+              <p className="font-medium text-slate-700">{report.content_type === "slideshow" ? "Presentation" : "Report"}</p>
+            </div>
+            <div>
+              <p className="text-slate-500 uppercase tracking-wide">Trust Signal</p>
+              <p className="font-medium text-slate-700">Sanitized HTML rendering enabled</p>
+            </div>
           </div>
 
           {/* Vote bar */}
@@ -466,7 +482,7 @@ export function ReportViewerPage() {
           {/* Comment List */}
           <div className="flex flex-col gap-4">
             {comments.map((comment: any) => (
-              <CommentItem key={comment.id} comment={comment} />
+              <CommentItem key={comment.id} comment={comment} reportId={report.id} />
             ))}
           </div>
         </div>
@@ -474,18 +490,39 @@ export function ReportViewerPage() {
     </ScrollArea>
   )
 }
-function CommentItem({ comment }: { comment: any }) {
-  const [reactions, setReactions] = useState<{ emoji: string, count: number, reacted: boolean }[]>([
-    { emoji: "👍", count: Math.floor(Math.random() * 5), reacted: false },
-  ])
+function CommentItem({ comment, reportId }: { comment: any; reportId: string }) {
+  const { isAuthenticated } = useAuth()
+  const [reactions, setReactions] = useState<{ emoji: string; count: number; reacted: boolean }[]>(
+    Array.isArray(comment.reactions) ? comment.reactions : [],
+  )
+  const [isReacting, setIsReacting] = useState<string | null>(null)
 
-  const toggleReaction = (emoji: string) => {
-    setReactions(prev => prev.map(r => {
-      if (r.emoji === emoji) {
-        return { ...r, count: r.reacted ? r.count - 1 : r.count + 1, reacted: !r.reacted }
+  useEffect(() => {
+    setReactions(Array.isArray(comment.reactions) ? comment.reactions : [])
+  }, [comment.id, comment.reactions])
+
+  const toggleReaction = async (emoji: string) => {
+    if (!isAuthenticated || isReacting) return
+    setIsReacting(emoji)
+    setReactions((prev) => {
+      const existing = prev.find((r) => r.emoji === emoji)
+      if (existing) {
+        return prev.map((r) =>
+          r.emoji === emoji
+            ? { ...r, reacted: !r.reacted, count: r.reacted ? Math.max(0, r.count - 1) : r.count + 1 }
+            : r,
+        )
       }
-      return r
-    }))
+      return [...prev, { emoji, count: 1, reacted: true }]
+    })
+    try {
+      await api.post(`/reports/${reportId}/comments/${comment.id}/reactions`, { emoji })
+    } catch (err) {
+      console.error("Reaction update failed", err)
+      setReactions(Array.isArray(comment.reactions) ? comment.reactions : [])
+    } finally {
+      setIsReacting(null)
+    }
   }
 
   return (
@@ -509,8 +546,9 @@ function CommentItem({ comment }: { comment: any }) {
               key={r.emoji}
               variant="outline"
               size="sm"
+              disabled={!isAuthenticated || !!isReacting}
               className={`h-6 px-1.5 rounded-full gap-1 transition-all text-[10px] ${r.reacted ? "bg-amber-50 border-amber-200 text-amber-700" : "hover:bg-slate-50 text-slate-500"}`}
-              onClick={() => toggleReaction(r.emoji)}
+              onClick={() => void toggleReaction(r.emoji)}
             >
               <span>{r.emoji}</span>
               <span className="font-bold">{r.count > 0 ? r.count : ""}</span>
@@ -519,7 +557,12 @@ function CommentItem({ comment }: { comment: any }) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-6 rounded-full text-slate-400 hover:text-amber-600 hover:bg-amber-50">
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={!isAuthenticated || !!isReacting}
+                className="size-6 rounded-full text-slate-400 hover:text-amber-600 hover:bg-amber-50"
+              >
                 <Smile className="size-3.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -535,11 +578,7 @@ function CommentItem({ comment }: { comment: any }) {
                   className="p-0 focus:bg-transparent rounded-md overflow-hidden"
                   onSelect={(e) => {
                     e.preventDefault()
-                    if (!reactions.find(r => r.emoji === emoji)) {
-                      setReactions([...reactions, { emoji, count: 1, reacted: true }])
-                    } else {
-                      toggleReaction(emoji)
-                    }
+                    void toggleReaction(emoji)
                   }}
                 >
                   <Button variant="ghost" size="icon" className="size-9 text-xl hover:bg-slate-100 transition-colors">

@@ -33,19 +33,19 @@ function StatusBadge({ status }: { status: string }) {
   if (status === "IDLE") return (
     <Badge variant="outline" className="gap-1 text-emerald-700 border-emerald-200 bg-emerald-50">
       <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
-      Idle
+      Ready
     </Badge>
   )
   if (status === "GENERATING") return (
     <Badge variant="outline" className="gap-1 text-blue-700 border-blue-200 bg-blue-50">
       <span className="size-1.5 rounded-full bg-blue-500 animate-pulse inline-block" />
-      Generating
+      Working
     </Badge>
   )
   return (
     <Badge variant="outline" className="gap-1 text-slate-500 border-slate-200 bg-slate-50">
       <span className="size-1.5 rounded-full bg-slate-400 inline-block" />
-      Offline
+      Disconnected
     </Badge>
   )
 }
@@ -55,7 +55,6 @@ export function AgentsDirectoryPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "IDLE" | "GENERATING" | "OFFLINE">("all")
-  const [claimFilter, setClaimFilter] = useState<"all" | "claimed" | "unclaimed">("all")
   const [sortKey, setSortKey] = useState<SortKey>("report_count")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
 
@@ -76,11 +75,6 @@ export function AgentsDirectoryPage() {
       (a.description ?? "").toLowerCase().includes(search.toLowerCase())
     )
     .filter(a => statusFilter === "all" ? true : a.status === statusFilter)
-    .filter(a => {
-      if (claimFilter === "claimed") return a.is_claimed
-      if (claimFilter === "unclaimed") return !a.is_claimed
-      return true
-    })
     .sort((a, b) => {
       let va: string | number = a[sortKey] ?? ""
       let vb: string | number = b[sortKey] ?? ""
@@ -113,11 +107,11 @@ export function AgentsDirectoryPage() {
               <div className="p-2 bg-amber-50 rounded-xl">
                 <Bot className="size-6 text-amber-500" />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Agent Directory</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">AI Assistants</h1>
             </div>
             <p className="text-sm text-slate-500 ml-11">
               {loading ? "Loading…" : (
-                <><span className="font-semibold text-emerald-600">{onlineCount} online</span> · {agents.length} registered agents</>
+                <><span className="font-semibold text-emerald-600">{onlineCount} online</span> · {agents.length} registered</>
               )}
             </p>
           </div>
@@ -125,7 +119,7 @@ export function AgentsDirectoryPage() {
             <div className="relative flex-1 min-w-[220px] max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
               <Input 
-                placeholder="Search agents..." 
+                placeholder="Search AI assistants..." 
                 className="pl-9 bg-white border-slate-200"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -133,14 +127,9 @@ export function AgentsDirectoryPage() {
             </div>
             <div className="flex items-center gap-2">
               <Button variant={statusFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("all")}>All</Button>
-              <Button variant={statusFilter === "IDLE" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("IDLE")}>Idle</Button>
-              <Button variant={statusFilter === "GENERATING" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("GENERATING")}>Generating</Button>
-              <Button variant={statusFilter === "OFFLINE" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("OFFLINE")}>Offline</Button>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant={claimFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setClaimFilter("all")}>All Claims</Button>
-              <Button variant={claimFilter === "claimed" ? "default" : "outline"} size="sm" onClick={() => setClaimFilter("claimed")}>Claimed</Button>
-              <Button variant={claimFilter === "unclaimed" ? "default" : "outline"} size="sm" onClick={() => setClaimFilter("unclaimed")}>Unclaimed</Button>
+              <Button variant={statusFilter === "IDLE" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("IDLE")}>Ready</Button>
+              <Button variant={statusFilter === "GENERATING" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("GENERATING")}>Working</Button>
+              <Button variant={statusFilter === "OFFLINE" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("OFFLINE")}>Disconnected</Button>
             </div>
             <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white gap-2">
               <Link to="/connect">
@@ -158,7 +147,7 @@ export function AgentsDirectoryPage() {
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-slate-600">
                   <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-semibold text-slate-600 hover:text-slate-900" onClick={() => handleSort("name")}>
-                    Agent <SortIcon k="name" />
+                    AI Assistant <SortIcon k="name" />
                   </Button>
                 </th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-600">
@@ -194,14 +183,14 @@ export function AgentsDirectoryPage() {
               {!loading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-12 text-center text-slate-400">
-                    No agents match your search.
+                    No AI assistants match your search.
                   </td>
                 </tr>
               )}
               {!loading && filtered.map(agent => (
                 <tr key={agent.id} className="hover:bg-slate-50/60 transition-colors">
                   <td className="px-4 py-3">
-                    <Link to={`/agent/${agent.name}`} className="flex items-center gap-3 group">
+                    <Link to={`/assistant/${agent.name}`} className="flex items-center gap-3 group">
                       <Avatar className="size-8 shrink-0">
                         <AvatarFallback className="bg-amber-100 text-amber-700 text-xs font-bold">
                           {agent.name.slice(0, 2).toUpperCase()}
@@ -238,7 +227,7 @@ export function AgentsDirectoryPage() {
         </div>
 
         {!loading && filtered.length > 0 && (
-          <p className="text-xs text-slate-400 mt-4 text-right">{filtered.length} agent{filtered.length !== 1 ? "s" : ""} · reports in private spaces are hidden</p>
+          <p className="text-xs text-slate-400 mt-4 text-right">{filtered.length} AI assistant{filtered.length !== 1 ? "s" : ""} · reports in private spaces are hidden</p>
         )}
       </main>
     </ScrollArea>
