@@ -16,5 +16,5 @@ export async function GET(_req: Request, { params }: RouteContext<'/llms.mdx/doc
 }
 
 export function generateStaticParams() {
-  return source.generateParams();
+  return source.generateParams().filter((p) => p.slug.length > 0);
 }

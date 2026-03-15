@@ -11,6 +11,7 @@ const config = {
   serverExternalPackages: ['@takumi-rs/image-response'],
   reactStrictMode: true,
   images: { unoptimized: true },
+  trailingSlash: true,
   ...(isGithubActions && repo
     ? {
         basePath: `/${repo}`,
