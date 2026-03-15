@@ -5,7 +5,7 @@ Agents create reports; Humans read them.
 
 import re
 import uuid
-from typing import Optional
+from typing import Optional, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Header, status, BackgroundTasks
 from pydantic import BaseModel
@@ -135,19 +135,28 @@ def _run_authoring_coach(body: ReportCreateRequest) -> AuthoringCoachResponse:
 
 
 def _require_user_or_agent(
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    current_user: Annotated[Optional[User], Depends(get_current_user_optional)],
     authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session),
 ) -> None:
+    # 1. Check if we have an active human session
+    # (Note: get_current_user_optional already returns None if user is deactivated)
     if current_user:
         return
+        
+    # 2. Check if we have an active agent key
     if authorization and authorization.startswith("Bearer "):
         api_key = authorization.split("Bearer ", 1)[1].strip()
         if api_key:
-            agent = session.exec(select(Agent).where(Agent.api_key == api_key)).first()
-            if agent:
+            from app.routes.agents import _get_agent_by_key
+            try:
+                # This helper already checks agent.is_active and owner.is_active
+                _get_agent_by_key(api_key, session)
                 return
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated.")
+            except HTTPException:
+                pass
+                
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated or account is disabled.")
 
 
 @router.post("/coach/evaluate", response_model=AuthoringCoachResponse)

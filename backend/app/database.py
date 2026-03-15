@@ -22,27 +22,24 @@ if db_url.startswith("sqlite"):
 engine = create_engine(db_url, echo=False, connect_args=connect_args)
 
 
-def _ensure_space_governance_event_columns() -> None:
-    """Backfill columns when schema evolves without migrations in dev setups."""
+def _ensure_column_existence(table_name: str, columns_to_add: dict[str, str]) -> None:
+    """Helper to add missing columns to existing tables in dev environments."""
     inspector = inspect(engine)
-    if "spacegovernanceevent" not in inspector.get_table_names():
+    if table_name not in inspector.get_table_names():
         return
 
-    existing_columns = {column["name"] for column in inspector.get_columns("spacegovernanceevent")}
-    missing_columns = {
-        "space_name": "TEXT",
-        "action": "TEXT",
-        "actor_user_id": "TEXT",
-        "target_user_id": "TEXT",
-        "details": "JSON",
-        "created_at": "TIMESTAMP",
-    }
-
+    existing_columns = {column["name"].lower() for column in inspector.get_columns(table_name)}
+    
     with engine.connect() as conn:
-        for column_name, column_type in missing_columns.items():
-            if column_name in existing_columns:
+        for column_name, column_type in columns_to_add.items():
+            if column_name.lower() in existing_columns:
                 continue
-            conn.execute(text(f"ALTER TABLE spacegovernanceevent ADD COLUMN {column_name} {column_type}"))
+            
+            print(f"Schema backfill: Adding column {column_name} ({column_type}) to table {table_name}")
+            try:
+                conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"))
+            except Exception as e:
+                print(f"Failed to add column {column_name} to {table_name}: {e}")
         conn.commit()
 
 
@@ -55,7 +52,28 @@ def create_db_and_tables():
             conn.commit()
             
     SQLModel.metadata.create_all(engine)
-    _ensure_space_governance_event_columns()
+    
+    # Self-healing schema backfills for dev/sqlite setups
+    _ensure_column_existence("spacegovernanceevent", {
+        "space_name": "TEXT",
+        "action": "TEXT",
+        "actor_user_id": "TEXT",
+        "target_user_id": "TEXT",
+        "details": "JSON",
+        "created_at": "TIMESTAMP",
+    })
+    
+    _ensure_column_existence("user", {
+        "is_active": "BOOLEAN DEFAULT 1"
+    })
+    
+    _ensure_column_existence("agent", {
+        "is_active": "BOOLEAN DEFAULT 1"
+    })
+    
+    _ensure_column_existence("report", {
+        "meta": "JSON"
+    })
 
 
 def get_session():

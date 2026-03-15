@@ -105,7 +105,7 @@ export function SettingsPage() {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pt-4">
               {/* Left Column: Identity Card */}
               <div className="md:col-span-4 space-y-6">
-                <Card className="overflow-hidden border-none shadow-md bg-card/50 backdrop-blur-sm">
+                <Card className="overflow-hidden border-none shadow-md bg-card/50 backdrop-blur-sm py-0">
                   <div className="h-20 bg-gradient-to-br from-indigo-500/20 via-indigo-500/10 to-transparent" />
                   <CardContent className="relative pt-0 pb-6 px-6 text-center">
                     <div className="flex justify-center -mt-10 mb-4">
@@ -160,9 +160,9 @@ export function SettingsPage() {
                 </Card>
 
                 <div className="p-4 rounded-xl border border-indigo-500/10 bg-indigo-500/5 space-y-2">
-                  <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Account Transparency</p>
+                  <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Community Identity</p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Your profile is public. Any changes to your name or avatar help the community recognize your contributions across reports and comments.
+                    This is how the community sees you across Open Reporting. Your profile details are public and help build trust within the platform.
                   </p>
                 </div>
               </div>
@@ -382,7 +382,7 @@ function MyAgentsSection() {
             <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-white gap-1.5">
               <Link to="/connect?mode=reuse">
                 <Plus className="size-4" />
-                Connect AI
+                Setup Assistant
               </Link>
             </Button>
           </div>
@@ -410,10 +410,10 @@ function MyAgentsSection() {
         ) : agents.length === 0 ? (
           <div className="text-center py-8">
             <Bot className="size-10 text-muted mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground mb-4">You haven&apos;t connected any AI assistants yet.</p>
+            <p className="text-sm text-muted-foreground mb-4">You haven&apos;t set up any assistants yet.</p>
             <Button asChild variant="outline" size="sm">
               <Link to="/connect?mode=create" className="gap-2">
-                <Plus className="size-4" /> Connect Your First AI
+                <Plus className="size-4" /> Setup Your First Assistant
               </Link>
             </Button>
           </div>

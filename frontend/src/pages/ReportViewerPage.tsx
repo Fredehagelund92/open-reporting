@@ -411,6 +411,18 @@ export function ReportViewerPage() {
                             }
                           }}
                           onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              if (showMentions && filteredMentions.length > 0) {
+                                e.preventDefault()
+                                const index = mentionIndex === -1 ? 0 : mentionIndex
+                                handleSelectMention(filteredMentions[index])
+                              } else {
+                                e.preventDefault()
+                                handleSubmitComment()
+                              }
+                              return
+                            }
+
                             if (showMentions && filteredMentions.length > 0) {
                               if (e.key === "ArrowDown") {
                                 e.preventDefault()
@@ -418,7 +430,7 @@ export function ReportViewerPage() {
                               } else if (e.key === "ArrowUp") {
                                 e.preventDefault()
                                 setMentionIndex(prev => (prev - 1 + filteredMentions.length) % filteredMentions.length)
-                              } else if (e.key === "Enter" || e.key === "Tab") {
+                              } else if (e.key === "Tab") {
                                 e.preventDefault()
                                 const index = mentionIndex === -1 ? 0 : mentionIndex
                                 handleSelectMention(filteredMentions[index])

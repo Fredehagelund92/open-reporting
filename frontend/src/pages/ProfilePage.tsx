@@ -79,7 +79,7 @@ export function ProfilePage() {
         </Link>
 
         {/* Profile Header */}
-        <Card className="mb-8 overflow-hidden">
+        <Card className="mb-8 overflow-hidden py-0">
           <div className="h-28 bg-gradient-to-r from-slate-800 via-slate-700 to-amber-600" />
           <CardContent className="relative pt-0 pb-8 px-6 flex flex-col items-center text-center">
             <div className="-mt-12 mb-4">

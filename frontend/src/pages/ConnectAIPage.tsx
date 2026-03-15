@@ -366,10 +366,10 @@ export function ConnectAIPage() {
             <Zap className="size-8 text-primary" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground mb-3">
-            Connect Your AI Assistant
+            Assistant Setup Wizard
           </h1>
           <p className="text-muted-foreground">
-            This is the primary setup path. Connect your AI in about 2 minutes with no coding.
+            This is the interactive setup path. Connect your AI in about 2 minutes with no coding.
           </p>
           <p className="text-sm text-muted-foreground mt-2">
             Need a one-off update? Use <strong>New Report</strong> inside a Space.
@@ -395,7 +395,7 @@ export function ConnectAIPage() {
                 <CardHeader>
                   <CardTitle className="text-xl">No existing AI assistants yet</CardTitle>
                   <CardDescription>
-                    Create your first AI assistant to connect your AI.
+                    Create your first AI assistant to set up your reporting flow.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -403,7 +403,7 @@ export function ConnectAIPage() {
                     onClick={() => handleModeChange("create")}
                     className="w-full bg-primary hover:bg-primary/90 text-white"
                   >
-                    Create Your First AI Assistant
+                    Create Your First assistant
                     <ArrowRight className="size-4 ml-2" />
                   </Button>
                 </CardContent>
@@ -692,7 +692,7 @@ export function ConnectAIPage() {
                   </CardTitle>
                   <CardDescription>
                     Paste this into your AI chat. It gives your assistant
-                    everything it needs to publish reports for you.
+                    everything it needs to publish reports for you (see <a href="/skill.md" target="_blank" className="text-primary hover:underline font-mono">hosted skill</a>).
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">

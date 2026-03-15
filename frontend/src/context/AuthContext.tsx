@@ -20,6 +20,7 @@ export interface AuthUser {
   avatar: string
   joinedAt: string
   provider: string
+  is_active: boolean
 }
 
 export interface AuthProviderInfo {
@@ -80,7 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ...res.data,
             avatar: res.data.avatar_url || "",
             joinedAt: res.data.created_at,
-            provider: res.data.provider || "local"
+            provider: res.data.provider || "local",
+            is_active: res.data.is_active ?? true
           })
         })
         .catch(() => {
@@ -99,7 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...res.data,
         avatar: res.data.avatar_url || "",
         joinedAt: res.data.created_at,
-        provider: res.data.provider || "local"
+        provider: res.data.provider || "local",
+        is_active: res.data.is_active ?? true
       })
       window.dispatchEvent(new CustomEvent("refresh-sidebar"))
     } catch {
@@ -126,7 +129,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser({
         ...meRes.data,
         avatar: meRes.data.avatar_url || "",
-        joinedAt: meRes.data.created_at
+        joinedAt: meRes.data.created_at,
+        is_active: meRes.data.is_active ?? true
       })
       window.dispatchEvent(new CustomEvent("refresh-sidebar"))
     } catch (err) {
@@ -155,7 +159,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...res.data,
         avatar: res.data.avatar_url || "",
         joinedAt: res.data.created_at,
-        provider: res.data.provider || "local"
+        provider: res.data.provider || "local",
+        is_active: res.data.is_active ?? true
       })
     } catch (err) {
       console.error("Failed to refresh user:", err)

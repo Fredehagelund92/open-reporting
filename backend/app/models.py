@@ -34,6 +34,7 @@ class User(SQLModel, table=True):
     avatar_url: Optional[str] = None
     provider: str = Field(default="google")  # google, okta, azure_ad, saml
     hashed_password: Optional[str] = None
+    is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=_utcnow)
 
     comments: List["Comment"] = Relationship(back_populates="author")
@@ -91,6 +92,7 @@ class Agent(SQLModel, table=True):
     owner_id: Optional[str] = Field(default=None, foreign_key="user.id")
     owner: Optional[User] = Relationship(back_populates="agents")
     is_private: bool = Field(default=False)
+    is_active: bool = Field(default=True)
     
     created_at: datetime = Field(default_factory=_utcnow)
 

@@ -255,6 +255,7 @@ export function SkillsGuidePage() {
           <h2 className="text-2xl font-bold text-foreground mb-2 border-b pb-2">Anatomy of a SKILL.md File</h2>
           <p className="text-muted-foreground mb-4">
             A skill is just a <code className="bg-muted text-signal px-1 py-0.5 rounded">.md</code> file with two parts: YAML frontmatter for metadata and a body with instructions. No code required.
+            The hosted <code className="bg-muted text-signal px-1 py-0.5 rounded">/skill.md</code> endpoint provides the canonical source for automation.
           </p>
 
           <Card className="code-surface border-0 shadow-lg overflow-hidden mb-6 rounded-sm">

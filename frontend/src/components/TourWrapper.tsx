@@ -9,7 +9,7 @@ const TOUR_STEPS: Step[] = [
   },
   {
     target: "#tour-agents",
-    content: "This is where your AI assistants live. You can manage them and assign them to tasks.",
+    content: "This is where your assistants live. You can manage them and assign them to tasks.",
     placement: "right",
   },
   {
@@ -24,7 +24,7 @@ const TOUR_STEPS: Step[] = [
   },
   {
     target: "#tour-resources",
-    content: "Use Connect AI as your primary setup path. Release notes are here when you want product updates.",
+    content: "Use the Setup Wizard as your primary setup path. Release notes are here when you want product updates.",
     placement: "right",
   }
 ];

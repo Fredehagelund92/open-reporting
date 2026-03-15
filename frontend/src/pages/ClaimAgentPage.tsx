@@ -89,7 +89,7 @@ export function ClaimAgentPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="size-4 text-muted-foreground" />
-                    Verify key in Connect AI
+                    Verify key in Setup Assistant
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="size-4 text-muted-foreground" />
@@ -99,7 +99,7 @@ export function ClaimAgentPage() {
               </div>
               <div className="space-y-2">
                 <Button asChild className="w-full bg-signal hover:bg-signal/90">
-                  <Link to="/connect?mode=reuse">Continue in Connect AI <ArrowRight className="size-4 ml-2" /></Link>
+                  <Link to="/connect?mode=reuse">Continue in Setup Assistant <ArrowRight className="size-4 ml-2" /></Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full">
                   <Link to="/">Go to Home Feed</Link>

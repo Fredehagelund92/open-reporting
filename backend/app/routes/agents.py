@@ -40,6 +40,7 @@ class AgentProfileResponse(BaseModel):
     report_count: int = 0
     owner_name: Optional[str] = None
     owner_id: Optional[str] = None
+    is_active: bool
 
 
 class AgentUpdateRequest(BaseModel):
@@ -62,6 +63,18 @@ def _get_agent_by_key(api_key: str, session: Session) -> Agent:
     agent = session.exec(select(Agent).where(Agent.api_key == api_key)).first()
     if not agent:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key.")
+    
+    # Check if agent itself is active
+    if not agent.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Agent is deactivated.")
+        
+    # Ban Inheritance: If owner is banned, agent is suspended
+    if agent.owner and not agent.owner.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Agent is suspended because the owner account is inactive."
+        )
+        
     return agent
 
 
@@ -157,6 +170,7 @@ def get_my_profile(agent: Agent = Depends(get_current_agent)):
         is_claimed=agent.is_claimed,
         created_at=agent.created_at.isoformat(),
         report_count=len(agent.reports) if agent.reports else 0,
+        is_active=agent.is_active,
     )
 
 
@@ -186,6 +200,7 @@ def update_my_profile(
         is_claimed=agent.is_claimed,
         created_at=agent.created_at.isoformat(),
         report_count=len(agent.reports) if agent.reports else 0,
+        is_active=agent.is_active,
     )
 
 
@@ -256,6 +271,7 @@ class MyAgentItem(BaseModel):
     api_key_hint: str
     report_count: int
     created_at: str
+    is_active: bool
     last_published_at: Optional[str] = None
 
 
@@ -278,6 +294,7 @@ def list_my_agents(
             api_key_hint=f"{a.api_key[:12]}...{a.api_key[-4:]}",
             report_count=len(a.reports) if a.reports else 0,
             created_at=a.created_at.isoformat(),
+            is_active=a.is_active,
             last_published_at=max((r.created_at for r in a.reports), default=None).isoformat() if a.reports else None,
         )
         for a in agents
@@ -338,9 +355,43 @@ def list_agents(
             report_count=len(a.reports) if a.reports else 0,
             owner_name=a.owner.name if a.owner else None,
             owner_id=a.owner_id,
+            is_active=a.is_active,
         )
         for a in agents
     ]
+
+class AgentStatusUpdate(BaseModel):
+    is_active: bool
+
+@router.patch("/{agent_id}/status", response_model=AgentProfileResponse)
+def update_agent_status(
+    agent_id: str,
+    body: AgentStatusUpdate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Toggle an agent's active status (Admin or Owner only)."""
+    agent = session.get(Agent, agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+        
+    if agent.owner_id != current_user.id and current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not authorized to manage this agent.")
+        
+    agent.is_active = body.is_active
+    session.add(agent)
+    session.commit()
+    session.refresh(agent)
+    
+    return AgentProfileResponse(
+        id=agent.id, name=agent.name, description=agent.description,
+        status=agent.status, is_claimed=agent.is_claimed,
+        created_at=agent.created_at.isoformat(),
+        report_count=len(agent.reports) if agent.reports else 0,
+        owner_name=agent.owner.name if agent.owner else None,
+        owner_id=agent.owner_id,
+        is_active=agent.is_active,
+    )
 
 
 @router.get("/profile")
@@ -365,6 +416,7 @@ def get_agent_profile(
         report_count=len(agent.reports) if agent.reports else 0,
         owner_name=agent.owner.name if agent.owner else None,
         owner_id=agent.owner_id,
+        is_active=agent.is_active,
     )
 
 

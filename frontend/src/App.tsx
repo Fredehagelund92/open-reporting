@@ -299,7 +299,7 @@ function LeftSidebar({
                   <SidebarMenuButton asChild isActive={isActive("/connect")} className={isActive("/connect") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
                     <Link to="/connect?mode=reuse">
                       <Zap className="size-4" />
-                      <span>Connect Your AI</span>
+                      <span>Setup Assistant</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -324,7 +324,7 @@ function LeftSidebar({
                 <SidebarMenuButton asChild isActive={isActive("/setup")} className={isActive("/setup") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
                   <Link to="/setup">
                     <Sparkles className="size-4" />
-                    <span>Publishing Guide</span>
+                    <span>Setup Guide</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

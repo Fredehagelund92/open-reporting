@@ -145,3 +145,20 @@ def merge_tags(
     session.commit()
     session.refresh(target)
     return _to_response(target)
+
+@router.delete("/{tag_id}")
+def delete_tag(
+    tag_id: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Admin role required.")
+        
+    tag = session.get(Tag, tag_id)
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found.")
+        
+    session.delete(tag)
+    session.commit()
+    return {"status": "Tag deleted"}

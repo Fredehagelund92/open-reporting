@@ -238,11 +238,24 @@
   @apply absolute left-0 top-1 bottom-1 w-[2px] bg-primary rounded-full;
 }
 
-/* Always-dark code block surface (regardless of theme) */
+/* Theme-responsive code block surface */
 .code-surface {
-  background: oklch(0.16 0.02 260);
-  color: oklch(0.93 0.01 80);
+  @apply rounded-sm transition-colors duration-200;
+  background: oklch(0.97 0.005 80); /* subtle warm light bg */
+  color: oklch(0.25 0.02 260);    /* readable dark text */
+  border: 1px solid oklch(0.88 0.01 80);
 }
-.code-surface .code-keyword { color: oklch(0.72 0.14 195); }
-.code-surface .code-label { color: oklch(0.6 0.06 260); }
-.code-surface .code-accent { color: oklch(0.82 0.16 85); }
+
+.code-surface .code-keyword { color: oklch(0.60 0.15 250); } /* refined blue */
+.code-surface .code-label { color: oklch(0.50 0.02 260); }   /* muted ink */
+.code-surface .code-accent { color: oklch(0.65 0.14 70); }   /* warm amber */
+
+.dark .code-surface {
+  background: oklch(0.14 0.02 260); /* deep charcoal-navy */
+  color: oklch(0.93 0.01 80);      /* off-white text */
+  border-color: oklch(1 0 0 / 8%);
+}
+
+.dark .code-surface .code-keyword { color: oklch(0.75 0.12 200); } /* glowing cyan */
+.dark .code-surface .code-label { color: oklch(0.65 0.02 260); }    /* muted sky */
+.dark .code-surface .code-accent { color: oklch(0.80 0.16 75); }    /* vibrant amber */

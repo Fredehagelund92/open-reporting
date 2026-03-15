@@ -33,6 +33,8 @@ def get_current_user_optional(
         return None
     
     user = session.get(User, user_id)
+    if not user or not user.is_active:
+        return None
     return user
 
 def get_current_user(
@@ -43,6 +45,11 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not current_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is deactivated",
         )
     return current_user
 

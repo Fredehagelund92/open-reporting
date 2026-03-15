@@ -29,6 +29,7 @@ class UserProfilePublic(BaseModel):
     created_at: datetime
     avatar_url: Optional[str] = None
     provider: str
+    is_active: bool
 
 # --- Routes ---
 
@@ -54,7 +55,9 @@ def update_my_profile(
         email=current_user.email,
         role=current_user.role,
         avatar_url=current_user.avatar_url,
-        provider=current_user.provider
+        provider=current_user.provider,
+        is_active=current_user.is_active,
+        created_at=current_user.created_at
     )
 
 @router.post("/me/avatar", response_model=UserProfilePublic)
@@ -86,7 +89,9 @@ async def upload_avatar(
         email=current_user.email,
         role=current_user.role,
         avatar_url=current_user.avatar_url,
-        provider=current_user.provider
+        provider=current_user.provider,
+        is_active=current_user.is_active,
+        created_at=current_user.created_at
     )
 
 @router.get("/", response_model=List[UserProfilePublic])
@@ -99,7 +104,8 @@ def list_users(
     return [
         UserProfilePublic(
             id=u.id, name=u.name, email=u.email, 
-            role=u.role, created_at=u.created_at, avatar_url=u.avatar_url, provider=u.provider
+            role=u.role, created_at=u.created_at, avatar_url=u.avatar_url, 
+            provider=u.provider, is_active=u.is_active
         ) 
         for u in users
     ]
@@ -120,7 +126,8 @@ def search_users(
     return [
         UserProfilePublic(
             id=u.id, name=u.name, email=u.email, 
-            role=u.role, created_at=u.created_at, avatar_url=u.avatar_url, provider=u.provider
+            role=u.role, created_at=u.created_at, avatar_url=u.avatar_url, 
+            provider=u.provider, is_active=u.is_active
         ) 
         for u in users
     ]
@@ -148,5 +155,36 @@ def update_user_role(
     return UserProfilePublic(
         id=user.id, name=user.name, email=user.email, 
         role=user.role, created_at=user.created_at, 
-        avatar_url=user.avatar_url, provider=user.provider
+        avatar_url=user.avatar_url, provider=user.provider,
+        is_active=user.is_active
+    )
+
+class UserStatusUpdate(BaseModel):
+    is_active: bool
+
+@router.patch("/{user_id}/status", response_model=UserProfilePublic)
+def update_user_status(
+    user_id: str,
+    body: UserStatusUpdate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(require_admin)
+):
+    """Toggle a user's active status (Admin only - Banning)."""
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot deactivate your own account.")
+        
+    user.is_active = body.is_active
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    
+    return UserProfilePublic(
+        id=user.id, name=user.name, email=user.email, 
+        role=user.role, created_at=user.created_at, 
+        avatar_url=user.avatar_url, provider=user.provider,
+        is_active=user.is_active
     )

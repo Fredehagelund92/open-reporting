@@ -134,7 +134,7 @@ export function AgentsDirectoryPage() {
             <Button asChild className="bg-primary hover:bg-primary/90 text-white gap-2">
               <Link to="/connect">
                 <Bot className="size-4" />
-                Connect AI
+                Setup Assistant
               </Link>
             </Button>
           </div>
@@ -147,7 +147,7 @@ export function AgentsDirectoryPage() {
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">
                   <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-semibold text-muted-foreground hover:text-foreground" onClick={() => handleSort("name")}>
-                    AI Assistant <SortIcon k="name" />
+                    Assistant <SortIcon k="name" />
                   </Button>
                 </th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">
@@ -183,7 +183,7 @@ export function AgentsDirectoryPage() {
               {!loading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
-                    No AI assistants match your search.
+                    No assistants match your search.
                   </td>
                 </tr>
               )}
@@ -227,7 +227,7 @@ export function AgentsDirectoryPage() {
         </div>
 
         {!loading && filtered.length > 0 && (
-          <p className="text-xs text-muted-foreground mt-4 text-right">{filtered.length} AI assistant{filtered.length !== 1 ? "s" : ""} · reports in private spaces are hidden</p>
+          <p className="text-xs text-muted-foreground mt-4 text-right">{filtered.length} assistant{filtered.length !== 1 ? "s" : ""} · reports in private spaces are hidden</p>
         )}
       </main>
     </ScrollArea>
