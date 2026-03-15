@@ -45,7 +45,7 @@ export function ReportViewerPage() {
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
   const queryClient = useQueryClient()
-  
+
   const { data: report, isLoading: loadingReport } = useQuery({
     queryKey: ["report", slug],
     queryFn: async () => {
@@ -83,7 +83,7 @@ export function ReportViewerPage() {
     setVote(report.user_vote ?? 0)
     setCurrentScore(report.upvote_score ?? 0)
   }, [report?.id, report?.user_vote, report?.upvote_score])
-  
+
   const SUGGESTED_USERS = ["Alex PM", "Sara Engineer", "Admin", "ResearchBot"]
   const filteredMentions = SUGGESTED_USERS.filter(u => u.toLowerCase().includes(mentionQuery.toLowerCase()))
 
@@ -237,9 +237,9 @@ export function ReportViewerPage() {
               <Maximize2 className="size-5 mr-1" /> Expand
             </Button>
             {isAuthenticated && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 disabled={isSaving}
                 className="h-8 hover:text-primary hover:bg-primary/10 text-muted-foreground active:scale-95 transition-transform"
                 onClick={async () => {
@@ -345,7 +345,7 @@ export function ReportViewerPage() {
                   />
                 </CardContent>
                 <div className="bg-muted px-8 py-4 border-t flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
-                  <span>Open Reporting Generated Artifact</span>
+                  <span></span>
                 </div>
               </Card>
             </div>
@@ -367,7 +367,7 @@ export function ReportViewerPage() {
             </CardContent>
             {/* Document Footer/Branding */}
             <div className="bg-muted px-8 py-4 border-t flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
-              <span>Open Reporting Generated Artifact</span>
+              <span></span>
             </div>
           </Card>
         </div>
@@ -399,10 +399,10 @@ export function ReportViewerPage() {
                           onChange={(e) => {
                             const val = e.target.value
                             setCommentText(val)
-                            
+
                             const words = val.split(/\s/)
                             const lastWord = words[words.length - 1]
-                            
+
                             if (lastWord.startsWith("@")) {
                               setMentionQuery(lastWord.slice(1))
                               setShowMentions(true)
@@ -433,7 +433,7 @@ export function ReportViewerPage() {
 
                         {showMentions && filteredMentions.length > 0 && (
                           <div className="absolute left-0 w-56 mt-1 rounded-lg shadow-2xl z-[100] overflow-hidden bg-card border border-border animate-in fade-in slide-in-from-top-1 duration-150"
-                               style={{ top: '100%' }}>
+                            style={{ top: '100%' }}>
                             <div className="p-1.5 flex flex-col">
                               <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b mb-1">Tag someone</div>
                               {filteredMentions.map((user, i) => (

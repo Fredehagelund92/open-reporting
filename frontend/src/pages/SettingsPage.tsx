@@ -7,15 +7,17 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Save, User as UserIcon, Upload, X, Bot, RefreshCw, Copy, Plus, FileText, CheckCircle2, AlertCircle } from "lucide-react"
+import { Loader2, Save, User as UserIcon, Upload, X, Bot, RefreshCw, Copy, Plus, FileText, CheckCircle2, AlertCircle, Bell, Mail } from "lucide-react"
 import { getAvatarColor, getInitials } from "@/lib/user"
 import { api } from "@/lib/api"
 import { LoginButton } from "@/components/LoginButton"
 import { buildAgentConnectPrompt, normalizeApiBaseUrl } from "@/lib/agentPrompts"
 import { HelpTip } from "@/components/HelpTip"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { NotificationSettings } from "@/components/NotificationSettings"
 
 export function SettingsPage() {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   
   // Local state for the form
   const [name, setName] = useState(user?.name || "")
@@ -55,9 +57,8 @@ export function SettingsPage() {
 
       await api.patch("/users/me", { name })
       
-      // Simulate context refresh since we don't have a real context updater here,
-      // but in real app `login()` or `fetchUser()` should just be called.
-      // We'll rely on a page reload or context refresh later if needed.
+      // Update global context so name change reflects in sidebar/profile immediately
+      await refreshUser()
       
       setMessage({ type: "success", text: "Profile updated successfully." })
     } catch (error) {
@@ -87,119 +88,177 @@ export function SettingsPage() {
           <p className="text-muted-foreground text-sm mt-1">Manage your account settings and preferences.</p>
         </div>
 
-        <div className="grid gap-8">
-          {/* My AI Assistants Section */}
-          <MyAgentsSection />
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="profile" className="gap-2">
+              <UserIcon className="size-4" /> Profile
+            </TabsTrigger>
+            <TabsTrigger value="assistants" className="gap-2">
+              <Bot className="size-4" /> AI Assistants
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-2">
+              <Bell className="size-4" /> Notifications
+            </TabsTrigger>
+          </TabsList>
 
-          <Card>
-            <form onSubmit={handleSave}>
-              <CardHeader>
-                <CardTitle>Profile Details</CardTitle>
-                <CardDescription>
-                  Update your personal information.
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent className="space-y-6 pb-10">
-                {/* Avatar Preview */}
-                <div className="flex items-center gap-6">
-                  <Avatar className="size-20 border shadow-sm">
-                    <AvatarImage src={avatarUrl} alt={name} className="object-cover" />
-                    <AvatarFallback className={`text-lg ${getAvatarColor(name || user.id)}`}>
-                      {name ? getInitials(name) : <UserIcon className="size-8" />}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-3 flex-1">
-                    <Label>Profile Picture</Label>
-                    <div className="flex items-center gap-3">
-                      <Label htmlFor="avatar-upload" className="cursor-pointer">
-                        <div className="inline-flex items-center justify-center whitespace-nowrap rounded-sm text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-border bg-card shadow-sm hover:bg-muted hover:text-foreground h-9 px-4 py-2 gap-2">
-                          <Upload className="size-4" />
-                          Upload Image
-                        </div>
-                      </Label>
-                      <input 
-                        id="avatar-upload" 
-                        type="file" 
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarChange}
-                      />
-                      {avatarUrl && (
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          <TabsContent value="profile" className="mt-0">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pt-4">
+              {/* Left Column: Identity Card */}
+              <div className="md:col-span-4 space-y-6">
+                <Card className="overflow-hidden border-none shadow-md bg-card/50 backdrop-blur-sm">
+                  <div className="h-20 bg-gradient-to-br from-indigo-500/20 via-indigo-500/10 to-transparent" />
+                  <CardContent className="relative pt-0 pb-6 px-6 text-center">
+                    <div className="flex justify-center -mt-10 mb-4">
+                      <div className="relative group">
+                        <Avatar className="size-24 border-4 border-card shadow-xl transition-transform duration-300 group-hover:scale-105">
+                          <AvatarImage src={avatarUrl} alt={name} className="object-cover" />
+                          <AvatarFallback className={`text-2xl font-bold ${getAvatarColor(name || user.id)}`}>
+                            {name ? getInitials(name) : <UserIcon className="size-10" />}
+                          </AvatarFallback>
+                        </Avatar>
+                        <Label
+                          htmlFor="avatar-upload"
+                          className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer rounded-full"
+                        >
+                          <Upload className="size-6" />
+                        </Label>
+                        <input
+                          id="avatar-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarChange}
+                        />
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-bold text-foreground truncate">{name || user.name || "Your Name"}</h3>
+                    <p className="text-muted-foreground text-sm truncate mb-4">{user.email}</p>
+                    
+                    <div className="flex items-center justify-center gap-2">
+                      <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider bg-muted/50 border-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+                        {user.role}
+                      </Badge>
+                      <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider bg-muted/50">
+                        Standard Account
+                      </Badge>
+                    </div>
+
+                    {avatarUrl && (
+                      <div className="mt-6 flex justify-center">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/5 text-xs h-8"
                           onClick={handleRemoveAvatar}
                         >
-                          <X className="size-4 mr-1" /> Remove
+                          <X className="size-3 mr-1.5" /> Remove Photo
                         </Button>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Supported formats: JPG, PNG, GIF. Max size 5MB.</p>
-                  </div>
-                </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-                <div className="grid gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Display Name</Label>
-                    <Input 
-                      id="name" 
-                      placeholder="Your name" 
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input 
-                      id="email" 
-                      value={user.email} 
-                      disabled 
-                      className="bg-muted text-muted-foreground"
-                    />
-                    <p className="text-xs text-muted-foreground">Your email address is managed by your identity provider.</p>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Label className="text-muted-foreground/70 uppercase text-[10px] font-mono font-bold tracking-widest">Role</Label>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center rounded-sm bg-muted px-2.5 py-1 text-xs font-mono font-medium text-muted-foreground ring-1 ring-inset ring-border uppercase tracking-wider">
-                        {user.role}
-                      </span>
-                    </div>
-                  </div>
+                <div className="p-4 rounded-xl border border-indigo-500/10 bg-indigo-500/5 space-y-2">
+                  <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Account Transparency</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Your profile is public. Any changes to your name or avatar help the community recognize your contributions across reports and comments.
+                  </p>
                 </div>
-              </CardContent>
+              </div>
 
-              <CardFooter className="flex justify-between border-t bg-muted/50 px-6 py-4">
-                <div className="text-sm">
-                  {message.text && (
-                    <span className={message.type === "success" ? "text-signal" : "text-destructive"}>
-                      {message.text}
-                    </span>
-                  )}
-                </div>
-                <Button type="submit" disabled={isSaving || !name.trim()}>
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 size-4" />
-                      Save Changes
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </form>
-          </Card>
-        </div>
+              {/* Right Column: Edit Form */}
+              <div className="md:col-span-8">
+                <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
+                  <form onSubmit={handleSave}>
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg font-bold">Personal Information</CardTitle>
+                      <CardDescription>
+                        Update your public profile information.
+                      </CardDescription>
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="text-sm font-semibold">Public Display Name</Label>
+                        <Input 
+                          id="name" 
+                          placeholder="Your name" 
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          required
+                          className="bg-background/50 border-border/50 focus:ring-indigo-500/50"
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          This is the name people see on your reports and comments.
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className="text-sm font-semibold">Verified Email</Label>
+                        <div className="relative">
+                          <Input 
+                            id="email" 
+                            value={user.email} 
+                            disabled 
+                            className="bg-muted/50 text-muted-foreground border-transparent cursor-not-allowed pl-9"
+                          />
+                          <Mail className="absolute left-3 top-2.5 size-4 text-muted-foreground/50" />
+                        </div>
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                          <CheckCircle2 className="size-3 text-signal" />
+                          Email managed by {user.provider}
+                        </p>
+                      </div>
+
+                      <div className="pt-4 border-t border-border/10">
+                        <div className="flex items-center justify-between p-4 rounded-lg bg-indigo-500/5 border border-indigo-500/10">
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">Two-Factor Authentication</p>
+                            <p className="text-xs text-muted-foreground">Enhanced security for your account.</p>
+                          </div>
+                          <Badge variant="outline" className="bg-white/50 dark:bg-black/50 text-[10px] font-bold">COMING SOON</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+
+                    <CardFooter className="flex items-center justify-between bg-muted/20 px-6 py-4 rounded-b-xl border-t border-border/10">
+                      <div className="text-sm">
+                        {message.text && (
+                          <span className={`flex items-center gap-1.5 ${message.type === "success" ? "text-signal" : "text-destructive"}`}>
+                            {message.type === "success" ? <CheckCircle2 className="size-4" /> : <AlertCircle className="size-4" />}
+                            {message.text}
+                          </span>
+                        )}
+                      </div>
+                      <Button type="submit" disabled={isSaving || !name.trim()} className="bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-indigo-500/20 shadow-lg">
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="mr-2 size-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 size-4" />
+                            Update Profile
+                          </>
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="assistants">
+            <MyAgentsSection />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <NotificationSettings />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   )

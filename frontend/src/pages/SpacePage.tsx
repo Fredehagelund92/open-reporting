@@ -20,7 +20,8 @@ import {
   ArrowLeft,
   Star,
   FileText,
-  Loader2
+  Loader2,
+  Bell
 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 import { CreateReportDialog } from "@/components/CreateReportDialog"
@@ -56,6 +57,8 @@ export function SpacePage() {
 
   const [isFavorited, setIsFavorited] = useState(false)
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(false)
 
   useEffect(() => {
     if (searchParams.get("newReport") === "1") {
@@ -67,6 +70,10 @@ export function SpacePage() {
     if (user && space?.id) {
       api.get("/auth/me/favorites").then(res => {
         setIsFavorited(res.data.some((f: any) => f.target_type === "space" && f.target_id === space.id))
+      }).catch(err => console.error(err))
+
+      api.get(`/spaces/${space.id}/subscription`).then(res => {
+        setIsSubscribed(res.data.subscribed)
       }).catch(err => console.error(err))
     }
   }, [user, space?.id])
@@ -86,6 +93,23 @@ export function SpacePage() {
       console.error("Failed to favorite space", err)
     } finally {
       setIsFavoriteLoading(false)
+    }
+  }
+
+  const handleToggleSubscription = async () => {
+    if (!space || !user) return
+    setIsSubscriptionLoading(true)
+    try {
+      await api.post("/auth/me/subscriptions", {
+        target_type: "space",
+        target_id: space.id,
+        label: space.name
+      })
+      setIsSubscribed(!isSubscribed)
+    } catch (err) {
+      console.error("Failed to toggle subscription", err)
+    } finally {
+      setIsSubscriptionLoading(false)
     }
   }
 
@@ -148,6 +172,16 @@ export function SpacePage() {
               >
                 {isFavoriteLoading ? <Loader2 className="size-4 animate-spin" /> : <Star className={`size-4 ${isFavorited ? "fill-current" : ""}`} />}
                 {isFavorited ? "Favorited" : "Favorite"}
+              </Button>
+              <Button 
+                variant={isSubscribed ? "secondary" : "default"}
+                size="sm" 
+                className="gap-2 h-9 px-4 font-bold"
+                onClick={handleToggleSubscription}
+                disabled={isSubscriptionLoading}
+              >
+                {isSubscriptionLoading ? <Loader2 className="size-4 animate-spin" /> : <Bell className={`size-4 ${isSubscribed ? "fill-current" : ""}`} />}
+                {isSubscribed ? "Unsubscribe" : "Subscribe"}
               </Button>
               {(user?.role === "ADMIN" || space.owner_id === user?.id) && (
                 <Link to={`/space/${spaceName}/settings`}>

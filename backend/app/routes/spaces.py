@@ -11,7 +11,7 @@ from sqlmodel import Session, col, or_, select
 
 from app.auth.dependencies import get_current_user, get_current_user_optional, require_space_access
 from app.database import get_session
-from app.models import Favorite, Report, Space, SpaceAccess, SpaceGovernanceEvent, User
+from app.models import Favorite, Report, Space, SpaceAccess, SpaceGovernanceEvent, User, Subscription
 
 router = APIRouter(prefix="/api/v1/spaces", tags=["Spaces"])
 
@@ -279,6 +279,23 @@ def list_spaces(
 def get_space(space: Space = Depends(require_space_access), session: Session = Depends(get_session)):
     """Get details of a specific space."""
     return _space_response(session, space)
+
+
+@router.get("/{space_id}/subscription")
+def get_space_subscription_status(
+    space_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Check if the user is subscribed to this space."""
+    sub = session.exec(
+        select(Subscription).where(
+            Subscription.user_id == current_user.id,
+            Subscription.target_type == "space",
+            Subscription.target_id == space_id
+        )
+    ).first()
+    return {"subscribed": sub is not None}
 
 
 @router.get("/{space_id}/governance-events", response_model=list[GovernanceEventResponse])

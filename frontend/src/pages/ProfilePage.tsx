@@ -173,7 +173,7 @@ export function ProfilePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-foreground">Sign out</p>
-                  <p className="text-xs text-muted-foreground">You are signed in via Google</p>
+                  <p className="text-xs text-muted-foreground">You are signed in via <span className="capitalize">{user.provider}</span></p>
                 </div>
                 <Button variant="outline" size="sm" onClick={logout} className="text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive gap-2">
                   <LogOut className="size-4" />

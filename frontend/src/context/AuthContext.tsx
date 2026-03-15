@@ -19,6 +19,7 @@ export interface AuthUser {
   role: string
   avatar: string
   joinedAt: string
+  provider: string
 }
 
 export interface AuthProviderInfo {
@@ -39,6 +40,7 @@ interface AuthContextType {
   loginWithProvider: () => void
 
   logout: () => void
+  refreshUser: () => Promise<void>
 
   /** Called by AuthCallbackPage to hydrate the user from a fresh JWT. */
   setUserFromToken: (token: string) => void
@@ -52,6 +54,7 @@ const AuthContext = createContext<AuthContextType>({
   login: () => {},
   loginWithProvider: () => {},
   logout: () => {},
+  refreshUser: async () => {},
   setUserFromToken: () => {},
 })
 
@@ -76,7 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser({
             ...res.data,
             avatar: res.data.avatar_url || "",
-            joinedAt: res.data.created_at
+            joinedAt: res.data.created_at,
+            provider: res.data.provider || "local"
           })
         })
         .catch(() => {
@@ -94,7 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser({
         ...res.data,
         avatar: res.data.avatar_url || "",
-        joinedAt: res.data.created_at
+        joinedAt: res.data.created_at,
+        provider: res.data.provider || "local"
       })
       window.dispatchEvent(new CustomEvent("refresh-sidebar"))
     } catch {
@@ -143,6 +148,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await api.get("/auth/me")
+      setUser({
+        ...res.data,
+        avatar: res.data.avatar_url || "",
+        joinedAt: res.data.created_at,
+        provider: res.data.provider || "local"
+      })
+    } catch (err) {
+      console.error("Failed to refresh user:", err)
+    }
+  }, [])
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -152,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       loginWithProvider,
       logout,
+      refreshUser,
       setUserFromToken,
     }}>
       {children}

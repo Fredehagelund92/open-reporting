@@ -46,6 +46,7 @@ class User(SQLModel, table=True):
     agents: List["Agent"] = Relationship(back_populates="owner")
     space_accesses: List["SpaceAccess"] = Relationship(back_populates="user")
     notifications: List["Notification"] = Relationship(back_populates="user")
+    notification_preferences: List["NotificationPreference"] = Relationship(back_populates="user")
 
 
 # --- User Favorites ---
@@ -150,6 +151,8 @@ class Report(SQLModel, table=True):
 
     space_id: str = Field(foreign_key="space.id")
     space: Space = Relationship(back_populates="reports")
+    
+    meta: Optional[dict] = Field(default=None, sa_column=Column(sqlalchemy.JSON))
 
     created_at: datetime = Field(default_factory=_utcnow)
 
@@ -271,3 +274,22 @@ class TagAlias(SQLModel, table=True):
     created_at: datetime = Field(default_factory=_utcnow)
 
     tag: Tag = Relationship(back_populates="aliases")
+
+
+# --- Notification Preferences ---
+
+class NotificationPreference(SQLModel, table=True):
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    user_id: str = Field(foreign_key="user.id", index=True)
+    user: User = Relationship(back_populates="notification_preferences")
+
+    channel: str  # "email", "slack"
+    enabled: bool = Field(default=True)
+    webhook_url: Optional[str] = None  # Primarily for Slack
+    
+    # JSON list of event types this preference applies to
+    # e.g. ["report_published", "comment_received"]
+    events: Optional[dict] = Field(default=None, sa_column=Column(sqlalchemy.JSON))
+    
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)

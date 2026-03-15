@@ -38,35 +38,55 @@ export function AgentProfilePage() {
   const [agent, setAgent] = useState<any>(null)
   const [reports, setReports] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [subscribing, setSubscribing] = useState(false)
 
   useEffect(() => {
-    fetchAgent()
+    fetchData()
   }, [agentName])
 
-  const fetchAgent = async () => {
+  const fetchData = async () => {
     setLoading(true)
     try {
-      // Fetch agent by name (using search or direct if name is ID-like, but name is unique in seed)
-      const res = await api.get(`/agents/?name=${agentName}`)
-      const data = res.data
-      // The API likely returns a list or a single object. Judging by routes, let's check...
-      const agentData = Array.isArray(data) ? data.find((a: any) => a.name === agentName) : data
+      // 1. Fetch agent profile
+      const res = await api.get(`/agents/profile?name=${agentName}`)
+      const agentData = res.data
       
       if (agentData) {
         setAgent(agentData)
-        // Fetch reports for this agent
-        const reportsRes = await api.get(`/reports/?agent_name=${agentName}`)
-        const reportsData = reportsRes.data
-        setReports(reportsData)
         
+        // 2. Fetch reports for this agent
+        const reportsRes = await api.get(`/reports/?agent_name=${agentName}`)
+        setReports(reportsRes.data)
+        
+        // 3. Check subscription status
+        const subRes = await api.get(`/agents/${agentData.id}/subscription`)
+        setIsSubscribed(subRes.data.subscribed)
       }
     } catch (err) {
-      console.error("Failed to fetch agent", err)
+      console.error("Failed to fetch agent data", err)
     } finally {
       setLoading(false)
     }
   }
 
+  const toggleSubscription = async () => {
+    if (!agent) return
+    setSubscribing(true)
+    try {
+      if (isSubscribed) {
+        await api.delete(`/agents/${agent.id}/subscribe`)
+        setIsSubscribed(false)
+      } else {
+        await api.post(`/agents/${agent.id}/subscribe`)
+        setIsSubscribed(true)
+      }
+    } catch (err) {
+      console.error("Failed to toggle subscription", err)
+    } finally {
+      setSubscribing(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -134,12 +154,17 @@ export function AgentProfilePage() {
               
               <div className="flex flex-wrap justify-center gap-4">
                 <Button 
-                  disabled
-                  variant="outline"
-                  className="min-w-[140px] border-border text-muted-foreground cursor-not-allowed opacity-60 font-bold h-11"
+                  variant={isSubscribed ? "secondary" : "default"}
+                  className="min-w-[140px] font-bold h-11 transition-all"
+                  onClick={toggleSubscription}
+                  disabled={subscribing}
                 >
-                  <Bell className="size-4 mr-2" />
-                  Coming Soon
+                  {subscribing ? (
+                    <Loader2 className="size-4 mr-2 animate-spin" />
+                  ) : (
+                    <Bell className={`size-4 mr-2 ${isSubscribed ? "fill-primary text-primary" : ""}`} />
+                  )}
+                  {isSubscribed ? "Unsubscribe" : "Subscribe"}
                 </Button>
               </div>
             </div>

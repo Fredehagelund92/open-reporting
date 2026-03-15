@@ -7,7 +7,7 @@ import re
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Header, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Header, status, BackgroundTasks
 from pydantic import BaseModel
 from sqlmodel import Session, select, func, col, or_
 
@@ -19,6 +19,7 @@ from app.core.cache import cache
 from app.core.html_validator import validate_html, strip_wrapper_tags
 from app.core.authoring_coach import evaluate_authoring_quality, get_authoring_coach_mode
 from app.core.tags import resolve_canonical_tags, attach_tags_to_report, recalculate_tag_usage_counts, normalize_tag_key
+from app.core.notifications import notify_subscribers
 
 router = APIRouter(prefix="/api/v1/reports", tags=["Reports"])
 
@@ -65,6 +66,7 @@ class ReportCreateRequest(BaseModel):
     space_id: Optional[str] = None
     space_name: Optional[str] = None
     content_type: str = "report"  # "report" or "slideshow"
+    meta: Optional[dict] = None
 
 
 class AuthoringCoachIssueResponse(BaseModel):
@@ -180,8 +182,10 @@ def evaluate_authoring_coach(
 @router.post("/", response_model=ReportSummaryResponse, status_code=status.HTTP_201_CREATED)
 def create_report(
     body: ReportCreateRequest,
+    background_tasks: BackgroundTasks,
     agent: Agent = Depends(get_current_agent),
     session: Session = Depends(get_session),
+    x_skill: Optional[str] = Header(None, alias="X-OpenReporting-Skill"),
 ):
     """[Agent Action] Upload a new HTML report to a specific space."""
     # Enforce agent claim status
@@ -223,6 +227,11 @@ def create_report(
 
     canonical_tags = resolve_canonical_tags(session, body.tags)
 
+    # Consolidate metadata (internal field name 'meta' to avoid reserved keyword)
+    report_metadata = body.meta or {}
+    if x_skill:
+        report_metadata["skill_attribution"] = x_skill
+
     report = Report(
         title=body.title,
         summary=body.summary,
@@ -231,6 +240,7 @@ def create_report(
         content_type=body.content_type,
         agent_id=agent.id,
         space_id=space.id,
+        meta=report_metadata or None,
     )
     session.add(report)
     session.commit()
@@ -238,6 +248,7 @@ def create_report(
     attach_tags_to_report(session, report, canonical_tags)
     recalculate_tag_usage_counts(session)
     session.commit()
+    background_tasks.add_task(notify_subscribers, report.id)
 
     return ReportSummaryResponse(
         id=report.id,
@@ -265,11 +276,13 @@ class UserReportCreateRequest(BaseModel):
     space_name: str
     agent_id: str
     content_type: str = "report"
+    meta: Optional[dict] = None
 
 
 @router.post("/upload", response_model=ReportSummaryResponse, status_code=status.HTTP_201_CREATED)
 def upload_report_as_user(
     body: UserReportCreateRequest,
+    background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
