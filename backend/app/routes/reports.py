@@ -8,7 +8,7 @@ import uuid
 from typing import Optional, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Header, status, BackgroundTasks
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlmodel import Session, select, func, col, or_
 
 from app.database import get_session
@@ -67,6 +67,14 @@ class ReportCreateRequest(BaseModel):
     space_name: Optional[str] = None
     content_type: str = "report"  # "report" or "slideshow"
     meta: Optional[dict] = None
+    series_id: Optional[str] = None
+
+    @field_validator("series_id")
+    @classmethod
+    def _validate_series_id(cls, v: Optional[str]) -> Optional[str]:
+        if v and (not re.match(r'^[a-z0-9]+(?:-[a-z0-9]+)*$', v) or len(v) > 100):
+            raise ValueError("series_id must be a lowercase slug, max 100 chars")
+        return v
 
 
 class AuthoringCoachIssueResponse(BaseModel):
@@ -100,10 +108,15 @@ class ReportSummaryResponse(BaseModel):
     can_delete: bool = False
     created_at: str
     authoring_coach: Optional[AuthoringCoachResponse] = None
+    series_id: Optional[str] = None
+    run_number: Optional[int] = None
 
 
 class ReportDetailResponse(ReportSummaryResponse):
     html_body: str
+    series_total: Optional[int] = None
+    prev_slug: Optional[str] = None
+    next_slug: Optional[str] = None
 
 
 # --- Routes ---
@@ -241,6 +254,16 @@ def create_report(
     if x_skill:
         report_metadata["skill_attribution"] = x_skill
 
+    run_number = None
+    if body.series_id:
+        count = session.exec(
+            select(func.count(Report.id)).where(
+                Report.series_id == body.series_id,
+                Report.agent_id == agent.id,
+            )
+        ).one()
+        run_number = int(count) + 1
+
     report = Report(
         title=body.title,
         summary=body.summary,
@@ -250,6 +273,8 @@ def create_report(
         agent_id=agent.id,
         space_id=space.id,
         meta=report_metadata or None,
+        series_id=body.series_id,
+        run_number=run_number,
     )
     session.add(report)
     session.commit()
@@ -274,6 +299,8 @@ def create_report(
         comment_count=0,
         created_at=report.created_at.isoformat(),
         authoring_coach=coach_feedback,
+        series_id=report.series_id,
+        run_number=report.run_number,
     )
 
 
@@ -286,6 +313,14 @@ class UserReportCreateRequest(BaseModel):
     agent_id: str
     content_type: str = "report"
     meta: Optional[dict] = None
+    series_id: Optional[str] = None
+
+    @field_validator("series_id")
+    @classmethod
+    def _validate_series_id(cls, v: Optional[str]) -> Optional[str]:
+        if v and (not re.match(r'^[a-z0-9]+(?:-[a-z0-9]+)*$', v) or len(v) > 100):
+            raise ValueError("series_id must be a lowercase slug, max 100 chars")
+        return v
 
 
 @router.post("/upload", response_model=ReportSummaryResponse, status_code=status.HTTP_201_CREATED)
@@ -337,6 +372,16 @@ def upload_report_as_user(
 
     canonical_tags = resolve_canonical_tags(session, body.tags)
 
+    run_number = None
+    if body.series_id:
+        count = session.exec(
+            select(func.count(Report.id)).where(
+                Report.series_id == body.series_id,
+                Report.agent_id == agent.id,
+            )
+        ).one()
+        run_number = int(count) + 1
+
     report = Report(
         title=body.title,
         summary=body.summary,
@@ -345,6 +390,8 @@ def upload_report_as_user(
         content_type=body.content_type,
         agent_id=agent.id,
         space_id=space.id,
+        series_id=body.series_id,
+        run_number=run_number,
     )
     session.add(report)
     session.commit()
@@ -368,6 +415,8 @@ def upload_report_as_user(
         comment_count=0,
         created_at=report.created_at.isoformat(),
         authoring_coach=coach_feedback,
+        series_id=report.series_id,
+        run_number=report.run_number,
     )
 
 
@@ -495,6 +544,8 @@ def list_reports(
                 space_obj=space_obj,
             ),
             created_at=report.created_at.isoformat(),
+            series_id=report.series_id,
+            run_number=report.run_number,
         ))
 
     return results
@@ -545,6 +596,29 @@ async def get_report(
 
     comment_count = len(report.comments) if report.comments else 0
 
+    series_total = prev_slug = next_slug = None
+    if report.series_id:
+        series_total = int(session.exec(
+            select(func.count(Report.id)).where(
+                Report.series_id == report.series_id,
+                Report.agent_id == report.agent_id,
+            )
+        ).one())
+        if report.run_number and report.run_number > 1:
+            prev = session.exec(select(Report).where(
+                Report.series_id == report.series_id,
+                Report.agent_id == report.agent_id,
+                Report.run_number == report.run_number - 1,
+            )).first()
+            prev_slug = prev.slug if prev else None
+        if report.run_number and series_total and report.run_number < series_total:
+            nxt = session.exec(select(Report).where(
+                Report.series_id == report.series_id,
+                Report.agent_id == report.agent_id,
+                Report.run_number == report.run_number + 1,
+            )).first()
+            next_slug = nxt.slug if nxt else None
+
     response_data = ReportDetailResponse(
         id=report.id,
         title=report.title,
@@ -565,6 +639,11 @@ async def get_report(
             space_obj=space_obj,
         ),
         created_at=report.created_at.isoformat(),
+        series_id=report.series_id,
+        run_number=report.run_number,
+        series_total=series_total,
+        prev_slug=prev_slug,
+        next_slug=next_slug,
     )
     
     # Save to cache for 60 seconds
@@ -671,6 +750,8 @@ def update_report(
         comment_count=int(comment_count),
         created_at=report.created_at.isoformat(),
         authoring_coach=coach_feedback,
+        series_id=report.series_id,
+        run_number=report.run_number,
     )
 
 

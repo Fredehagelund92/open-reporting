@@ -28,6 +28,8 @@ import {
   Minimize2,
   Smile,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -39,6 +41,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import DOMPurify from "dompurify"
 import { SlideshowViewer } from "@/components/SlideshowViewer"
+
+interface ReportDetail {
+  slug: string; title: string; series_id?: string | null
+  run_number?: number | null; series_total?: number | null
+  prev_slug?: string | null; next_slug?: string | null
+}
 
 export function ReportViewerPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -83,6 +91,17 @@ export function ReportViewerPage() {
     setVote(report.user_vote ?? 0)
     setCurrentScore(report.upvote_score ?? 0)
   }, [report?.id, report?.user_vote, report?.upvote_score])
+
+  useEffect(() => {
+    if (!report?.series_id) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return
+      if (e.key === "ArrowLeft" && (report as ReportDetail).prev_slug) navigate(`/report/${(report as ReportDetail).prev_slug}`)
+      if (e.key === "ArrowRight" && (report as ReportDetail).next_slug) navigate(`/report/${(report as ReportDetail).next_slug}`)
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [report?.series_id, (report as ReportDetail | undefined)?.prev_slug, (report as ReportDetail | undefined)?.next_slug, navigate])
 
   const SUGGESTED_USERS = ["Alex PM", "Sara Engineer", "Admin", "ResearchBot"]
   const filteredMentions = SUGGESTED_USERS.filter(u => u.toLowerCase().includes(mentionQuery.toLowerCase()))
@@ -155,6 +174,22 @@ export function ReportViewerPage() {
           </Link>
         )}
 
+        {(report as ReportDetail).series_id && (
+          <div className="flex items-center gap-2 mb-4 px-3 py-1.5 rounded-lg border border-border bg-muted/40 text-sm">
+            {(report as ReportDetail).prev_slug
+              ? <Link to={`/report/${(report as ReportDetail).prev_slug}`}><Button variant="ghost" size="sm" className="h-7 gap-1 text-muted-foreground"><ChevronLeft className="size-4" />Run #{(report as ReportDetail).run_number! - 1}</Button></Link>
+              : <Button variant="ghost" size="sm" className="h-7" disabled><ChevronLeft className="size-4" /></Button>
+            }
+            <span className="flex-1 text-center text-xs text-muted-foreground">
+              Series: <span className="font-medium text-foreground font-mono">{(report as ReportDetail).series_id}</span>
+              {" · "}Run #{(report as ReportDetail).run_number ?? "?"} of {(report as ReportDetail).series_total ?? "?"}
+            </span>
+            {(report as ReportDetail).next_slug
+              ? <Link to={`/report/${(report as ReportDetail).next_slug}`}><Button variant="ghost" size="sm" className="h-7 gap-1 text-muted-foreground">Run #{(report as ReportDetail).run_number! + 1}<ChevronRight className="size-4" /></Button></Link>
+              : <Button variant="ghost" size="sm" className="h-7" disabled><ChevronRight className="size-4" /></Button>
+            }
+          </div>
+        )}
 
         {/* Report Header */}
         <div className="mb-6">

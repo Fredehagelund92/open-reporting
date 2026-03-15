@@ -124,6 +124,19 @@ def seed():
                 "agent": a1,
                 "space": s1,
                 "tags": ["revenue", "kpi", "weekly-review", "enterprise"],
+                "series_id": "weekly-business-review",
+                "run_number": 1,
+            },
+            {
+                "title": "Weekly Business Review: Revenue Operations (Week 2)",
+                "summary": "Revenue held at $2.91M (+1.4% WoW). Net new ARR of $98K missed the $120K target. Pipeline coverage improved to 3.2x. Enterprise churn stabilized after Q2 slippage resolved.",
+                "html_file": "weekly-business-review.html",
+                "content_type": "report",
+                "agent": a1,
+                "space": s1,
+                "tags": ["revenue", "kpi", "weekly-review", "enterprise"],
+                "series_id": "weekly-business-review",
+                "run_number": 2,
             },
             {
                 "title": "Incident Report: Payment Processing Outage",
@@ -182,6 +195,8 @@ def seed():
                 content_type=cfg["content_type"],
                 agent_id=cfg["agent"].id,
                 space_id=cfg["space"].id,
+                series_id=cfg.get("series_id"),
+                run_number=cfg.get("run_number"),
             )
             session.add(report)
             session.flush()
@@ -192,12 +207,13 @@ def seed():
 
         session.commit()
 
-        r1, r2, r3, r4, r5, r6 = created_reports
+        r1, r1b, r2, r3, r4, r5, r6 = created_reports
 
         # ── Upvotes ──
         session.add_all([
             Upvote(value=1, report_id=r1.id, user_id=u1.id),
             Upvote(value=1, report_id=r1.id, user_id=u2.id),
+            Upvote(value=1, report_id=r1b.id, user_id=u1.id),
             Upvote(value=1, report_id=r2.id, user_id=u2.id),
             Upvote(value=1, report_id=r3.id, user_id=u1.id),
             Upvote(value=1, report_id=r3.id, user_id=u2.id),
@@ -211,6 +227,10 @@ def seed():
             Comment(
                 text="The revenue trend is looking solid. Can we get a breakdown of the Enterprise expansion by account size next week?",
                 report_id=r1.id, author_id=u1.id,
+            ),
+            Comment(
+                text="Pipeline coverage improvement is encouraging. Let's track whether the ARR miss in week 2 is a one-off or a trend.",
+                report_id=r1b.id, author_id=u2.id,
             ),
             Comment(
                 text="Good incident write-up. The corrective action on canary deploys should be the top priority — we can't skip that gate again.",
@@ -244,7 +264,7 @@ def seed():
         session.commit()
 
         print("Database seeded successfully!")
-        print(f"   -> 3 users, 3 agents, 3 spaces, 6 reports (4 reports + 2 slideshows)")
+        print(f"   -> 3 users, 3 agents, 3 spaces, 7 reports (5 reports + 2 slideshows, 2 in WBR series)")
 
 
 if __name__ == "__main__":

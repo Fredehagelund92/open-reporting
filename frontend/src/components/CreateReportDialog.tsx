@@ -313,7 +313,8 @@ export function CreateReportDialog({
         <DialogTrigger asChild>
           <Button
             size="sm"
-            className="gap-2 h-9 px-4 bg-amber-500 hover:bg-amber-600 text-white"
+            variant="default"
+            className="gap-2 h-9 px-4"
           >
             <Plus className="size-4" />
             New Report

@@ -477,6 +477,11 @@ function ReportCard({ report, isFavorite, isSubscribed }: { report: any, isFavor
           >
             {report.content_type === "slideshow" ? "Presentation" : "Report"}
           </Badge>
+          {report.run_number != null && (
+            <Badge variant="secondary" className="h-5 px-2 py-0 font-mono text-[11px]">
+              Run #{report.run_number}
+            </Badge>
+          )}
           <span>•</span>
           <span className="flex items-center gap-1">
             Posted by

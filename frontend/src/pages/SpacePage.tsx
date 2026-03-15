@@ -37,7 +37,7 @@ export function SpacePage() {
   const [createReportOpen, setCreateReportOpen] = useState(searchParams.get("newReport") === "1")
 
   const { data: spaces, isLoading: loadingSpaces } = useQuery({
-    queryKey: ["spaces"], 
+    queryKey: ["spaces"],
     queryFn: async () => {
       const res = await api.get("/spaces/")
       return res.data
@@ -134,68 +134,123 @@ export function SpacePage() {
   return (
     <ScrollArea className="flex-1 bg-card">
       <main className="max-w-6xl mx-auto p-6 md:p-8">
+
+        {/* Back nav */}
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mb-6"
+        >
+          <ArrowLeft className="size-3.5" />
+          Back to Feed
+        </Link>
+
         {/* Space Header */}
-        <div className="mb-8">
-          <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-4">
-            <ArrowLeft className="size-4" /> Back to Feed
-          </Link>
-          <div className="flex items-center gap-4 mb-3">
-            <div className="size-14 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-xl shadow-sm">
-              {spaceName?.[0]?.toUpperCase()}
+        <div className="mb-8 rounded-xl border border-border bg-card/60 overflow-hidden">
+          <div className="p-5 md:p-6">
+            <div className="flex items-start gap-4">
+
+              {/* Avatar */}
+              <div className="size-12 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
+                {spaceName?.[0]?.toUpperCase()}
+              </div>
+
+              {/* Name + description + actions */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 justify-between">
+                  <div className="min-w-0">
+                    <h1 className="text-lg font-semibold tracking-tight text-foreground truncate">
+                      {space.name}
+                    </h1>
+                    {space.description && (
+                      <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">
+                        {space.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Action cluster */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Primary CTA */}
+                    {isAuthenticated && (
+                      <CreateReportDialog
+                        spaceName={fullName}
+                        open={createReportOpen}
+                        onOpenChange={(nextOpen) => {
+                          setCreateReportOpen(nextOpen)
+                          if (!nextOpen && searchParams.get("newReport") === "1") {
+                            const next = new URLSearchParams(searchParams)
+                            next.delete("newReport")
+                            setSearchParams(next, { replace: true })
+                          }
+                        }}
+                        onCreated={() => queryClient.invalidateQueries({ queryKey: ["reports", fullName] })}
+                      />
+                    )}
+
+                    {/* Separator */}
+                    {isAuthenticated && (
+                      <div className="w-px h-5 bg-border mx-0.5" aria-hidden />
+                    )}
+
+                    {/* Favorite */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                      onClick={handleToggleFavorite}
+                      disabled={isFavoriteLoading}
+                      title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+                    >
+                      {isFavoriteLoading
+                        ? <Loader2 className="size-4 animate-spin" />
+                        : <Star className={`size-4 transition-colors ${isFavorited ? "fill-yellow-400 text-yellow-400" : ""}`} />
+                      }
+                    </Button>
+
+                    {/* Subscribe */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                      onClick={handleToggleSubscription}
+                      disabled={isSubscriptionLoading}
+                      title={isSubscribed ? "Unsubscribe from notifications" : "Subscribe to notifications"}
+                    >
+                      {isSubscriptionLoading
+                        ? <Loader2 className="size-4 animate-spin" />
+                        : <Bell className={`size-4 transition-colors ${isSubscribed ? "fill-foreground text-foreground" : ""}`} />
+                      }
+                    </Button>
+
+                    {/* Settings — admin/owner only */}
+                    {(user?.role === "ADMIN" || space.owner_id === user?.id) && (
+                      <Link to={`/space/${spaceName}/settings`}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                          title="Space settings"
+                        >
+                          <Settings className="size-4" />
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                {/* Stats row */}
+                <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border/60 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <FileText className="size-3.5" />
+                    {reports?.length || 0} reports
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Users className="size-3.5" />
+                    {space.member_count || 0} members
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">{space.name}</h1>
-              <p className="text-sm text-muted-foreground">{space.description}</p>
-            </div>
-            <div className="ml-auto flex gap-2">
-              {isAuthenticated && (
-                <CreateReportDialog
-                  spaceName={fullName}
-                  open={createReportOpen}
-                  onOpenChange={(nextOpen) => {
-                    setCreateReportOpen(nextOpen)
-                    if (!nextOpen && searchParams.get("newReport") === "1") {
-                      const next = new URLSearchParams(searchParams)
-                      next.delete("newReport")
-                      setSearchParams(next, { replace: true })
-                    }
-                  }}
-                  onCreated={() => queryClient.invalidateQueries({ queryKey: ["reports", fullName] })}
-                />
-              )}
-              <Button 
-                variant={isFavorited ? "default" : "outline"}
-                size="sm" 
-                className={`gap-2 h-9 px-4 ${isFavorited ? "bg-primary hover:bg-primary/90 text-white" : "border-primary/20 hover:bg-primary/10 hover:text-primary"}`}
-                onClick={handleToggleFavorite}
-                disabled={isFavoriteLoading}
-              >
-                {isFavoriteLoading ? <Loader2 className="size-4 animate-spin" /> : <Star className={`size-4 ${isFavorited ? "fill-current" : ""}`} />}
-                {isFavorited ? "Favorited" : "Favorite"}
-              </Button>
-              <Button 
-                variant={isSubscribed ? "secondary" : "default"}
-                size="sm" 
-                className="gap-2 h-9 px-4 font-bold"
-                onClick={handleToggleSubscription}
-                disabled={isSubscriptionLoading}
-              >
-                {isSubscriptionLoading ? <Loader2 className="size-4 animate-spin" /> : <Bell className={`size-4 ${isSubscribed ? "fill-current" : ""}`} />}
-                {isSubscribed ? "Unsubscribe" : "Subscribe"}
-              </Button>
-              {(user?.role === "ADMIN" || space.owner_id === user?.id) && (
-                <Link to={`/space/${spaceName}/settings`}>
-                  <Button variant="ghost" size="sm" className="gap-2 h-9 px-3 text-muted-foreground hover:text-primary">
-                    <Settings className="size-4" />
-                    <span>Settings</span>
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground mt-3">
-            <span className="flex items-center gap-1"><FileText className="size-4" /> {reports?.length || 0} Reports</span>
-            <span className="flex items-center gap-1"><Users className="size-4" /> {space.member_count || 0} Members</span>
           </div>
         </div>
 
@@ -270,14 +325,15 @@ function SpaceReportCard({ report }: { report: any }) {
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
           <Badge
             variant="secondary"
-            className={
-              report.content_type === "slideshow"
-                ? "h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-medium"
-                : "h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-medium"
-            }
+            className="h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-medium"
           >
             {report.content_type === "slideshow" ? "Presentation" : "Report"}
           </Badge>
+          {report.run_number != null && (
+            <Badge variant="secondary" className="h-5 px-2 py-0 font-mono text-[11px]">
+              Run #{report.run_number}
+            </Badge>
+          )}
           <span>•</span>
           <span className="flex items-center gap-1">
             Posted by
