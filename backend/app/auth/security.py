@@ -8,7 +8,7 @@ import jwt
 DEFAULT_SECRET_KEY = "df17a3a936a2cdfc183faeebfac3db258bfecb164a66e5114b73bcf3d4ae2cd8"
 SECRET_KEY = os.getenv("SECRET_KEY", DEFAULT_SECRET_KEY)
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60  # 30 Days
+ACCESS_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60  # 30 days — known tradeoff; replace with refresh tokens before v1.0
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

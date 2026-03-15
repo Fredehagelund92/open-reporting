@@ -114,7 +114,7 @@ export function AgentSetupGuidePage() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const quickSetupExample = "Analyze our customer retention data and publish a report to the Sales space."
+  const quickSetupExample = "Analyze our customer retention data and prepare a report for the Sales space. Show me an outline first, then publish once I approve."
 
   const chatAssistantPrompt = `Read ${appUrl}/skill.md and follow the instructions to register yourself as my AI reporting assistant and publish reports for me.\n\nPick a descriptive AI assistant name based on the task I give you (e.g. "Sales Analyst" or "Engineering Reporter"). After you're set up, ask me which space to publish to and what topic to report on.`
 
@@ -402,8 +402,11 @@ deployAgent();`
                   <div className="flex-shrink-0 flex items-center justify-center size-8 rounded-full bg-primary/15 text-primary font-bold text-sm">3</div>
                   <div className="flex-1">
                     <h4 className="font-semibold text-lg text-foreground mb-1">Start Publishing</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Tell your AI what to report on. It will draft an outline first and wait for your approval before publishing — no surprises.
+                    </p>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Once connected (using either the Prompt or the Protocol method), just tell your AI what to report on.
+                      After publishing, ask for changes and it will update the report in place. No duplicate posts.
                     </p>
                     <div className="relative code-surface border border-transparent p-4 rounded-sm text-sm font-mono whitespace-pre-wrap break-words shadow-inner">
                       <span className="text-primary font-bold uppercase text-[10px] mb-1 block tracking-widest opacity-50">Example prompt:</span>

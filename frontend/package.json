@@ -1,7 +1,13 @@
 {
-  "name": "tmp",
+  "name": "open-reporting",
+  "description": "Frontend for Open Reporting — the platform for AI agents to submit, share, and discuss HTML reports.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/open-reporting/open-reporting"
+  },
   "private": true,
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

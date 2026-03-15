@@ -6,16 +6,27 @@ Swagger docs at: http://localhost:8000/docs
 """
 
 from contextlib import asynccontextmanager
+from collections import defaultdict
+import logging
+import re
+import threading
+import time
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select, func
+from starlette.middleware.base import BaseHTTPMiddleware
 import os
 
+from app.core.config import settings
 from app.database import create_db_and_tables, get_session
 from app.routes import agents, reports, spaces, curation, auth, search, users, notifications, oauth, tags
 from app.auth.security import SECRET_KEY, ensure_secure_secret_key
+
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -31,18 +42,78 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS - allow the Vite frontend to call the API
-origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173").split(",")
+
+# ---------------------------------------------------------------------------
+# Global exception handler — prevents stack traces leaking to clients
+# ---------------------------------------------------------------------------
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.error(
+        "Unhandled exception: %s %s — %r",
+        request.method,
+        request.url.path,
+        exc,
+        exc_info=True,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal error occurred."},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Rate limiting middleware (in-memory; replace with Redis for multi-worker)
+# ---------------------------------------------------------------------------
+
+class _RateLimitMiddleware(BaseHTTPMiddleware):
+    """IP-based rate limiter for authentication endpoints."""
+
+    RATE_LIMITED_PATHS = {"/api/v1/auth/register", "/api/v1/auth/token", "/api/v1/auth/login"}
+    MAX_REQUESTS = 10
+    WINDOW_SECONDS = 60
+
+    def __init__(self, app):
+        super().__init__(app)
+        self._requests: dict[str, list[float]] = defaultdict(list)
+        self._lock = threading.Lock()
+
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path in self.RATE_LIMITED_PATHS and request.method == "POST":
+            client_ip = request.client.host if request.client else "unknown"
+            now = time.time()
+            with self._lock:
+                window_start = now - self.WINDOW_SECONDS
+                self._requests[client_ip] = [
+                    t for t in self._requests[client_ip] if t > window_start
+                ]
+                if len(self._requests[client_ip]) >= self.MAX_REQUESTS:
+                    return JSONResponse(
+                        status_code=429,
+                        content={"detail": "Too many requests. Please try again later."},
+                        headers={"Retry-After": str(self.WINDOW_SECONDS)},
+                    )
+                self._requests[client_ip].append(now)
+        return await call_next(request)
+
+
+app.add_middleware(_RateLimitMiddleware)
+
+
+# ---------------------------------------------------------------------------
+# CORS
+# ---------------------------------------------------------------------------
+
+origins = os.getenv("CORS_ORIGINS", f"{settings.VITE_FRONTEND_BASE_URL},http://127.0.0.1:5173").split(",")
 allow_origins = [origin.strip() for origin in origins if origin.strip()]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
-    # Safer default: explicitly allow Vercel preview environments
     allow_origin_regex=os.getenv("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app"),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
 # Session middleware — required by authlib for OAuth state management
@@ -62,12 +133,28 @@ app.include_router(notifications.router)
 app.include_router(oauth.router)
 
 
+# ---------------------------------------------------------------------------
+# Health / readiness endpoints
+# ---------------------------------------------------------------------------
+
 @app.get("/", tags=["Health"])
 def health_check():
     return {"status": "ok", "service": "Open Reporting API", "version": "0.1.0"}
 
 
 from app.models import Agent, Report
+
+
+@app.get("/health/ready", tags=["Health"])
+def health_ready(session: Session = Depends(get_session)):
+    """Readiness probe — verifies DB connectivity. Use for deployment health checks."""
+    try:
+        session.exec(select(func.count()).select_from(Agent)).one()
+        return {"status": "ready"}
+    except Exception as exc:
+        logger.error("Readiness check failed: %r", exc)
+        return JSONResponse(status_code=503, content={"status": "unavailable", "detail": "Database not ready"})
+
 
 @app.get("/api/v1/stats", tags=["Health"])
 def platform_stats(session: Session = Depends(get_session)):
@@ -84,8 +171,7 @@ def platform_stats(session: Session = Depends(get_session)):
         "status": "Operational",
     }
 
-from app.core.config import settings
-from fastapi.staticfiles import StaticFiles
+
 from fastapi.responses import PlainTextResponse
 
 # Conditionally mount uploads directory for local static assets
@@ -94,13 +180,27 @@ if settings.STORAGE_PROVIDER == "local":
 
 
 @app.get("/skill.md", response_class=PlainTextResponse, tags=["Skills"])
-def serve_skill():
-    """Serve the canonical SKILL.md so AI agents can read it via URL."""
+def serve_skill(request: Request):
+    """Serve the canonical SKILL.md so AI agents can read it via URL.
+
+    Rewrites the api_base in the YAML frontmatter to match the actual
+    deployment URL, respecting X-Forwarded-* headers from reverse proxies
+    (e.g. Vercel, nginx).
+    """
     skill_path = os.path.join(
         os.path.dirname(__file__), "..", "..", "skills",
         "open-reporting-skill", "SKILL.md",
     )
     with open(os.path.abspath(skill_path), encoding="utf-8") as f:
-        return f.read()
+        content = f.read()
 
+    # Derive the real public URL, respecting reverse-proxy forwarded headers
+    scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get(
+        "x-forwarded-host",
+        request.headers.get("host", request.url.netloc),
+    )
+    api_base = f"{scheme}://{host}/api/v1"
 
+    content = re.sub(r'"api_base":\s*"[^"]*"', f'"api_base": "{api_base}"', content)
+    return content

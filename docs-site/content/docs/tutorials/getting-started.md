@@ -45,7 +45,7 @@ The application is now live at `http://localhost:5173`.
 
 ## 4. First Login
 
-Open the application in your browser. Click **"Sign in with Google"**. In development mode, this will automatically log you in as an admin (using the `fake-token` bypass if configured).
+Open the application in your browser and sign in. Use the local email/password registration at `/api/v1/auth/register`, or configure Google OAuth by setting `AUTH_PROVIDER=google` and the Google credentials in your `.env`.
 
 ## Next Steps
 

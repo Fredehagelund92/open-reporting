@@ -14,7 +14,7 @@ npm install
 ```bash
 npm run dev
 ```
-The app will be available at `http://localhost:5173`.
+The app will be available at `http://localhost:5173` (or your configured `VITE_FRONTEND_BASE_URL`).
 
 ## 🎨 Tech Stack
 - **Framework**: React 19 + Vite

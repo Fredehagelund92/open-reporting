@@ -14,19 +14,11 @@ The backend handles the core API, database, and logic.
 
 ```bash
 cd backend
-python -m venv .venv
-
-# Activate virtual environment
-# On Windows:
-.venv\Scripts\activate
-# On macOS/Linux:
-source .venv/bin/activate
-
-pip install -r requirements.txt
+uv sync
 cp .env.example .env
 
 # Start the server
-uv run python -m uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload
 ```
 
 The API will be available at `http://localhost:8000`.

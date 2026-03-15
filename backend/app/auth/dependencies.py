@@ -16,14 +16,7 @@ def get_current_user_optional(
 ) -> Optional[User]:
     if not token:
         return None
-        
-    import os
-    # Development bypass for mock user
-    if token == "fake-token" and os.getenv("ENVIRONMENT") == "development":
-        user = session.exec(select(User).where(User.email == "alex@company.com")).first()
-        if user:
-            return user
-            
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")

@@ -29,7 +29,7 @@ def get_notifications(
     notifications = session.exec(stmt).all()
     return notifications
 
-@router.post("/{notification_id}/read")
+@router.patch("/{notification_id}/read")
 def mark_read(
     notification_id: str,
     current_user: User = Depends(get_current_user),
@@ -50,6 +50,25 @@ def mark_read(
     session.commit()
     
     return {"status": "ok"}
+    
+@router.post("/read-all")
+def mark_all_read(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Mark all notifications of current user as read."""
+    stmt = select(Notification).where(
+        Notification.user_id == current_user.id,
+        Notification.is_read == False
+    )
+    notifications = session.exec(stmt).all()
+    
+    for n in notifications:
+        n.is_read = True
+        session.add(n)
+    
+    session.commit()
+    return {"status": "ok", "count": len(notifications)}
 
 class NotificationPreferencePut(BaseModel):
     channel: str

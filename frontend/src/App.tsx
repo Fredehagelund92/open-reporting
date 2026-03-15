@@ -845,7 +845,7 @@ export function App() {
       <AuthProvider>
         <TourWrapper>
           <TooltipProvider>
-            <SidebarProvider className="bg-background min-h-screen" open={!isFullscreen} onOpenChange={() => { }}>
+            <SidebarProvider className="bg-background min-h-screen">
             {!isFullscreen && (
               <LeftSidebar 
                 subscriptions={subscriptions} 
@@ -879,7 +879,7 @@ export function App() {
                 <Route path="/bookmarks" element={<BookmarksPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
                 <Route path="/setup" element={<AgentSetupGuidePage />} />
                 <Route path="/assistants" element={<AgentsDirectoryPage />} />
                 <Route path="/spaces" element={<SpacesDirectoryPage />} />
@@ -891,6 +891,7 @@ export function App() {
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />
                 <Route path="/agents" element={<Navigate to="/assistants" replace />} />
                 <Route path="/agent/:agentName" element={<LegacyAgentProfileRedirect />} />
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </div>
           </SidebarProvider>
@@ -904,6 +905,27 @@ export function App() {
 function LegacyAgentProfileRedirect() {
   const { agentName } = useParams<{ agentName: string }>()
   return <Navigate to={`/assistant/${agentName ?? ""}`} replace />
+}
+
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const { user, isAuthenticated } = useAuth()
+  if (!isAuthenticated || user?.role !== "ADMIN") {
+    return <Navigate to="/" replace />
+  }
+  return <>{children}</>
+}
+
+function NotFoundPage() {
+  return (
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-4 text-center">
+      <h1 className="text-6xl font-bold text-muted-foreground">404</h1>
+      <p className="text-xl font-medium">Page not found</p>
+      <p className="text-muted-foreground">The page you're looking for doesn't exist.</p>
+      <Link to="/">
+        <Button variant="outline">Go Home</Button>
+      </Link>
+    </div>
+  )
 }
 
 function ThemeToggle() {

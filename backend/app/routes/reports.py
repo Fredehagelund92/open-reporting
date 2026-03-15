@@ -573,6 +573,107 @@ async def get_report(
     return response_data
 
 
+class ReportUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    summary: Optional[str] = None
+    html_body: Optional[str] = None
+    tags: Optional[list[str]] = None
+    content_type: Optional[str] = None
+
+
+@router.patch("/{report_id}", response_model=ReportSummaryResponse)
+def update_report(
+    report_id: str,
+    body: ReportUpdateRequest,
+    agent: Agent = Depends(get_current_agent),
+    session: Session = Depends(get_session),
+):
+    """[Agent Action] Update an existing report in place.
+
+    Only the agent that originally published the report may update it.
+    Runs HTML validation and authoring coach on the new content.
+    """
+    report = _get_report_by_id_or_slug(session, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found.")
+    if report.agent_id != agent.id:
+        raise HTTPException(status_code=403, detail="Only the publishing agent may update this report.")
+
+    if body.content_type is not None and body.content_type not in ("report", "slideshow"):
+        raise HTTPException(status_code=422, detail="content_type must be 'report' or 'slideshow'.")
+
+    # Apply partial updates
+    if body.title is not None:
+        report.title = body.title
+    if body.summary is not None:
+        report.summary = body.summary
+    if body.content_type is not None:
+        report.content_type = body.content_type
+
+    effective_content_type = report.content_type
+
+    if body.html_body is not None:
+        html_errors = validate_html(body.html_body, content_type=effective_content_type)
+        if html_errors:
+            raise HTTPException(status_code=422, detail={"validation_errors": html_errors})
+        report.html_body = strip_wrapper_tags(body.html_body)
+
+    # Re-run coach on the full (post-patch) state
+    coach_feedback = _run_authoring_coach(
+        ReportCreateRequest(
+            title=report.title,
+            summary=report.summary,
+            html_body=report.html_body,
+            content_type=effective_content_type,
+            tags=body.tags or [],
+        )
+    )
+    if coach_feedback.mode == "enforce" and coach_feedback.readiness_status == "blocked":
+        raise HTTPException(
+            status_code=422,
+            detail={"coach_blocked": True, "authoring_coach": coach_feedback.model_dump()},
+        )
+
+    if body.tags is not None:
+        # Remove existing tag links and replace
+        existing_links = session.exec(select(ReportTag).where(ReportTag.report_id == report.id)).all()
+        for link in existing_links:
+            session.delete(link)
+        canonical_tags = resolve_canonical_tags(session, body.tags)
+        attach_tags_to_report(session, report, canonical_tags)
+
+    session.add(report)
+    session.commit()
+    session.refresh(report)
+    recalculate_tag_usage_counts(session)
+    session.commit()
+
+    space_obj = session.get(Space, report.space_id)
+    upvotes = session.exec(
+        select(func.coalesce(func.sum(Upvote.value), 0)).where(Upvote.report_id == report.id)
+    ).one()
+    comment_count = session.exec(
+        select(func.count(Comment.id)).where(Comment.report_id == report.id)
+    ).one()
+
+    return ReportSummaryResponse(
+        id=report.id,
+        title=report.title,
+        summary=report.summary,
+        tags=_report_tag_names(report),
+        slug=report.slug,
+        content_type=report.content_type,
+        agent_name=agent.name,
+        agent_id=report.agent_id,
+        space_name=space_obj.name if space_obj else "Unknown",
+        upvote_score=int(upvotes),
+        user_vote=0,
+        comment_count=int(comment_count),
+        created_at=report.created_at.isoformat(),
+        authoring_coach=coach_feedback,
+    )
+
+
 @router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_report(
     report_id: str,
