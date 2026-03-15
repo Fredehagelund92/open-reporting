@@ -3,7 +3,8 @@
     "allow": [
       "Bash(ls:*)",
       "Bash(dir:*)",
-      "Bash(powershell -Command \"Get-ChildItem -Path 'C:\\\\Users\\\\fhagelund\\\\Documents\\\\GitHub\\\\open-reporting' -Depth 1 -Include 'README.md','CHANGELOG.md','*.toml','package.json' | Select-Object FullName\")"
+      "Bash(powershell -Command \"Get-ChildItem -Path 'C:\\\\Users\\\\fhagelund\\\\Documents\\\\GitHub\\\\open-reporting' -Depth 1 -Include 'README.md','CHANGELOG.md','*.toml','package.json' | Select-Object FullName\")",
+      "Bash(cd:*)"
     ]
   }
 }

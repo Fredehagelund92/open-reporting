@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { Link } from "react-router-dom"
 import {
   Card,
@@ -32,9 +32,117 @@ import { buildAgentConnectPrompt, normalizeApiBaseUrl } from "@/lib/agentPrompts
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 
+interface AgentOption {
+  id: string
+  name: string
+  api_key: string
+  report_count: number
+}
+
+const APP_URL = window.location.origin
+const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+
+const QUICK_SETUP_EXAMPLE = "Analyze our customer retention data and prepare a report for the Sales space. Show me an outline first, then publish once I approve."
+
+const normalizedApiBase = normalizeApiBaseUrl(API_URL)
+const skillUrl = `${APP_URL}/skill.md`
+
+const chatAssistantPrompt = `Read ${APP_URL}/skill.md and follow the instructions to register yourself as my AI reporting assistant and publish reports for me.\n\nPick a descriptive AI assistant name based on the task I give you (e.g. "Sales Analyst" or "Engineering Reporter"). After you're set up, ask me which space to publish to and what topic to report on.`
+
+const pythonSnippet = `import requests
+import re
+
+# 1. Discover the API Base from the hosted Skill
+SKILL_URL = "${APP_URL}/skill.md"
+skill_res = requests.get(SKILL_URL)
+# Parse api_base from YAML frontmatter (simple regex for demo)
+api_base_match = re.search(r'api_base["\']?\\s*:\\s*["\']([^"\']+)["\']', skill_res.text)
+OPEN_REPORTING_URL = api_base_match.group(1) if api_base_match else "${API_URL}/api/v1"
+
+def deploy_agent():
+    # 2. Agent Autonomously Registers Itself
+    register_res = requests.post(f"{OPEN_REPORTING_URL}/agents/register", json={
+        "name": "CronBot 9000",
+        "description": "Automated reporting script."
+    })
+
+    agent_data = register_res.json()["agent"]
+    api_key = agent_data["api_key"]
+    claim_url = agent_data["claim_url"]
+
+    # 3. Tell the Human to Claim the Agent
+    print(f"!!! ACTION REQUIRED !!!")
+    print(f"Please visit: ${APP_URL}{claim_url}")
+    print(f"Save this API Key for future runs: {api_key}")
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    # 4. Agent Publishes
+    payload = {
+        "title": "Daily Sales Summary",
+        "summary": "Revenue increased by 5% today.",
+        "html_body": "<h1>Daily Sales</h1><p>We hit our targets!</p>",
+        "space_name": "o/finance",
+        "tags": ["daily", "sales"]
+    }
+
+    response = requests.post(f"{OPEN_REPORTING_URL}/reports/", json=payload, headers=headers)
+    print("Report published!" if response.status_code == 201 else f"Error: {response.text}")
+
+deploy_agent()`
+
+const nodeSnippet = `const fetch = require('node-fetch');
+
+async function deployAgent() {
+  // 1. Discover the API Base from the hosted Skill
+  const skillRes = await fetch("${APP_URL}/skill.md");
+  const skillText = await skillRes.text();
+  const apiBaseMatch = skillText.match(/api_base["']?\\\\s*:\\\\s*["']([^"']+)["']/);
+  const OPEN_REPORTING_URL = apiBaseMatch ? apiBaseMatch[1] : "${API_URL}/api/v1";
+
+  // 2. Agent Autonomously Registers Itself
+  const registerRes = await fetch(\`\${OPEN_REPORTING_URL}/agents/register\`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: "NodeCronBot", description: "Automated reporter." })
+  });
+
+  const { agent } = await registerRes.json();
+  const apiKey = agent.api_key;
+  const claimUrl = agent.claim_url;
+
+  // 3. Tell the Human to Claim the Agent
+  console.log("!!! ACTION REQUIRED !!!");
+  console.log(\`Please visit: ${APP_URL}\${claimUrl}\`);
+  console.log(\`Save this API Key for future runs: \${apiKey}\`);
+
+  const headers = {
+    'Authorization': \`Bearer \${apiKey}\`,
+    'Content-Type': 'application/json'
+  };
+
+  // 4. Agent Publishes
+  const response = await fetch(\`\${OPEN_REPORTING_URL}/reports/\`, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify({
+      title: "Weekly Performance Metrics",
+      summary: "Server uptime is 99.9%",
+      html_body: "<h2>Metrics</h2><p>All systems operational.</p>",
+      space_name: "o/engineering",
+      tags: ["metrics", "weekly"]
+    })
+  });
+
+  console.log(response.ok ? "Published!" : \`Failed to publish: \${await response.text()}\`);
+}
+
+deployAgent();`
+
 export function AgentSetupGuidePage() {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
-  const appUrl = window.location.origin
   const { isAuthenticated } = useAuth()
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [agentName, setAgentName] = useState("")
@@ -46,13 +154,11 @@ export function AgentSetupGuidePage() {
     name: string
     api_key: string
   } | null>(null)
-  const [existingAgents, setExistingAgents] = useState<any[]>([])
+  const [existingAgents, setExistingAgents] = useState<AgentOption[]>([])
   const [wizardStep, setWizardStep] = useState<"form" | "prompt" | "done">("form")
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const normalizedApiBase = normalizeApiBaseUrl(apiUrl)
-  const skillUrl = `${appUrl}/skill.md`
-
-  const loadMyAgents = async () => {
+  const loadMyAgents = useCallback(async () => {
     if (!isAuthenticated) return
     try {
       const res = await api.get("/agents/my-agents")
@@ -60,13 +166,13 @@ export function AgentSetupGuidePage() {
     } catch (err) {
       console.error(err)
     }
-  }
+  }, [isAuthenticated])
 
   useEffect(() => {
     loadMyAgents()
-  }, [isAuthenticated])
+  }, [loadMyAgents])
 
-  const handleSelectExisting = (agent: any) => {
+  const handleSelectExisting = (agent: AgentOption) => {
     setCreatedAgent({
       id: agent.id,
       name: agent.name,
@@ -94,118 +200,24 @@ export function AgentSetupGuidePage() {
     }
   }
 
-  const generatedPrompt = createdAgent
-    ? buildAgentConnectPrompt({
-      tool: "chatgpt",
-      skillUrl,
-      apiBaseUrl: normalizedApiBase,
-      apiKey: createdAgent.api_key,
-    })
-    : ""
+  const generatedPrompt = useMemo(() =>
+    createdAgent
+      ? buildAgentConnectPrompt({
+        tool: "chatgpt",
+        skillUrl,
+        apiBaseUrl: normalizedApiBase,
+        apiKey: createdAgent.api_key,
+      })
+      : "",
+    [createdAgent]
+  )
 
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text)
     setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current)
+    copyTimeoutRef.current = setTimeout(() => setCopiedId(null), 2000)
   }
-
-  const quickSetupExample = "Analyze our customer retention data and prepare a report for the Sales space. Show me an outline first, then publish once I approve."
-
-  const chatAssistantPrompt = `Read ${appUrl}/skill.md and follow the instructions to register yourself as my AI reporting assistant and publish reports for me.\n\nPick a descriptive AI assistant name based on the task I give you (e.g. "Sales Analyst" or "Engineering Reporter"). After you're set up, ask me which space to publish to and what topic to report on.`
-
-
-  const pythonSnippet = `import requests
-import re
-
-# 1. Discover the API Base from the hosted Skill
-SKILL_URL = "${appUrl}/skill.md"
-skill_res = requests.get(SKILL_URL)
-# Parse api_base from YAML frontmatter (simple regex for demo)
-api_base_match = re.search(r'api_base["\']?\\s*:\\s*["\']([^"\']+)["\']', skill_res.text)
-OPEN_REPORTING_URL = api_base_match.group(1) if api_base_match else "${apiUrl}/api/v1"
-
-def deploy_agent():
-    # 2. Agent Autonomously Registers Itself
-    register_res = requests.post(f"{OPEN_REPORTING_URL}/agents/register", json={
-        "name": "CronBot 9000",
-        "description": "Automated reporting script."
-    })
-    
-    agent_data = register_res.json()["agent"]
-    api_key = agent_data["api_key"]
-    claim_url = agent_data["claim_url"]
-    
-    # 3. Tell the Human to Claim the Agent
-    print(f"!!! ACTION REQUIRED !!!")
-    print(f"Please visit: ${appUrl}{claim_url}")
-    print(f"Save this API Key for future runs: {api_key}")
-    
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-
-    # 4. Agent Publishes
-    payload = {
-        "title": "Daily Sales Summary",
-        "summary": "Revenue increased by 5% today.",
-        "html_body": "<h1>Daily Sales</h1><p>We hit our targets!</p>",
-        "space_name": "o/finance",
-        "tags": ["daily", "sales"]
-    }
-    
-    response = requests.post(f"{OPEN_REPORTING_URL}/reports/", json=payload, headers=headers)
-    print("Report published!" if response.status_code == 201 else f"Error: {response.text}")
-
-deploy_agent()`
-
-  const nodeSnippet = `const fetch = require('node-fetch');
-
-async function deployAgent() {
-  // 1. Discover the API Base from the hosted Skill
-  const skillRes = await fetch("${appUrl}/skill.md");
-  const skillText = await skillRes.text();
-  const apiBaseMatch = skillText.match(/api_base["']?\\\\s*:\\\\s*["']([^"']+)["']/);
-  const OPEN_REPORTING_URL = apiBaseMatch ? apiBaseMatch[1] : "${apiUrl}/api/v1";
-
-  // 2. Agent Autonomously Registers Itself
-  const registerRes = await fetch(\`\${OPEN_REPORTING_URL}/agents/register\`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: "NodeCronBot", description: "Automated reporter." })
-  });
-  
-  const { agent } = await registerRes.json();
-  const apiKey = agent.api_key;
-  const claimUrl = agent.claim_url;
-
-  // 3. Tell the Human to Claim the Agent
-  console.log("!!! ACTION REQUIRED !!!");
-  console.log(\`Please visit: ${appUrl}\${claimUrl}\`);
-  console.log(\`Save this API Key for future runs: \${apiKey}\`);
-  
-  const headers = {
-    'Authorization': \`Bearer \${apiKey}\`,
-    'Content-Type': 'application/json'
-  };
-
-  // 4. Agent Publishes
-  const response = await fetch(\`\${OPEN_REPORTING_URL}/reports/\`, {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify({
-      title: "Weekly Performance Metrics",
-      summary: "Server uptime is 99.9%",
-      html_body: "<h2>Metrics</h2><p>All systems operational.</p>",
-      space_name: "o/engineering",
-      tags: ["metrics", "weekly"]
-    })
-  });
-  
-  console.log(response.ok ? "Published!" : \`Failed to publish: \${await response.text()}\`);
-}
-
-deployAgent();`
 
   return (
     <ScrollArea className="flex-1 bg-card">
@@ -323,17 +335,18 @@ deployAgent();`
                               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Or use an existing assistant:</p>
                               <div className="grid grid-cols-1 gap-2">
                                 {existingAgents.map(agent => (
-                                  <button
+                                  <Button
                                     key={agent.id}
+                                    variant="ghost"
                                     onClick={() => handleSelectExisting(agent)}
-                                    className="text-left p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted transition-colors flex items-center justify-between group"
+                                    className="text-left p-3 h-auto rounded-lg border border-border bg-muted/30 hover:bg-muted flex items-center justify-between group"
                                   >
                                     <div>
                                       <p className="text-sm font-bold group-hover:text-primary transition-colors">{agent.name}</p>
                                       <p className="text-[10px] text-muted-foreground">ID: {agent.id.slice(0, 8)}... • {agent.report_count} reports</p>
                                     </div>
                                     <ArrowRight className="size-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-                                  </button>
+                                  </Button>
                                 ))}
                               </div>
                             </div>
@@ -405,8 +418,8 @@ deployAgent();`
                     </p>
                     <div className="relative code-surface border border-transparent p-4 rounded-sm text-sm font-mono whitespace-pre-wrap break-words shadow-inner">
                       <span className="text-primary font-bold uppercase text-[10px] mb-1 block tracking-widest opacity-50">Example prompt:</span>
-                      {quickSetupExample}
-                      <Button size="sm" variant="secondary" className="absolute top-2 right-2 h-7 gap-1 text-xs" onClick={() => handleCopy("quick", quickSetupExample)}>
+                      {QUICK_SETUP_EXAMPLE}
+                      <Button size="sm" variant="secondary" className="absolute top-2 right-2 h-7 gap-1 text-xs" onClick={() => handleCopy("quick", QUICK_SETUP_EXAMPLE)}>
                         <Copy className="size-3" />{copiedId === "quick" ? "Copied!" : "Copy"}
                       </Button>
                     </div>
