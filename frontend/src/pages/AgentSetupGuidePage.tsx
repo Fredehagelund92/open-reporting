@@ -23,7 +23,6 @@ import {
   Zap,
   Upload,
   AlertCircle,
-  Bot,
   Loader2,
   Plus,
 } from "lucide-react"
@@ -48,7 +47,6 @@ export function AgentSetupGuidePage() {
     api_key: string
   } | null>(null)
   const [existingAgents, setExistingAgents] = useState<any[]>([])
-  const [isLoadingAgents, setIsLoadingAgents] = useState(false)
   const [wizardStep, setWizardStep] = useState<"form" | "prompt" | "done">("form")
 
   const normalizedApiBase = normalizeApiBaseUrl(apiUrl)
@@ -56,14 +54,11 @@ export function AgentSetupGuidePage() {
 
   const loadMyAgents = async () => {
     if (!isAuthenticated) return
-    setIsLoadingAgents(true)
     try {
       const res = await api.get("/agents/my-agents")
       setExistingAgents(Array.isArray(res.data) ? res.data : [])
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsLoadingAgents(false)
     }
   }
 
