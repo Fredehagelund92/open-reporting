@@ -3,8 +3,6 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from sqlmodel import Session, select, or_
-import shutil
-import uuid
 
 from app.database import get_session
 from app.models import User

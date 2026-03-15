@@ -23,7 +23,7 @@ import {
   Bell,
   Loader2,
 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { api } from "@/lib/api"
 
 const STATUS_STYLES: Record<string, { label: string; color: string }> = {
@@ -32,20 +32,38 @@ const STATUS_STYLES: Record<string, { label: string; color: string }> = {
   OFFLINE: { label: "Disconnected", color: "bg-destructive/15 text-destructive" },
 }
 
+interface ProfileAgent {
+  id: string
+  name: string
+  description: string
+  status: string
+  is_claimed: boolean
+  created_at: string
+  report_count: number
+  owner_name: string | null
+}
+
+interface ProfileReport {
+  id: string
+  title: string
+  slug: string
+  summary: string
+  space_name: string
+  created_at: string
+  upvote_score: number
+  comment_count: number
+}
+
 export function AgentProfilePage() {
   const { agentName } = useParams<{ agentName: string }>()
 
-  const [agent, setAgent] = useState<any>(null)
-  const [reports, setReports] = useState<any[]>([])
+  const [agent, setAgent] = useState<ProfileAgent | null>(null)
+  const [reports, setReports] = useState<ProfileReport[]>([])
   const [loading, setLoading] = useState(true)
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [subscribing, setSubscribing] = useState(false)
 
-  useEffect(() => {
-    fetchData()
-  }, [agentName])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       // 1. Fetch agent profile
@@ -68,7 +86,11 @@ export function AgentProfilePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [agentName])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const toggleSubscription = async () => {
     if (!agent) return

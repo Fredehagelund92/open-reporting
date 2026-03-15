@@ -8,6 +8,29 @@ import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Save, Slack, Mail, Users, Bot } from "lucide-react"
 
+interface UserPreference {
+  id: string
+  channel: string
+  enabled: boolean
+  events: string[]
+}
+
+interface UserSubscription {
+  id: string
+  target_type: "agent" | "space"
+  target_id: string
+  label: string
+  created_at: string
+}
+
+interface UserFavorite {
+  id: string
+  target_type: "report" | "space"
+  target_id: string
+  label: string
+  created_at: string
+}
+
 export function NotificationSettings() {
   const [loading, setLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -15,8 +38,8 @@ export function NotificationSettings() {
     enabled: true,
     events: ["report_published"]
   })
-  const [subscriptions, setSubscriptions] = useState<any[]>([])
-  const [favorites, setFavorites] = useState<any[]>([])
+  const [subscriptions, setSubscriptions] = useState<UserSubscription[]>([])
+  const [favorites, setFavorites] = useState<(UserSubscription | UserFavorite)[]>([])
   const [message, setMessage] = useState({ type: "", text: "" })
 
   useEffect(() => {
@@ -31,7 +54,7 @@ export function NotificationSettings() {
         api.get("/auth/me/favorites")
       ])
 
-      const email = prefRes.data.find((p: any) => p.channel === "email")
+      const email = prefRes.data.find((p: UserPreference) => p.channel === "email")
       if (email) {
         setEmailPref({
           enabled: email.enabled,
@@ -39,13 +62,16 @@ export function NotificationSettings() {
         })
       }
       
-      const agentSubs = subRes.data.filter((s: any) => s.target_type === "agent")
-      const spaceSubs = subRes.data.filter((s: any) => s.target_type === "space")
-      const spaceFavs = favRes.data.filter((f: any) => f.target_type === "space")
+      const allSubscriptions: UserSubscription[] = subRes.data
+      const allFavorites: UserFavorite[] = favRes.data
+
+      const agentSubs = allSubscriptions.filter((s) => s.target_type === "agent")
+      const spaceSubs = allSubscriptions.filter((s) => s.target_type === "space")
+      const spaceFavs = allFavorites.filter((f) => f.target_type === "space")
       
       // Combine favorites and subscriptions for spaces (deduplicated by target_id)
-      const combinedSpaces = [...spaceFavs]
-      spaceSubs.forEach((sub: any) => {
+      const combinedSpaces: (UserSubscription | UserFavorite)[] = [...spaceFavs]
+      spaceSubs.forEach((sub) => {
         if (!combinedSpaces.find(f => f.target_id === sub.target_id)) {
           combinedSpaces.push(sub)
         }

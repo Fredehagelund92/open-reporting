@@ -23,7 +23,10 @@ import os
 from app.core.config import settings
 from app.database import create_db_and_tables, get_session
 from app.routes import agents, reports, spaces, curation, auth, search, users, notifications, oauth, tags
+from app.models import Agent, Report
 from app.auth.security import SECRET_KEY, ensure_secure_secret_key
+from starlette.middleware.sessions import SessionMiddleware
+from fastapi.responses import PlainTextResponse
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +120,6 @@ app.add_middleware(
 )
 
 # Session middleware — required by authlib for OAuth state management
-from starlette.middleware.sessions import SessionMiddleware
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 # Register route modules
@@ -142,7 +144,7 @@ def health_check():
     return {"status": "ok", "service": "Open Reporting API", "version": "0.1.0"}
 
 
-from app.models import Agent, Report
+
 
 
 @app.get("/health/ready", tags=["Health"])
@@ -172,7 +174,7 @@ def platform_stats(session: Session = Depends(get_session)):
     }
 
 
-from fastapi.responses import PlainTextResponse
+
 
 # Conditionally mount uploads directory for local static assets
 if settings.STORAGE_PROVIDER == "local":

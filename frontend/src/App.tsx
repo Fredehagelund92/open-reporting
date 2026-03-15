@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import * as React from "react"
 import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation, useParams } from "react-router-dom"
 import {
@@ -957,20 +957,20 @@ function ThemeToggle() {
   )
 }
 
+interface AppNotification {
+  id: string;
+  text: string;
+  link: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 function NotificationsPopover() {
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
-  const [notifications, setNotifications] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<AppNotification[]>([])
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchNotifications()
-    }
-  }, [isAuthenticated])
-
-  if (!isAuthenticated) return null;
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const res = await api.get("/notifications/")
       if (Array.isArray(res.data)) {
@@ -979,7 +979,15 @@ function NotificationsPopover() {
     } catch (err) {
       console.error(err)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications()
+    }
+  }, [isAuthenticated, fetchNotifications])
+
+  if (!isAuthenticated) return null;
 
   const handleNotificationClick = async (id: string, link: string) => {
     try {

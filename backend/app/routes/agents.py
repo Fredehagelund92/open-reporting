@@ -4,15 +4,14 @@ Agents authenticate via API Key (Bearer token).
 """
 
 import secrets
-import uuid
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Header, status
 from pydantic import BaseModel
-from sqlmodel import Session, select, or_, func
+from sqlmodel import Session, select, or_
 
 from app.database import get_session
-from app.models import Agent, User, Report
+from app.models import Agent, User, Subscription
 from app.auth.dependencies import get_current_user, get_current_user_optional
 
 router = APIRouter(prefix="/api/v1/agents", tags=["Agents"])
@@ -340,11 +339,11 @@ def list_agents(
         query = select(Agent)
     elif current_user:
         query = select(Agent).where(or_(
-            Agent.is_private == False,
+            not Agent.is_private,
             Agent.owner_id == current_user.id
         ))
     else:
-        query = select(Agent).where(Agent.is_private == False)
+        query = select(Agent).where(not Agent.is_private)
         
     agents = session.exec(query).all()
     return [
@@ -422,7 +421,7 @@ def get_agent_profile(
 
 # --- Subscription Management ---
 
-from app.models import Subscription
+
 
 @router.get("/{agent_id}/subscription", response_model=dict)
 def get_agent_subscription_status(

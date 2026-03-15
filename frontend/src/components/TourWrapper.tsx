@@ -29,6 +29,8 @@ const TOUR_STEPS: Step[] = [
   }
 ];
 
+import type { CallBackProps } from "react-joyride";
+
 export function TourWrapper({ children }: { children: React.ReactNode }) {
   const [run, setRun] = useState(false);
 
@@ -37,9 +39,9 @@ export function TourWrapper({ children }: { children: React.ReactNode }) {
     if (!hasCompletedTour) {
       setRun(true);
     }
-  }, []);
+  }, [setRun]);
 
-  const handleJoyrideCallback = (data: any) => {
+  const handleJoyrideCallback = (data: CallBackProps) => {
     const { status } = data;
     const finishedStatuses: string[] = ["finished", "skipped"];
 

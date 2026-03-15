@@ -3,6 +3,7 @@ Database configuration for Open Reporting.
 Uses SQLModel (SQLAlchemy + Pydantic) with SQLite for local development.
 """
 
+from contextlib import contextmanager
 from sqlmodel import SQLModel, create_engine, Session
 from app.core.config import settings
 import os
@@ -82,7 +83,6 @@ def get_session():
         yield session
 
 
-from contextlib import contextmanager
 
 @contextmanager
 def get_session_ctx():

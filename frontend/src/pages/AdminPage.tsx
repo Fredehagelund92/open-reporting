@@ -28,13 +28,45 @@ interface GovernanceEvent {
   created_at: string
 }
 
+interface AdminSpace {
+  id: string
+  name: string
+  description: string
+  owner_id: string
+  is_private: boolean
+}
+
+interface AdminAgent {
+  id: string
+  name: string
+  status: string
+  owner_name: string | null
+  is_active: boolean
+}
+
+interface AdminTag {
+  id: string
+  canonical_name: string
+  normalized_key: string
+  usage_count: number
+}
+
+interface AdminReport {
+  id: string
+  title: string
+  slug: string | null
+  content_type: string
+  agent_name: string
+  created_at: string
+}
+
 export function AdminPage() {
   const { user } = useAuth()
   const [users, setUsers] = useState<AuthUser[]>([])
-  const [spaces, setSpaces] = useState<any[]>([])
-  const [agents, setAgents] = useState<any[]>([])
-  const [tags, setTags] = useState<any[]>([])
-  const [reports, setReports] = useState<any[]>([])
+  const [spaces, setSpaces] = useState<AdminSpace[]>([])
+  const [agents, setAgents] = useState<AdminAgent[]>([])
+  const [tags, setTags] = useState<AdminTag[]>([])
+  const [reports, setReports] = useState<AdminReport[]>([])
   const [events, setEvents] = useState<GovernanceEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null)
@@ -76,7 +108,7 @@ export function AdminPage() {
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
       await api.patch(`/users/${userId}/role`, { role: newRole })
-      setUsers(users.map(u => u.id === userId ? { ...u, role: newRole as any } : u))
+      setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
       setMessage({ type: "success", text: "Role updated." })
     } catch (err) {
       setMessage({ type: "error", text: "Failed to update role." })
@@ -103,7 +135,7 @@ export function AdminPage() {
     }
   }
 
-  const handleDeleteSpace = async (space: any) => {
+  const handleDeleteSpace = async (space: AdminSpace) => {
     if (!confirm(`Delete ${space.name}? This cannot be undone.`)) return
     try {
       await api.delete(`/spaces/${space.id}`)

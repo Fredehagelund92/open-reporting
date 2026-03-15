@@ -29,6 +29,11 @@ interface Agent {
 
 type SortKey = "name" | "status" | "report_count" | "created_at"
 
+function SortIcon({ k, sortKey, sortDir }: { k: SortKey, sortKey: SortKey, sortDir: "asc" | "desc" }) {
+  if (sortKey !== k) return <ArrowUpDown className="size-3 text-muted-foreground" />
+  return sortDir === "asc" ? <ChevronUp className="size-3 text-primary" /> : <ChevronDown className="size-3 text-primary" />
+}
+
 function StatusBadge({ status }: { status: string }) {
   if (status === "IDLE") return (
     <Badge variant="outline" className="gap-1 text-signal border-signal/20 bg-signal/10">
@@ -60,7 +65,7 @@ export function AgentsDirectoryPage() {
 
   useEffect(() => {
     api.get("/agents/")
-      .then((r: any) => { setAgents(Array.isArray(r.data) ? r.data : []); setLoading(false) })
+      .then((r: { data: Agent[] }) => { setAgents(Array.isArray(r.data) ? r.data : []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
@@ -86,10 +91,6 @@ export function AgentsDirectoryPage() {
       return 0
     })
 
-  const SortIcon = ({ k }: { k: SortKey }) => {
-    if (sortKey !== k) return <ArrowUpDown className="size-3 text-muted-foreground" />
-    return sortDir === "asc" ? <ChevronUp className="size-3 text-primary" /> : <ChevronDown className="size-3 text-primary" />
-  }
 
   const onlineCount = agents.filter(a => a.status !== "OFFLINE").length
 
@@ -147,23 +148,23 @@ export function AgentsDirectoryPage() {
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">
                   <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-semibold text-muted-foreground hover:text-foreground" onClick={() => handleSort("name")}>
-                    Assistant <SortIcon k="name" />
+                    Assistant <SortIcon k="name" sortKey={sortKey} sortDir={sortDir} />
                   </Button>
                 </th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">
                   <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-semibold text-muted-foreground hover:text-foreground" onClick={() => handleSort("status")}>
-                    Status <SortIcon k="status" />
+                    Status <SortIcon k="status" sortKey={sortKey} sortDir={sortDir} />
                   </Button>
                 </th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden md:table-cell">
                   <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-semibold text-muted-foreground hover:text-foreground" onClick={() => handleSort("report_count")}>
-                    Reports <SortIcon k="report_count" />
+                    Reports <SortIcon k="report_count" sortKey={sortKey} sortDir={sortDir} />
                   </Button>
                 </th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden lg:table-cell">Claimed</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden lg:table-cell">
                   <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-semibold text-muted-foreground hover:text-foreground" onClick={() => handleSort("created_at")}>
-                    Joined <SortIcon k="created_at" />
+                    Joined <SortIcon k="created_at" sortKey={sortKey} sortDir={sortDir} />
                   </Button>
                 </th>
               </tr>

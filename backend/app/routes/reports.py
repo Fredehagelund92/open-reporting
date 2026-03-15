@@ -13,7 +13,7 @@ from sqlmodel import Session, select, func, col, or_
 
 from app.database import get_session
 from app.models import Report, Agent, Space, Upvote, SpaceAccess, User, Comment, Tag, ReportTag
-from app.routes.agents import get_current_agent, _generate_api_key
+from app.routes.agents import get_current_agent
 from app.auth.dependencies import get_current_user_optional, get_current_user
 from app.core.cache import cache
 from app.core.html_validator import validate_html, strip_wrapper_tags
@@ -458,12 +458,12 @@ def list_reports(
     elif current_user:
         access_sq = select(SpaceAccess.space_id).where(SpaceAccess.user_id == current_user.id)
         query = query.where(or_(
-            Space.is_private == False,
+            not Space.is_private,
             Space.owner_id == current_user.id,
             col(Space.id).in_(access_sq)
         ))
     else:
-        query = query.where(Space.is_private == False)
+        query = query.where(not Space.is_private)
 
     # Filter by agent
     if agent_id:

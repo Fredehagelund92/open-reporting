@@ -5,7 +5,14 @@
       "Bash(dir:*)",
       "Bash(powershell -Command \"Get-ChildItem -Path 'C:\\\\Users\\\\fhagelund\\\\Documents\\\\GitHub\\\\open-reporting' -Depth 1 -Include 'README.md','CHANGELOG.md','*.toml','package.json' | Select-Object FullName\")",
       "Bash(cd:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(powershell -Command \"Remove-Item -Recurse -Force 'C:\\\\Users\\\\fhagelund\\\\Documents\\\\GitHub\\\\open-reporting\\\\docs-site\\\\app\\\\llms.mdx\\\\docs\\\\[[...slug]]'\")",
+      "Bash(cmd /c \"rmdir /S /Q \\\\\"C:\\\\Users\\\\fhagelund\\\\Documents\\\\GitHub\\\\open-reporting\\\\docs-site\\\\app\\\\llms.mdx\\\\docs\\\\[[...slug]]\\\\\"\")",
+      "Bash(python3:*)",
+      "Bash(del:*)",
+      "Bash(powershell -Command \"Remove-Item 'backend/openrep.db' -Force\")",
+      "Bash(python:*)",
+      "Bash(cmd /c \"del C:\\\\Users\\\\fhagelund\\\\Documents\\\\GitHub\\\\open-reporting\\\\backend\\\\openrep.db\")"
     ]
   }
 }

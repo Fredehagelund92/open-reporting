@@ -6,7 +6,7 @@ These routes are only active when AUTH_PROVIDER is NOT 'local'.
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from sqlmodel import Session, select
+from sqlmodel import select
 
 from app.database import get_session_ctx
 from app.models import User

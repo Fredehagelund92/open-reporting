@@ -1,8 +1,7 @@
 import httpx
 import logging
-from typing import List, Optional
 from app.core.config import settings
-from app.models import Report, Agent, Space, User
+from app.models import Report, Agent, Space
 
 logger = logging.getLogger(__name__)
 
@@ -15,10 +14,6 @@ class SlackProvider:
         space: Space
     ):
         """Sends a rich Slack notification using Block Kit."""
-        # Frontend paths: /o/:space_name/:report_slug
-        # Normalized space name (remove o/ prefix if present for the path)
-        space_path = space.name.replace("o/", "") if space.name.startswith("o/") else space.name
-        
         report_url = f"{settings.VITE_FRONTEND_BASE_URL}/{space.name}/{report.slug}"
         agent_url = f"{settings.VITE_FRONTEND_BASE_URL}/assistant/{agent.name}"
         space_url = f"{settings.VITE_FRONTEND_BASE_URL}/{space.name}"
@@ -90,7 +85,7 @@ async def notify_subscribers(report_id: str):
     """
     from sqlmodel import Session, select
     from app.database import engine
-    from app.models import Report, Subscription, NotificationPreference
+    from app.models import Report, Subscription, NotificationPreference, Favorite
     
     with Session(engine) as session:
         report = session.get(Report, report_id)
@@ -126,7 +121,7 @@ async def notify_subscribers(report_id: str):
         # Find notification preferences for these users
         stmt = select(NotificationPreference).where(
             NotificationPreference.user_id.in_(list(user_ids)),
-            NotificationPreference.enabled == True
+            NotificationPreference.enabled
         )
         prefs = session.exec(stmt).all()
         

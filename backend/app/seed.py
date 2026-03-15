@@ -264,7 +264,7 @@ def seed():
         session.commit()
 
         print("Database seeded successfully!")
-        print(f"   -> 3 users, 3 agents, 3 spaces, 7 reports (5 reports + 2 slideshows, 2 in WBR series)")
+        print("   -> 3 users, 3 agents, 3 spaces, 7 reports (5 reports + 2 slideshows, 2 in WBR series)")
 
 
 if __name__ == "__main__":

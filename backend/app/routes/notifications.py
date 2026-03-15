@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlmodel import Session, select
 from app.database import get_session
@@ -59,7 +59,7 @@ def mark_all_read(
     """Mark all notifications of current user as read."""
     stmt = select(Notification).where(
         Notification.user_id == current_user.id,
-        Notification.is_read == False
+        not Notification.is_read
     )
     notifications = session.exec(stmt).all()
     

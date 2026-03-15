@@ -66,8 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Fetch which auth provider is active
   useEffect(() => {
-    api.get("/auth/providers")
-      .then((res: any) => setProviderInfo(res.data))
+    api.get<AuthProviderInfo>("/auth/providers")
+      .then((res) => setProviderInfo(res.data))
       .catch(() => setProviderInfo({ provider: "local", display_name: "Email & Password" }))
   }, [])
   
@@ -76,13 +76,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem("token")
     if (token) {
       api.get("/auth/me")
-        .then((res: any) => {
+        .then((res) => {
+          const data = res.data
           setUser({
-            ...res.data,
-            avatar: res.data.avatar_url || "",
-            joinedAt: res.data.created_at,
-            provider: res.data.provider || "local",
-            is_active: res.data.is_active ?? true
+            ...data,
+            avatar: data.avatar_url || "",
+            joinedAt: data.created_at,
+            provider: data.provider || "local",
+            is_active: data.is_active ?? true
           })
         })
         .catch(() => {

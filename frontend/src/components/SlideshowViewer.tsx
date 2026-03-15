@@ -128,7 +128,7 @@ export function SlideshowViewer({
 
   useEffect(() => {
     setCurrentIndex(0)
-  }, [sanitizedHtml])
+  }, [sanitizedHtml, setCurrentIndex])
 
   const goTo = useCallback(
     (nextIndex: number) => {

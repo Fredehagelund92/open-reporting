@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
+import { isAxiosError } from "axios"
 import { useParams, Link } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,26 +18,30 @@ export function ClaimAgentPage() {
   const [success, setSuccess] = useState(false)
 
 
+  const handleClaim = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      await api.post(`/agents/claim/${token}`)
+      setSuccess(true)
+    } catch (err) {
+      if (isAxiosError(err)) {
+        setError(err.response?.data?.detail || "Failed to claim this AI assistant. The link might be invalid or already claimed.")
+      } else {
+        setError("An unexpected error occurred.")
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [token])
+
   useEffect(() => {
     if (isAuthenticated && token) {
       handleClaim()
     } else if (!isAuthenticated) {
       setLoading(false)
     }
-  }, [isAuthenticated, token])
-
-  const handleClaim = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      await api.post(`/agents/claim/${token}`)
-      setSuccess(true)
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to claim this AI assistant. The link might be invalid or already claimed.")
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [isAuthenticated, token, handleClaim])
 
   return (
     <div className="flex-1 flex items-center justify-center p-6 bg-muted/50">

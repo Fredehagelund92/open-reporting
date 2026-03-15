@@ -42,10 +42,43 @@ import { api } from "@/lib/api"
 import DOMPurify from "dompurify"
 import { SlideshowViewer } from "@/components/SlideshowViewer"
 
-interface ReportDetail {
-  slug: string; title: string; series_id?: string | null
-  run_number?: number | null; series_total?: number | null
-  prev_slug?: string | null; next_slug?: string | null
+interface Reaction {
+  emoji: string
+  count: number
+  reacted: boolean
+}
+
+interface ReportComment {
+  id: string
+  author_name: string
+  author_avatar?: string
+  author?: { name: string; avatar?: string }
+  text: string
+  created_at: string
+  reactions: Reaction[]
+}
+
+interface Report {
+  id: string
+  title: string
+  slug: string
+  content_type: "report" | "slideshow"
+  html_body: string
+  created_at: string
+  upvote_score: number
+  user_vote: number
+  agent_name?: string
+  agent?: string
+  space_name?: string
+  space?: string
+  tags: string[]
+  can_delete?: boolean
+  series_id?: string | null
+  run_number?: number | null
+  series_total?: number | null
+  prev_slug?: string | null
+  next_slug?: string | null
+  time?: string
 }
 
 export function ReportViewerPage() {
@@ -54,7 +87,7 @@ export function ReportViewerPage() {
   const { isAuthenticated, user } = useAuth()
   const queryClient = useQueryClient()
 
-  const { data: report, isLoading: loadingReport } = useQuery({
+  const { data: report, isLoading: loadingReport } = useQuery<Report>({
     queryKey: ["report", slug],
     queryFn: async () => {
       const res = await api.get(`/reports/${slug}`)
@@ -65,7 +98,7 @@ export function ReportViewerPage() {
 
   // Comments would eventually come from an API, but keeping local state for now or fetching 
   // if endpoint exists. (Assuming /reports/{id}/comments)
-  const { data: comments = [] } = useQuery({
+  const { data: comments = [] } = useQuery<ReportComment[]>({
     queryKey: ["comments", report?.id],
     queryFn: async () => {
       const res = await api.get(`/reports/${report?.id}/comments`)
@@ -96,12 +129,12 @@ export function ReportViewerPage() {
     if (!report?.series_id) return
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return
-      if (e.key === "ArrowLeft" && (report as ReportDetail).prev_slug) navigate(`/report/${(report as ReportDetail).prev_slug}`)
-      if (e.key === "ArrowRight" && (report as ReportDetail).next_slug) navigate(`/report/${(report as ReportDetail).next_slug}`)
+      if (e.key === "ArrowLeft" && report.prev_slug) navigate(`/report/${report.prev_slug}`)
+      if (e.key === "ArrowRight" && report.next_slug) navigate(`/report/${report.next_slug}`)
     }
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
-  }, [report?.series_id, (report as ReportDetail | undefined)?.prev_slug, (report as ReportDetail | undefined)?.next_slug, navigate])
+  }, [report?.series_id, report?.prev_slug, report?.next_slug, navigate])
 
   const SUGGESTED_USERS = ["Alex PM", "Sara Engineer", "Admin", "ResearchBot"]
   const filteredMentions = SUGGESTED_USERS.filter(u => u.toLowerCase().includes(mentionQuery.toLowerCase()))
@@ -174,18 +207,18 @@ export function ReportViewerPage() {
           </Link>
         )}
 
-        {(report as ReportDetail).series_id && (
+        {report.series_id && (
           <div className="flex items-center gap-2 mb-4 px-3 py-1.5 rounded-lg border border-border bg-muted/40 text-sm">
-            {(report as ReportDetail).prev_slug
-              ? <Link to={`/report/${(report as ReportDetail).prev_slug}`}><Button variant="ghost" size="sm" className="h-7 gap-1 text-muted-foreground"><ChevronLeft className="size-4" />Run #{(report as ReportDetail).run_number! - 1}</Button></Link>
+            {report.prev_slug
+              ? <Link to={`/report/${report.prev_slug}`}><Button variant="ghost" size="sm" className="h-7 gap-1 text-muted-foreground"><ChevronLeft className="size-4" />Run #{report.run_number! - 1}</Button></Link>
               : <Button variant="ghost" size="sm" className="h-7" disabled><ChevronLeft className="size-4" /></Button>
             }
             <span className="flex-1 text-center text-xs text-muted-foreground">
-              Series: <span className="font-medium text-foreground font-mono">{(report as ReportDetail).series_id}</span>
-              {" · "}Run #{(report as ReportDetail).run_number ?? "?"} of {(report as ReportDetail).series_total ?? "?"}
+              Series: <span className="font-medium text-foreground font-mono">{report.series_id}</span>
+              {" · "}Run #{report.run_number ?? "?"} of {report.series_total ?? "?"}
             </span>
-            {(report as ReportDetail).next_slug
-              ? <Link to={`/report/${(report as ReportDetail).next_slug}`}><Button variant="ghost" size="sm" className="h-7 gap-1 text-muted-foreground">Run #{(report as ReportDetail).run_number! + 1}<ChevronRight className="size-4" /></Button></Link>
+            {report.next_slug
+              ? <Link to={`/report/${report.next_slug}`}><Button variant="ghost" size="sm" className="h-7 gap-1 text-muted-foreground">Run #{report.run_number! + 1}<ChevronRight className="size-4" /></Button></Link>
               : <Button variant="ghost" size="sm" className="h-7" disabled><ChevronRight className="size-4" /></Button>
             }
           </div>
@@ -528,7 +561,7 @@ export function ReportViewerPage() {
 
           {/* Comment List */}
           <div className="flex flex-col gap-4">
-            {comments.map((comment: any) => (
+            {comments.map((comment) => (
               <CommentItem key={comment.id} comment={comment} reportId={report.id} />
             ))}
           </div>
@@ -537,7 +570,7 @@ export function ReportViewerPage() {
     </ScrollArea>
   )
 }
-function CommentItem({ comment, reportId }: { comment: any; reportId: string }) {
+function CommentItem({ comment, reportId }: { comment: ReportComment; reportId: string }) {
   const { isAuthenticated } = useAuth()
   const [reactions, setReactions] = useState<{ emoji: string; count: number; reacted: boolean }[]>(
     Array.isArray(comment.reactions) ? comment.reactions : [],
