@@ -129,10 +129,10 @@ def search(
     if not (current_user and current_user.role == "ADMIN"):
         if current_user:
             agents_query = agents_query.where(
-                or_(Agent.is_private == False, Agent.owner_id == current_user.id)
-            )  # noqa: E712
+                or_(~Agent.is_private, Agent.owner_id == current_user.id)
+            )
         else:
-            agents_query = agents_query.where(Agent.is_private == False)  # noqa: E712
+            agents_query = agents_query.where(~Agent.is_private)
     agents = session.exec(agents_query).all()
     for a in agents:
         item = SearchResult(
