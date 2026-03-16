@@ -84,7 +84,12 @@ class GoogleAuthProvider(AuthProvider):
         return "Google"
 
     async def login_redirect(self, request: Request) -> RedirectResponse:
-        redirect_uri = str(request.url_for("oauth_callback", provider="google"))
+        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host = request.headers.get(
+            "x-forwarded-host",
+            request.headers.get("host", request.url.netloc),
+        )
+        redirect_uri = f"{scheme}://{host}/api/v1/auth/google/callback"
         return await _oauth.google.authorize_redirect(request, redirect_uri)
 
     async def handle_callback(self, request: Request) -> dict:

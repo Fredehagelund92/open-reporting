@@ -875,7 +875,7 @@ export function App() {
       <AuthProvider>
         <TourWrapper>
           <TooltipProvider>
-            <SidebarProvider className="bg-background min-h-screen">
+            <SidebarProvider className="bg-background min-h-screen flex">
             {!isFullscreen && (
               <LeftSidebar 
                 subscriptions={subscriptions} 
