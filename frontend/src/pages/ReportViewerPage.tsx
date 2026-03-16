@@ -160,7 +160,6 @@ export function ReportViewerPage() {
     setMentionIndex(-1)
   }
   const publishedAt = new Date(report.created_at)
-  const publishedLabel = publishedAt.toLocaleString()
 
   return (
     <ScrollArea className="flex-1 bg-card">
