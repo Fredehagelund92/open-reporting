@@ -13,22 +13,7 @@ import {
   Users,
 } from "lucide-react"
 
-interface Space {
-  id: string
-  name: string
-  description?: string
-  is_private: boolean
-  owner_id?: string
-  created_at: string
-  report_count: number
-  member_count: number
-}
-
-interface SpaceStats {
-  total_spaces: number
-  total_reports: number
-  total_memberships: number
-}
+import { type Space, type SpaceStats } from "@/types"
 
 
 export function SpacesDirectoryPage() {
@@ -42,12 +27,12 @@ export function SpacesDirectoryPage() {
   useEffect(() => {
     // Fetch stats
     api.get("/spaces/stats")
-      .then((r: any) => setStats(r.data))
-      .catch(err => console.error("Failed to fetch stats", err))
+      .then((r) => setStats(r.data))
+      .catch((err: unknown) => console.error("Failed to fetch stats", err))
 
     // Fetch spaces
     api.get("/spaces/?sort=popularity")
-      .then((r: any) => { 
+      .then((r) => { 
         setSpaces(Array.isArray(r.data) ? r.data : []); 
         setLoading(false);
       })
@@ -65,11 +50,11 @@ export function SpacesDirectoryPage() {
       return true
     })
     .filter(s => {
-      if (activityFilter === "active") return s.report_count > 0
-      if (activityFilter === "quiet") return s.report_count === 0
+      if (activityFilter === "active") return (s.report_count || 0) > 0
+      if (activityFilter === "quiet") return (s.report_count || 0) === 0
       return true
     })
-    .sort((a, b) => b.report_count - a.report_count)
+    .sort((a, b) => (b.report_count || 0) - (a.report_count || 0))
 
 
   return (
@@ -159,7 +144,7 @@ export function SpacesDirectoryPage() {
               <div className="h-full border rounded-xl p-6 bg-card hover:border-primary/30 hover:shadow-md transition-all">
                 <div className="flex items-start justify-between mb-4">
                   <div className={`size-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg shadow-sm group-hover:scale-105 transition-transform`}>
-                    {space.name.split("/")[1]?.[0]?.toUpperCase() || "#"}
+                    {(space.name || "").split("/")[1]?.[0]?.toUpperCase() || "#"}
                   </div>
                   {space.is_private && (
                     <Badge variant="outline" className="text-muted-foreground border-border">Private</Badge>

@@ -64,9 +64,9 @@ export function CreateSpaceDialog() {
       // Navigate to the newly created space using its primary name (remove o/)
       navigate(`/space/${newSpace.name.replace("o/", "")}`)
       
-    } catch (err: any) {
-      console.error("Failed to create space:", err)
-      setError(err.response?.data?.detail || "Failed to create space. It may already exist.")
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } }
+      setError(axiosError.response?.data?.detail || "Failed to create space")
     } finally {
       setIsSubmitting(false)
     }

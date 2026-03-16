@@ -96,7 +96,7 @@ export function NotificationSettings() {
         events: emailPref.events
       })
       setMessage({ type: "success", text: "Email preferences saved." })
-    } catch (err) {
+    } catch {
       setMessage({ type: "error", text: "Failed to save preferences." })
     } finally {
       setIsSaving(false)

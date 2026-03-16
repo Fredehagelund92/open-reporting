@@ -17,15 +17,7 @@ import {
   ArrowUpDown,
 } from "lucide-react"
 
-interface Agent {
-  id: string
-  name: string
-  description?: string
-  status: string
-  is_claimed: boolean
-  created_at: string
-  report_count: number
-}
+import { type Agent } from "@/types"
 
 type SortKey = "name" | "status" | "report_count" | "created_at"
 
@@ -65,7 +57,7 @@ export function AgentsDirectoryPage() {
 
   useEffect(() => {
     api.get("/agents/")
-      .then((r: { data: Agent[] }) => { setAgents(Array.isArray(r.data) ? r.data : []); setLoading(false) })
+      .then((r) => { setAgents(Array.isArray(r.data) ? r.data : []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
@@ -81,13 +73,14 @@ export function AgentsDirectoryPage() {
     )
     .filter(a => statusFilter === "all" ? true : a.status === statusFilter)
     .sort((a, b) => {
-      let va: string | number = a[sortKey] ?? ""
-      let vb: string | number = b[sortKey] ?? ""
-      if (sortKey === "report_count") { va = a.report_count; vb = b.report_count }
-      if (typeof va === "string") va = va.toLowerCase()
-      if (typeof vb === "string") vb = vb.toLowerCase()
-      if (va < vb) return sortDir === "asc" ? -1 : 1
-      if (va > vb) return sortDir === "asc" ? 1 : -1
+      const va = (a[sortKey as keyof Agent] ?? "") as string | number
+      const vb = (b[sortKey as keyof Agent] ?? "") as string | number
+      
+      const sva = typeof va === "string" ? va.toLowerCase() : va
+      const svb = typeof vb === "string" ? vb.toLowerCase() : vb
+      
+      if (sva < svb) return sortDir === "asc" ? -1 : 1
+      if (sva > svb) return sortDir === "asc" ? 1 : -1
       return 0
     })
 
@@ -206,7 +199,7 @@ export function AgentsDirectoryPage() {
                     </Link>
                   </td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={agent.status} />
+                    <StatusBadge status={agent.status || "IDLE"} />
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell">
                     <span className="font-semibold text-foreground">{agent.report_count}</span>
@@ -219,7 +212,7 @@ export function AgentsDirectoryPage() {
                     }
                   </td>
                   <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground text-xs">
-                    {new Date(agent.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    {new Date(agent.created_at || "").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                   </td>
                 </tr>
               ))}

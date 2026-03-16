@@ -42,44 +42,7 @@ import { api } from "@/lib/api"
 import DOMPurify from "dompurify"
 import { SlideshowViewer } from "@/components/SlideshowViewer"
 
-interface Reaction {
-  emoji: string
-  count: number
-  reacted: boolean
-}
-
-interface ReportComment {
-  id: string
-  author_name: string
-  author_avatar?: string
-  author?: { name: string; avatar?: string }
-  text: string
-  created_at: string
-  reactions: Reaction[]
-}
-
-interface Report {
-  id: string
-  title: string
-  slug: string
-  content_type: "report" | "slideshow"
-  html_body: string
-  created_at: string
-  upvote_score: number
-  user_vote: number
-  agent_name?: string
-  agent?: string
-  space_name?: string
-  space?: string
-  tags: string[]
-  can_delete?: boolean
-  series_id?: string | null
-  run_number?: number | null
-  series_total?: number | null
-  prev_slug?: string | null
-  next_slug?: string | null
-  time?: string
-}
+import { type Report, type ReportComment } from "@/types"
 
 export function ReportViewerPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -123,7 +86,7 @@ export function ReportViewerPage() {
     if (!report) return
     setVote(report.user_vote ?? 0)
     setCurrentScore(report.upvote_score ?? 0)
-  }, [report?.id, report?.user_vote, report?.upvote_score])
+  }, [report])
 
   useEffect(() => {
     if (!report?.series_id) return
@@ -252,7 +215,7 @@ export function ReportViewerPage() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground mb-3">{report.title}</h1>
           <div className="flex gap-2 mb-4">
-            {report.tags.map((tag: string) => (
+            {report.tags.map((tag) => (
               <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
                 <Badge variant="secondary" className="font-normal bg-muted text-muted-foreground">{tag}</Badge>
               </Link>
@@ -382,7 +345,7 @@ export function ReportViewerPage() {
               </div>
 
               <SlideshowViewer
-                htmlBody={report.html_body}
+                htmlBody={report.html_body || ""}
                 isFullscreen={true}
                 onRequestExitFullscreen={() => handleToggleFullscreen(false)}
               />
@@ -405,7 +368,7 @@ export function ReportViewerPage() {
                   <div
                     className="prose prose-slate prose-lg prose-headings:text-foreground prose-headings:font-bold prose-p:text-muted-foreground prose-a:text-primary max-w-none"
                     dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(report.html_body, {
+                      __html: DOMPurify.sanitize(report.html_body || "", {
                         ADD_TAGS: ["canvas"],
                         ADD_ATTR: ["style"],
                       }),
@@ -425,11 +388,11 @@ export function ReportViewerPage() {
           <Card className="mx-auto shadow-xl border-border overflow-hidden bg-card ring-1 ring-slate-900/5 max-w-5xl">
             <CardContent className={report.content_type === "slideshow" ? "p-2 md:p-3 bg-transparent" : "p-8 md:p-16 overflow-x-auto"}>
               {report.content_type === "slideshow" ? (
-                <SlideshowViewer htmlBody={report.html_body} />
+                <SlideshowViewer htmlBody={report.html_body || ""} />
               ) : (
                 <div
                   className="prose prose-slate prose-headings:text-foreground prose-headings:font-bold prose-p:text-muted-foreground prose-a:text-primary max-w-none"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(report.html_body, { ADD_TAGS: ['canvas'], ADD_ATTR: ['style'] }) }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(report.html_body || "", { ADD_TAGS: ['canvas'], ADD_ATTR: ['style'] }) }}
                 />
               )}
             </CardContent>

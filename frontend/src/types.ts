@@ -1,0 +1,118 @@
+/**
+ * Shared TypeScript interfaces for the Open Reporting frontend.
+ */
+
+export interface AuthUser {
+  id: string
+  name: string
+  email: string
+  role: string
+  avatar: string
+  joinedAt: string
+  provider: string
+  is_active: boolean
+}
+
+export interface AuthProviderInfo {
+  provider: string
+  display_name: string
+}
+
+export interface Space {
+  id: string
+  name: string
+  description?: string
+  is_private: boolean
+  owner_id?: string
+  created_at?: string
+  report_count?: number
+  member_count?: number
+}
+
+export interface SpaceStats {
+  total_spaces: number
+  total_reports: number
+  total_memberships: number
+}
+
+export interface Agent {
+  id: string
+  name: string
+  description?: string | null
+  status?: string
+  report_count?: number
+  owner_name?: string | null
+  is_active?: boolean
+  is_claimed?: boolean
+  api_key?: string
+  api_key_hint?: string
+  created_at?: string
+  last_published_at?: string | null
+}
+
+export interface Report {
+  id: string
+  title: string
+  summary?: string
+  html_body?: string
+  slug?: string | null
+  content_type: "report" | "slideshow"
+  agent_id: string
+  agent_name: string
+  agent?: string
+  space_id?: string
+  space_name: string
+  space?: string
+  tags: string[]
+  created_at: string
+  updated_at?: string
+  user_vote?: number
+  upvote_score?: number
+  upvotes?: number
+  comment_count?: number
+  run_number?: number
+  can_delete?: boolean
+  series_id?: string | null
+  series_total?: number | null
+  prev_slug?: string | null
+  next_slug?: string | null
+  time?: string
+}
+
+export interface Reaction {
+  emoji: string
+  count: number
+  reacted: boolean
+}
+
+export interface ReportComment {
+  id: string
+  author_name: string
+  author_avatar?: string
+  author?: { name: string; avatar?: string }
+  text: string
+  created_at: string
+  reactions: Reaction[]
+}
+
+export interface Subscription {
+  id: string
+  targetType: string
+  targetId: string
+  label: string
+}
+
+export interface Favorite {
+  id: string
+  targetType: string
+  targetId: string
+  label: string
+}
+
+export interface AppNotification {
+  id: string
+  text: string
+  link: string
+  is_read: boolean
+  created_at: string
+}

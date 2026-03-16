@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Joyride, { type Step } from "react-joyride";
 
 const TOUR_STEPS: Step[] = [
@@ -34,12 +34,15 @@ import type { CallBackProps } from "react-joyride";
 export function TourWrapper({ children }: { children: React.ReactNode }) {
   const [run, setRun] = useState(false);
 
-  useEffect(() => {
-    const hasCompletedTour = localStorage.getItem("hasCompletedTour");
+  // Initialize run state once
+  const [hasCheckedTour, setHasCheckedTour] = useState(false)
+  if (!hasCheckedTour) {
+    setHasCheckedTour(true)
+    const hasCompletedTour = localStorage.getItem("hasCompletedTour")
     if (!hasCompletedTour) {
-      setRun(true);
+      setRun(true)
     }
-  }, [setRun]);
+  }
 
   const handleJoyrideCallback = (data: CallBackProps) => {
     const { status } = data;

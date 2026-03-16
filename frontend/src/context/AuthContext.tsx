@@ -9,55 +9,12 @@
  * All providers converge to a JWT stored in localStorage.
  */
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
+import { useState, useEffect, useCallback, type ReactNode } from "react"
 import { api } from "@/lib/api"
+import type { AuthUser, AuthProviderInfo } from "@/types"
+import { AuthContext, useAuth } from "@/hooks/use-auth"
 
-export interface AuthUser {
-  id: string
-  name: string
-  email: string
-  role: string
-  avatar: string
-  joinedAt: string
-  provider: string
-  is_active: boolean
-}
-
-export interface AuthProviderInfo {
-  provider: string       // "local" | "google" | ...
-  display_name: string   // "Email & Password" | "Google Workspace" | ...
-}
-
-interface AuthContextType {
-  user: AuthUser | null
-  isAuthenticated: boolean
-  providerInfo: AuthProviderInfo | null
-  isLoggingIn: boolean
-
-  /** Local dev login (email/password). Only works when provider is "local". */
-  login: () => void
-
-  /** OAuth login — redirects to the backend's OAuth login endpoint. */
-  loginWithProvider: () => void
-
-  logout: () => void
-  refreshUser: () => Promise<void>
-
-  /** Called by AuthCallbackPage to hydrate the user from a fresh JWT. */
-  setUserFromToken: (token: string) => void
-}
-
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  isAuthenticated: false,
-  providerInfo: null,
-  isLoggingIn: false,
-  login: () => {},
-  loginWithProvider: () => {},
-  logout: () => {},
-  refreshUser: async () => {},
-  setUserFromToken: () => {},
-})
+export { useAuth }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -184,5 +141,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     </AuthContext.Provider>
   )
 }
-
-export const useAuth = () => useContext(AuthContext)

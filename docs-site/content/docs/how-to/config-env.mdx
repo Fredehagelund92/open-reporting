@@ -1,0 +1,104 @@
+---
+title: Configuration
+description: All backend and frontend environment variables for Open Reporting.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Configuration
+
+Copy the example files before starting:
+
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
+
+---
+
+## Backend (`backend/.env`)
+
+### Core
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SECRET_KEY` | — | **Required.** JWT signing secret. Generate with `openssl rand -hex 32`. |
+| `ENVIRONMENT` | `development` | `development`, `staging`, or `production`. |
+| `DATABASE_URL` | `sqlite:///openrep.db` | Database connection string. SQLite for dev, PostgreSQL for production. |
+
+### Database
+
+SQLite requires no setup and is the default for local development. For production, use PostgreSQL with pgvector:
+
+```bash
+DATABASE_URL=postgresql://user:password@localhost:5432/openrep
+```
+
+<Callout type="info">
+  pgvector is required for semantic search. Without it, search falls back to keyword matching. Install the pgvector extension on your PostgreSQL instance before connecting.
+</Callout>
+
+If your PostgreSQL provider gives a pooled connection URL that doesn't support schema setup (e.g. Vercel Postgres), set the direct URL separately:
+
+```bash
+POSTGRES_URL_NON_POOLING=postgresql://user:password@db.example.com:5432/openrep
+```
+
+### CORS
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CORS_ORIGINS` | `http://localhost:5173` | Comma-separated list of allowed frontend origins. |
+| `CORS_ORIGIN_REGEX` | `https://.*\.vercel\.app` | Regex for additional origins (e.g. preview deploy URLs). |
+
+### Storage
+
+Controls where uploaded report HTML files are stored.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `STORAGE_PROVIDER` | `local` | `local`, `vercel_blob`, or `s3`. |
+| `BLOB_READ_WRITE_TOKEN` | — | Required when `STORAGE_PROVIDER=vercel_blob`. |
+| `S3_BUCKET_NAME` | — | Required when `STORAGE_PROVIDER=s3`. |
+| `AWS_ACCESS_KEY_ID` | — | AWS credentials for S3. |
+| `AWS_SECRET_ACCESS_KEY` | — | AWS credentials for S3. |
+| `AWS_REGION` | `us-east-1` | AWS region. |
+| `AWS_ENDPOINT_URL_S3` | — | Custom S3-compatible endpoint (e.g. Cloudflare R2, MinIO). |
+
+### Authentication
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AUTH_PROVIDER` | `local` | `local` (email/password) or `google` (OAuth). |
+| `VITE_FRONTEND_BASE_URL` | `http://localhost:5173` | Frontend URL — used for OAuth redirects. |
+| `GOOGLE_CLIENT_ID` | — | Required when `AUTH_PROVIDER=google`. |
+| `GOOGLE_CLIENT_SECRET` | — | Required when `AUTH_PROVIDER=google`. |
+| `GOOGLE_ALLOWED_DOMAIN` | — | Restrict Google logins to a specific domain (e.g. `yourcompany.com`). Leave blank to allow any Google account. |
+
+### Authoring Coach
+
+The authoring coach evaluates report quality before publish.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AUTHORING_COACH_MODE` | `enforce` | `enforce` — blocks publish when quality check fails. `shadow` — advisory only, never blocks. |
+
+---
+
+## Frontend (`frontend/.env`)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VITE_API_BASE_URL` | `http://localhost:8000` | Backend API base URL. In production, set this to your deployed backend URL. |
+| `VITE_FRONTEND_BASE_URL` | `http://localhost:5173` | Public frontend URL. Used for building absolute links. |
+
+---
+
+## Production checklist
+
+- [ ] Set a strong random `SECRET_KEY`
+- [ ] Switch `DATABASE_URL` to PostgreSQL
+- [ ] Set `CORS_ORIGINS` to your frontend domain
+- [ ] Set `VITE_API_BASE_URL` to your deployed backend URL
+- [ ] Set `STORAGE_PROVIDER` to `s3` or `vercel_blob` (local storage won't persist across deploys)
+- [ ] Set `AUTH_PROVIDER=google` and configure OAuth credentials, or keep `local` and manage users manually

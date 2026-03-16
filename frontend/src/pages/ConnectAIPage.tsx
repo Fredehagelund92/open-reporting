@@ -33,17 +33,7 @@ import { HelpTip } from "@/components/HelpTip"
 type WizardStep = "name" | "prompt" | "done"
 type ConnectMode = "create" | "reuse"
 
-interface AgentItem {
-  id: string
-  name: string
-  description: string | null
-  status: string
-  api_key: string
-  api_key_hint: string
-  report_count: number
-  created_at: string
-  last_published_at?: string | null
-}
+import type { Agent, Space } from "@/types"
 
 export function ConnectAIPage() {
   const { isAuthenticated, user } = useAuth()
@@ -55,7 +45,7 @@ export function ConnectAIPage() {
 
   const [mode, setMode] = useState<ConnectMode>(searchParams.get("mode") === "reuse" ? "reuse" : "create")
   const [promptTool, setPromptTool] = useState<PromptTool>("chatgpt")
-  const [existingAgents, setExistingAgents] = useState<AgentItem[]>([])
+  const [existingAgents, setExistingAgents] = useState<Agent[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState("")
   const [isLoadingAgents, setIsLoadingAgents] = useState(true)
   const [reuseVerifyStatus, setReuseVerifyStatus] = useState<"idle" | "running" | "success" | "error">("idle")
@@ -82,7 +72,7 @@ export function ConnectAIPage() {
     setIsLoadingAgents(true)
     try {
       const res = await api.get("/agents/my-agents")
-      const agents = Array.isArray(res.data) ? (res.data as AgentItem[]) : []
+      const agents = Array.isArray(res.data) ? (res.data as Agent[]) : []
       setExistingAgents(agents)
       if (agents.length > 0) {
         setSelectedAgentId((current) => current || agents[0].id)
@@ -155,12 +145,13 @@ export function ConnectAIPage() {
       setCreatedAgent(res.data.agent)
       await loadMyAgents()
       setStep("prompt")
-    } catch (err: any) {
-      const detail = err.response?.data?.detail
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } }
+      const detail = axiosError.response?.data?.detail
       if (typeof detail === "string") {
         setError(detail)
       } else {
-      setError("Failed to create AI assistant. Please try again.")
+        setError("Failed to create AI assistant. Please try again.")
       }
     } finally {
       setIsCreating(false)
@@ -173,7 +164,7 @@ export function ConnectAIPage() {
       tool,
       skillUrl,
       apiBaseUrl: normalizedApiBase,
-      apiKey: createdAgent.api_key,
+      apiKey: createdAgent.api_key || "",
     })
   }
 
@@ -183,7 +174,7 @@ export function ConnectAIPage() {
       tool,
       skillUrl,
       apiBaseUrl: normalizedApiBase,
-      apiKey: selectedAgent.api_key,
+      apiKey: selectedAgent.api_key || "",
       reconnect: true,
     })
   }
@@ -228,7 +219,7 @@ export function ConnectAIPage() {
     try {
       const spacesRes = await api.get("/spaces/")
       const spaces = Array.isArray(spacesRes.data) ? spacesRes.data : []
-      const owned = spaces.find((space: any) => space.owner_id === user?.id)
+      const owned = spaces.find((space: Space) => space.owner_id === user?.id)
       if (owned?.name) return owned.name as string
       if (spaces.length > 0 && spaces[0].name) return spaces[0].name as string
     } catch {
@@ -243,8 +234,9 @@ export function ConnectAIPage() {
       })
       window.dispatchEvent(new CustomEvent("refresh-sidebar"))
       return createRes.data.name as string
-    } catch (err: any) {
-      if (err?.response?.status === 409) return starterSpaceName
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { status?: number } }
+      if (axiosError?.response?.status === 409) return starterSpaceName
       throw err
     }
   }
@@ -306,8 +298,9 @@ export function ConnectAIPage() {
       setStarterMessage("Starter space and sample report are ready. Opening your space now.")
       window.dispatchEvent(new CustomEvent("refresh-sidebar"))
       navigate(`/space/${targetSpace.replace("o/", "")}`)
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } }
+      const detail = axiosError?.response?.data?.detail
       setStarterStatus("error")
       if (typeof detail === "string") {
         setStarterMessage(detail)
@@ -436,7 +429,7 @@ export function ConnectAIPage() {
                         <div className="flex items-center justify-between gap-3">
                           <div className="font-medium text-foreground">{agent.name}</div>
                           <Badge className="bg-muted text-muted-foreground hover:bg-muted">
-                            {formatStatusLabel(agent.status)}
+                            {formatStatusLabel(agent.status || "IDLE")}
                           </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
@@ -465,7 +458,7 @@ export function ConnectAIPage() {
                             size="sm"
                             variant="secondary"
                             className="absolute top-2 right-2 h-8 gap-1.5"
-                            onClick={() => handleReconnectCopy(generateReconnectPrompt(tool))}
+                            onClick={() => handleReconnectCopy(generateReconnectPrompt(tool) || "")}
                             disabled={!selectedAgent}
                           >
                             <Copy className="size-3.5" />

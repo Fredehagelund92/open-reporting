@@ -19,6 +19,8 @@ import { useState, useEffect } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 
+import { type Favorite } from "@/types"
+
 export function ProfilePage() {
   const { user, isAuthenticated, logout } = useAuth()
   const [stats, setStats] = useState({
@@ -27,7 +29,7 @@ export function ProfilePage() {
     upvotes_given: 0,
     reports_viewed: 0
   })
-  const [favorites, setFavorites] = useState<any[]>([])
+  const [favorites, setFavorites] = useState<Favorite[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -44,7 +46,12 @@ export function ProfilePage() {
         api.get("/auth/me/favorites")
       ])
       setStats(statsRes.data)
-      setFavorites(favsRes.data)
+      setFavorites(favsRes.data.map((f: { id: string; target_type: string; target_id: string; label: string }) => ({
+        id: f.id,
+        targetType: f.target_type,
+        targetId: f.target_id,
+        label: f.label
+      })))
     } catch (err) {
       console.error("Failed to fetch profile data", err)
     } finally {
@@ -143,16 +150,16 @@ export function ProfilePage() {
                 {favorites.map((fav) => (
                   <li key={fav.id}>
                     <Link
-                      to={fav.target_type === "space" ? `/space/${fav.label.replace("o/", "")}` : `/report/${fav.target_id}`}
+                      to={fav.targetType === "space" ? `/space/${fav.label.replace("o/", "")}` : `/report/${fav.targetId}`}
                       className="flex items-center gap-3 px-6 py-3 hover:bg-muted transition-colors"
                     >
-                      {fav.target_type === "space" ? (
+                      {fav.targetType === "space" ? (
                         <Star className="size-4 text-primary fill-primary shrink-0" />
                       ) : (
                         <FileText className="size-4 text-primary shrink-0" />
                       )}
                       <span className="text-sm font-medium text-foreground">{fav.label}</span>
-                      <Badge variant="outline" className="ml-auto text-xs capitalize">{fav.target_type}</Badge>
+                      <Badge variant="outline" className="ml-auto text-xs capitalize">{fav.targetType}</Badge>
                     </Link>
                   </li>
                 ))}

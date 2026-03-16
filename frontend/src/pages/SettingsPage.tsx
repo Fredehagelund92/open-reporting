@@ -61,7 +61,7 @@ export function SettingsPage() {
       await refreshUser()
       
       setMessage({ type: "success", text: "Profile updated successfully." })
-    } catch (error) {
+    } catch {
       setMessage({ type: "error", text: "Failed to update profile." })
     } finally {
       setIsSaving(false)

@@ -27,6 +27,7 @@ import { useAuth } from "@/context/AuthContext"
 import { CreateReportDialog } from "@/components/CreateReportDialog"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { type Space, type Report, type Favorite } from "@/types"
 
 export function SpacePage() {
   const { user, isAuthenticated } = useAuth()
@@ -36,21 +37,41 @@ export function SpacePage() {
   const queryClient = useQueryClient()
   const [createReportOpen, setCreateReportOpen] = useState(searchParams.get("newReport") === "1")
 
-  const { data: spaces, isLoading: loadingSpaces } = useQuery({
+  const { data: spaces, isLoading: loadingSpaces } = useQuery<Space[]>({
     queryKey: ["spaces"],
     queryFn: async () => {
       const res = await api.get("/spaces/")
-      return res.data
+      return res.data.map((s: { id: string; name: string; description?: string; owner_id: string; is_private: boolean; member_count?: number }) => ({
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        owner_id: s.owner_id,
+        is_private: s.is_private,
+        member_count: s.member_count
+      }))
     }
   })
 
-  const space = (spaces as any[] | undefined)?.find((s: any) => s.name === fullName)
+  const space = spaces?.find((s) => s.name === fullName)
 
-  const { data: reports, isLoading: loadingReports } = useQuery({
+  const { data: reports, isLoading: loadingReports } = useQuery<Report[]>({
     queryKey: ["reports", fullName],
     queryFn: async () => {
       const res = await api.get(`/reports/?space=${encodeURIComponent(fullName)}`)
-      return res.data
+      const reportsWithFixedTags = res.data.map((r: { id: string; tags?: string[] | string }) => {
+        let tags: string[] = []
+        if (Array.isArray(r.tags)) tags = r.tags
+        else if (typeof r.tags === "string") {
+          try {
+            tags = JSON.parse(r.tags)
+          } catch (error) { // Added error variable to catch block
+            console.error("Failed to parse tags:", error) // Log the error
+            tags = []
+          }
+        }
+        return { ...r, tags }
+      })
+      return reportsWithFixedTags
     },
     enabled: !!space
   })
@@ -69,7 +90,7 @@ export function SpacePage() {
   useEffect(() => {
     if (user && space?.id) {
       api.get("/auth/me/favorites").then(res => {
-        setIsFavorited(res.data.some((f: any) => f.target_type === "space" && f.target_id === space.id))
+        setIsFavorited(res.data.some((f: Favorite) => f.targetType === "space" && f.targetId === space.id))
       }).catch(err => console.error(err))
 
       api.get(`/spaces/${space.id}/subscription`).then(res => {
@@ -192,6 +213,20 @@ export function SpacePage() {
                       <div className="w-px h-5 bg-border mx-0.5" aria-hidden />
                     )}
 
+                    {/* Settings — admin/owner only */}
+                    {(user?.role === "ADMIN" || space?.owner_id === user?.id) && (
+                      <Link to={`/space/${spaceName}/settings`}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                          title="Space settings"
+                        >
+                          <Settings className="size-4" />
+                        </Button>
+                      </Link>
+                    )}
+
                     {/* Favorite */}
                     <Button
                       variant="ghost"
@@ -222,19 +257,6 @@ export function SpacePage() {
                       }
                     </Button>
 
-                    {/* Settings — admin/owner only */}
-                    {(user?.role === "ADMIN" || space.owner_id === user?.id) && (
-                      <Link to={`/space/${spaceName}/settings`}>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8 text-muted-foreground hover:text-foreground hover:bg-muted"
-                          title="Space settings"
-                        >
-                          <Settings className="size-4" />
-                        </Button>
-                      </Link>
-                    )}
                   </div>
                 </div>
 
@@ -256,7 +278,7 @@ export function SpacePage() {
 
         {/* Report List */}
         <div className="flex flex-col gap-4 pb-12">
-          {(reports as any[])?.length > 0 ? (reports as any[]).map((report: any) => (
+          {reports && reports.length > 0 ? reports.map((report) => (
             <SpaceReportCard key={report.id} report={report} />
           )) : (
             <Card className="p-12 text-center">
@@ -269,7 +291,7 @@ export function SpacePage() {
   )
 }
 
-function SpaceReportCard({ report }: { report: any }) {
+function SpaceReportCard({ report }: { report: Report }) {
   const { isAuthenticated } = useAuth()
   const [vote, setVote] = useState(report.user_vote ?? 0)
   const [score, setScore] = useState(report.upvote_score ?? report.upvotes ?? 0)
@@ -354,7 +376,7 @@ function SpaceReportCard({ report }: { report: any }) {
 
         <div className="flex items-center gap-4 mt-auto">
           <div className="flex gap-2">
-            {report.tags.map((tag: any) => (
+            {report.tags.map((tag) => (
               <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
                 <Badge variant="secondary" className="font-normal bg-muted text-muted-foreground hover:bg-secondary">{tag}</Badge>
               </Link>

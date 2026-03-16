@@ -70,6 +70,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext"
 import { useTheme } from "@/components/theme-provider"
 import { AuthCallbackPage } from "@/pages/AuthCallbackPage"
 import { api } from "@/lib/api"
+import { type Subscription, type Favorite, type Space, type AppNotification, type Report } from "@/types"
 import { SpacePage } from "@/pages/SpacePage"
 import { AgentProfilePage } from "@/pages/AgentProfilePage"
 import { ReportViewerPage } from "@/pages/ReportViewerPage"
@@ -97,9 +98,9 @@ function LeftSidebar({
   favorites, 
   spaces, 
 }: { 
-  subscriptions: any[], 
-  favorites: any[], 
-  spaces: any[], 
+  subscriptions: Subscription[], 
+  favorites: Favorite[], 
+  spaces: Space[], 
 }) {
   const { user, isAuthenticated, logout } = useAuth()
   const location = useLocation()
@@ -402,7 +403,7 @@ function LeftSidebar({
 
 // --- Report Card (for Home Feed) ---
 
-function ReportCard({ report, isFavorite, isSubscribed }: { report: any, isFavorite: boolean, isSubscribed: boolean }) {
+function ReportCard({ report, isFavorite, isSubscribed }: { report: Report, isFavorite: boolean, isSubscribed: boolean }) {
   const { isAuthenticated } = useAuth()
   const [vote, setVote] = useState(report.user_vote ?? 0)
   const [score, setScore] = useState(report.upvote_score || 0)
@@ -428,8 +429,10 @@ function ReportCard({ report, isFavorite, isSubscribed }: { report: any, isFavor
       const res = await api.post(`/reports/${report.id}/${endpoint}`)
       setVote(res.data.user_vote ?? 0)
       setScore(res.data.total_score ?? score)
-    } catch (err) {
-      console.error("Vote failed", err)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } }
+      const detail = axiosError.response?.data?.detail
+      setActionMessage(typeof detail === "string" ? detail : "Failed to vote.")
     } finally {
       setIsVoting(false)
     }
@@ -548,9 +551,10 @@ function ReportCard({ report, isFavorite, isSubscribed }: { report: any, isFavor
                       setActionMessage("Following")
                     }
                     window.dispatchEvent(new CustomEvent("refresh-sidebar"))
-                  } catch (err) {
-                    console.error("Follow failed", err)
-                    setActionMessage("Could not update follow")
+                  } catch (err: unknown) {
+                    const axiosError = err as { response?: { data?: { detail?: string } } }
+                    const detail = axiosError.response?.data?.detail
+                    setActionMessage(typeof detail === "string" ? detail : "Could not update follow")
                   } finally {
                     setIsFollowing(false)
                   }
@@ -581,9 +585,10 @@ function ReportCard({ report, isFavorite, isSubscribed }: { report: any, isFavor
                     // Trigger global refresh
                     window.dispatchEvent(new CustomEvent("refresh-sidebar"))
                     setActionMessage("Saved to bookmarks")
-                  } catch (err) {
-                    console.error("Favorite failed", err)
-                    setActionMessage("Could not save report")
+                  } catch (err: unknown) {
+                    const axiosError = err as { response?: { data?: { detail?: string } } }
+                    const detail = axiosError.response?.data?.detail
+                    setActionMessage(typeof detail === "string" ? detail : "Could not save report")
                   } finally {
                     setIsSaving(false)
                   }
@@ -607,7 +612,10 @@ function RightSidebar() {
   useEffect(() => {
     api.get("/stats")
       .then(res => setStats(res.data))
-      .catch(() => {})
+      .catch((err: unknown) => {
+        const axiosError = err as { response?: { data?: { detail?: string } } }
+        console.error(axiosError.response?.data?.detail || "Failed to fetch stats")
+      })
   }, [])
 
   const isOperational = !stats || stats.status === "Operational"
@@ -648,19 +656,15 @@ function RightSidebar() {
 
 // --- Home Page ---
 
-function HomePage({ favorites, subscriptions }: { favorites: any[]; subscriptions: any[] }) {
+function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscriptions: Subscription[] }) {
   const location = useLocation()
-  const [reports, setReports] = useState<any[]>([])
+  const [reports, setReports] = useState<Report[]>([])
   const [reportsLoading, setReportsLoading] = useState(true)
   const [hasLoadedReports, setHasLoadedReports] = useState(false)
   const [activeSort, setActiveSort] = useState("hot")
   const tagFilter = new URLSearchParams(location.search).get("tag")
 
-  useEffect(() => {
-    fetchReports()
-  }, [activeSort, tagFilter])
-
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     if (!hasLoadedReports) {
       setReportsLoading(true)
     }
@@ -670,13 +674,18 @@ function HomePage({ favorites, subscriptions }: { favorites: any[]; subscription
       if (Array.isArray(res.data)) {
         setReports(res.data)
       }
-    } catch (err) {
-      console.error("Failed to fetch reports", err)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } }
+      console.error("Failed to fetch reports", axiosError.response?.data?.detail || err)
     } finally {
       setReportsLoading(false)
       setHasLoadedReports(true)
     }
-  }
+  }, [activeSort, tagFilter, hasLoadedReports])
+
+  useEffect(() => {
+    fetchReports()
+  }, [fetchReports])
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -776,73 +785,89 @@ function HomePage({ favorites, subscriptions }: { favorites: any[]; subscription
 
 export function App() {
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [subscriptions, setSubscriptions] = useState<any[]>([])
-  const [favorites, setFavorites] = useState<any[]>([])
-  const [spaces, setSpaces] = useState<any[]>([])
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
+  const [favorites, setFavorites] = useState<Favorite[]>([])
+  const [spaces, setSpaces] = useState<Space[]>([])
 
-  const fetchSpaces = async () => {
+  const fetchSpaces = useCallback(async () => {
+    if (!localStorage.getItem("token")) return;
     try {
       const res = await api.get("/spaces/")
       if (Array.isArray(res.data)) {
-        setSpaces([...res.data].sort((a,b) => a.name.localeCompare(b.name)))
+        setSpaces(res.data.map((s: { id: string; name: string; description?: string; owner_id: string; is_private: boolean }) => ({
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          owner_id: s.owner_id,
+          is_private: s.is_private
+        })).sort((a: Space, b: Space) => a.name.localeCompare(b.name)))
       }
-    } catch (err) {
-      console.error("Failed to fetch spaces", err)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } }
+      console.error("Failed to fetch spaces", axiosError.response?.data?.detail || err)
     }
-  }
+  }, [])
 
-  const fetchSubscriptions = async () => {
+  const fetchSubscriptions = useCallback(async () => {
     if (!localStorage.getItem("token")) return;
     try {
       const res = await api.get("/auth/me/subscriptions")
       if (Array.isArray(res.data)) {
-        setSubscriptions(res.data.map((s: any) => ({
+        setSubscriptions(res.data.map((s: { id: string; target_type: string; target_id: string; label: string }) => ({
           id: s.id,
           targetType: s.target_type,
           targetId: s.target_id,
           label: s.label
-        })).sort((a: any, b: any) => a.label.localeCompare(b.label)))
+        })).sort((a: Subscription, b: Subscription) => a.label.localeCompare(b.label)))
       }
-    } catch (err) {
-      console.error("Failed to fetch subscriptions", err)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } }
+      console.error("Failed to fetch subscriptions", axiosError.response?.data?.detail || err)
     }
-  }
+  }, [])
 
-  const fetchFavorites = async () => {
+  const fetchFavorites = useCallback(async () => {
     if (!localStorage.getItem("token")) return;
     try {
       const res = await api.get("/auth/me/favorites")
       if (Array.isArray(res.data)) {
-        setFavorites(res.data.map((f: any) => ({
+        setFavorites(res.data.map((f: { id: string; target_type: string; target_id: string; label: string }) => ({
           id: f.id,
           targetType: f.target_type,
           targetId: f.target_id,
           label: f.label
         })))
       }
-    } catch (err) {
-      console.error("Failed to fetch favorites", err)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } }
+      console.error("Failed to fetch favorites", axiosError.response?.data?.detail || err)
     }
-  }
-
-  const refreshAll = () => {
-    Promise.all([fetchSubscriptions(), fetchFavorites(), fetchSpaces()])
-  }
-
-  React.useEffect(() => {
-    refreshAll()
   }, [])
+
+  const refreshAll = useCallback(() => {
+    Promise.all([fetchSubscriptions(), fetchFavorites(), fetchSpaces()])
+  }, [fetchSubscriptions, fetchFavorites, fetchSpaces])
+
+  useEffect(() => {
+    const init = async () => {
+      await refreshAll()
+    }
+    init()
+  }, [refreshAll])
 
   useEffect(() => {
     window.addEventListener("refresh-sidebar", refreshAll)
     return () => window.removeEventListener("refresh-sidebar", refreshAll)
-  }, [])
+  }, [refreshAll])
 
   // Listen for fullscreen toggle from child components
-  React.useEffect(() => {
-    const handleToggle = (e: any) => setIsFullscreen(e.detail)
-    window.addEventListener("toggle-fullscreen" as any, handleToggle)
-    return () => window.removeEventListener("toggle-fullscreen" as any, handleToggle)
+  useEffect(() => {
+    const handleToggle = (e: Event) => {
+      const customEvent = e as CustomEvent<boolean>
+      setIsFullscreen(customEvent.detail)
+    }
+    window.addEventListener("toggle-fullscreen", handleToggle)
+    return () => window.removeEventListener("toggle-fullscreen", handleToggle)
   }, [])
 
   return (
@@ -957,13 +982,6 @@ function ThemeToggle() {
   )
 }
 
-interface AppNotification {
-  id: string;
-  text: string;
-  link: string;
-  is_read: boolean;
-  created_at: string;
-}
 
 function NotificationsPopover() {
   const { isAuthenticated } = useAuth()
@@ -976,14 +994,18 @@ function NotificationsPopover() {
       if (Array.isArray(res.data)) {
         setNotifications(res.data)
       }
-    } catch (err) {
-      console.error(err)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } }
+      console.error(axiosError.response?.data?.detail || "Failed to fetch notifications")
     }
   }, [])
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchNotifications()
+      const init = async () => {
+        await fetchNotifications()
+      }
+      init()
     }
   }, [isAuthenticated, fetchNotifications])
 

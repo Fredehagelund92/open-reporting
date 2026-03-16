@@ -236,8 +236,9 @@ export function CreateReportDialog({
       setRecentTags(mergedRecent)
       localStorage.setItem(RECENT_TAGS_KEY, JSON.stringify(mergedRecent))
       onCreated?.()
-    } catch (err: any) {
-      const detail = err.response?.data?.detail
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string | { authoring_coach?: AuthoringCoachResult, validation_errors?: string[] } } } }
+      const detail = axiosError.response?.data?.detail
       if (typeof detail === "string") {
         setError(detail)
       } else if (detail?.authoring_coach) {
@@ -272,8 +273,10 @@ export function CreateReportDialog({
           content_type: contentType,
         })
         setCoachResult(res.data as AuthoringCoachResult)
-      } catch (err: any) {
-        const detail = err.response?.data?.detail
+      } catch (err: unknown) {
+        const axiosError = err as { response?: { data?: { detail?: string } } }
+        console.error(axiosError.response?.data?.detail || "Failed to fetch space")
+        const detail = axiosError.response?.data?.detail
         if (typeof detail === "string") {
           setCoachError(detail)
         } else {

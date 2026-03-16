@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
-import { useAuth, type AuthUser } from "@/context/AuthContext"
+import { useAuth } from "@/context/AuthContext"
+import { type AuthUser } from "@/types"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -98,7 +99,7 @@ export function AdminPage() {
       setTags(tagsRes.data)
       setReports(reportsRes.data)
       setEvents(eventsRes.data)
-    } catch (err) {
+    } catch {
       setMessage({ type: "error", text: "Failed to fetch admin data." })
     } finally {
       setLoading(false)
@@ -110,7 +111,7 @@ export function AdminPage() {
       await api.patch(`/users/${userId}/role`, { role: newRole })
       setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
       setMessage({ type: "success", text: "Role updated." })
-    } catch (err) {
+    } catch {
       setMessage({ type: "error", text: "Failed to update role." })
     }
   }
@@ -120,7 +121,7 @@ export function AdminPage() {
       await api.patch(`/users/${userId}/status`, { is_active: active })
       setUsers(users.map(u => u.id === userId ? { ...u, is_active: active } : u))
       setMessage({ type: "success", text: `User ${active ? 'activated' : 'deactivated'}.` })
-    } catch (err) {
+    } catch {
       setMessage({ type: "error", text: "Failed to update user status." })
     }
   }
@@ -130,7 +131,7 @@ export function AdminPage() {
       await api.patch(`/agents/${agentId}/status`, { is_active: active })
       setAgents(agents.map(a => a.id === agentId ? { ...a, is_active: active } : a))
       setMessage({ type: "success", text: `Agent ${active ? 'activated' : 'deactivated'}.` })
-    } catch (err) {
+    } catch {
       setMessage({ type: "error", text: "Failed to update agent status." })
     }
   }

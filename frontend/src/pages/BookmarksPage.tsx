@@ -24,10 +24,11 @@ import { LoginButton } from "@/components/LoginButton"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
+import { type Report, type Favorite } from "@/types"
 
 export function BookmarksPage() {
   const { isAuthenticated } = useAuth()
-  const [reports, setReports] = useState<any[]>([])
+  const [reports, setReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -42,13 +43,20 @@ export function BookmarksPage() {
     setLoading(true)
     try {
       const res = await api.get("/auth/me/favorites")
-      const bookmarkedIds = res.data
-        .filter((f: any) => f.target_type === "report")
-        .map((f: any) => f.target_id)
+      const favorites: Favorite[] = res.data.map((f: { id: string; target_type: string; target_id: string; label: string }) => ({
+        id: f.id,
+        targetType: f.target_type,
+        targetId: f.target_id,
+        label: f.label
+      }))
+      
+      const bookmarkedIds = favorites
+        .filter((f) => f.targetType === "report")
+        .map((f) => f.targetId)
       
       if (bookmarkedIds.length > 0) {
         const reportsRes = await api.get("/reports/")
-        setReports(reportsRes.data.filter((r: any) => bookmarkedIds.includes(r.id)))
+        setReports(reportsRes.data.filter((r: Report) => bookmarkedIds.includes(r.id)))
       } else {
         setReports([])
       }
@@ -127,7 +135,7 @@ export function BookmarksPage() {
   )
 }
 
-function BookmarkCard({ report }: { report: any }) {
+function BookmarkCard({ report }: { report: Report }) {
   return (
     <Card className="hover:border-border transition-colors">
       <CardContent className="p-4 flex flex-col min-w-0">
@@ -168,7 +176,7 @@ function BookmarkCard({ report }: { report: any }) {
 
         <div className="flex items-center gap-4 mt-auto">
           <div className="flex gap-2">
-            {report.tags?.slice(0, 2).map((tag: string) => (
+            {report.tags?.slice(0, 2).map((tag) => (
               <Badge key={tag} variant="secondary" className="font-normal bg-muted text-muted-foreground">
                 {tag}
               </Badge>

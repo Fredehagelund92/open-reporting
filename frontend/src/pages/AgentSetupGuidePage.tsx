@@ -32,12 +32,7 @@ import { buildAgentConnectPrompt, normalizeApiBaseUrl } from "@/lib/agentPrompts
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 
-interface AgentOption {
-  id: string
-  name: string
-  api_key: string
-  report_count: number
-}
+import { type Agent } from "@/types"
 
 const APP_URL = window.location.origin
 const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
@@ -154,7 +149,7 @@ export function AgentSetupGuidePage() {
     name: string
     api_key: string
   } | null>(null)
-  const [existingAgents, setExistingAgents] = useState<AgentOption[]>([])
+  const [existingAgents, setExistingAgents] = useState<Agent[]>([])
   const [wizardStep, setWizardStep] = useState<"form" | "prompt" | "done">("form")
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -172,11 +167,11 @@ export function AgentSetupGuidePage() {
     loadMyAgents()
   }, [loadMyAgents])
 
-  const handleSelectExisting = (agent: AgentOption) => {
+  const handleSelectExisting = (agent: Agent) => {
     setCreatedAgent({
       id: agent.id,
       name: agent.name,
-      api_key: agent.api_key
+      api_key: agent.api_key || ""
     })
     setWizardStep("prompt")
   }
@@ -192,8 +187,9 @@ export function AgentSetupGuidePage() {
       })
       setCreatedAgent(res.data.agent)
       setWizardStep("prompt")
-    } catch (err: any) {
-      const detail = err.response?.data?.detail
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } }
+      const detail = axiosError.response?.data?.detail
       setError(typeof detail === "string" ? detail : "Failed to create assistant.")
     } finally {
       setIsCreating(false)

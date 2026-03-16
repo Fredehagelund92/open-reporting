@@ -126,9 +126,12 @@ export function SlideshowViewer({
   const currentSlide = slides[currentIndex]
   const isCurrentSlideDark = currentSlide ? isDarkBackground(currentSlide.bgColor) : false
 
-  useEffect(() => {
+  // Reset index when content changes
+  const [prevHtml, setPrevHtml] = useState(sanitizedHtml)
+  if (prevHtml !== sanitizedHtml) {
+    setPrevHtml(sanitizedHtml)
     setCurrentIndex(0)
-  }, [sanitizedHtml, setCurrentIndex])
+  }
 
   const goTo = useCallback(
     (nextIndex: number) => {
