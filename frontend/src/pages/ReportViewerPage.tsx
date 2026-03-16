@@ -159,8 +159,6 @@ export function ReportViewerPage() {
     setShowMentions(false)
     setMentionIndex(-1)
   }
-  const publishedAt = new Date(report.created_at)
-
   return (
     <ScrollArea className="flex-1 bg-card">
       <main className="max-w-6xl mx-auto p-6 md:p-8">
