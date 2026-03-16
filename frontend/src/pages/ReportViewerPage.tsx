@@ -42,6 +42,7 @@ import { api } from "@/lib/api"
 import DOMPurify from "dompurify"
 import { SlideshowViewer } from "@/components/SlideshowViewer"
 
+import { cn } from "@/lib/utils"
 import { type Report, type ReportComment } from "@/types"
 
 export function ReportViewerPage() {
@@ -171,19 +172,77 @@ export function ReportViewerPage() {
         )}
 
         {report.series_id && (
-          <div className="flex items-center gap-2 mb-4 px-3 py-1.5 rounded-lg border border-border bg-muted/40 text-sm">
-            {report.prev_slug
-              ? <Link to={`/report/${report.prev_slug}`}><Button variant="ghost" size="sm" className="h-7 gap-1 text-muted-foreground"><ChevronLeft className="size-4" />Run #{report.run_number! - 1}</Button></Link>
-              : <Button variant="ghost" size="sm" className="h-7" disabled><ChevronLeft className="size-4" /></Button>
-            }
-            <span className="flex-1 text-center text-xs text-muted-foreground">
-              Series: <span className="font-medium text-foreground font-mono">{report.series_id}</span>
-              {" · "}Run #{report.run_number ?? "?"} of {report.series_total ?? "?"}
-            </span>
-            {report.next_slug
-              ? <Link to={`/report/${report.next_slug}`}><Button variant="ghost" size="sm" className="h-7 gap-1 text-muted-foreground">Run #{report.run_number! + 1}<ChevronRight className="size-4" /></Button></Link>
-              : <Button variant="ghost" size="sm" className="h-7" disabled><ChevronRight className="size-4" /></Button>
-            }
+          <div className="flex items-center gap-3 mb-5 px-3 py-2 rounded-xl border border-border/60 bg-muted/30">
+            {/* Series label + name */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 select-none">Series</span>
+              <span className="font-mono text-xs font-semibold text-foreground bg-background border border-border/70 rounded-md px-2 py-0.5 leading-none">
+                {report.series_id}
+              </span>
+            </div>
+
+            {/* Divider */}
+            <div className="w-px h-4 bg-border/50 shrink-0" />
+
+            {/* Prev */}
+            <div className="shrink-0">
+              {report.prev_slug ? (
+                <Link to={`/report/${report.prev_slug}`}>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs text-muted-foreground hover:text-foreground">
+                    <ChevronLeft className="size-3.5" />
+                    <span className="tabular-nums">#{report.run_number! - 1}</span>
+                  </Button>
+                </Link>
+              ) : (
+                <Button variant="ghost" size="sm" className="h-7 px-2 opacity-30" disabled>
+                  <ChevronLeft className="size-3.5" />
+                </Button>
+              )}
+            </div>
+
+            {/* Progress dots */}
+            <div className="flex items-center justify-center gap-1 flex-1">
+              {report.series_total && report.series_total <= 16
+                ? Array.from({ length: report.series_total }, (_, i) => {
+                    const runIdx = i + 1
+                    const isCurrent = runIdx === report.run_number
+                    const isPast = runIdx < (report.run_number ?? 0)
+                    return (
+                      <div
+                        key={i}
+                        className={cn(
+                          "rounded-full transition-all duration-200",
+                          isCurrent  ? "w-5 h-1.5 bg-primary"          :
+                          isPast     ? "w-1.5 h-1.5 bg-primary/40"      :
+                                       "w-1.5 h-1.5 bg-muted-foreground/20"
+                        )}
+                      />
+                    )
+                  })
+                : (
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    <span className="font-semibold text-foreground">{report.run_number ?? "?"}</span>
+                    <span className="text-muted-foreground/50"> / {report.series_total ?? "?"}</span>
+                  </span>
+                )
+              }
+            </div>
+
+            {/* Next */}
+            <div className="shrink-0">
+              {report.next_slug ? (
+                <Link to={`/report/${report.next_slug}`}>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs text-muted-foreground hover:text-foreground">
+                    <span className="tabular-nums">#{report.run_number! + 1}</span>
+                    <ChevronRight className="size-3.5" />
+                  </Button>
+                </Link>
+              ) : (
+                <Button variant="ghost" size="sm" className="h-7 px-2 opacity-30" disabled>
+                  <ChevronRight className="size-3.5" />
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
@@ -220,20 +279,6 @@ export function ReportViewerPage() {
                 <Badge variant="secondary" className="font-normal bg-muted text-muted-foreground">{tag}</Badge>
               </Link>
             ))}
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3 mb-4 rounded-lg border border-border bg-muted p-3 text-xs">
-            <div>
-              <p className="text-muted-foreground uppercase tracking-wide">Generated</p>
-              <p className="font-medium text-foreground">{publishedLabel}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground uppercase tracking-wide">Artifact Type</p>
-              <p className="font-medium text-foreground">{report.content_type === "slideshow" ? "Presentation" : "Report"}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground uppercase tracking-wide">Trust Signal</p>
-              <p className="font-medium text-foreground">Sanitized HTML rendering enabled</p>
-            </div>
           </div>
 
           {/* Vote bar */}

@@ -661,7 +661,7 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
   const [reports, setReports] = useState<Report[]>([])
   const [reportsLoading, setReportsLoading] = useState(true)
   const [hasLoadedReports, setHasLoadedReports] = useState(false)
-  const [activeSort, setActiveSort] = useState("hot")
+  const [activeSort, setActiveSort] = useState("new")
   const tagFilter = new URLSearchParams(location.search).get("tag")
 
   const fetchReports = useCallback(async () => {
@@ -705,11 +705,11 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`h-8 gap-2 font-mono text-xs ${activeSort === "hot" ? "bg-card shadow-sm font-bold text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                onClick={() => setActiveSort("hot")}
+                className={`h-8 gap-2 font-mono text-xs ${activeSort === "trending" ? "bg-card shadow-sm font-bold text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => setActiveSort("trending")}
               >
                 <Flame className="size-4" />
-                Hot
+                Trending
               </Button>
               <Button 
                 variant="ghost" 

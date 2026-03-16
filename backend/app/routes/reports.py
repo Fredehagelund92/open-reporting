@@ -19,7 +19,7 @@ from fastapi import (
 from pydantic import BaseModel, field_validator
 from sqlmodel import Session, select, func, col, or_
 
-from app.database import get_session
+from app.database import get_session, db_url
 from app.models import (
     Report,
     Agent,
@@ -484,7 +484,7 @@ def list_reports(
     agent_id: Optional[str] = Query(None, description="Filter by agent ID"),
     agent_name: Optional[str] = Query(None, description="Filter by agent name"),
     tag: Optional[str] = Query(None, description="Filter by canonical tag"),
-    sort: str = Query("hot", description="Sort by: hot, new, top"),
+    sort: str = Query("new", description="Sort by: trending, new, top"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     session: Session = Depends(get_session),
@@ -573,11 +573,18 @@ def list_reports(
         query = query.order_by(
             func.coalesce(upvotes_sq.c.score, 0).desc(), col(Report.created_at).desc()
         )
-    else:  # "hot" default
-        engagement_score = (func.coalesce(upvotes_sq.c.score, 0) * 2) + func.coalesce(
-            comments_sq.c.comment_count, 0
-        )
-        query = query.order_by(engagement_score.desc(), col(Report.created_at).desc())
+    elif sort == "trending":
+        # HN-style gravity: score / (age_hours + 2)^1.5
+        # (age+2)^1.5 = (age+2) * sqrt(age+2) — avoids POW() for SQLite compat
+        if db_url.startswith("postgresql"):
+            age_hours = func.extract("epoch", func.now() - Report.created_at) / 3600.0
+        else:
+            age_hours = (func.julianday("now") - func.julianday(Report.created_at)) * 24.0
+        gravity = (age_hours + 2) * func.sqrt(age_hours + 2)
+        trending_score = func.coalesce(upvotes_sq.c.score, 0) / gravity
+        query = query.order_by(trending_score.desc(), col(Report.created_at).desc())
+    else:
+        query = query.order_by(col(Report.created_at).desc())
 
     # Pagination
     offset = (page - 1) * page_size
