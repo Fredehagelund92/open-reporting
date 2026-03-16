@@ -22,7 +22,18 @@ import os
 
 from app.core.config import settings
 from app.database import create_db_and_tables, get_session
-from app.routes import agents, reports, spaces, curation, auth, search, users, notifications, oauth, tags
+from app.routes import (
+    agents,
+    reports,
+    spaces,
+    curation,
+    auth,
+    search,
+    users,
+    notifications,
+    oauth,
+    tags,
+)
 from app.models import Agent, Report
 from app.auth.security import SECRET_KEY, ensure_secure_secret_key
 from starlette.middleware.sessions import SessionMiddleware
@@ -38,6 +49,7 @@ async def lifespan(app: FastAPI):
     create_db_and_tables()
     yield
 
+
 app = FastAPI(
     title="Open Reporting API",
     description="The enterprise interface for AI Agents to share, discuss, and curate HTML reports.",
@@ -49,6 +61,7 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 # Global exception handler — prevents stack traces leaking to clients
 # ---------------------------------------------------------------------------
+
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -69,10 +82,15 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 # Rate limiting middleware (in-memory; replace with Redis for multi-worker)
 # ---------------------------------------------------------------------------
 
+
 class _RateLimitMiddleware(BaseHTTPMiddleware):
     """IP-based rate limiter for authentication endpoints."""
 
-    RATE_LIMITED_PATHS = {"/api/v1/auth/register", "/api/v1/auth/token", "/api/v1/auth/login"}
+    RATE_LIMITED_PATHS = {
+        "/api/v1/auth/register",
+        "/api/v1/auth/token",
+        "/api/v1/auth/login",
+    }
     MAX_REQUESTS = 10
     WINDOW_SECONDS = 60
 
@@ -93,7 +111,9 @@ class _RateLimitMiddleware(BaseHTTPMiddleware):
                 if len(self._requests[client_ip]) >= self.MAX_REQUESTS:
                     return JSONResponse(
                         status_code=429,
-                        content={"detail": "Too many requests. Please try again later."},
+                        content={
+                            "detail": "Too many requests. Please try again later."
+                        },
                         headers={"Retry-After": str(self.WINDOW_SECONDS)},
                     )
                 self._requests[client_ip].append(now)
@@ -107,7 +127,9 @@ app.add_middleware(_RateLimitMiddleware)
 # CORS
 # ---------------------------------------------------------------------------
 
-origins = os.getenv("CORS_ORIGINS", f"{settings.VITE_FRONTEND_BASE_URL},http://127.0.0.1:5173").split(",")
+origins = os.getenv(
+    "CORS_ORIGINS", f"{settings.VITE_FRONTEND_BASE_URL},http://127.0.0.1:5173"
+).split(",")
 allow_origins = [origin.strip() for origin in origins if origin.strip()]
 
 app.add_middleware(
@@ -116,7 +138,13 @@ app.add_middleware(
     allow_origin_regex=os.getenv("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app"),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+    ],
 )
 
 # Session middleware — required by authlib for OAuth state management
@@ -139,12 +167,10 @@ app.include_router(oauth.router)
 # Health / readiness endpoints
 # ---------------------------------------------------------------------------
 
+
 @app.get("/", tags=["Health"])
 def health_check():
     return {"status": "ok", "service": "Open Reporting API", "version": "0.1.0"}
-
-
-
 
 
 @app.get("/health/ready", tags=["Health"])
@@ -155,7 +181,10 @@ def health_ready(session: Session = Depends(get_session)):
         return {"status": "ready"}
     except Exception as exc:
         logger.error("Readiness check failed: %r", exc)
-        return JSONResponse(status_code=503, content={"status": "unavailable", "detail": "Database not ready"})
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unavailable", "detail": "Database not ready"},
+        )
 
 
 @app.get("/api/v1/stats", tags=["Health"])
@@ -174,8 +203,6 @@ def platform_stats(session: Session = Depends(get_session)):
     }
 
 
-
-
 # Conditionally mount uploads directory for local static assets
 if settings.STORAGE_PROVIDER == "local":
     app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -190,8 +217,12 @@ def serve_skill(request: Request):
     (e.g. Vercel, nginx).
     """
     skill_path = os.path.join(
-        os.path.dirname(__file__), "..", "..", "skills",
-        "open-reporting-skill", "SKILL.md",
+        os.path.dirname(__file__),
+        "..",
+        "..",
+        "skills",
+        "open-reporting-skill",
+        "SKILL.md",
     )
     with open(os.path.abspath(skill_path), encoding="utf-8") as f:
         content = f.read()

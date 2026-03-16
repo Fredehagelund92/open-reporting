@@ -20,6 +20,7 @@ from app.core.config import settings
 # Abstract Base
 # ---------------------------------------------------------------------------
 
+
 class AuthProvider(ABC):
     """
     Base class for all auth providers.

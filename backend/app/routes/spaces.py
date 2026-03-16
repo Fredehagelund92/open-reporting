@@ -9,14 +9,27 @@ from pydantic import BaseModel
 from sqlalchemy import func
 from sqlmodel import Session, col, or_, select
 
-from app.auth.dependencies import get_current_user, get_current_user_optional, require_space_access
+from app.auth.dependencies import (
+    get_current_user,
+    get_current_user_optional,
+    require_space_access,
+)
 from app.database import get_session
-from app.models import Favorite, Report, Space, SpaceAccess, SpaceGovernanceEvent, User, Subscription
+from app.models import (
+    Favorite,
+    Report,
+    Space,
+    SpaceAccess,
+    SpaceGovernanceEvent,
+    User,
+    Subscription,
+)
 
 router = APIRouter(prefix="/api/v1/spaces", tags=["Spaces"])
 
 
 # --- Schemas ---
+
 
 class SpaceCreateRequest(BaseModel):
     name: str  # e.g. "o/marketing"
@@ -73,6 +86,7 @@ class GovernanceEventResponse(BaseModel):
 
 # --- Helpers ---
 
+
 def _normalize_space_name(name: str) -> str:
     normalized = name.strip()
     if not normalized.startswith("o/"):
@@ -89,11 +103,17 @@ def _get_space_or_404(session: Session, space_id: str) -> Space:
 
 def _ensure_space_manager(space: Space, current_user: User) -> None:
     if current_user.role != "ADMIN" and space.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to manage this space")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to manage this space"
+        )
 
 
 def _report_count(session: Session, space_id: str) -> int:
-    return int(session.exec(select(func.count(Report.id)).where(Report.space_id == space_id)).one())
+    return int(
+        session.exec(
+            select(func.count(Report.id)).where(Report.space_id == space_id)
+        ).one()
+    )
 
 
 def _member_count(session: Session, space: Space) -> int:
@@ -146,7 +166,9 @@ def _record_space_event(
     )
 
 
-def _serialize_events(session: Session, events: list[SpaceGovernanceEvent]) -> list[GovernanceEventResponse]:
+def _serialize_events(
+    session: Session, events: list[SpaceGovernanceEvent]
+) -> list[GovernanceEventResponse]:
     user_ids = {
         user_id
         for event in events
@@ -165,9 +187,13 @@ def _serialize_events(session: Session, events: list[SpaceGovernanceEvent]) -> l
             space_name=event.space_name,
             action=event.action,
             actor_user_id=event.actor_user_id,
-            actor_name=users_by_id[event.actor_user_id].name if event.actor_user_id in users_by_id else None,
+            actor_name=users_by_id[event.actor_user_id].name
+            if event.actor_user_id in users_by_id
+            else None,
             target_user_id=event.target_user_id,
-            target_name=users_by_id[event.target_user_id].name if event.target_user_id in users_by_id else None,
+            target_name=users_by_id[event.target_user_id].name
+            if event.target_user_id in users_by_id
+            else None,
             details=event.details,
             created_at=event.created_at.isoformat(),
         )
@@ -176,6 +202,7 @@ def _serialize_events(session: Session, events: list[SpaceGovernanceEvent]) -> l
 
 
 # --- Routes ---
+
 
 @router.post("/", response_model=SpaceResponse, status_code=status.HTTP_201_CREATED)
 def create_space(
@@ -187,7 +214,9 @@ def create_space(
     normalized_name = _normalize_space_name(body.name)
     existing = session.exec(select(Space).where(Space.name == normalized_name)).first()
     if existing:
-        raise HTTPException(status_code=409, detail=f"Space '{normalized_name}' already exists.")
+        raise HTTPException(
+            status_code=409, detail=f"Space '{normalized_name}' already exists."
+        )
 
     space = Space(
         name=normalized_name,
@@ -214,7 +243,9 @@ def get_space_stats(session: Session = Depends(get_session)):
     total_spaces = int(session.exec(select(func.count(Space.id))).one())
     total_reports = int(session.exec(select(func.count(Report.id))).one())
     total_favorites = int(
-        session.exec(select(func.count(Favorite.id)).where(Favorite.target_type == "space")).one()
+        session.exec(
+            select(func.count(Favorite.id)).where(Favorite.target_type == "space")
+        ).one()
     )
     total_private_accesses = int(session.exec(select(func.count(SpaceAccess.id))).one())
     total_memberships = total_favorites + total_private_accesses + total_spaces
@@ -234,7 +265,9 @@ def list_recent_governance_events(
 ):
     """List recent governance events platform-wide (admin only)."""
     if current_user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Not authorized to view governance events")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to view governance events"
+        )
 
     events = session.exec(
         select(SpaceGovernanceEvent)
@@ -254,7 +287,9 @@ def list_spaces(
     if current_user and current_user.role == "ADMIN":
         query = select(Space)
     elif current_user:
-        access_sq = select(SpaceAccess.space_id).where(SpaceAccess.user_id == current_user.id)
+        access_sq = select(SpaceAccess.space_id).where(
+            SpaceAccess.user_id == current_user.id
+        )
         query = select(Space).where(
             or_(
                 Space.is_private == False,  # noqa: E712
@@ -268,7 +303,9 @@ def list_spaces(
     spaces = session.exec(query).all()
 
     if sort == "popularity":
-        spaces = sorted(spaces, key=lambda s: _report_count(session, s.id), reverse=True)
+        spaces = sorted(
+            spaces, key=lambda s: _report_count(session, s.id), reverse=True
+        )
     else:
         spaces = sorted(spaces, key=lambda s: s.name)
 
@@ -276,7 +313,10 @@ def list_spaces(
 
 
 @router.get("/{space_id}", response_model=SpaceResponse)
-def get_space(space: Space = Depends(require_space_access), session: Session = Depends(get_session)):
+def get_space(
+    space: Space = Depends(require_space_access),
+    session: Session = Depends(get_session),
+):
     """Get details of a specific space."""
     return _space_response(session, space)
 
@@ -285,20 +325,22 @@ def get_space(space: Space = Depends(require_space_access), session: Session = D
 def get_space_subscription_status(
     space_id: str,
     current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
 ):
     """Check if the user is subscribed to this space."""
     sub = session.exec(
         select(Subscription).where(
             Subscription.user_id == current_user.id,
             Subscription.target_type == "space",
-            Subscription.target_id == space_id
+            Subscription.target_id == space_id,
         )
     ).first()
     return {"subscribed": sub is not None}
 
 
-@router.get("/{space_id}/governance-events", response_model=list[GovernanceEventResponse])
+@router.get(
+    "/{space_id}/governance-events", response_model=list[GovernanceEventResponse]
+)
 def list_space_governance_events(
     space_id: str,
     limit: int = Query(default=50, ge=1, le=200),
@@ -319,6 +361,7 @@ def list_space_governance_events(
 
 # --- Access Management ---
 
+
 @router.get("/{space_id}/access", response_model=list[SpaceAccessResponse])
 def list_space_access(
     space_id: str,
@@ -329,9 +372,7 @@ def list_space_access(
     space = _get_space_or_404(session, space_id)
     _ensure_space_manager(space, current_user)
     accesses = session.exec(
-        select(SpaceAccess, User)
-        .join(User)
-        .where(SpaceAccess.space_id == space_id)
+        select(SpaceAccess, User).join(User).where(SpaceAccess.space_id == space_id)
     ).all()
     return [
         SpaceAccessResponse(
@@ -356,11 +397,17 @@ def invite_user_to_space(
     _ensure_space_manager(space, current_user)
 
     if not space.is_private:
-        raise HTTPException(status_code=400, detail="Public spaces do not require invites")
+        raise HTTPException(
+            status_code=400, detail="Public spaces do not require invites"
+        )
 
-    target_user = session.exec(select(User).where(User.email == body.user_email.strip())).first()
+    target_user = session.exec(
+        select(User).where(User.email == body.user_email.strip())
+    ).first()
     if not target_user:
-        raise HTTPException(status_code=404, detail=f"User with email '{body.user_email}' not found")
+        raise HTTPException(
+            status_code=404, detail=f"User with email '{body.user_email}' not found"
+        )
     if target_user.id == space.owner_id:
         raise HTTPException(status_code=409, detail="Space owner already has access")
 
@@ -371,7 +418,9 @@ def invite_user_to_space(
         )
     ).first()
     if existing:
-        raise HTTPException(status_code=409, detail="User already has access to this space")
+        raise HTTPException(
+            status_code=409, detail="User already has access to this space"
+        )
 
     access = SpaceAccess(space_id=space.id, user_id=target_user.id)
     session.add(access)
@@ -413,7 +462,9 @@ def update_space(
                 select(Space).where(Space.name == next_name, Space.id != space.id)
             ).first()
             if duplicate:
-                raise HTTPException(status_code=409, detail=f"Space '{next_name}' already exists.")
+                raise HTTPException(
+                    status_code=409, detail=f"Space '{next_name}' already exists."
+                )
             changes["name"] = {"from": space.name, "to": next_name}
             space.name = next_name
 
@@ -477,7 +528,9 @@ def revoke_space_access(
     _ensure_space_manager(space, current_user)
 
     if user_id == space.owner_id:
-        raise HTTPException(status_code=400, detail="Cannot revoke access from the space owner")
+        raise HTTPException(
+            status_code=400, detail="Cannot revoke access from the space owner"
+        )
 
     access = session.exec(
         select(SpaceAccess).where(
@@ -486,7 +539,9 @@ def revoke_space_access(
         )
     ).first()
     if not access:
-        raise HTTPException(status_code=404, detail="User does not have explicit access to this space")
+        raise HTTPException(
+            status_code=404, detail="User does not have explicit access to this space"
+        )
 
     session.delete(access)
     _record_space_event(

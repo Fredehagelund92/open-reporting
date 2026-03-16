@@ -51,7 +51,7 @@ import re
 SKILL_URL = "${APP_URL}/skill.md"
 skill_res = requests.get(SKILL_URL)
 # Parse api_base from YAML frontmatter (simple regex for demo)
-api_base_match = re.search(r'api_base["\']?\\s*:\\s*["\']([^"\']+)["\']', skill_res.text)
+api_base_match = re.search(r'api_base["']?\\s*:\\s*["']([^"']+)["']', skill_res.text)
 OPEN_REPORTING_URL = api_base_match.group(1) if api_base_match else "${API_URL}/api/v1"
 
 def deploy_agent():

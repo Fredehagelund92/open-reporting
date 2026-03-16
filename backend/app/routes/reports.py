@@ -7,24 +7,51 @@ import re
 import uuid
 from typing import Optional, Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Header, status, BackgroundTasks
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Header,
+    status,
+    BackgroundTasks,
+)
 from pydantic import BaseModel, field_validator
 from sqlmodel import Session, select, func, col, or_
 
 from app.database import get_session
-from app.models import Report, Agent, Space, Upvote, SpaceAccess, User, Comment, Tag, ReportTag
+from app.models import (
+    Report,
+    Agent,
+    Space,
+    Upvote,
+    SpaceAccess,
+    User,
+    Comment,
+    Tag,
+    ReportTag,
+)
 from app.routes.agents import get_current_agent
 from app.auth.dependencies import get_current_user_optional, get_current_user
 from app.core.cache import cache
 from app.core.html_validator import validate_html, strip_wrapper_tags
-from app.core.authoring_coach import evaluate_authoring_quality, get_authoring_coach_mode
-from app.core.tags import resolve_canonical_tags, attach_tags_to_report, recalculate_tag_usage_counts, normalize_tag_key
+from app.core.authoring_coach import (
+    evaluate_authoring_quality,
+    get_authoring_coach_mode,
+)
+from app.core.tags import (
+    resolve_canonical_tags,
+    attach_tags_to_report,
+    recalculate_tag_usage_counts,
+    normalize_tag_key,
+)
 from app.core.notifications import notify_subscribers
 
 router = APIRouter(prefix="/api/v1/reports", tags=["Reports"])
 
+
 def generate_slug(text: str) -> str:
-    slug = re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
+    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
     return f"{slug}-{uuid.uuid4().hex[:6]}"
 
 
@@ -55,6 +82,7 @@ def _get_report_by_id_or_slug(session: Session, report_id: str) -> Optional[Repo
         return report
     return session.exec(select(Report).where(Report.slug == report_id)).first()
 
+
 # --- Request / Response Schemas ---
 
 
@@ -72,7 +100,7 @@ class ReportCreateRequest(BaseModel):
     @field_validator("series_id")
     @classmethod
     def _validate_series_id(cls, v: Optional[str]) -> Optional[str]:
-        if v and (not re.match(r'^[a-z0-9]+(?:-[a-z0-9]+)*$', v) or len(v) > 100):
+        if v and (not re.match(r"^[a-z0-9]+(?:-[a-z0-9]+)*$", v) or len(v) > 100):
             raise ValueError("series_id must be a lowercase slug, max 100 chars")
         return v
 
@@ -156,20 +184,24 @@ def _require_user_or_agent(
     # (Note: get_current_user_optional already returns None if user is deactivated)
     if current_user:
         return
-        
+
     # 2. Check if we have an active agent key
     if authorization and authorization.startswith("Bearer "):
         api_key = authorization.split("Bearer ", 1)[1].strip()
         if api_key:
             from app.routes.agents import _get_agent_by_key
+
             try:
                 # This helper already checks agent.is_active and owner.is_active
                 _get_agent_by_key(api_key, session)
                 return
             except HTTPException:
                 pass
-                
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated or account is disabled.")
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated or account is disabled.",
+    )
 
 
 @router.post("/coach/evaluate", response_model=AuthoringCoachResponse)
@@ -179,7 +211,9 @@ def evaluate_authoring_coach(
 ):
     """Evaluate draft quality before publish for both user and agent workflows."""
     if body.content_type not in ("report", "slideshow"):
-        raise HTTPException(status_code=422, detail="content_type must be 'report' or 'slideshow'.")
+        raise HTTPException(
+            status_code=422, detail="content_type must be 'report' or 'slideshow'."
+        )
 
     html_errors = validate_html(body.html_body, content_type=body.content_type)
     if html_errors:
@@ -201,7 +235,10 @@ def evaluate_authoring_coach(
 
     return _run_authoring_coach(body)
 
-@router.post("/", response_model=ReportSummaryResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/", response_model=ReportSummaryResponse, status_code=status.HTTP_201_CREATED
+)
 def create_report(
     body: ReportCreateRequest,
     background_tasks: BackgroundTasks,
@@ -212,11 +249,16 @@ def create_report(
     """[Agent Action] Upload a new HTML report to a specific space."""
     # Enforce agent claim status
     if not agent.is_claimed:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Agent must be claimed by a user before posting reports.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Agent must be claimed by a user before posting reports.",
+        )
 
     # Validate content_type
     if body.content_type not in ("report", "slideshow"):
-        raise HTTPException(status_code=422, detail="content_type must be 'report' or 'slideshow'.")
+        raise HTTPException(
+            status_code=422, detail="content_type must be 'report' or 'slideshow'."
+        )
 
     # Validate HTML content
     html_errors = validate_html(body.html_body, content_type=body.content_type)
@@ -224,7 +266,10 @@ def create_report(
         raise HTTPException(status_code=422, detail={"validation_errors": html_errors})
 
     coach_feedback = _run_authoring_coach(body)
-    if coach_feedback.mode == "enforce" and coach_feedback.readiness_status == "blocked":
+    if (
+        coach_feedback.mode == "enforce"
+        and coach_feedback.readiness_status == "blocked"
+    ):
         raise HTTPException(
             status_code=422,
             detail={
@@ -242,7 +287,7 @@ def create_report(
         space = session.get(Space, body.space_id)
     elif body.space_name:
         space = session.exec(select(Space).where(Space.name == body.space_name)).first()
-    
+
     if not space:
         target = body.space_id or body.space_name or "unknown"
         raise HTTPException(status_code=404, detail=f"Space '{target}' not found.")
@@ -318,12 +363,14 @@ class UserReportCreateRequest(BaseModel):
     @field_validator("series_id")
     @classmethod
     def _validate_series_id(cls, v: Optional[str]) -> Optional[str]:
-        if v and (not re.match(r'^[a-z0-9]+(?:-[a-z0-9]+)*$', v) or len(v) > 100):
+        if v and (not re.match(r"^[a-z0-9]+(?:-[a-z0-9]+)*$", v) or len(v) > 100):
             raise ValueError("series_id must be a lowercase slug, max 100 chars")
         return v
 
 
-@router.post("/upload", response_model=ReportSummaryResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/upload", response_model=ReportSummaryResponse, status_code=status.HTTP_201_CREATED
+)
 def upload_report_as_user(
     body: UserReportCreateRequest,
     background_tasks: BackgroundTasks,
@@ -333,11 +380,15 @@ def upload_report_as_user(
     """[User Action] Upload a report directly, published under one of the
     user's own agents.  The caller must supply ``agent_id``."""
     if body.content_type not in ("report", "slideshow"):
-        raise HTTPException(status_code=422, detail="content_type must be 'report' or 'slideshow'.")
+        raise HTTPException(
+            status_code=422, detail="content_type must be 'report' or 'slideshow'."
+        )
 
     agent = session.get(Agent, body.agent_id)
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found. Please create an agent first.")
+        raise HTTPException(
+            status_code=404, detail="Agent not found. Please create an agent first."
+        )
     if agent.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="You do not own this agent.")
 
@@ -355,7 +406,10 @@ def upload_report_as_user(
             content_type=body.content_type,
         )
     )
-    if coach_feedback.mode == "enforce" and coach_feedback.readiness_status == "blocked":
+    if (
+        coach_feedback.mode == "enforce"
+        and coach_feedback.readiness_status == "blocked"
+    ):
         raise HTTPException(
             status_code=422,
             detail={
@@ -368,7 +422,9 @@ def upload_report_as_user(
 
     space = session.exec(select(Space).where(Space.name == body.space_name)).first()
     if not space:
-        raise HTTPException(status_code=404, detail=f"Space '{body.space_name}' not found.")
+        raise HTTPException(
+            status_code=404, detail=f"Space '{body.space_name}' not found."
+        )
 
     canonical_tags = resolve_canonical_tags(session, body.tags)
 
@@ -422,7 +478,9 @@ def upload_report_as_user(
 
 @router.get("/", response_model=list[ReportSummaryResponse])
 def list_reports(
-    space: Optional[str] = Query(None, description="Filter by space name, e.g., o/marketing"),
+    space: Optional[str] = Query(
+        None, description="Filter by space name, e.g., o/marketing"
+    ),
     agent_id: Optional[str] = Query(None, description="Filter by agent ID"),
     agent_name: Optional[str] = Query(None, description="Filter by agent name"),
     tag: Optional[str] = Query(None, description="Filter by canonical tag"),
@@ -435,33 +493,44 @@ def list_reports(
     """List reports with optional space filter, agent filter and sorting."""
 
     # Pre-compute aggregation subqueries
-    upvotes_sq = select(
-        Upvote.report_id,
-        func.sum(Upvote.value).label("score")
-    ).group_by(Upvote.report_id).subquery()
+    upvotes_sq = (
+        select(Upvote.report_id, func.sum(Upvote.value).label("score"))
+        .group_by(Upvote.report_id)
+        .subquery()
+    )
 
-    comments_sq = select(
-        Comment.report_id,
-        func.count(Comment.id).label("comment_count")
-    ).group_by(Comment.report_id).subquery()
+    comments_sq = (
+        select(Comment.report_id, func.count(Comment.id).label("comment_count"))
+        .group_by(Comment.report_id)
+        .subquery()
+    )
 
     # Base query with aggregations joined in
-    query = select(
-        Report,
-        func.coalesce(upvotes_sq.c.score, 0).label("total_score"),
-        func.coalesce(comments_sq.c.comment_count, 0).label("total_comments")
-    ).join(Space).outerjoin(upvotes_sq, Report.id == upvotes_sq.c.report_id).outerjoin(comments_sq, Report.id == comments_sq.c.report_id)
+    query = (
+        select(
+            Report,
+            func.coalesce(upvotes_sq.c.score, 0).label("total_score"),
+            func.coalesce(comments_sq.c.comment_count, 0).label("total_comments"),
+        )
+        .join(Space)
+        .outerjoin(upvotes_sq, Report.id == upvotes_sq.c.report_id)
+        .outerjoin(comments_sq, Report.id == comments_sq.c.report_id)
+    )
 
     # Access control
     if current_user and current_user.role == "ADMIN":
         pass  # Admin sees all
     elif current_user:
-        access_sq = select(SpaceAccess.space_id).where(SpaceAccess.user_id == current_user.id)
-        query = query.where(or_(
-            not Space.is_private,
-            Space.owner_id == current_user.id,
-            col(Space.id).in_(access_sq)
-        ))
+        access_sq = select(SpaceAccess.space_id).where(
+            SpaceAccess.user_id == current_user.id
+        )
+        query = query.where(
+            or_(
+                not Space.is_private,
+                Space.owner_id == current_user.id,
+                col(Space.id).in_(access_sq),
+            )
+        )
     else:
         query = query.where(not Space.is_private)
 
@@ -488,18 +557,26 @@ def list_reports(
         normalized_tag = normalize_tag_key(tag)
         if not normalized_tag:
             return []
-        tag_obj = session.exec(select(Tag).where(Tag.normalized_key == normalized_tag)).first()
+        tag_obj = session.exec(
+            select(Tag).where(Tag.normalized_key == normalized_tag)
+        ).first()
         if not tag_obj:
             return []
-        query = query.join(ReportTag, Report.id == ReportTag.report_id).where(ReportTag.tag_id == tag_obj.id)
+        query = query.join(ReportTag, Report.id == ReportTag.report_id).where(
+            ReportTag.tag_id == tag_obj.id
+        )
 
     # Sorting
     if sort == "new":
         query = query.order_by(col(Report.created_at).desc())
     elif sort == "top":
-        query = query.order_by(func.coalesce(upvotes_sq.c.score, 0).desc(), col(Report.created_at).desc())
+        query = query.order_by(
+            func.coalesce(upvotes_sq.c.score, 0).desc(), col(Report.created_at).desc()
+        )
     else:  # "hot" default
-        engagement_score = (func.coalesce(upvotes_sq.c.score, 0) * 2) + func.coalesce(comments_sq.c.comment_count, 0)
+        engagement_score = (func.coalesce(upvotes_sq.c.score, 0) * 2) + func.coalesce(
+            comments_sq.c.comment_count, 0
+        )
         query = query.order_by(engagement_score.desc(), col(Report.created_at).desc())
 
     # Pagination
@@ -518,44 +595,48 @@ def list_reports(
                 col(Upvote.report_id).in_(report_ids),
             )
         ).all()
-        user_votes_by_report = {report_id: int(value) for report_id, value in user_vote_rows}
+        user_votes_by_report = {
+            report_id: int(value) for report_id, value in user_vote_rows
+        }
 
     results = []
     for report, score, comment_count in rows:
         agent_obj = session.get(Agent, report.agent_id)
         space_obj = session.get(Space, report.space_id)
 
-        results.append(ReportSummaryResponse(
-            id=report.id,
-            title=report.title,
-            summary=report.summary,
-            tags=_report_tag_names(report),
-            slug=report.slug,
-            content_type=report.content_type,
-            agent_name=agent_obj.name if agent_obj else "Unknown",
-            agent_id=report.agent_id,
-            space_name=space_obj.name if space_obj else "Unknown",
-            upvote_score=int(score),
-            user_vote=user_votes_by_report.get(report.id, 0),
-            comment_count=int(comment_count),
-            can_delete=_can_delete_report(
-                current_user=current_user,
-                agent_obj=agent_obj,
-                space_obj=space_obj,
-            ),
-            created_at=report.created_at.isoformat(),
-            series_id=report.series_id,
-            run_number=report.run_number,
-        ))
+        results.append(
+            ReportSummaryResponse(
+                id=report.id,
+                title=report.title,
+                summary=report.summary,
+                tags=_report_tag_names(report),
+                slug=report.slug,
+                content_type=report.content_type,
+                agent_name=agent_obj.name if agent_obj else "Unknown",
+                agent_id=report.agent_id,
+                space_name=space_obj.name if space_obj else "Unknown",
+                upvote_score=int(score),
+                user_vote=user_votes_by_report.get(report.id, 0),
+                comment_count=int(comment_count),
+                can_delete=_can_delete_report(
+                    current_user=current_user,
+                    agent_obj=agent_obj,
+                    space_obj=space_obj,
+                ),
+                created_at=report.created_at.isoformat(),
+                series_id=report.series_id,
+                run_number=report.run_number,
+            )
+        )
 
     return results
 
 
 @router.get("/{report_id}", response_model=ReportDetailResponse)
 async def get_report(
-    report_id: str, 
+    report_id: str,
     session: Session = Depends(get_session),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ):
     """Get a specific report including its full HTML body."""
     report = _get_report_by_id_or_slug(session, report_id)
@@ -564,13 +645,18 @@ async def get_report(
         raise HTTPException(status_code=404, detail="Report not found.")
 
     space_obj = session.get(Space, report.space_id)
-    
+
     # Access check
     if space_obj.is_private:
         if not current_user:
             raise HTTPException(status_code=401, detail="Authentication required")
         if current_user.role != "ADMIN" and space_obj.owner_id != current_user.id:
-            acc = session.exec(select(SpaceAccess).where(SpaceAccess.space_id == space_obj.id, SpaceAccess.user_id == current_user.id)).first()
+            acc = session.exec(
+                select(SpaceAccess).where(
+                    SpaceAccess.space_id == space_obj.id,
+                    SpaceAccess.user_id == current_user.id,
+                )
+            ).first()
             if not acc:
                 raise HTTPException(status_code=403, detail="Unrecognized report")
 
@@ -584,12 +670,16 @@ async def get_report(
     agent_obj = session.get(Agent, report.agent_id)
 
     upvotes = session.exec(
-        select(func.coalesce(func.sum(Upvote.value), 0)).where(Upvote.report_id == report.id)
+        select(func.coalesce(func.sum(Upvote.value), 0)).where(
+            Upvote.report_id == report.id
+        )
     ).one()
     user_vote = 0
     if current_user:
         existing_vote = session.exec(
-            select(Upvote).where(Upvote.report_id == report.id, Upvote.user_id == current_user.id)
+            select(Upvote).where(
+                Upvote.report_id == report.id, Upvote.user_id == current_user.id
+            )
         ).first()
         if existing_vote:
             user_vote = existing_vote.value
@@ -598,25 +688,31 @@ async def get_report(
 
     series_total = prev_slug = next_slug = None
     if report.series_id:
-        series_total = int(session.exec(
-            select(func.count(Report.id)).where(
-                Report.series_id == report.series_id,
-                Report.agent_id == report.agent_id,
-            )
-        ).one())
+        series_total = int(
+            session.exec(
+                select(func.count(Report.id)).where(
+                    Report.series_id == report.series_id,
+                    Report.agent_id == report.agent_id,
+                )
+            ).one()
+        )
         if report.run_number and report.run_number > 1:
-            prev = session.exec(select(Report).where(
-                Report.series_id == report.series_id,
-                Report.agent_id == report.agent_id,
-                Report.run_number == report.run_number - 1,
-            )).first()
+            prev = session.exec(
+                select(Report).where(
+                    Report.series_id == report.series_id,
+                    Report.agent_id == report.agent_id,
+                    Report.run_number == report.run_number - 1,
+                )
+            ).first()
             prev_slug = prev.slug if prev else None
         if report.run_number and series_total and report.run_number < series_total:
-            nxt = session.exec(select(Report).where(
-                Report.series_id == report.series_id,
-                Report.agent_id == report.agent_id,
-                Report.run_number == report.run_number + 1,
-            )).first()
+            nxt = session.exec(
+                select(Report).where(
+                    Report.series_id == report.series_id,
+                    Report.agent_id == report.agent_id,
+                    Report.run_number == report.run_number + 1,
+                )
+            ).first()
             next_slug = nxt.slug if nxt else None
 
     response_data = ReportDetailResponse(
@@ -645,10 +741,10 @@ async def get_report(
         prev_slug=prev_slug,
         next_slug=next_slug,
     )
-    
+
     # Save to cache for 60 seconds
     await cache.set(cache_key, response_data.model_dump(), expire_seconds=60)
-    
+
     return response_data
 
 
@@ -676,10 +772,17 @@ def update_report(
     if not report:
         raise HTTPException(status_code=404, detail="Report not found.")
     if report.agent_id != agent.id:
-        raise HTTPException(status_code=403, detail="Only the publishing agent may update this report.")
+        raise HTTPException(
+            status_code=403, detail="Only the publishing agent may update this report."
+        )
 
-    if body.content_type is not None and body.content_type not in ("report", "slideshow"):
-        raise HTTPException(status_code=422, detail="content_type must be 'report' or 'slideshow'.")
+    if body.content_type is not None and body.content_type not in (
+        "report",
+        "slideshow",
+    ):
+        raise HTTPException(
+            status_code=422, detail="content_type must be 'report' or 'slideshow'."
+        )
 
     # Apply partial updates
     if body.title is not None:
@@ -694,7 +797,9 @@ def update_report(
     if body.html_body is not None:
         html_errors = validate_html(body.html_body, content_type=effective_content_type)
         if html_errors:
-            raise HTTPException(status_code=422, detail={"validation_errors": html_errors})
+            raise HTTPException(
+                status_code=422, detail={"validation_errors": html_errors}
+            )
         report.html_body = strip_wrapper_tags(body.html_body)
 
     # Re-run coach on the full (post-patch) state
@@ -707,15 +812,23 @@ def update_report(
             tags=body.tags or [],
         )
     )
-    if coach_feedback.mode == "enforce" and coach_feedback.readiness_status == "blocked":
+    if (
+        coach_feedback.mode == "enforce"
+        and coach_feedback.readiness_status == "blocked"
+    ):
         raise HTTPException(
             status_code=422,
-            detail={"coach_blocked": True, "authoring_coach": coach_feedback.model_dump()},
+            detail={
+                "coach_blocked": True,
+                "authoring_coach": coach_feedback.model_dump(),
+            },
         )
 
     if body.tags is not None:
         # Remove existing tag links and replace
-        existing_links = session.exec(select(ReportTag).where(ReportTag.report_id == report.id)).all()
+        existing_links = session.exec(
+            select(ReportTag).where(ReportTag.report_id == report.id)
+        ).all()
         for link in existing_links:
             session.delete(link)
         canonical_tags = resolve_canonical_tags(session, body.tags)
@@ -729,7 +842,9 @@ def update_report(
 
     space_obj = session.get(Space, report.space_id)
     upvotes = session.exec(
-        select(func.coalesce(func.sum(Upvote.value), 0)).where(Upvote.report_id == report.id)
+        select(func.coalesce(func.sum(Upvote.value), 0)).where(
+            Upvote.report_id == report.id
+        )
     ).one()
     comment_count = session.exec(
         select(func.count(Comment.id)).where(Comment.report_id == report.id)
@@ -768,11 +883,17 @@ def delete_report(
 
     agent_obj = session.get(Agent, report.agent_id)
     space_obj = session.get(Space, report.space_id)
-    if not _can_delete_report(current_user=current_user, agent_obj=agent_obj, space_obj=space_obj):
-        raise HTTPException(status_code=403, detail="Not authorized to delete this report")
+    if not _can_delete_report(
+        current_user=current_user, agent_obj=agent_obj, space_obj=space_obj
+    ):
+        raise HTTPException(
+            status_code=403, detail="Not authorized to delete this report"
+        )
 
     # Cleanup dependent tag mappings first, then recalculate usage counters.
-    report_tag_links = session.exec(select(ReportTag).where(ReportTag.report_id == report.id)).all()
+    report_tag_links = session.exec(
+        select(ReportTag).where(ReportTag.report_id == report.id)
+    ).all()
     for link in report_tag_links:
         session.delete(link)
 

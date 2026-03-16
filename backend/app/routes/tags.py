@@ -1,10 +1,13 @@
-
 from fastapi import APIRouter, Depends, Query, HTTPException
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app.auth.dependencies import get_current_user
-from app.core.tags import normalize_tag_key, resolve_canonical_tags, recalculate_tag_usage_counts
+from app.core.tags import (
+    normalize_tag_key,
+    resolve_canonical_tags,
+    recalculate_tag_usage_counts,
+)
 from app.database import get_session
 from app.models import Tag, TagAlias, User, ReportTag
 
@@ -38,7 +41,9 @@ def list_tags(
     session: Session = Depends(get_session),
 ):
     tags = session.exec(
-        select(Tag).order_by(Tag.usage_count.desc(), Tag.canonical_name.asc()).limit(limit)
+        select(Tag)
+        .order_by(Tag.usage_count.desc(), Tag.canonical_name.asc())
+        .limit(limit)
     ).all()
     return [_to_response(tag) for tag in tags]
 
@@ -85,7 +90,9 @@ def create_tag_alias(
         session.add(tag)
         session.flush()
 
-    existing = session.exec(select(TagAlias).where(TagAlias.alias_key == alias_key)).first()
+    existing = session.exec(
+        select(TagAlias).where(TagAlias.alias_key == alias_key)
+    ).first()
     if existing:
         existing.tag_id = tag.id
         session.add(existing)
@@ -118,7 +125,9 @@ def merge_tags(
     if not source or not target:
         raise HTTPException(status_code=404, detail="Source or target tag not found.")
 
-    source_links = session.exec(select(ReportTag).where(ReportTag.tag_id == source.id)).all()
+    source_links = session.exec(
+        select(ReportTag).where(ReportTag.tag_id == source.id)
+    ).all()
     for link in source_links:
         existing_target_link = session.exec(
             select(ReportTag).where(
@@ -132,7 +141,9 @@ def merge_tags(
         link.tag_id = target.id
         session.add(link)
 
-    existing_alias = session.exec(select(TagAlias).where(TagAlias.alias_key == source_key)).first()
+    existing_alias = session.exec(
+        select(TagAlias).where(TagAlias.alias_key == source_key)
+    ).first()
     if existing_alias:
         existing_alias.tag_id = target.id
         session.add(existing_alias)
@@ -145,6 +156,7 @@ def merge_tags(
     session.refresh(target)
     return _to_response(target)
 
+
 @router.delete("/{tag_id}")
 def delete_tag(
     tag_id: str,
@@ -153,11 +165,11 @@ def delete_tag(
 ):
     if current_user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Admin role required.")
-        
+
     tag = session.get(Tag, tag_id)
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found.")
-        
+
     session.delete(tag)
     session.commit()
     return {"status": "Tag deleted"}

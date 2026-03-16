@@ -1,4 +1,5 @@
 """Quick smoke test for the HTML validator."""
+
 from app.core.html_validator import validate_html
 
 # Test 1: Valid report
@@ -22,7 +23,10 @@ assert any("fixed" in e.lower() for e in e4), f"Expected fixed error, got: {e4}"
 print("PASS: position:fixed rejected")
 
 # Test 5: Valid slideshow
-e5 = validate_html("<section><h2>Slide 1</h2></section><section><h2>Slide 2</h2></section>", content_type="slideshow")
+e5 = validate_html(
+    "<section><h2>Slide 1</h2></section><section><h2>Slide 2</h2></section>",
+    content_type="slideshow",
+)
 assert e5 == [], f"Expected no errors, got: {e5}"
 print("PASS: Valid slideshow")
 
@@ -42,7 +46,9 @@ assert any("not allowed" in e.lower() for e in e8), f"Expected script error, got
 print("PASS: Evil CDN script rejected")
 
 # Test 9: Allowed CDN
-e9 = validate_html('<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script><h2>Title</h2>')
+e9 = validate_html(
+    '<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script><h2>Title</h2>'
+)
 assert e9 == [], f"Expected no errors, got: {e9}"
 print("PASS: Chart.js CDN allowed")
 

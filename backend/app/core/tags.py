@@ -29,7 +29,9 @@ def _get_alias_map(session: Session, normalized_keys: Iterable[str]) -> dict[str
 
 
 def _get_or_create_tag_by_key(session: Session, normalized_key: str) -> Tag:
-    existing = session.exec(select(Tag).where(Tag.normalized_key == normalized_key)).first()
+    existing = session.exec(
+        select(Tag).where(Tag.normalized_key == normalized_key)
+    ).first()
     if existing:
         return existing
     tag = Tag(canonical_name=normalized_key, normalized_key=normalized_key)
@@ -93,5 +95,3 @@ def recalculate_tag_usage_counts(session: Session) -> None:
         tag.usage_count = count
         session.add(tag)
     session.flush()
-
-

@@ -14,6 +14,7 @@ import { api } from "@/lib/api"
 import type { AuthUser, AuthProviderInfo } from "@/types"
 import { AuthContext, useAuth } from "@/hooks/use-auth"
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { useAuth }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

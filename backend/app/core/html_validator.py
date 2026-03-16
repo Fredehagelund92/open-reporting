@@ -6,7 +6,7 @@ Enforces security rules, quality standards, and platform constraints.
 
 Usage:
     from app.core.html_validator import validate_html
-    
+
     errors = validate_html(html_body, content_type="report")
     if errors:
         raise HTTPException(status_code=422, detail=errors)
@@ -21,46 +21,61 @@ from typing import Optional
 MAX_HTML_SIZE = 2 * 1024 * 1024
 
 # Tags that are always forbidden
-FORBIDDEN_TAGS = frozenset({
-    "iframe", "object", "embed", "applet",  # external content
-    "form", "input", "textarea", "select", "button",  # interactive forms
-    "link",  # external CSS
-    "meta",  # metadata injection
-    "base",  # URL hijacking
-    "style",  # global CSS — must use inline styles
-})
+FORBIDDEN_TAGS = frozenset(
+    {
+        "iframe",
+        "object",
+        "embed",
+        "applet",  # external content
+        "form",
+        "input",
+        "textarea",
+        "select",
+        "button",  # interactive forms
+        "link",  # external CSS
+        "meta",  # metadata injection
+        "base",  # URL hijacking
+        "style",  # global CSS — must use inline styles
+    }
+)
 
 # Document-level wrapper tags that should be stripped (not hard-reject)
 WRAPPER_TAGS = frozenset({"html", "head", "body", "!doctype"})
 
 # CSS properties that break platform layout
-FORBIDDEN_CSS_PROPERTIES = frozenset({
-    "position: fixed",
-    "position: absolute",
-    "z-index",
-})
+FORBIDDEN_CSS_PROPERTIES = frozenset(
+    {
+        "position: fixed",
+        "position: absolute",
+        "z-index",
+    }
+)
 
 # Allowlisted CDN hosts for <script src="...">
-ALLOWED_SCRIPT_CDNS = frozenset({
-    "cdn.jsdelivr.net/npm/chart.js",
-    "cdnjs.cloudflare.com/ajax/libs/Chart.js",
-})
+ALLOWED_SCRIPT_CDNS = frozenset(
+    {
+        "cdn.jsdelivr.net/npm/chart.js",
+        "cdnjs.cloudflare.com/ajax/libs/Chart.js",
+    }
+)
 
 # SVG tags considered visual content quality signals.
-ALLOWED_SVG_TAGS = frozenset({
-    "svg",
-    "path",
-    "circle",
-    "rect",
-    "line",
-    "polyline",
-    "polygon",
-    "text",
-    "g",
-    "defs",
-    "clippath",
-    "use",
-})
+ALLOWED_SVG_TAGS = frozenset(
+    {
+        "svg",
+        "path",
+        "circle",
+        "rect",
+        "line",
+        "polyline",
+        "polygon",
+        "text",
+        "g",
+        "defs",
+        "clippath",
+        "use",
+    }
+)
 
 
 class _HtmlInspector(HTMLParser):
@@ -144,7 +159,9 @@ def validate_html(html_body: str, content_type: str = "report") -> list[str]:
         return ["html_body cannot be empty."]
 
     if len(html_body.encode("utf-8")) > MAX_HTML_SIZE:
-        return [f"html_body exceeds maximum size of {MAX_HTML_SIZE // (1024*1024)}MB."]
+        return [
+            f"html_body exceeds maximum size of {MAX_HTML_SIZE // (1024 * 1024)}MB."
+        ]
 
     # --- Parse and inspect ---
     inspector = _HtmlInspector()
@@ -186,6 +203,8 @@ def strip_wrapper_tags(html_body: str) -> str:
     html_body = re.sub(r"<!DOCTYPE[^>]*>", "", html_body, flags=re.IGNORECASE)
     # Remove <html>, </html>, <head>...</head>, <body>, </body>
     html_body = re.sub(r"</?html[^>]*>", "", html_body, flags=re.IGNORECASE)
-    html_body = re.sub(r"<head[^>]*>.*?</head>", "", html_body, flags=re.IGNORECASE | re.DOTALL)
+    html_body = re.sub(
+        r"<head[^>]*>.*?</head>", "", html_body, flags=re.IGNORECASE | re.DOTALL
+    )
     html_body = re.sub(r"</?body[^>]*>", "", html_body, flags=re.IGNORECASE)
     return html_body.strip()

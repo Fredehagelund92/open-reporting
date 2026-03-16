@@ -11,11 +11,13 @@ from app.auth.security import create_access_token
 
 client = TestClient(app)
 
+
 def test_read_root():
     response = client.get("/")
     # If there is a root route, this will pass or return 404 if no root exists.
     # We just ensure the app builds and HTTP works.
     assert response.status_code in [200, 404]
+
 
 def test_docs():
     response = client.get("/docs")
@@ -35,8 +37,16 @@ def test_search_hides_private_content_from_unauthorized_users():
 
     try:
         with Session(engine) as session:
-            owner = User(email=f"owner-{suffix}@example.com", name=f"Owner {suffix}", provider="local")
-            outsider = User(email=f"outsider-{suffix}@example.com", name=f"Outsider {suffix}", provider="local")
+            owner = User(
+                email=f"owner-{suffix}@example.com",
+                name=f"Owner {suffix}",
+                provider="local",
+            )
+            outsider = User(
+                email=f"outsider-{suffix}@example.com",
+                name=f"Outsider {suffix}",
+                provider="local",
+            )
             session.add(owner)
             session.add(outsider)
             session.commit()
@@ -45,8 +55,17 @@ def test_search_hides_private_content_from_unauthorized_users():
             owner_id = owner.id
             outsider_id = outsider.id
 
-            private_space = Space(name=f"o/private-{suffix}", description=f"private-scope-{suffix}", is_private=True, owner_id=owner.id)
-            public_space = Space(name=f"o/public-{suffix}", description=f"public-scope-{suffix}", is_private=False)
+            private_space = Space(
+                name=f"o/private-{suffix}",
+                description=f"private-scope-{suffix}",
+                is_private=True,
+                owner_id=owner.id,
+            )
+            public_space = Space(
+                name=f"o/public-{suffix}",
+                description=f"public-scope-{suffix}",
+                is_private=False,
+            )
             session.add(private_space)
             session.add(public_space)
             session.commit()
@@ -199,7 +218,10 @@ def test_register_for_me_and_existing_agent_reconnect_endpoints():
         headers={"Authorization": f"Bearer {user_token}"},
     )
     assert my_agents_res.status_code == 200
-    matched = next((item for item in my_agents_res.json() if item["id"] == created_agent["id"]), None)
+    matched = next(
+        (item for item in my_agents_res.json() if item["id"] == created_agent["id"]),
+        None,
+    )
     assert matched is not None
     assert matched["api_key"] == created_agent["api_key"]
     assert matched["api_key_hint"]
@@ -222,14 +244,22 @@ def test_space_management_permissions_and_edge_cases():
 
     try:
         with Session(engine) as session:
-            owner = User(email=f"space-owner-{suffix}@example.com", name=f"Owner {suffix}", provider="local")
+            owner = User(
+                email=f"space-owner-{suffix}@example.com",
+                name=f"Owner {suffix}",
+                provider="local",
+            )
             admin = User(
                 email=f"space-admin-{suffix}@example.com",
                 name=f"Admin {suffix}",
                 provider="local",
                 role="ADMIN",
             )
-            outsider = User(email=f"space-outsider-{suffix}@example.com", name=f"Outsider {suffix}", provider="local")
+            outsider = User(
+                email=f"space-outsider-{suffix}@example.com",
+                name=f"Outsider {suffix}",
+                provider="local",
+            )
             session.add(owner)
             session.add(admin)
             session.add(outsider)
@@ -343,14 +373,22 @@ def test_space_governance_events_are_recorded_and_listable():
 
     try:
         with Session(engine) as session:
-            owner = User(email=f"gov-owner-{suffix}@example.com", name=f"Gov Owner {suffix}", provider="local")
+            owner = User(
+                email=f"gov-owner-{suffix}@example.com",
+                name=f"Gov Owner {suffix}",
+                provider="local",
+            )
             admin = User(
                 email=f"gov-admin-{suffix}@example.com",
                 name=f"Gov Admin {suffix}",
                 provider="local",
                 role="ADMIN",
             )
-            member = User(email=f"gov-member-{suffix}@example.com", name=f"Gov Member {suffix}", provider="local")
+            member = User(
+                email=f"gov-member-{suffix}@example.com",
+                name=f"Gov Member {suffix}",
+                provider="local",
+            )
             session.add(owner)
             session.add(admin)
             session.add(member)
@@ -404,7 +442,9 @@ def test_space_governance_events_are_recorded_and_listable():
         )
         assert owner_events_res.status_code == 200
         owner_actions = {event["action"] for event in owner_events_res.json()}
-        assert {"member_invited", "space_updated", "member_revoked"}.issubset(owner_actions)
+        assert {"member_invited", "space_updated", "member_revoked"}.issubset(
+            owner_actions
+        )
 
         non_admin_recent_res = client.get(
             "/api/v1/spaces/governance-events/recent",
@@ -424,7 +464,9 @@ def test_space_governance_events_are_recorded_and_listable():
             headers={"Authorization": f"Bearer {admin_token}"},
         )
         assert admin_recent_res.status_code == 200
-        recent_actions = {event["action"] for event in admin_recent_res.json() if event["space_id"]}
+        recent_actions = {
+            event["action"] for event in admin_recent_res.json() if event["space_id"]
+        }
         assert "space_deleted" in recent_actions
     finally:
         with Session(engine) as session:
@@ -460,9 +502,21 @@ def test_report_delete_permissions_for_admin_space_owner_and_agent_owner():
 
     try:
         with Session(engine) as session:
-            space_owner = User(email=f"space-owner-del-{suffix}@example.com", name=f"Space Owner {suffix}", provider="local")
-            agent_owner = User(email=f"agent-owner-del-{suffix}@example.com", name=f"Agent Owner {suffix}", provider="local")
-            outsider = User(email=f"outsider-del-{suffix}@example.com", name=f"Outsider {suffix}", provider="local")
+            space_owner = User(
+                email=f"space-owner-del-{suffix}@example.com",
+                name=f"Space Owner {suffix}",
+                provider="local",
+            )
+            agent_owner = User(
+                email=f"agent-owner-del-{suffix}@example.com",
+                name=f"Agent Owner {suffix}",
+                provider="local",
+            )
+            outsider = User(
+                email=f"outsider-del-{suffix}@example.com",
+                name=f"Outsider {suffix}",
+                provider="local",
+            )
             admin = User(
                 email=f"admin-del-{suffix}@example.com",
                 name=f"Admin {suffix}",
@@ -514,36 +568,42 @@ def test_report_delete_permissions_for_admin_space_owner_and_agent_owner():
             report_two_id = str(uuid4())
 
             if report_has_legacy_tags:
-                session.execute(text("""
+                session.execute(
+                    text("""
                     INSERT INTO report (id, title, summary, tags, slug, html_body, content_type, agent_id, space_id, created_at)
                     VALUES (:id, :title, :summary, :tags, :slug, :html_body, :content_type, :agent_id, :space_id, :created_at)
-                """), {
-                    "id": report_one_id,
-                    "title": f"Delete One {suffix}",
-                    "summary": "delete permissions one",
-                    "tags": "[]",
-                    "slug": f"delete-one-{suffix}",
-                    "html_body": "<h2>Delete One</h2>",
-                    "content_type": "report",
-                    "agent_id": agent.id,
-                    "space_id": space.id,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                })
-                session.execute(text("""
+                """),
+                    {
+                        "id": report_one_id,
+                        "title": f"Delete One {suffix}",
+                        "summary": "delete permissions one",
+                        "tags": "[]",
+                        "slug": f"delete-one-{suffix}",
+                        "html_body": "<h2>Delete One</h2>",
+                        "content_type": "report",
+                        "agent_id": agent.id,
+                        "space_id": space.id,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                )
+                session.execute(
+                    text("""
                     INSERT INTO report (id, title, summary, tags, slug, html_body, content_type, agent_id, space_id, created_at)
                     VALUES (:id, :title, :summary, :tags, :slug, :html_body, :content_type, :agent_id, :space_id, :created_at)
-                """), {
-                    "id": report_two_id,
-                    "title": f"Delete Two {suffix}",
-                    "summary": "delete permissions two",
-                    "tags": "[]",
-                    "slug": f"delete-two-{suffix}",
-                    "html_body": "<h2>Delete Two</h2>",
-                    "content_type": "report",
-                    "agent_id": agent.id,
-                    "space_id": space.id,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                })
+                """),
+                    {
+                        "id": report_two_id,
+                        "title": f"Delete Two {suffix}",
+                        "summary": "delete permissions two",
+                        "tags": "[]",
+                        "slug": f"delete-two-{suffix}",
+                        "html_body": "<h2>Delete Two</h2>",
+                        "content_type": "report",
+                        "agent_id": agent.id,
+                        "space_id": space.id,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                )
             else:
                 report_one = Report(
                     id=report_one_id,
@@ -600,21 +660,24 @@ def test_report_delete_permissions_for_admin_space_owner_and_agent_owner():
             report_columns = {c["name"] for c in inspect(engine).get_columns("report")}
             report_has_legacy_tags = "tags" in report_columns
             if report_has_legacy_tags:
-                session.execute(text("""
+                session.execute(
+                    text("""
                     INSERT INTO report (id, title, summary, tags, slug, html_body, content_type, agent_id, space_id, created_at)
                     VALUES (:id, :title, :summary, :tags, :slug, :html_body, :content_type, :agent_id, :space_id, :created_at)
-                """), {
-                    "id": str(uuid4()),
-                    "title": f"Delete Three {suffix}",
-                    "summary": "delete permissions three",
-                    "tags": "[]",
-                    "slug": report_three_slug,
-                    "html_body": "<h2>Delete Three</h2>",
-                    "content_type": "report",
-                    "agent_id": agent_id,
-                    "space_id": space_id,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                })
+                """),
+                    {
+                        "id": str(uuid4()),
+                        "title": f"Delete Three {suffix}",
+                        "summary": "delete permissions three",
+                        "tags": "[]",
+                        "slug": report_three_slug,
+                        "html_body": "<h2>Delete Three</h2>",
+                        "content_type": "report",
+                        "agent_id": agent_id,
+                        "space_id": space_id,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                )
             else:
                 report_three = Report(
                     title=f"Delete Three {suffix}",
@@ -681,7 +744,11 @@ def test_reports_include_user_vote_state_for_authenticated_user():
     try:
         register_res = client.post(
             "/api/v1/auth/register",
-            json={"name": f"Vote User {suffix}", "email": f"vote-{suffix}@example.com", "password": "pass1234"},
+            json={
+                "name": f"Vote User {suffix}",
+                "email": f"vote-{suffix}@example.com",
+                "password": "pass1234",
+            },
         )
         assert register_res.status_code == 200
         user_id = register_res.json()["id"]
@@ -696,7 +763,12 @@ def test_reports_include_user_vote_state_for_authenticated_user():
 
         with Session(engine) as session:
             user = session.get(User, user_id)
-            space = Space(name=f"o/vote-{suffix}", description="vote state test", is_private=False, owner_id=user.id)
+            space = Space(
+                name=f"o/vote-{suffix}",
+                description="vote state test",
+                is_private=False,
+                owner_id=user.id,
+            )
             agent = Agent(
                 name=f"vote-agent-{suffix}",
                 description="vote state test agent",
@@ -740,7 +812,9 @@ def test_reports_include_user_vote_state_for_authenticated_user():
             headers={"Authorization": f"Bearer {token}"},
         )
         assert list_res.status_code == 200
-        target = next((item for item in list_res.json() if item["id"] == report_id), None)
+        target = next(
+            (item for item in list_res.json() if item["id"] == report_id), None
+        )
         assert target is not None
         assert target["user_vote"] == 1
 
@@ -753,7 +827,9 @@ def test_reports_include_user_vote_state_for_authenticated_user():
     finally:
         with Session(engine) as session:
             if report_id:
-                votes = session.exec(select(Upvote).where(Upvote.report_id == report_id)).all()
+                votes = session.exec(
+                    select(Upvote).where(Upvote.report_id == report_id)
+                ).all()
                 for vote in votes:
                     session.delete(vote)
             if report_id:
@@ -837,13 +913,22 @@ def test_authoring_coach_enforce_mode_blocks_publish(monkeypatch):
 
     try:
         with Session(engine) as session:
-            user = User(email=f"coach-owner-{suffix}@example.com", name=f"Coach Owner {suffix}", provider="local")
+            user = User(
+                email=f"coach-owner-{suffix}@example.com",
+                name=f"Coach Owner {suffix}",
+                provider="local",
+            )
             session.add(user)
             session.commit()
             session.refresh(user)
             user_id = user.id
 
-            space = Space(name=f"o/coach-{suffix}", description="coach mode space", is_private=False, owner_id=user.id)
+            space = Space(
+                name=f"o/coach-{suffix}",
+                description="coach mode space",
+                is_private=False,
+                owner_id=user.id,
+            )
             session.add(space)
             session.commit()
             session.refresh(space)
@@ -916,14 +1001,21 @@ def test_authoring_coach_enforce_mode_blocks_user_upload(monkeypatch):
     try:
         register_res = client.post(
             "/api/v1/auth/register",
-            json={"name": f"Upload Coach {suffix}", "email": f"upload-coach-{suffix}@example.com", "password": "pass1234"},
+            json={
+                "name": f"Upload Coach {suffix}",
+                "email": f"upload-coach-{suffix}@example.com",
+                "password": "pass1234",
+            },
         )
         assert register_res.status_code == 200
         user_id = register_res.json()["id"]
 
         token_res = client.post(
             "/api/v1/auth/token",
-            data={"username": f"upload-coach-{suffix}@example.com", "password": "pass1234"},
+            data={
+                "username": f"upload-coach-{suffix}@example.com",
+                "password": "pass1234",
+            },
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert token_res.status_code == 200
@@ -931,7 +1023,11 @@ def test_authoring_coach_enforce_mode_blocks_user_upload(monkeypatch):
 
         space_res = client.post(
             "/api/v1/spaces/",
-            json={"name": f"o/upload-coach-{suffix}", "description": "coach upload checks", "is_private": False},
+            json={
+                "name": f"o/upload-coach-{suffix}",
+                "description": "coach upload checks",
+                "is_private": False,
+            },
             headers={"Authorization": f"Bearer {user_token}"},
         )
         assert space_res.status_code == 201
@@ -939,7 +1035,10 @@ def test_authoring_coach_enforce_mode_blocks_user_upload(monkeypatch):
 
         agent_res = client.post(
             "/api/v1/agents/register-for-me",
-            json={"name": f"upload-coach-agent-{suffix}", "description": "coach upload test"},
+            json={
+                "name": f"upload-coach-agent-{suffix}",
+                "description": "coach upload test",
+            },
             headers={"Authorization": f"Bearer {user_token}"},
         )
         assert agent_res.status_code == 201
@@ -992,7 +1091,11 @@ def test_comment_reactions_toggle_and_list():
     try:
         register_res = client.post(
             "/api/v1/auth/register",
-            json={"name": f"Reaction User {suffix}", "email": f"reaction-{suffix}@example.com", "password": "pass1234"},
+            json={
+                "name": f"Reaction User {suffix}",
+                "email": f"reaction-{suffix}@example.com",
+                "password": "pass1234",
+            },
         )
         assert register_res.status_code == 200
         user_id = register_res.json()["id"]
@@ -1007,7 +1110,12 @@ def test_comment_reactions_toggle_and_list():
 
         with Session(engine) as session:
             user = session.get(User, user_id)
-            space = Space(name=f"o/reactions-{suffix}", description="reaction checks", is_private=False, owner_id=user.id)
+            space = Space(
+                name=f"o/reactions-{suffix}",
+                description="reaction checks",
+                is_private=False,
+                owner_id=user.id,
+            )
             agent = Agent(
                 name=f"reaction-agent-{suffix}",
                 description="reaction checks",
@@ -1077,7 +1185,9 @@ def test_comment_reactions_toggle_and_list():
     finally:
         with Session(engine) as session:
             if comment_id:
-                reactions = session.exec(select(Reaction).where(Reaction.comment_id == comment_id)).all()
+                reactions = session.exec(
+                    select(Reaction).where(Reaction.comment_id == comment_id)
+                ).all()
                 for reaction in reactions:
                     session.delete(reaction)
                 comment = session.get(Comment, comment_id)

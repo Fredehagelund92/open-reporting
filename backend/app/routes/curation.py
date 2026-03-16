@@ -9,13 +9,24 @@ from pydantic import BaseModel
 from sqlmodel import Session, select, func, col
 
 from app.database import get_session
-from app.models import Report, Comment, Upvote, User, Space, SpaceAccess, Mention, Notification, Reaction
+from app.models import (
+    Report,
+    Comment,
+    Upvote,
+    User,
+    Space,
+    SpaceAccess,
+    Mention,
+    Notification,
+    Reaction,
+)
 from app.auth.dependencies import get_current_user, get_current_user_optional
 
 router = APIRouter(prefix="/api/v1/reports", tags=["Curation & Comments"])
 
 
 # --- Schemas ---
+
 
 class CommentCreateRequest(BaseModel):
     text: str
@@ -54,34 +65,46 @@ class UpvoteResponse(BaseModel):
 
 
 # --- Helpers ---
-def _check_report_access(report: Report, current_user: Optional[User], session: Session):
+def _check_report_access(
+    report: Report, current_user: Optional[User], session: Session
+):
     space = session.get(Space, report.space_id)
     if space.is_private:
         if not current_user:
             raise HTTPException(status_code=401, detail="Authentication required")
         if current_user.role != "ADMIN" and space.owner_id != current_user.id:
-            acc = session.exec(select(SpaceAccess).where(SpaceAccess.space_id == space.id, SpaceAccess.user_id == current_user.id)).first()
+            acc = session.exec(
+                select(SpaceAccess).where(
+                    SpaceAccess.space_id == space.id,
+                    SpaceAccess.user_id == current_user.id,
+                )
+            ).first()
             if not acc:
-                raise HTTPException(status_code=403, detail="Not authorized to access this report")
+                raise HTTPException(
+                    status_code=403, detail="Not authorized to access this report"
+                )
 
 
 # --- Comment Routes ---
 
+
 @router.get("/{report_id}/comments", response_model=list[CommentResponse])
 def list_comments(
-    report_id: str, 
+    report_id: str,
     session: Session = Depends(get_session),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ):
     """List all comments for a report."""
     report = session.get(Report, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found.")
-        
+
     _check_report_access(report, current_user, session)
 
     comments = session.exec(
-        select(Comment).where(Comment.report_id == report_id).order_by(Comment.created_at)
+        select(Comment)
+        .where(Comment.report_id == report_id)
+        .order_by(Comment.created_at)
     ).all()
 
     comment_ids = [comment.id for comment in comments]
@@ -106,9 +129,7 @@ def list_comments(
                 )
             ).all()
             user_reactions = {
-                (comment_id, emoji)
-                for comment_id, emoji in reacted_rows
-                if comment_id
+                (comment_id, emoji) for comment_id, emoji in reacted_rows if comment_id
             }
 
     results = []
@@ -121,31 +142,39 @@ def list_comments(
                 count=count,
                 reacted=(c.id, emoji) in user_reactions,
             )
-            for emoji, count in sorted(per_comment_counts.items(), key=lambda item: (-item[1], item[0]))
+            for emoji, count in sorted(
+                per_comment_counts.items(), key=lambda item: (-item[1], item[0])
+            )
         ]
-        results.append(CommentResponse(
-            id=c.id,
-            text=c.text,
-            author_name=author.name if author else "Unknown",
-            author_avatar=author.avatar_url if author else None,
-            created_at=c.created_at.isoformat(),
-            reactions=reaction_items,
-        ))
+        results.append(
+            CommentResponse(
+                id=c.id,
+                text=c.text,
+                author_name=author.name if author else "Unknown",
+                author_avatar=author.avatar_url if author else None,
+                created_at=c.created_at.isoformat(),
+                reactions=reaction_items,
+            )
+        )
     return results
 
 
-@router.post("/{report_id}/comments", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{report_id}/comments",
+    response_model=CommentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 def create_comment(
     report_id: str,
     body: CommentCreateRequest,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """[Human Action] Post a comment on a report."""
     report = session.get(Report, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found.")
-        
+
     _check_report_access(report, current_user, session)
 
     comment = Comment(text=body.text, report_id=report_id, author_id=current_user.id)
@@ -155,20 +184,19 @@ def create_comment(
 
     # Simple mention parsing: find @name in text
     import re
+
     mention_names = re.findall(r"@([a-zA-Z0-9_]+)", body.text)
     for name_part in mention_names:
         # Search for users: try exact name without spaces, or start of name
         mentioned_user = session.exec(
             select(User).where(
-                (col(User.name).ilike(f"{name_part}%")) | 
-                (func.replace(User.name, ' ', '').ilike(f"{name_part}%"))
+                (col(User.name).ilike(f"{name_part}%"))
+                | (func.replace(User.name, " ", "").ilike(f"{name_part}%"))
             )
         ).first()
         if mentioned_user:
             mention = Mention(
-                user_id=mentioned_user.id,
-                comment_id=comment.id,
-                report_id=report_id
+                user_id=mentioned_user.id, comment_id=comment.id, report_id=report_id
             )
             session.add(mention)
 
@@ -176,10 +204,10 @@ def create_comment(
             notification = Notification(
                 user_id=mentioned_user.id,
                 text=f"{current_user.name} mentioned you in a comment on '{report.title}'",
-                link=f"/report/{report.slug}" # Link to the report
+                link=f"/report/{report.slug}",  # Link to the report
             )
             session.add(notification)
-    
+
     if mention_names:
         session.commit()
 
@@ -193,7 +221,10 @@ def create_comment(
     )
 
 
-@router.post("/{report_id}/comments/{comment_id}/reactions", response_model=ReactionToggleResponse)
+@router.post(
+    "/{report_id}/comments/{comment_id}/reactions",
+    response_model=ReactionToggleResponse,
+)
 def toggle_comment_reaction(
     report_id: str,
     comment_id: str,
@@ -214,7 +245,9 @@ def toggle_comment_reaction(
 
     emoji = body.emoji.strip()
     if not emoji or len(emoji) > 16:
-        raise HTTPException(status_code=422, detail="Emoji must be between 1 and 16 characters.")
+        raise HTTPException(
+            status_code=422, detail="Emoji must be between 1 and 16 characters."
+        )
 
     existing = session.exec(
         select(Reaction).where(
@@ -257,11 +290,12 @@ def toggle_comment_reaction(
 
 # --- Upvote Routes ---
 
+
 @router.post("/{report_id}/upvote", response_model=UpvoteResponse)
 def toggle_upvote(
     report_id: str,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """[Human Action] Toggle an upvote (+1) on a report."""
     report = session.get(Report, report_id)
@@ -272,7 +306,9 @@ def toggle_upvote(
 
     # Check for existing vote by this user
     existing = session.exec(
-        select(Upvote).where(Upvote.report_id == report_id, Upvote.user_id == current_user.id)
+        select(Upvote).where(
+            Upvote.report_id == report_id, Upvote.user_id == current_user.id
+        )
     ).first()
 
     if existing:
@@ -291,12 +327,16 @@ def toggle_upvote(
 
     # Calculate total score
     total = session.exec(
-        select(func.coalesce(func.sum(Upvote.value), 0)).where(Upvote.report_id == report_id)
+        select(func.coalesce(func.sum(Upvote.value), 0)).where(
+            Upvote.report_id == report_id
+        )
     ).one()
 
     # Get the user's current vote
     user_vote_obj = session.exec(
-        select(Upvote).where(Upvote.report_id == report_id, Upvote.user_id == current_user.id)
+        select(Upvote).where(
+            Upvote.report_id == report_id, Upvote.user_id == current_user.id
+        )
     ).first()
 
     return UpvoteResponse(
@@ -310,7 +350,7 @@ def toggle_upvote(
 def toggle_downvote(
     report_id: str,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """[Human Action] Toggle a downvote (-1) on a report."""
     report = session.get(Report, report_id)
@@ -320,7 +360,9 @@ def toggle_downvote(
     _check_report_access(report, current_user, session)
 
     existing = session.exec(
-        select(Upvote).where(Upvote.report_id == report_id, Upvote.user_id == current_user.id)
+        select(Upvote).where(
+            Upvote.report_id == report_id, Upvote.user_id == current_user.id
+        )
     ).first()
 
     if existing:
@@ -336,11 +378,15 @@ def toggle_downvote(
     session.commit()
 
     total = session.exec(
-        select(func.coalesce(func.sum(Upvote.value), 0)).where(Upvote.report_id == report_id)
+        select(func.coalesce(func.sum(Upvote.value), 0)).where(
+            Upvote.report_id == report_id
+        )
     ).one()
 
     user_vote_obj = session.exec(
-        select(Upvote).where(Upvote.report_id == report_id, Upvote.user_id == current_user.id)
+        select(Upvote).where(
+            Upvote.report_id == report_id, Upvote.user_id == current_user.id
+        )
     ).first()
 
     return UpvoteResponse(

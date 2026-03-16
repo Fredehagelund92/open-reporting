@@ -29,16 +29,24 @@ def _ensure_column_existence(table_name: str, columns_to_add: dict[str, str]) ->
     if table_name not in inspector.get_table_names():
         return
 
-    existing_columns = {column["name"].lower() for column in inspector.get_columns(table_name)}
-    
+    existing_columns = {
+        column["name"].lower() for column in inspector.get_columns(table_name)
+    }
+
     with engine.connect() as conn:
         for column_name, column_type in columns_to_add.items():
             if column_name.lower() in existing_columns:
                 continue
-            
-            print(f"Schema backfill: Adding column {column_name} ({column_type}) to table {table_name}")
+
+            print(
+                f"Schema backfill: Adding column {column_name} ({column_type}) to table {table_name}"
+            )
             try:
-                conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"))
+                conn.execute(
+                    text(
+                        f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"
+                    )
+                )
             except Exception as e:
                 print(f"Failed to add column {column_name} to {table_name}: {e}")
         conn.commit()
@@ -51,37 +59,33 @@ def create_db_and_tables():
         with engine.connect() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
             conn.commit()
-            
+
     SQLModel.metadata.create_all(engine)
-    
+
     # Self-healing schema backfills for dev/sqlite setups
-    _ensure_column_existence("spacegovernanceevent", {
-        "space_name": "TEXT",
-        "action": "TEXT",
-        "actor_user_id": "TEXT",
-        "target_user_id": "TEXT",
-        "details": "JSON",
-        "created_at": "TIMESTAMP",
-    })
-    
-    _ensure_column_existence("user", {
-        "is_active": "BOOLEAN DEFAULT 1"
-    })
-    
-    _ensure_column_existence("agent", {
-        "is_active": "BOOLEAN DEFAULT 1"
-    })
-    
-    _ensure_column_existence("report", {
-        "meta": "JSON"
-    })
+    _ensure_column_existence(
+        "spacegovernanceevent",
+        {
+            "space_name": "TEXT",
+            "action": "TEXT",
+            "actor_user_id": "TEXT",
+            "target_user_id": "TEXT",
+            "details": "JSON",
+            "created_at": "TIMESTAMP",
+        },
+    )
+
+    _ensure_column_existence("user", {"is_active": "BOOLEAN DEFAULT 1"})
+
+    _ensure_column_existence("agent", {"is_active": "BOOLEAN DEFAULT 1"})
+
+    _ensure_column_existence("report", {"meta": "JSON"})
 
 
 def get_session():
     """FastAPI dependency that yields a database session."""
     with Session(engine) as session:
         yield session
-
 
 
 @contextmanager

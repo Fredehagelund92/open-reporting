@@ -12,20 +12,36 @@ from sqlmodel import Session, delete
 
 from app.database import create_db_and_tables, engine
 from app.models import (
-    User, Agent, Space, Report, Comment, Upvote,
-    Favorite, Subscription, Tag, ReportTag,
-    Reaction, Mention, Notification, SpaceAccess, SpaceGovernanceEvent,
+    User,
+    Agent,
+    Space,
+    Report,
+    Comment,
+    Upvote,
+    Favorite,
+    Subscription,
+    Tag,
+    ReportTag,
+    Reaction,
+    Mention,
+    Notification,
+    SpaceAccess,
+    SpaceGovernanceEvent,
 )
 from app.auth.security import get_password_hash
-from app.core.tags import resolve_canonical_tags, attach_tags_to_report, recalculate_tag_usage_counts
+from app.core.tags import (
+    resolve_canonical_tags,
+    attach_tags_to_report,
+    recalculate_tag_usage_counts,
+)
 
 SEED_DIR = Path(__file__).resolve().parent.parent / "seed"
 
 
 def slugify(text: str) -> str:
     text = text.lower()
-    text = re.sub(r'[^a-z0-9]+', '-', text)
-    return text.strip('-')
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+    return text.strip("-")
 
 
 def _load_seed_html(filename: str) -> str:
@@ -51,9 +67,21 @@ def seed():
 
     with Session(engine) as session:
         for model in [
-            Notification, SpaceGovernanceEvent, SpaceAccess,
-            Mention, Reaction, Favorite, Subscription,
-            Comment, Upvote, ReportTag, Tag, Report, Space, Agent, User,
+            Notification,
+            SpaceGovernanceEvent,
+            SpaceAccess,
+            Mention,
+            Reaction,
+            Favorite,
+            Subscription,
+            Comment,
+            Upvote,
+            ReportTag,
+            Tag,
+            Report,
+            Space,
+            Agent,
+            User,
         ]:
             session.exec(delete(model))
         session.commit()
@@ -108,9 +136,18 @@ def seed():
         session.add_all([a1, a2, a3])
 
         # ── Spaces ──
-        s1 = Space(name="o/finance", description="Revenue operations, cost analysis, and financial reporting.")
-        s2 = Space(name="o/engineering", description="Engineering health, incident reports, and infrastructure metrics.")
-        s3 = Space(name="o/executive", description="Board materials, strategy decks, and competitive intelligence.")
+        s1 = Space(
+            name="o/finance",
+            description="Revenue operations, cost analysis, and financial reporting.",
+        )
+        s2 = Space(
+            name="o/engineering",
+            description="Engineering health, incident reports, and infrastructure metrics.",
+        )
+        s3 = Space(
+            name="o/executive",
+            description="Board materials, strategy decks, and competitive intelligence.",
+        )
         session.add_all([s1, s2, s3])
         session.commit()
 
@@ -163,7 +200,14 @@ def seed():
                 "content_type": "report",
                 "agent": a2,
                 "space": s3,
-                "tags": ["market-research", "payments", "saas", "pricing", "risk", "strategy"],
+                "tags": [
+                    "market-research",
+                    "payments",
+                    "saas",
+                    "pricing",
+                    "risk",
+                    "strategy",
+                ],
             },
             {
                 "title": "Engineering Velocity & Reliability Report",
@@ -210,53 +254,95 @@ def seed():
         r1, r1b, r2, r3, r4, r5, r6 = created_reports
 
         # ── Upvotes ──
-        session.add_all([
-            Upvote(value=1, report_id=r1.id, user_id=u1.id),
-            Upvote(value=1, report_id=r1.id, user_id=u2.id),
-            Upvote(value=1, report_id=r1b.id, user_id=u1.id),
-            Upvote(value=1, report_id=r2.id, user_id=u2.id),
-            Upvote(value=1, report_id=r3.id, user_id=u1.id),
-            Upvote(value=1, report_id=r3.id, user_id=u2.id),
-            Upvote(value=1, report_id=r4.id, user_id=u1.id),
-            Upvote(value=1, report_id=r5.id, user_id=u1.id),
-            Upvote(value=1, report_id=r5.id, user_id=u2.id),
-        ])
+        session.add_all(
+            [
+                Upvote(value=1, report_id=r1.id, user_id=u1.id),
+                Upvote(value=1, report_id=r1.id, user_id=u2.id),
+                Upvote(value=1, report_id=r1b.id, user_id=u1.id),
+                Upvote(value=1, report_id=r2.id, user_id=u2.id),
+                Upvote(value=1, report_id=r3.id, user_id=u1.id),
+                Upvote(value=1, report_id=r3.id, user_id=u2.id),
+                Upvote(value=1, report_id=r4.id, user_id=u1.id),
+                Upvote(value=1, report_id=r5.id, user_id=u1.id),
+                Upvote(value=1, report_id=r5.id, user_id=u2.id),
+            ]
+        )
 
         # ── Comments ──
-        session.add_all([
-            Comment(
-                text="The revenue trend is looking solid. Can we get a breakdown of the Enterprise expansion by account size next week?",
-                report_id=r1.id, author_id=u1.id,
-            ),
-            Comment(
-                text="Pipeline coverage improvement is encouraging. Let's track whether the ARR miss in week 2 is a one-off or a trend.",
-                report_id=r1b.id, author_id=u2.id,
-            ),
-            Comment(
-                text="Good incident write-up. The corrective action on canary deploys should be the top priority — we can't skip that gate again.",
-                report_id=r2.id, author_id=u2.id,
-            ),
-            Comment(
-                text="The Zenith AI threat is real. We should move faster on the retention outreach to those 12 accounts.",
-                report_id=r3.id, author_id=u1.id,
-            ),
-        ])
+        session.add_all(
+            [
+                Comment(
+                    text="The revenue trend is looking solid. Can we get a breakdown of the Enterprise expansion by account size next week?",
+                    report_id=r1.id,
+                    author_id=u1.id,
+                ),
+                Comment(
+                    text="Pipeline coverage improvement is encouraging. Let's track whether the ARR miss in week 2 is a one-off or a trend.",
+                    report_id=r1b.id,
+                    author_id=u2.id,
+                ),
+                Comment(
+                    text="Good incident write-up. The corrective action on canary deploys should be the top priority — we can't skip that gate again.",
+                    report_id=r2.id,
+                    author_id=u2.id,
+                ),
+                Comment(
+                    text="The Zenith AI threat is real. We should move faster on the retention outreach to those 12 accounts.",
+                    report_id=r3.id,
+                    author_id=u1.id,
+                ),
+            ]
+        )
 
         session.commit()
 
         # ── Favorites ──
-        session.add_all([
-            Favorite(user_id=u1.id, target_type="space", target_id=s1.id, label="o/finance"),
-            Favorite(user_id=u1.id, target_type="space", target_id=s3.id, label="o/executive"),
-            Favorite(user_id=u2.id, target_type="space", target_id=s2.id, label="o/engineering"),
-        ])
+        session.add_all(
+            [
+                Favorite(
+                    user_id=u1.id,
+                    target_type="space",
+                    target_id=s1.id,
+                    label="o/finance",
+                ),
+                Favorite(
+                    user_id=u1.id,
+                    target_type="space",
+                    target_id=s3.id,
+                    label="o/executive",
+                ),
+                Favorite(
+                    user_id=u2.id,
+                    target_type="space",
+                    target_id=s2.id,
+                    label="o/engineering",
+                ),
+            ]
+        )
 
         # ── Subscriptions ──
-        session.add_all([
-            Subscription(user_id=u1.id, target_type="agent", target_id=a1.id, label="FinOps-Agent"),
-            Subscription(user_id=u1.id, target_type="agent", target_id=a3.id, label="ExecutiveSummarizer"),
-            Subscription(user_id=u2.id, target_type="agent", target_id=a1.id, label="FinOps-Agent"),
-        ])
+        session.add_all(
+            [
+                Subscription(
+                    user_id=u1.id,
+                    target_type="agent",
+                    target_id=a1.id,
+                    label="FinOps-Agent",
+                ),
+                Subscription(
+                    user_id=u1.id,
+                    target_type="agent",
+                    target_id=a3.id,
+                    label="ExecutiveSummarizer",
+                ),
+                Subscription(
+                    user_id=u2.id,
+                    target_type="agent",
+                    target_id=a1.id,
+                    label="FinOps-Agent",
+                ),
+            ]
+        )
 
         session.commit()
 
@@ -264,7 +350,9 @@ def seed():
         session.commit()
 
         print("Database seeded successfully!")
-        print("   -> 3 users, 3 agents, 3 spaces, 7 reports (5 reports + 2 slideshows, 2 in WBR series)")
+        print(
+            "   -> 3 users, 3 agents, 3 spaces, 7 reports (5 reports + 2 slideshows, 2 in WBR series)"
+        )
 
 
 if __name__ == "__main__":

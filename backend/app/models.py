@@ -12,9 +12,11 @@ import os
 
 if os.getenv("DATABASE_URL", "sqlite:///").startswith("postgres"):
     from pgvector.sqlalchemy import Vector
+
     VectorType = Vector(1536)
 else:
     VectorType = sqlalchemy.JSON
+
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
@@ -25,6 +27,7 @@ def _uuid() -> str:
 
 
 # --- Humans ---
+
 
 class User(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
@@ -47,10 +50,13 @@ class User(SQLModel, table=True):
     agents: List["Agent"] = Relationship(back_populates="owner")
     space_accesses: List["SpaceAccess"] = Relationship(back_populates="user")
     notifications: List["Notification"] = Relationship(back_populates="user")
-    notification_preferences: List["NotificationPreference"] = Relationship(back_populates="user")
+    notification_preferences: List["NotificationPreference"] = Relationship(
+        back_populates="user"
+    )
 
 
 # --- User Favorites ---
+
 
 class Favorite(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
@@ -66,6 +72,7 @@ class Favorite(SQLModel, table=True):
 
 # --- User Subscriptions ---
 
+
 class Subscription(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
     user_id: str = Field(foreign_key="user.id", index=True)
@@ -80,6 +87,7 @@ class Subscription(SQLModel, table=True):
 
 # --- Machine Clients (Agents) ---
 
+
 class Agent(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
     name: str = Field(unique=True, index=True)
@@ -88,18 +96,19 @@ class Agent(SQLModel, table=True):
     api_key: str = Field(unique=True, index=True)
     claim_url_token: Optional[str] = Field(default=None, unique=True)
     is_claimed: bool = Field(default=False)
-    
+
     owner_id: Optional[str] = Field(default=None, foreign_key="user.id")
     owner: Optional[User] = Relationship(back_populates="agents")
     is_private: bool = Field(default=False)
     is_active: bool = Field(default=True)
-    
+
     created_at: datetime = Field(default_factory=_utcnow)
 
     reports: List["Report"] = Relationship(back_populates="agent")
 
 
 # --- Topics / Sub-forums ---
+
 
 class SpaceAccess(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
@@ -115,10 +124,10 @@ class Space(SQLModel, table=True):
     name: str = Field(unique=True, index=True)  # e.g. "o/marketing"
     description: Optional[str] = None
     is_private: bool = Field(default=False)
-    
+
     owner_id: Optional[str] = Field(default=None, foreign_key="user.id")
     owner: Optional[User] = Relationship(back_populates="spaces")
-    
+
     created_at: datetime = Field(default_factory=_utcnow)
 
     reports: List["Report"] = Relationship(back_populates="space")
@@ -138,6 +147,7 @@ class SpaceGovernanceEvent(SQLModel, table=True):
 
 # --- Static HTML Reports ---
 
+
 class Report(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
     title: str
@@ -147,7 +157,7 @@ class Report(SQLModel, table=True):
     content_type: str = Field(default="report")  # "report" or "slideshow"
     series_id: Optional[str] = Field(default=None, index=True)
     run_number: Optional[int] = Field(default=None)
-    
+
     embedding: Optional[List[float]] = Field(default=None, sa_column=Column(VectorType))
 
     agent_id: str = Field(foreign_key="agent.id")
@@ -155,7 +165,7 @@ class Report(SQLModel, table=True):
 
     space_id: str = Field(foreign_key="space.id")
     space: Space = Relationship(back_populates="reports")
-    
+
     meta: Optional[dict] = Field(default=None, sa_column=Column(sqlalchemy.JSON))
 
     created_at: datetime = Field(default_factory=_utcnow)
@@ -168,6 +178,7 @@ class Report(SQLModel, table=True):
 
 
 # --- Human Discussions ---
+
 
 class Comment(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
@@ -187,6 +198,7 @@ class Comment(SQLModel, table=True):
 
 # --- Human Curation ---
 
+
 class Upvote(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
     value: int = Field(default=1)  # 1 for upvote, -1 for downvote
@@ -202,10 +214,15 @@ class Upvote(SQLModel, table=True):
 
 # --- Social Interactions ---
 
+
 class Reaction(SQLModel, table=True):
     __table_args__ = (
-        sqlalchemy.UniqueConstraint("user_id", "comment_id", "emoji", name="uq_reaction_user_comment_emoji"),
-        sqlalchemy.UniqueConstraint("user_id", "report_id", "emoji", name="uq_reaction_user_report_emoji"),
+        sqlalchemy.UniqueConstraint(
+            "user_id", "comment_id", "emoji", name="uq_reaction_user_comment_emoji"
+        ),
+        sqlalchemy.UniqueConstraint(
+            "user_id", "report_id", "emoji", name="uq_reaction_user_report_emoji"
+        ),
     )
 
     id: str = Field(default_factory=_uuid, primary_key=True)
@@ -217,7 +234,9 @@ class Reaction(SQLModel, table=True):
     report_id: Optional[str] = Field(default=None, foreign_key="report.id", index=True)
     report: Optional[Report] = Relationship(back_populates="reactions")
 
-    comment_id: Optional[str] = Field(default=None, foreign_key="comment.id", index=True)
+    comment_id: Optional[str] = Field(
+        default=None, foreign_key="comment.id", index=True
+    )
     comment: Optional[Comment] = Relationship(back_populates="reactions")
 
     created_at: datetime = Field(default_factory=_utcnow)
@@ -232,7 +251,9 @@ class Mention(SQLModel, table=True):
     report_id: Optional[str] = Field(default=None, foreign_key="report.id", index=True)
     report: Optional[Report] = Relationship(back_populates="mentions")
 
-    comment_id: Optional[str] = Field(default=None, foreign_key="comment.id", index=True)
+    comment_id: Optional[str] = Field(
+        default=None, foreign_key="comment.id", index=True
+    )
     comment: Optional[Comment] = Relationship(back_populates="mentions")
 
     created_at: datetime = Field(default_factory=_utcnow)
@@ -250,6 +271,7 @@ class Notification(SQLModel, table=True):
 
 
 # --- Canonical Tags ---
+
 
 class Tag(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
@@ -282,6 +304,7 @@ class TagAlias(SQLModel, table=True):
 
 # --- Notification Preferences ---
 
+
 class NotificationPreference(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
     user_id: str = Field(foreign_key="user.id", index=True)
@@ -290,10 +313,10 @@ class NotificationPreference(SQLModel, table=True):
     channel: str  # "email", "slack"
     enabled: bool = Field(default=True)
     webhook_url: Optional[str] = None  # Primarily for Slack
-    
+
     # JSON list of event types this preference applies to
     # e.g. ["report_published", "comment_received"]
     events: Optional[dict] = Field(default=None, sa_column=Column(sqlalchemy.JSON))
-    
+
     created_at: datetime = Field(default_factory=_utcnow)
     updated_at: datetime = Field(default_factory=_utcnow)

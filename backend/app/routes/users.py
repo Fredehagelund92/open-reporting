@@ -12,12 +12,15 @@ router = APIRouter(prefix="/api/v1/users", tags=["Users"])
 
 # --- Schemas ---
 
+
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = None
     avatar_url: Optional[str] = None
 
+
 class UserRoleUpdate(BaseModel):
     role: str
+
 
 class UserProfilePublic(BaseModel):
     id: str
@@ -29,24 +32,26 @@ class UserProfilePublic(BaseModel):
     provider: str
     is_active: bool
 
+
 # --- Routes ---
+
 
 @router.patch("/me", response_model=UserProfilePublic)
 def update_my_profile(
-    body: UserProfileUpdate, 
+    body: UserProfileUpdate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Update profile settings for the authenticated user."""
     if body.name is not None:
         current_user.name = body.name
     if body.avatar_url is not None:
         current_user.avatar_url = body.avatar_url
-        
+
     session.add(current_user)
     session.commit()
     session.refresh(current_user)
-    
+
     return UserProfilePublic(
         id=current_user.id,
         name=current_user.name,
@@ -55,32 +60,36 @@ def update_my_profile(
         avatar_url=current_user.avatar_url,
         provider=current_user.provider,
         is_active=current_user.is_active,
-        created_at=current_user.created_at
+        created_at=current_user.created_at,
     )
+
 
 @router.post("/me/avatar", response_model=UserProfilePublic)
 async def upload_avatar(
     request: Request,
     file: UploadFile = File(...),
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Upload a new avatar logic."""
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file uploaded")
-        
+
     from app.core.storage import upload_file
+
     public_url = await upload_file(file, request=request, folder="avatars")
-    
+
     if not public_url:
-        raise HTTPException(status_code=500, detail="Storage is not configured correctly on the server")
-        
+        raise HTTPException(
+            status_code=500, detail="Storage is not configured correctly on the server"
+        )
+
     current_user.avatar_url = public_url
-    
+
     session.add(current_user)
     session.commit()
     session.refresh(current_user)
-    
+
     return UserProfilePublic(
         id=current_user.id,
         name=current_user.name,
@@ -89,100 +98,125 @@ async def upload_avatar(
         avatar_url=current_user.avatar_url,
         provider=current_user.provider,
         is_active=current_user.is_active,
-        created_at=current_user.created_at
+        created_at=current_user.created_at,
     )
+
 
 @router.get("/", response_model=List[UserProfilePublic])
 def list_users(
-    session: Session = Depends(get_session),
-    current_user: User = Depends(require_admin)
+    session: Session = Depends(get_session), current_user: User = Depends(require_admin)
 ):
     """List all registered users (Admin only)."""
     users = session.exec(select(User)).all()
     return [
         UserProfilePublic(
-            id=u.id, name=u.name, email=u.email, 
-            role=u.role, created_at=u.created_at, avatar_url=u.avatar_url, 
-            provider=u.provider, is_active=u.is_active
-        ) 
+            id=u.id,
+            name=u.name,
+            email=u.email,
+            role=u.role,
+            created_at=u.created_at,
+            avatar_url=u.avatar_url,
+            provider=u.provider,
+            is_active=u.is_active,
+        )
         for u in users
     ]
+
 
 @router.get("/search", response_model=List[UserProfilePublic])
 def search_users(
     q: str,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Search users by name or email (for inviting to spaces)."""
-    query = select(User).where(or_(
-        User.name.icontains(q),
-        User.email.icontains(q)
-    )).limit(10)
-    
+    query = (
+        select(User)
+        .where(or_(User.name.icontains(q), User.email.icontains(q)))
+        .limit(10)
+    )
+
     users = session.exec(query).all()
     return [
         UserProfilePublic(
-            id=u.id, name=u.name, email=u.email, 
-            role=u.role, created_at=u.created_at, avatar_url=u.avatar_url, 
-            provider=u.provider, is_active=u.is_active
-        ) 
+            id=u.id,
+            name=u.name,
+            email=u.email,
+            role=u.role,
+            created_at=u.created_at,
+            avatar_url=u.avatar_url,
+            provider=u.provider,
+            is_active=u.is_active,
+        )
         for u in users
     ]
+
 
 @router.patch("/{user_id}/role", response_model=UserProfilePublic)
 def update_user_role(
     user_id: str,
     body: UserRoleUpdate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
 ):
     """Update a user's role (Admin only)."""
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-        
+
     if body.role not in ["USER", "ADMIN"]:
         raise HTTPException(status_code=400, detail="Invalid role specified")
-        
+
     user.role = body.role
     session.add(user)
     session.commit()
     session.refresh(user)
-    
+
     return UserProfilePublic(
-        id=user.id, name=user.name, email=user.email, 
-        role=user.role, created_at=user.created_at, 
-        avatar_url=user.avatar_url, provider=user.provider,
-        is_active=user.is_active
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        role=user.role,
+        created_at=user.created_at,
+        avatar_url=user.avatar_url,
+        provider=user.provider,
+        is_active=user.is_active,
     )
+
 
 class UserStatusUpdate(BaseModel):
     is_active: bool
+
 
 @router.patch("/{user_id}/status", response_model=UserProfilePublic)
 def update_user_status(
     user_id: str,
     body: UserStatusUpdate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
 ):
     """Toggle a user's active status (Admin only - Banning)."""
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     if user.id == current_user.id:
-        raise HTTPException(status_code=400, detail="Cannot deactivate your own account.")
-        
+        raise HTTPException(
+            status_code=400, detail="Cannot deactivate your own account."
+        )
+
     user.is_active = body.is_active
     session.add(user)
     session.commit()
     session.refresh(user)
-    
+
     return UserProfilePublic(
-        id=user.id, name=user.name, email=user.email, 
-        role=user.role, created_at=user.created_at, 
-        avatar_url=user.avatar_url, provider=user.provider,
-        is_active=user.is_active
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        role=user.role,
+        created_at=user.created_at,
+        avatar_url=user.avatar_url,
+        provider=user.provider,
+        is_active=user.is_active,
     )

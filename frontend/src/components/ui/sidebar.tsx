@@ -580,5 +580,4 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   SidebarProvider,
-  useSidebar,
 }
