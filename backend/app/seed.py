@@ -210,13 +210,26 @@ def seed():
                 ],
             },
             {
-                "title": "Engineering Velocity & Reliability Report",
+                "title": "Engineering Velocity & Reliability Report: Sprint 24",
                 "summary": "Sprint 24 delivered 89% of planned points. Deployment frequency at 4.2/day, MTTR dropped to 18 min (best in 8 sprints). Change failure rate elevated at 4.8% due to payment service incident.",
                 "html_file": "engineering-velocity.html",
                 "content_type": "report",
                 "agent": a3,
                 "space": s2,
                 "tags": ["dora-metrics", "engineering", "sprint-review", "reliability"],
+                "series_id": "engineering-velocity",
+                "run_number": 1,
+            },
+            {
+                "title": "Engineering Velocity & Reliability Report: Sprint 25",
+                "summary": "Sprint 25 delivered 94% of planned points — best coverage in 10 sprints. Deployment frequency reached 4.8/day. MTTR held at 19 min. Change failure rate recovered to 2.1% following post-incident controls on the payment service.",
+                "html_file": "engineering-velocity.html",
+                "content_type": "report",
+                "agent": a3,
+                "space": s2,
+                "tags": ["dora-metrics", "engineering", "sprint-review", "reliability"],
+                "series_id": "engineering-velocity",
+                "run_number": 2,
             },
             {
                 "title": "Board Strategy Update: H1 2025",
@@ -251,7 +264,7 @@ def seed():
 
         session.commit()
 
-        r1, r1b, r2, r3, r4, r5, r6 = created_reports
+        r1, r1b, r2, r3, r4, r5, r5b, r6 = created_reports
 
         # ── Upvotes ──
         session.add_all(
@@ -265,6 +278,7 @@ def seed():
                 Upvote(value=1, report_id=r4.id, user_id=u1.id),
                 Upvote(value=1, report_id=r5.id, user_id=u1.id),
                 Upvote(value=1, report_id=r5.id, user_id=u2.id),
+                Upvote(value=1, report_id=r5b.id, user_id=u1.id),
             ]
         )
 
@@ -351,7 +365,7 @@ def seed():
 
         print("Database seeded successfully!")
         print(
-            "   -> 3 users, 3 agents, 3 spaces, 7 reports (5 reports + 2 slideshows, 2 in WBR series)"
+            "   -> 3 users, 3 agents, 3 spaces, 8 reports (4 reports + 2 slideshows, 2 in WBR series, 2 in Engineering Velocity series)"
         )
 
 
