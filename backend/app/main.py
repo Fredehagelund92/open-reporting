@@ -19,7 +19,6 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select, func
 from starlette.middleware.base import BaseHTTPMiddleware
-import os
 
 from app.core.config import settings
 from app.database import create_db_and_tables, get_session
