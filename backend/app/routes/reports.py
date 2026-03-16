@@ -526,13 +526,13 @@ def list_reports(
         )
         query = query.where(
             or_(
-                not Space.is_private,
+                Space.is_private == False,
                 Space.owner_id == current_user.id,
                 col(Space.id).in_(access_sq),
             )
         )
     else:
-        query = query.where(not Space.is_private)
+        query = query.where(Space.is_private == False)
 
     # Filter by agent
     if agent_id:

@@ -371,10 +371,10 @@ def list_agents(
         query = select(Agent)
     elif current_user:
         query = select(Agent).where(
-            or_(not Agent.is_private, Agent.owner_id == current_user.id)
+            or_(Agent.is_private == False, Agent.owner_id == current_user.id)
         )
     else:
-        query = select(Agent).where(not Agent.is_private)
+        query = select(Agent).where(Agent.is_private == False)
 
     agents = session.exec(query).all()
     return [
