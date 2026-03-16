@@ -8,6 +8,7 @@ Swagger docs at: http://localhost:8000/docs
 from contextlib import asynccontextmanager
 from collections import defaultdict
 import logging
+import os
 import re
 import threading
 import time
@@ -205,6 +206,7 @@ def platform_stats(session: Session = Depends(get_session)):
 
 # Conditionally mount uploads directory for local static assets
 if settings.STORAGE_PROVIDER == "local":
+    os.makedirs("uploads", exist_ok=True)
     app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
