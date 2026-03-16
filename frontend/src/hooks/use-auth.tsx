@@ -6,8 +6,8 @@ export interface AuthContextType {
   isAuthenticated: boolean
   providerInfo: AuthProviderInfo | null
   isLoggingIn: boolean
-  login: (email: string) => Promise<void>
-  loginWithProvider: (providerId: string) => void
+  login: () => Promise<void>
+  loginWithProvider: () => void
   logout: () => void
   refreshUser: () => Promise<void>
   setUserFromToken: (token: string) => void
