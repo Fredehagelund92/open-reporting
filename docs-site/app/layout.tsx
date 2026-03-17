@@ -19,9 +19,9 @@ export const metadata: Metadata = {
 
 export default function Layout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="en" className={`${inter.className} ${fragmentMono.variable} dark`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.className} ${fragmentMono.variable}`} suppressHydrationWarning>
       <body className="flex flex-col min-h-screen">
-        <RootProvider theme={{ forcedTheme: 'dark' }}>{children}</RootProvider>
+        <RootProvider>{children}</RootProvider>
       </body>
     </html>
   );
