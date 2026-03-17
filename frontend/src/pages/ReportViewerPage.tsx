@@ -60,8 +60,6 @@ export function ReportViewerPage() {
     enabled: !!slug
   })
 
-  // Comments would eventually come from an API, but keeping local state for now or fetching 
-  // if endpoint exists. (Assuming /reports/{id}/comments)
   const { data: comments = [] } = useQuery<ReportComment[]>({
     queryKey: ["comments", report?.id],
     queryFn: async () => {
@@ -103,9 +101,7 @@ export function ReportViewerPage() {
   const SUGGESTED_USERS = ["Alex PM", "Sara Engineer", "Admin", "ResearchBot"]
   const filteredMentions = SUGGESTED_USERS.filter(u => u.toLowerCase().includes(mentionQuery.toLowerCase()))
 
-  const handleToggleFullscreen = (val: boolean) => {
-    setIsFullscreen(val)
-  }
+  const handleToggleFullscreen = (val: boolean) => setIsFullscreen(val)
 
   const handleVote = async (direction: 1 | -1) => {
     if (!isAuthenticated || !report || isVoting) return
@@ -123,17 +119,27 @@ export function ReportViewerPage() {
   }
 
   if (loadingReport) {
-    return <div className="p-12 text-center text-muted-foreground">Loading...</div>
+    return (
+      <div className="flex flex-1 items-center justify-center p-12">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <div className="size-7 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+          <span className="font-mono text-[10px] uppercase tracking-widest">Loading report</span>
+        </div>
+      </div>
+    )
   }
 
   if (!report) {
     return (
       <div className="flex flex-1 items-center justify-center p-12">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-foreground mb-2">Report not found</h2>
-          <p className="text-muted-foreground mb-4">This report doesn't exist or has been removed.</p>
+        <div className="text-center space-y-3">
+          <div className="font-mono text-5xl font-bold text-muted-foreground/20">404</div>
+          <h2 className="text-xl font-semibold text-foreground">Report not found</h2>
+          <p className="text-sm text-muted-foreground">This report doesn't exist or has been removed.</p>
           <Link to="/">
-            <Button variant="outline"><ArrowLeft className="mr-2" /> Back to Home</Button>
+            <Button variant="outline" size="sm" className="mt-1">
+              <ArrowLeft className="mr-2 size-3.5" /> Back to Feed
+            </Button>
           </Link>
         </div>
       </div>
@@ -159,48 +165,50 @@ export function ReportViewerPage() {
     setShowMentions(false)
     setMentionIndex(-1)
   }
+
+  const score = currentScore ?? report.upvote_score ?? 0
+
   return (
-    <ScrollArea className="flex-1 bg-card">
-      <main className="max-w-6xl mx-auto p-3 sm:p-6 md:p-8">
+    <ScrollArea className="flex-1 bg-background">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-x-hidden">
+
+        {/* Back navigation */}
         {!isFullscreen && (
-          <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-6">
-            <ArrowLeft className="size-4" /> Back to Feed
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors mb-8 group"
+          >
+            <ArrowLeft className="size-3 group-hover:-translate-x-0.5 transition-transform" />
+            Feed
           </Link>
         )}
 
+        {/* Series Navigation */}
         {report.series_id && (
-          <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-5 px-2 sm:px-3 py-2 rounded-xl border border-border/60 bg-muted/30">
-            {/* Series label + name */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 select-none">Series</span>
-              <span className="font-mono text-xs font-semibold text-foreground bg-background border border-border/70 rounded-md px-2 py-0.5 leading-none">
-                {report.series_id}
-              </span>
-            </div>
+          <div className="mb-6 flex items-center gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60 shrink-0">Series</span>
+            <code className="font-mono text-xs font-semibold text-foreground bg-card border border-border/60 rounded px-1.5 py-0.5 shrink-0">
+              {report.series_id}
+            </code>
+            <div className="w-px h-3.5 bg-border/50 shrink-0" />
 
-            {/* Divider */}
-            <div className="w-px h-4 bg-border/50 shrink-0" />
-
-            {/* Prev */}
-            <div className="shrink-0">
-              {report.prev_slug ? (
-                <Link to={`/report/${report.prev_slug}`}>
-                  <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs text-muted-foreground hover:text-foreground">
-                    <ChevronLeft className="size-3.5" />
-                    <span className="tabular-nums">#{report.run_number! - 1}</span>
-                  </Button>
-                </Link>
-              ) : (
-                <Button variant="ghost" size="sm" className="h-7 px-2 opacity-30" disabled>
-                  <ChevronLeft className="size-3.5" />
+            {report.prev_slug ? (
+              <Link to={`/report/${report.prev_slug}`}>
+                <Button variant="ghost" size="sm" className="h-6 px-1.5 gap-0.5 text-xs text-muted-foreground hover:text-foreground">
+                  <ChevronLeft className="size-3" />
+                  <span className="tabular-nums font-mono">#{(report.run_number ?? 1) - 1}</span>
                 </Button>
-              )}
-            </div>
+              </Link>
+            ) : (
+              <Button variant="ghost" size="sm" className="h-6 px-1.5 opacity-25" disabled>
+                <ChevronLeft className="size-3" />
+              </Button>
+            )}
 
-            {/* Progress dots */}
-            <div className="flex items-center justify-center gap-1 flex-1">
-              {report.series_total && report.series_total <= 8
-                ? Array.from({ length: report.series_total }, (_, i) => {
+            <div className="flex items-center gap-1 flex-1 justify-center">
+              {report.series_total && report.series_total <= 12 ? (
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: report.series_total }, (_, i) => {
                     const runIdx = i + 1
                     const isCurrent = runIdx === report.run_number
                     const isPast = runIdx < (report.run_number ?? 0)
@@ -208,266 +216,209 @@ export function ReportViewerPage() {
                       <div
                         key={i}
                         className={cn(
-                          "rounded-full transition-all duration-200",
-                          isCurrent  ? "w-5 h-1.5 bg-primary"          :
-                          isPast     ? "w-1.5 h-1.5 bg-primary/40"      :
-                                       "w-1.5 h-1.5 bg-muted-foreground/20"
+                          "rounded-full transition-all duration-300",
+                          isCurrent ? "w-4 h-1.5 bg-primary" :
+                          isPast    ? "w-1.5 h-1.5 bg-primary/50" :
+                                      "w-1.5 h-1.5 bg-border"
                         )}
                       />
                     )
-                  })
-                : (
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    <span className="font-semibold text-foreground">{report.run_number ?? "?"}</span>
-                    <span className="text-muted-foreground/50"> / {report.series_total ?? "?"}</span>
-                  </span>
-                )
-              }
-            </div>
-
-            {/* Next */}
-            <div className="shrink-0">
-              {report.next_slug ? (
-                <Link to={`/report/${report.next_slug}`}>
-                  <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs text-muted-foreground hover:text-foreground">
-                    <span className="tabular-nums">#{report.run_number! + 1}</span>
-                    <ChevronRight className="size-3.5" />
-                  </Button>
-                </Link>
+                  })}
+                </div>
               ) : (
-                <Button variant="ghost" size="sm" className="h-7 px-2 opacity-30" disabled>
-                  <ChevronRight className="size-3.5" />
-                </Button>
+                <span className="font-mono text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">{report.run_number ?? "?"}</span>
+                  {" / "}{report.series_total ?? "?"}
+                </span>
               )}
             </div>
+
+            {report.next_slug ? (
+              <Link to={`/report/${report.next_slug}`}>
+                <Button variant="ghost" size="sm" className="h-6 px-1.5 gap-0.5 text-xs text-muted-foreground hover:text-foreground">
+                  <span className="tabular-nums font-mono">#{(report.run_number ?? 0) + 1}</span>
+                  <ChevronRight className="size-3" />
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="ghost" size="sm" className="h-6 px-1.5 opacity-25" disabled>
+                <ChevronRight className="size-3" />
+              </Button>
+            )}
           </div>
         )}
 
-        {/* Report Header */}
-        <div className="mb-4 sm:mb-6">
-
-          {/* Mobile metadata: minimal */}
-          <div className="flex sm:hidden items-center gap-1.5 text-xs text-muted-foreground mb-2 min-w-0">
-            <Link to={`/space/${(report.space || report.space_name || "").replace("o/", "")}`} className="font-semibold text-foreground hover:text-primary truncate max-w-[90px]">{report.space || report.space_name}</Link>
-            <span aria-hidden>•</span>
-            <Avatar className="size-3.5 shrink-0">
-              <AvatarFallback className="bg-primary/15 text-primary text-[9px]"><Bot className="size-2.5" /></AvatarFallback>
-            </Avatar>
-            <Link to={`/assistant/${report.agent || report.agent_name}`} className="font-medium text-foreground hover:underline truncate max-w-[90px]">{report.agent || report.agent_name}</Link>
-            <span aria-hidden>•</span>
-            <span className="shrink-0">{report.time || new Date(report.created_at).toLocaleDateString()}</span>
-          </div>
-
-          {/* Desktop metadata: full */}
-          <div className="hidden sm:flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground mb-3">
-            <Link to={`/space/${(report.space || report.space_name || "").replace("o/", "")}`} className="font-semibold text-foreground hover:text-primary">{report.space || report.space_name}</Link>
-            <span>•</span>
+        {/* ─── Editorial Header ─── */}
+        <header className="mb-5 pb-5 border-b border-border/60">
+          {/* Byline */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground mb-3">
+            <Link
+              to={`/space/${(report.space || report.space_name || "").replace("o/", "")}`}
+              className="font-mono font-semibold text-foreground/80 hover:text-primary transition-colors uppercase tracking-wide text-[10px]"
+            >
+              {report.space || report.space_name}
+            </Link>
+            <span className="text-border" aria-hidden>·</span>
             <Badge
               variant="secondary"
-              className="h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-medium"
+              className="h-4 px-1.5 py-0 font-mono text-[9px] uppercase tracking-widest bg-primary/10 text-primary border-primary/20"
             >
               {report.content_type === "slideshow" ? "Presentation" : "Report"}
             </Badge>
-            <span>•</span>
+            <span className="text-border" aria-hidden>·</span>
             <span className="flex items-center gap-1">
-              Posted by
-              <Avatar className="size-4 ml-1">
-                <AvatarFallback className="bg-primary/15 text-primary text-[10px]"><Bot className="size-3" /></AvatarFallback>
-              </Avatar>
-              <Link to={`/assistant/${report.agent || report.agent_name}`} className="font-medium text-foreground hover:underline">{report.agent || report.agent_name}</Link>
+              <Bot className="size-3 text-muted-foreground/60" />
+              <Link
+                to={`/assistant/${report.agent || report.agent_name}`}
+                className="font-medium hover:text-foreground transition-colors"
+              >
+                {report.agent || report.agent_name}
+              </Link>
             </span>
-            <span>•</span>
-            <span>{report.time || new Date(report.created_at).toLocaleDateString()}</span>
+            <span className="text-border" aria-hidden>·</span>
+            <time className="tabular-nums">
+              {report.time || new Date(report.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+            </time>
           </div>
 
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mb-3">{report.title}</h1>
+          {/* Title */}
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-tight mb-3">
+            {report.title}
+          </h1>
 
+          {/* Tags */}
           {report.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+            <div className="flex flex-wrap gap-1.5">
               {report.tags.map((tag) => (
                 <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
-                  <Badge variant="secondary" className="font-normal bg-muted text-muted-foreground">{tag}</Badge>
+                  <Badge variant="secondary" className="font-normal text-xs bg-muted hover:bg-secondary text-muted-foreground transition-colors cursor-pointer">
+                    {tag}
+                  </Badge>
                 </Link>
               ))}
             </div>
           )}
+        </header>
 
-          {/* Vote bar — mobile: icon-only compact */}
-          <div className="flex sm:hidden items-center gap-0.5 py-2 border-y">
+        {/* ─── Action Bar ─── */}
+        <div className="flex items-center gap-1.5 sm:gap-2 mb-7">
+          {/* Grouped vote control */}
+          <div className="flex items-center rounded-md border border-border/70 bg-card overflow-hidden shadow-sm">
             <Button
               variant="ghost"
               size="sm"
               disabled={!isAuthenticated || isVoting}
-              className={`h-9 px-2.5 hover:text-primary hover:bg-primary/10 ${vote === 1 ? "text-primary" : "text-muted-foreground"}`}
               onClick={() => handleVote(1)}
+              className={cn(
+                "h-8 px-2.5 rounded-none border-r border-border/60 transition-colors",
+                vote === 1
+                  ? "text-primary bg-primary/10 hover:bg-primary/15"
+                  : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+              )}
             >
-              <ArrowBigUp className="size-5" />
-              <span className={`font-bold text-sm ml-1 ${vote === 1 ? "text-primary" : vote === -1 ? "text-signal" : "text-foreground"}`}>
-                {currentScore ?? report.upvote_score ?? 0}
-              </span>
+              <ArrowBigUp className={cn("size-4", vote === 1 && "fill-primary")} />
             </Button>
+            <span className={cn(
+              "px-2.5 min-w-[2.25rem] text-center font-mono text-sm font-bold tabular-nums",
+              vote === 1 ? "text-primary" : vote === -1 ? "text-signal" : "text-foreground"
+            )}>
+              {score}
+            </span>
             <Button
               variant="ghost"
               size="sm"
               disabled={!isAuthenticated || isVoting}
-              className={`h-9 px-2.5 hover:text-signal hover:bg-signal/10 ${vote === -1 ? "text-signal" : "text-muted-foreground"}`}
               onClick={() => handleVote(-1)}
+              className={cn(
+                "h-8 px-2.5 rounded-none border-l border-border/60 transition-colors",
+                vote === -1
+                  ? "text-signal bg-signal/10 hover:bg-signal/15"
+                  : "text-muted-foreground hover:text-signal hover:bg-signal/10"
+              )}
             >
-              <ArrowBigDown className="size-5" />
+              <ArrowBigDown className={cn("size-4", vote === -1 && "fill-signal")} />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 px-2.5 hover:text-primary hover:bg-primary/10 text-muted-foreground"
-              onClick={() => handleToggleFullscreen(true)}
-            >
-              <Maximize2 className="size-5" />
-            </Button>
-            {isAuthenticated && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isSaving}
-                className="h-9 px-2.5 hover:text-primary hover:bg-primary/10 text-muted-foreground active:scale-95 transition-transform"
-                onClick={async () => {
-                  setIsSaving(true)
-                  setSaveMessage("")
-                  try {
-                    await api.post("/auth/me/favorites", { target_type: "report", target_id: report.id, label: report.title })
-                    window.dispatchEvent(new CustomEvent("refresh-sidebar"))
-                    setSaveMessage("Saved")
-                  } catch (err) {
-                    console.error("Save failed", err)
-                    setSaveMessage("Failed")
-                  } finally {
-                    setIsSaving(false)
-                  }
-                }}
-              >
-                <Bookmark className="size-5" />
-              </Button>
-            )}
-            {isAuthenticated && report.can_delete && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isDeleting}
-                className="h-9 px-2.5 hover:text-destructive hover:bg-destructive/10 text-muted-foreground"
-                onClick={async () => {
-                  if (!confirm("Delete this report permanently? This action cannot be undone.")) return
-                  setIsDeleting(true)
-                  try {
-                    await api.delete(`/reports/${report.id}`)
-                    await queryClient.invalidateQueries({ queryKey: ["reports"] })
-                    await queryClient.invalidateQueries({ queryKey: ["spaces"] })
-                    window.dispatchEvent(new CustomEvent("refresh-sidebar"))
-                    navigate(report.space_name ? `/space/${report.space_name.replace("o/", "")}` : "/")
-                  } catch (err) {
-                    console.error("Delete failed", err)
-                  } finally {
-                    setIsDeleting(false)
-                  }
-                }}
-              >
-                <Trash2 className="size-5" />
-              </Button>
-            )}
-            <span className="ml-auto flex items-center gap-1 text-sm text-muted-foreground pr-1">
-              <MessageSquare className="size-4" />
-              {comments.length}
-            </span>
           </div>
 
-          {/* Vote bar — desktop: labeled */}
-          <div className="hidden sm:flex items-center gap-2 py-2 border-y">
+          {/* Secondary actions */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+            onClick={() => handleToggleFullscreen(true)}
+          >
+            <Maximize2 className="size-3.5" />
+            <span className="hidden sm:inline text-xs">Expand</span>
+          </Button>
+
+          {isAuthenticated && (
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              disabled={!isAuthenticated || isVoting}
-              className={`h-8 hover:text-primary hover:bg-primary/10 ${vote === 1 ? "text-primary" : "text-muted-foreground"}`}
-              onClick={() => handleVote(1)}
+              disabled={isSaving}
+              className="h-8 gap-1.5 text-muted-foreground hover:text-foreground active:scale-95 transition-transform"
+              onClick={async () => {
+                setIsSaving(true)
+                setSaveMessage("")
+                try {
+                  await api.post("/auth/me/favorites", { target_type: "report", target_id: report.id, label: report.title })
+                  window.dispatchEvent(new CustomEvent("refresh-sidebar"))
+                  setSaveMessage("Saved")
+                } catch (err) {
+                  console.error("Save failed", err)
+                  setSaveMessage("Failed")
+                } finally {
+                  setIsSaving(false)
+                }
+              }}
             >
-              <ArrowBigUp className="size-5 mr-1" /> Upvote
+              <Bookmark className="size-3.5" />
+              <span className="hidden sm:inline text-xs">Save</span>
             </Button>
-            <span className={`text-sm font-bold ${vote === 1 ? "text-primary" : vote === -1 ? "text-signal" : "text-foreground"}`}>
-              {currentScore ?? report.upvote_score ?? 0}
+          )}
+
+          {isAuthenticated && report.can_delete && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isDeleting}
+              className="h-8 gap-1.5 text-muted-foreground hover:text-destructive hover:border-destructive/40"
+              onClick={async () => {
+                if (!confirm("Delete this report permanently? This action cannot be undone.")) return
+                setIsDeleting(true)
+                try {
+                  await api.delete(`/reports/${report.id}`)
+                  await queryClient.invalidateQueries({ queryKey: ["reports"] })
+                  await queryClient.invalidateQueries({ queryKey: ["spaces"] })
+                  window.dispatchEvent(new CustomEvent("refresh-sidebar"))
+                  navigate(report.space_name ? `/space/${report.space_name.replace("o/", "")}` : "/")
+                } catch (err) {
+                  console.error("Delete failed", err)
+                } finally {
+                  setIsDeleting(false)
+                }
+              }}
+            >
+              <Trash2 className="size-3.5" />
+              <span className="hidden sm:inline text-xs">Delete</span>
+            </Button>
+          )}
+
+          {saveMessage && (
+            <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest animate-in fade-in duration-200">
+              {saveMessage}
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={!isAuthenticated || isVoting}
-              className={`h-8 hover:text-signal hover:bg-signal/10 ${vote === -1 ? "text-signal" : "text-muted-foreground"}`}
-              onClick={() => handleVote(-1)}
-            >
-              <ArrowBigDown className="size-5 mr-1" /> Downvote
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 hover:text-primary hover:bg-primary/10 text-muted-foreground"
-              onClick={() => handleToggleFullscreen(true)}
-            >
-              <Maximize2 className="size-5 mr-1" /> Expand
-            </Button>
-            {isAuthenticated && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isSaving}
-                className="h-8 hover:text-primary hover:bg-primary/10 text-muted-foreground active:scale-95 transition-transform"
-                onClick={async () => {
-                  setIsSaving(true)
-                  setSaveMessage("")
-                  try {
-                    await api.post("/auth/me/favorites", { target_type: "report", target_id: report.id, label: report.title })
-                    window.dispatchEvent(new CustomEvent("refresh-sidebar"))
-                    setSaveMessage("Saved to bookmarks")
-                  } catch (err) {
-                    console.error("Save failed", err)
-                    setSaveMessage("Could not save report")
-                  } finally {
-                    setIsSaving(false)
-                  }
-                }}
-              >
-                <Bookmark className="size-5 mr-1" /> Save
-              </Button>
-            )}
-            {isAuthenticated && report.can_delete && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isDeleting}
-                className="h-8 hover:text-destructive hover:bg-destructive/10 text-muted-foreground"
-                onClick={async () => {
-                  if (!confirm("Delete this report permanently? This action cannot be undone.")) return
-                  setIsDeleting(true)
-                  try {
-                    await api.delete(`/reports/${report.id}`)
-                    await queryClient.invalidateQueries({ queryKey: ["reports"] })
-                    await queryClient.invalidateQueries({ queryKey: ["spaces"] })
-                    window.dispatchEvent(new CustomEvent("refresh-sidebar"))
-                    navigate(report.space_name ? `/space/${report.space_name.replace("o/", "")}` : "/")
-                  } catch (err) {
-                    console.error("Delete failed", err)
-                  } finally {
-                    setIsDeleting(false)
-                  }
-                }}
-              >
-                <Trash2 className="size-5 mr-1" /> Delete
-              </Button>
-            )}
-            {saveMessage && <span className="text-xs text-muted-foreground">{saveMessage}</span>}
-            <span className="ml-auto flex items-center text-sm text-muted-foreground">
-              <MessageSquare className="size-4 mr-1" />
-              {comments.length} Comments
-            </span>
+          )}
+
+          {/* Comment count */}
+          <div className="ml-auto flex items-center gap-1.5 text-muted-foreground">
+            <MessageSquare className="size-3.5" />
+            <span className="font-mono text-xs tabular-nums">{comments.length}</span>
+            <span className="hidden sm:inline text-xs">comments</span>
           </div>
         </div>
 
-
-        {/* Fullscreen Overlay */}
+        {/* ─── Fullscreen Overlay ─── */}
         {isFullscreen && (
           report.content_type === "slideshow" ? (
             <div className="fixed inset-0 z-[100] bg-foreground/90 backdrop-blur-sm overflow-hidden animate-in fade-in duration-300">
@@ -481,7 +432,6 @@ export function ReportViewerPage() {
                   <Minimize2 className="size-4" /> Exit Fullscreen
                 </Button>
               </div>
-
               <SlideshowViewer
                 htmlBody={report.html_body || ""}
                 isFullscreen={true}
@@ -500,7 +450,6 @@ export function ReportViewerPage() {
                   <Minimize2 className="size-4" /> Exit Fullscreen
                 </Button>
               </div>
-
               <Card className="mx-auto shadow-2xl border-border overflow-hidden bg-card max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0">
                 <CardContent className="p-12 md:p-24 overflow-x-auto">
                   <div
@@ -513,163 +462,166 @@ export function ReportViewerPage() {
                     }}
                   />
                 </CardContent>
-                <div className="bg-muted px-8 py-4 border-t flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
-                  <span></span>
-                </div>
               </Card>
             </div>
           )
         )}
 
-        {/* HTML Report Body - "Document Aesthetic" (Inline version) */}
-        <div className="mb-6 sm:mb-10 sm:bg-muted/50 sm:p-4 md:p-12 sm:rounded-xl sm:border sm:border-dashed sm:border-border -mx-3 sm:mx-0">
-          <Card className="mx-auto shadow-none sm:shadow-xl border-0 sm:border sm:border-border overflow-hidden bg-card sm:ring-1 sm:ring-slate-900/5 w-full sm:max-w-5xl rounded-none sm:rounded-xl">
-            <CardContent className={report.content_type === "slideshow" ? "p-0 sm:p-2 md:p-3 bg-transparent" : "p-3 sm:p-8 md:p-16 overflow-x-auto"}>
-              {report.content_type === "slideshow" ? (
-                <SlideshowViewer htmlBody={report.html_body || ""} />
-              ) : (
-                <div
-                  className="prose prose-slate prose-headings:text-foreground prose-headings:font-bold prose-p:text-muted-foreground prose-a:text-primary max-w-none [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_iframe]:max-w-full"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(report.html_body || "", { ADD_TAGS: ['canvas'], ADD_ATTR: ['style'] }) }}
-                />
-              )}
-            </CardContent>
-            {/* Document Footer/Branding */}
-            <div className="bg-muted px-4 sm:px-8 py-3 sm:py-4 border-t flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
-              <span></span>
+        {/* ─── Document Body ─── */}
+        <div className="mb-10 rounded-xl border border-border/60 overflow-hidden shadow-sm">
+          {/* Document chrome bar */}
+          <div className="flex items-center gap-3 px-4 py-2.5 bg-muted/40 border-b border-border/60">
+            <div className="flex gap-1.5 shrink-0">
+              <div className="size-2.5 rounded-full bg-border/80" />
+              <div className="size-2.5 rounded-full bg-border/80" />
+              <div className="size-2.5 rounded-full bg-border/80" />
             </div>
-          </Card>
+            <div className="flex items-center gap-2 min-w-0">
+              <Bot className="size-3 text-muted-foreground/50 shrink-0" />
+              <span className="font-mono text-[10px] text-muted-foreground/60 truncate">
+                {report.agent || report.agent_name}
+              </span>
+              <span className="text-border/60 shrink-0">·</span>
+              <span className="font-mono text-[10px] text-muted-foreground/50 uppercase tracking-widest shrink-0">
+                {report.content_type === "slideshow" ? "Presentation" : "Document"}
+              </span>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className={cn("bg-card", report.content_type !== "slideshow" && "p-4 sm:p-8 md:p-14")}>
+            {report.content_type === "slideshow" ? (
+              <SlideshowViewer htmlBody={report.html_body || ""} />
+            ) : (
+              <div
+                className="prose prose-slate prose-headings:text-foreground prose-headings:font-bold prose-p:text-muted-foreground prose-a:text-primary max-w-none [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_iframe]:max-w-full"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(report.html_body || "", { ADD_TAGS: ["canvas"], ADD_ATTR: ["style"] }) }}
+              />
+            )}
+          </div>
         </div>
 
+        {/* ─── Discussion ─── */}
+        <section className="pb-16">
+          <div className="flex items-center gap-2.5 mb-5">
+            <MessageSquare className="size-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-foreground">Discussion</h2>
+            <span className="font-mono text-[10px] text-muted-foreground bg-muted rounded px-1.5 py-0.5 tabular-nums">
+              {comments.length}
+            </span>
+          </div>
 
-        {/* Comment Section */}
-        <div className="pb-12">
-          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-            <MessageSquare className="size-5" />
-            Discussion ({comments.length})
-          </h2>
-
-          {/* Comment Input */}
+          {/* Comment input */}
           <div className="mb-6 relative">
             {isAuthenticated ? (
-              <Card>
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex gap-3">
-                    <Avatar className="hidden sm:flex size-8 shrink-0 mt-0.5">
-                      {user?.avatar && <AvatarImage src={user.avatar} alt={user?.name || "CurrentUser"} className="object-cover" />}
-                      <AvatarFallback className={`text-xs ${getAvatarColor(user?.name || user?.id)}`}>
-                        {user?.name ? getInitials(user.name) : <Bot className="size-4" />}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="relative">
-                        <textarea
-                          value={commentText}
-                          onChange={(e) => {
-                            const val = e.target.value
-                            setCommentText(val)
-                            const words = val.split(/\s/)
-                            const lastWord = words[words.length - 1]
-                            if (lastWord.startsWith("@")) {
-                              setMentionQuery(lastWord.slice(1))
-                              setShowMentions(true)
-                            } else {
-                              setShowMentions(false)
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                              if (showMentions && filteredMentions.length > 0) {
-                                e.preventDefault()
-                                const index = mentionIndex === -1 ? 0 : mentionIndex
-                                handleSelectMention(filteredMentions[index])
-                              } else {
-                                e.preventDefault()
-                                handleSubmitComment()
-                              }
-                              return
-                            }
-                            if (showMentions && filteredMentions.length > 0) {
-                              if (e.key === "ArrowDown") {
-                                e.preventDefault()
-                                setMentionIndex(prev => (prev + 1) % filteredMentions.length)
-                              } else if (e.key === "ArrowUp") {
-                                e.preventDefault()
-                                setMentionIndex(prev => (prev - 1 + filteredMentions.length) % filteredMentions.length)
-                              } else if (e.key === "Tab") {
-                                e.preventDefault()
-                                const index = mentionIndex === -1 ? 0 : mentionIndex
-                                handleSelectMention(filteredMentions[index])
-                              } else if (e.key === "Escape") {
-                                setShowMentions(false)
-                              }
-                            }
-                          }}
-                          placeholder="Add a comment... (use @ to tag users)"
-                          className="w-full min-h-[80px] bg-muted border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all block"
-                        />
-
-                        {showMentions && filteredMentions.length > 0 && (
-                          <div
-                            className="absolute left-0 w-56 mt-1 rounded-lg shadow-2xl z-[100] overflow-hidden bg-card border border-border animate-in fade-in slide-in-from-top-1 duration-150"
-                            style={{ top: "100%" }}
-                          >
-                            <div className="p-1.5 flex flex-col">
-                              <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b mb-1">Tag someone</div>
-                              {filteredMentions.map((user, i) => (
-                                <button
-                                  key={user}
-                                  className={`text-left px-2.5 py-2 text-sm rounded-md transition-colors flex items-center gap-2.5 ${i === mentionIndex ? "bg-primary/15 text-primary font-semibold" : "hover:bg-muted text-foreground"}`}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault()
-                                    handleSelectMention(user)
-                                  }}
-                                >
-                                  <div className="size-6 rounded-full bg-primary/15 flex items-center justify-center text-[11px] text-primary font-bold shrink-0">
-                                    {user.split(" ").map(n => n[0]).join("")}
-                                  </div>
-                                  <span>{user}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mt-2">
-                        <Button
-                          size="sm"
-                          className="w-full sm:w-auto sm:float-right bg-primary hover:bg-primary/90 text-white"
-                          onClick={handleSubmitComment}
-                          disabled={!commentText.trim()}
-                        >
-                          <Send className="size-4 mr-1" /> Comment
-                        </Button>
-                      </div>
+              <div className="flex gap-3">
+                <Avatar className="size-7 shrink-0 mt-1">
+                  {user?.avatar && <AvatarImage src={user.avatar} alt={user?.name || "You"} className="object-cover" />}
+                  <AvatarFallback className={cn("text-[10px]", getAvatarColor(user?.name || user?.id))}>
+                    {user?.name ? getInitials(user.name) : <Bot className="size-3" />}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="rounded-lg border border-border bg-card overflow-hidden focus-within:ring-1 focus-within:ring-primary/40 focus-within:border-primary/50 transition-all">
+                    <textarea
+                      value={commentText}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setCommentText(val)
+                        const words = val.split(/\s/)
+                        const lastWord = words[words.length - 1]
+                        if (lastWord.startsWith("@")) {
+                          setMentionQuery(lastWord.slice(1))
+                          setShowMentions(true)
+                        } else {
+                          setShowMentions(false)
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          if (showMentions && filteredMentions.length > 0) {
+                            e.preventDefault()
+                            handleSelectMention(filteredMentions[mentionIndex === -1 ? 0 : mentionIndex])
+                          } else {
+                            e.preventDefault()
+                            handleSubmitComment()
+                          }
+                          return
+                        }
+                        if (showMentions && filteredMentions.length > 0) {
+                          if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex(p => (p + 1) % filteredMentions.length) }
+                          else if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex(p => (p - 1 + filteredMentions.length) % filteredMentions.length) }
+                          else if (e.key === "Tab") { e.preventDefault(); handleSelectMention(filteredMentions[mentionIndex === -1 ? 0 : mentionIndex]) }
+                          else if (e.key === "Escape") { setShowMentions(false) }
+                        }
+                      }}
+                      placeholder="Add to the discussion… use @ to mention someone"
+                      className="w-full min-h-[84px] bg-transparent border-0 p-3 text-sm resize-none focus:outline-none placeholder:text-muted-foreground/40"
+                    />
+                    <div className="flex items-center justify-between px-3 py-2 border-t border-border/60 bg-muted/20">
+                      <span className="font-mono text-[10px] text-muted-foreground/40 uppercase tracking-widest hidden sm:block">
+                        Enter to submit · Shift+Enter for newline
+                      </span>
+                      <Button
+                        size="sm"
+                        className="h-7 px-3 bg-primary hover:bg-primary/90 text-primary-foreground text-xs gap-1.5 ml-auto"
+                        onClick={handleSubmitComment}
+                        disabled={!commentText.trim()}
+                      >
+                        <Send className="size-3" /> Post
+                      </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+
+                  {/* Mention dropdown */}
+                  {showMentions && filteredMentions.length > 0 && (
+                    <div className="absolute left-0 w-52 mt-1 rounded-lg shadow-2xl z-[100] overflow-hidden bg-card border border-border animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="p-1.5">
+                        <div className="px-2 py-1.5 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/60 mb-1">
+                          Tag someone
+                        </div>
+                        {filteredMentions.map((userName, i) => (
+                          <button
+                            key={userName}
+                            className={cn(
+                              "w-full text-left px-2.5 py-2 text-sm rounded-md transition-colors flex items-center gap-2",
+                              i === mentionIndex ? "bg-primary/15 text-primary font-semibold" : "hover:bg-muted text-foreground"
+                            )}
+                            onMouseDown={(e) => { e.preventDefault(); handleSelectMention(userName) }}
+                          >
+                            <div className="size-6 rounded-full bg-primary/15 flex items-center justify-center font-mono text-[10px] text-primary font-bold shrink-0">
+                              {userName.split(" ").map(n => n[0]).join("")}
+                            </div>
+                            {userName}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             ) : (
-              <Card>
-                <CardContent className="p-4 text-sm text-muted-foreground">
-                  Sign in to comment and vote on reports.
-                </CardContent>
-              </Card>
+              <div className="rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>{" "}
+                to comment and vote on reports.
+              </div>
             )}
           </div>
 
-          {/* Comment List */}
-          <div className="flex flex-col gap-4">
-            {comments.map((comment) => (
-              <CommentItem key={comment.id} comment={comment} reportId={report.id} />
-            ))}
-          </div>
-        </div>
+          {/* Comment list */}
+          {comments.length > 0 && (
+            <div className="divide-y divide-border/40">
+              {comments.map((comment) => (
+                <CommentItem key={comment.id} comment={comment} reportId={report.id} />
+              ))}
+            </div>
+          )}
+        </section>
       </main>
     </ScrollArea>
   )
 }
+
 function CommentItem({ comment, reportId }: { comment: ReportComment; reportId: string }) {
   const { isAuthenticated } = useAuth()
   const [reactions, setReactions] = useState<{ emoji: string; count: number; reacted: boolean }[]>(
@@ -706,32 +658,40 @@ function CommentItem({ comment, reportId }: { comment: ReportComment; reportId: 
   }
 
   return (
-    <div className="flex gap-3 group">
-      <Avatar className="size-8 shrink-0 mt-0.5">
+    <div className="flex gap-3 py-4 group">
+      <Avatar className="size-7 shrink-0 mt-0.5">
         {comment.author_avatar && <AvatarImage src={comment.author_avatar} alt={comment.author_name} className="object-cover" />}
-        <AvatarFallback className={`text-xs ${getAvatarColor(comment.author_name || comment.author?.name || comment.id)}`}>
+        <AvatarFallback className={cn("text-[10px]", getAvatarColor(comment.author_name || comment.author?.name || comment.id))}>
           {getInitials(comment.author_name || comment.author?.name || "Unknown")}
         </AvatarFallback>
       </Avatar>
-      <div className="flex-1">
-        <div className="flex items-center gap-2 mb-1">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-2 mb-1">
           <span className="text-sm font-semibold text-foreground">{comment.author_name}</span>
-          <span className="text-xs text-muted-foreground">{new Date(comment.created_at).toLocaleDateString()}</span>
+          <time className="font-mono text-[10px] text-muted-foreground/60 tabular-nums">
+            {new Date(comment.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+          </time>
         </div>
-        <MentionedText text={comment.text} className="text-sm text-foreground leading-relaxed" />
+        <MentionedText text={comment.text} className="text-sm text-foreground/90 leading-relaxed" />
 
-        <div className="flex items-center gap-2 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+        {/* Reactions */}
+        <div className="flex items-center gap-1.5 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
           {reactions.map(r => (
             <Button
               key={r.emoji}
               variant="outline"
               size="sm"
               disabled={!isAuthenticated || !!isReacting}
-              className={`h-6 px-1.5 rounded-full gap-1 transition-all text-[10px] ${r.reacted ? "bg-primary/10 border-primary/20 text-primary" : "hover:bg-muted text-muted-foreground"}`}
+              className={cn(
+                "h-6 px-1.5 rounded-full gap-1 text-[11px] transition-all",
+                r.reacted
+                  ? "bg-primary/10 border-primary/25 text-primary hover:bg-primary/15"
+                  : "hover:bg-muted text-muted-foreground border-border/60"
+              )}
               onClick={() => void toggleReaction(r.emoji)}
             >
               <span>{r.emoji}</span>
-              <span className="font-bold">{r.count > 0 ? r.count : ""}</span>
+              {r.count > 0 && <span className="font-mono font-bold">{r.count}</span>}
             </Button>
           ))}
 
@@ -741,7 +701,7 @@ function CommentItem({ comment, reportId }: { comment: ReportComment; reportId: 
                 variant="ghost"
                 size="icon"
                 disabled={!isAuthenticated || !!isReacting}
-                className="size-6 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10"
+                className="size-6 rounded-full text-muted-foreground/60 hover:text-primary hover:bg-primary/10"
               >
                 <Smile className="size-3.5" />
               </Button>
@@ -751,15 +711,14 @@ function CommentItem({ comment, reportId }: { comment: ReportComment; reportId: 
               align="start"
               className="grid grid-cols-3 gap-1 p-2 shadow-2xl border-border bg-card/95 backdrop-blur-sm min-w-[124px] animate-in zoom-in-95 duration-150"
             >
-              <div className="col-span-3 px-1 py-1 text-[9px] font-bold text-muted-foreground uppercase tracking-widest text-center border-b mb-1">Pick a reaction</div>
+              <div className="col-span-3 px-1 py-1 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest text-center border-b border-border/60 mb-1">
+                React
+              </div>
               {["👍", "❤️", "🚀", "💡", "💯", "✅", "🔥", "👀", "🤔"].map(emoji => (
                 <DropdownMenuItem
                   key={emoji}
                   className="p-0 focus:bg-transparent rounded-md overflow-hidden"
-                  onSelect={(e) => {
-                    e.preventDefault()
-                    void toggleReaction(emoji)
-                  }}
+                  onSelect={(e) => { e.preventDefault(); void toggleReaction(emoji) }}
                 >
                   <Button variant="ghost" size="icon" className="size-9 text-xl hover:bg-muted transition-colors">
                     {emoji}
