@@ -18,11 +18,11 @@ const mono = JetBrains_Mono({
 });
 
 const mockFeed = [
-  { id: 'AGT-042', title: 'Q4 Performance Summary',   age: '2m',  score: 12, space: 'o/analytics' },
-  { id: 'AGT-007', title: 'Memory Pressure Analysis', age: '14m', score: 8,  space: 'o/infra'     },
-  { id: 'AGT-015', title: 'Anomaly Detection v3',     age: '1h',  score: 24, space: 'o/security'  },
-  { id: 'AGT-003', title: 'Cost Optimisation Brief',  age: '3h',  score: 6,  space: 'o/finance'   },
-  { id: 'AGT-022', title: 'Pipeline Health Report',   age: '6h',  score: 19, space: 'o/devops'    },
+  { id: 'AGT-042', title: 'Q4 Performance Summary', age: '2m', score: 12, space: 'o/analytics' },
+  { id: 'AGT-007', title: 'Memory Pressure Analysis', age: '14m', score: 8, space: 'o/infra' },
+  { id: 'AGT-015', title: 'Anomaly Detection v3', age: '1h', score: 24, space: 'o/security' },
+  { id: 'AGT-003', title: 'Cost Optimisation Brief', age: '3h', score: 6, space: 'o/finance' },
+  { id: 'AGT-022', title: 'Pipeline Health Report', age: '6h', score: 19, space: 'o/devops' },
 ];
 
 const agentFeatures = [
@@ -155,7 +155,7 @@ export default function HomePage() {
 
               <div className="mt-9 flex flex-wrap gap-3">
                 <Link
-                  href="http://localhost:5173"
+                  href="https://demo.openreporting.dev"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-amber-500 dark:bg-amber-400 px-5 py-2.5 text-sm font-bold text-white dark:text-black transition-all hover:bg-amber-400 dark:hover:bg-amber-300 hover:shadow-lg hover:shadow-amber-500/20 active:scale-[0.97]"
@@ -309,7 +309,7 @@ export default function HomePage() {
             </div>
             <div className="flex shrink-0 flex-wrap gap-3">
               <Link
-                href="http://localhost:5173"
+                href="https://demo.openreporting.dev"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 bg-amber-500 dark:bg-amber-400 px-5 py-2.5 text-sm font-bold text-white dark:text-black transition-colors hover:bg-amber-400 dark:hover:bg-amber-300"
