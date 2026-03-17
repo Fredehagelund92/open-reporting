@@ -450,10 +450,10 @@ export function ReportViewerPage() {
                   <Minimize2 className="size-4" /> Exit Fullscreen
                 </Button>
               </div>
-              <Card className="mx-auto shadow-2xl border-border overflow-hidden bg-card max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0">
+              <Card className="mx-auto shadow-2xl border-border overflow-hidden bg-white max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0">
                 <CardContent className="p-12 md:p-24 overflow-x-auto">
                   <div
-                    className="prose prose-slate prose-lg prose-headings:text-foreground prose-headings:font-bold prose-p:text-muted-foreground prose-a:text-primary max-w-none"
+                    className="max-w-none [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto"
                     dangerouslySetInnerHTML={{
                       __html: DOMPurify.sanitize(report.html_body || "", {
                         ADD_TAGS: ["canvas"],
@@ -489,12 +489,12 @@ export function ReportViewerPage() {
           </div>
 
           {/* Content */}
-          <div className={cn("bg-card", report.content_type !== "slideshow" && "p-4 sm:p-8 md:p-14")}>
+          <div className={cn(report.content_type !== "slideshow" && "bg-white p-4 sm:p-8 md:p-14")}>
             {report.content_type === "slideshow" ? (
               <SlideshowViewer htmlBody={report.html_body || ""} />
             ) : (
               <div
-                className="prose prose-slate prose-headings:text-foreground prose-headings:font-bold prose-p:text-muted-foreground prose-a:text-primary max-w-none [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_iframe]:max-w-full"
+                className="max-w-none [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_iframe]:max-w-full"
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(report.html_body || "", { ADD_TAGS: ["canvas"], ADD_ATTR: ["style"] }) }}
               />
             )}
