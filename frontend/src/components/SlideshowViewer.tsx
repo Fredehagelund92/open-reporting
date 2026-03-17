@@ -69,6 +69,7 @@ export function SlideshowViewer({
   onRequestExitFullscreen,
 }: SlideshowViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [touchStartX, setTouchStartX] = useState<number | null>(null)
 
   const sanitizedHtml = useMemo(
     () =>
@@ -145,6 +146,20 @@ export function SlideshowViewer({
   const next = useCallback(() => goTo(currentIndex + 1), [currentIndex, goTo])
   const prev = useCallback(() => goTo(currentIndex - 1), [currentIndex, goTo])
 
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX)
+  }, [])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartX === null) return
+    const delta = touchStartX - e.changedTouches[0].clientX
+    if (Math.abs(delta) > 50) {
+      if (delta > 0) next()
+      else prev()
+    }
+    setTouchStartX(null)
+  }, [touchStartX, next, prev])
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "ArrowRight") {
@@ -166,16 +181,18 @@ export function SlideshowViewer({
   return (
     <div className="slideshow-viewer w-full">
       <div
-        className={`relative overflow-hidden border ${
+        className={`relative overflow-hidden ${
           isFullscreen
-            ? "h-[100vh] rounded-none border-slate-700/30 bg-slate-900/10"
-            : "rounded-xl border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800 shadow-xl ring-1 ring-slate-900/5 dark:ring-slate-100/5 p-3 md:p-4"
+            ? "border h-[100vh] rounded-none border-slate-700/30 bg-slate-900/10"
+            : "bg-white dark:bg-slate-900 sm:rounded-xl sm:border sm:border-slate-200 sm:dark:border-slate-800 sm:shadow-xl sm:ring-1 sm:ring-slate-900/5 sm:dark:ring-slate-100/5 sm:p-3 md:p-4"
         }`}
       >
-        <div className={`relative overflow-hidden ${isFullscreen ? "h-full" : "aspect-video rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950"}`}>
+        <div className={`relative overflow-hidden ${isFullscreen ? "h-full" : "aspect-[4/3] sm:aspect-video rounded-none sm:rounded-lg sm:border sm:border-slate-200 sm:dark:border-slate-800 bg-slate-50 dark:bg-slate-950"}`}>
           <div
             className="flex h-full transition-transform duration-400 ease-out"
             style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           >
             {slides.map((slide, index) => {
               const isDarkSlide = isDarkBackground(slide.bgColor)
@@ -187,19 +204,19 @@ export function SlideshowViewer({
                   className="h-full w-full shrink-0 overflow-y-auto"
                   style={{ backgroundColor: slide.bgColor }}
                 >
-                  <div className="mx-auto flex min-h-full w-full max-w-6xl items-center justify-center p-8 md:p-14 lg:p-16">
+                  <div className="mx-auto flex min-h-full w-full max-w-6xl items-center justify-center p-3 sm:p-8 md:p-14 lg:p-16">
                     <div
                       className={[
                         "w-full",
                         isTitleSlide ? "text-center" : "",
                         isDarkSlide ? "text-slate-100" : "text-slate-800",
-                        "[&_h1]:text-4xl md:[&_h1]:text-5xl [&_h1]:font-bold [&_h1]:tracking-tight [&_h1]:leading-tight [&_h1]:mb-5",
-                        "[&_h2]:text-3xl md:[&_h2]:text-4xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h2]:leading-tight [&_h2]:mb-4",
-                        "[&_h3]:text-xl md:[&_h3]:text-2xl [&_h3]:font-semibold [&_h3]:mb-3",
-                        "[&_p]:text-base md:[&_p]:text-lg [&_p]:leading-relaxed",
-                        "[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-3 [&_ul]:text-base md:[&_ul]:text-lg [&_ul]:leading-relaxed",
-                        "[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-3 [&_ol]:text-base md:[&_ol]:text-lg [&_ol]:leading-relaxed",
-                        "[&_table]:text-sm md:[&_table]:text-base",
+                        "[&_h1]:text-xl [&_h1]:sm:text-4xl [&_h1]:md:text-5xl [&_h1]:font-bold [&_h1]:tracking-tight [&_h1]:leading-tight [&_h1]:mb-2 [&_h1]:sm:mb-5",
+                        "[&_h2]:text-lg [&_h2]:sm:text-3xl [&_h2]:md:text-4xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h2]:leading-tight [&_h2]:mb-2 [&_h2]:sm:mb-4",
+                        "[&_h3]:text-base [&_h3]:sm:text-xl [&_h3]:md:text-2xl [&_h3]:font-semibold [&_h3]:mb-1.5 [&_h3]:sm:mb-3",
+                        "[&_p]:text-xs [&_p]:sm:text-base [&_p]:md:text-lg [&_p]:leading-relaxed",
+                        "[&_ul]:list-disc [&_ul]:pl-4 [&_ul]:sm:pl-6 [&_ul]:my-1.5 [&_ul]:sm:my-3 [&_ul]:text-xs [&_ul]:sm:text-base [&_ul]:md:text-lg [&_ul]:leading-relaxed",
+                        "[&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:sm:pl-6 [&_ol]:my-1.5 [&_ol]:sm:my-3 [&_ol]:text-xs [&_ol]:sm:text-base [&_ol]:md:text-lg [&_ol]:leading-relaxed",
+                        "[&_table]:text-xs [&_table]:sm:text-sm [&_table]:md:text-base",
                         isDarkSlide
                           ? "[&_h1]:text-white [&_h2]:text-white [&_h3]:text-slate-100 [&_p]:text-slate-200 [&_li]:text-slate-200"
                           : "[&_h1]:text-slate-900 [&_h2]:text-slate-900 [&_h3]:text-slate-800 [&_p]:text-slate-700 [&_li]:text-slate-700",
@@ -273,8 +290,11 @@ export function SlideshowViewer({
                 ))}
               </div>
             </div>
-            <span className={`${isFullscreen ? "text-slate-300" : "text-slate-500 dark:text-slate-400"} text-xs`}>
+            <span className={`hidden sm:inline ${isFullscreen ? "text-slate-300" : "text-slate-500 dark:text-slate-400"} text-xs`}>
               Use arrow keys to browse slides
+            </span>
+            <span className={`inline sm:hidden ${isFullscreen ? "text-slate-300" : "text-slate-500 dark:text-slate-400"} text-xs`}>
+              Swipe to navigate
             </span>
           </div>
         )}

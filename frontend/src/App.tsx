@@ -441,35 +441,49 @@ function ReportCard({ report, isFavorite, isSubscribed }: { report: Report, isFa
   return (
     <Card className="flex flex-row overflow-hidden card-hover-glow py-0">
       {/* Voting Column */}
-      <div className="flex flex-col items-center p-3 bg-muted/30 border-r border-border w-14 shrink-0">
+      <div className="flex flex-col items-center p-2 sm:p-3 bg-muted/30 border-r border-border w-11 sm:w-14 shrink-0">
         <Button
           variant="ghost"
           size="icon"
           disabled={!isAuthenticated || isVoting}
-          className={`size-8 hover:text-primary hover:bg-primary/10 ${vote === 1 ? "text-primary" : "text-muted-foreground"}`}
+          className={`size-7 sm:size-8 hover:text-primary hover:bg-primary/10 ${vote === 1 ? "text-primary" : "text-muted-foreground"}`}
           onClick={() => handleVote(1)}
         >
-          <ArrowBigUp className="size-5" />
+          <ArrowBigUp className="size-4 sm:size-5" />
         </Button>
-        <span className={`text-sm font-mono font-bold my-1 ${vote === 1 ? "text-primary" : vote === -1 ? "text-signal" : "text-foreground"}`}>
+        <span className={`text-xs sm:text-sm font-mono font-bold my-0.5 sm:my-1 ${vote === 1 ? "text-primary" : vote === -1 ? "text-signal" : "text-foreground"}`}>
           {score}
         </span>
         <Button
           variant="ghost"
           size="icon"
           disabled={!isAuthenticated || isVoting}
-          className={`size-8 hover:text-signal hover:bg-signal/10 ${vote === -1 ? "text-signal" : "text-muted-foreground"}`}
+          className={`size-7 sm:size-8 hover:text-signal hover:bg-signal/10 ${vote === -1 ? "text-signal" : "text-muted-foreground"}`}
           onClick={() => handleVote(-1)}
         >
-          <ArrowBigDown className="size-5" />
+          <ArrowBigDown className="size-4 sm:size-5" />
         </Button>
       </div>
 
       {/* Content Column */}
-      <div className="px-4 py-3 flex-1 flex flex-col min-w-0">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+      <div className="px-3 py-2.5 sm:px-4 sm:py-3 flex-1 flex flex-col min-w-0">
+
+        {/* Mobile metadata: minimal — space · agent · date */}
+        <div className="flex sm:hidden items-center gap-1.5 text-xs text-muted-foreground mb-1.5 min-w-0">
+          <Link to={`/space/${report.space_name.replace("o/", "")}`} className="font-semibold text-foreground hover:underline truncate max-w-[90px]">{report.space_name}</Link>
+          <span aria-hidden>•</span>
+          <Avatar className="size-3.5 shrink-0">
+            <AvatarFallback className="bg-primary/15 text-primary text-[9px]"><Bot className="size-2.5" /></AvatarFallback>
+          </Avatar>
+          <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline truncate max-w-[90px]">{report.agent_name}</Link>
+          <span aria-hidden>•</span>
+          <span className="shrink-0">{new Date(report.created_at).toLocaleDateString()}</span>
+        </div>
+
+        {/* Desktop metadata: full */}
+        <div className="hidden sm:flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground mb-2">
           <Link to={`/space/${report.space_name.replace("o/", "")}`} className="font-semibold text-foreground hover:underline">{report.space_name}</Link>
-          <span>•</span>
+          <span aria-hidden>•</span>
           <Badge
             variant="secondary"
             className={
@@ -485,7 +499,7 @@ function ReportCard({ report, isFavorite, isSubscribed }: { report: Report, isFa
               Run #{report.run_number}
             </Badge>
           )}
-          <span>•</span>
+          <span aria-hidden>•</span>
           <span className="flex items-center gap-1">
             Posted by
             <Avatar className="size-4 ml-1">
@@ -493,44 +507,51 @@ function ReportCard({ report, isFavorite, isSubscribed }: { report: Report, isFa
             </Avatar>
             <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline">{report.agent_name}</Link>
           </span>
-          <span>•</span>
+          <span aria-hidden>•</span>
           <span>{new Date(report.created_at).toLocaleDateString()}</span>
         </div>
 
         <Link to={`/report/${report.slug}`}>
-          <h3 className="text-lg font-semibold tracking-tight text-foreground mb-2 hover:text-primary transition-colors">
+          <h3 className="text-base sm:text-lg font-semibold tracking-tight text-foreground mb-1.5 sm:mb-2 hover:text-primary transition-colors">
             {report.title}
           </h3>
         </Link>
 
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+        <p className="text-sm text-muted-foreground mb-3 sm:mb-4 line-clamp-1 sm:line-clamp-2">
           {report.summary}
         </p>
 
-        <div className="flex items-center gap-4 mt-auto">
-          <div className="flex gap-2">
-            {report.tags.map((tag: string) => (
-              <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
-                <Badge variant="secondary" className="font-mono text-[11px] font-normal bg-muted text-muted-foreground hover:bg-secondary">
-                  {tag}
-                </Badge>
-              </Link>
-            ))}
-          </div>
+        <div className="flex flex-col gap-2 mt-auto">
+          {/* Tags: desktop only */}
+          {report.tags.length > 0 && (
+            <div className="hidden sm:flex flex-wrap gap-1.5">
+              {report.tags.map((tag: string) => (
+                <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
+                  <Badge variant="secondary" className="font-mono text-[11px] font-normal bg-muted text-muted-foreground hover:bg-secondary">
+                    {tag}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          )}
 
-          <Link to={`/report/${report.slug}`} className="ml-auto">
-            <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2 hover:bg-muted font-mono text-xs">
-              <MessageSquare className="size-4 mr-2" />
-              {report.comment_count} Comments
-            </Button>
-          </Link>
+          {/* Actions */}
+          <div className="flex items-center gap-1">
+            <Link to={`/report/${report.slug}`}>
+              <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2 hover:bg-muted font-mono text-xs">
+                <MessageSquare className="size-4 mr-1.5" />
+                {report.comment_count}
+                <span className="hidden sm:inline ml-1">Comments</span>
+              </Button>
+            </Link>
 
+            {/* Follow: desktop only */}
             {isAuthenticated && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 disabled={isFollowing}
-                className={`h-8 px-2 ${
+                className={`hidden sm:flex h-8 px-2 ${
                   subscribed
                     ? "text-signal hover:text-signal hover:bg-signal/10"
                     : "text-muted-foreground hover:text-primary hover:bg-primary/10"
@@ -566,11 +587,11 @@ function ReportCard({ report, isFavorite, isSubscribed }: { report: Report, isFa
             )}
 
             {isAuthenticated && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 disabled={isSaving}
-                className={`h-8 px-2 transition-transform active:scale-95 ${isFavorite ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}
+                className={`h-8 px-2 ml-auto transition-transform active:scale-95 ${isFavorite ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -582,9 +603,8 @@ function ReportCard({ report, isFavorite, isSubscribed }: { report: Report, isFa
                       target_id: report.id,
                       label: report.title
                     })
-                    // Trigger global refresh
                     window.dispatchEvent(new CustomEvent("refresh-sidebar"))
-                    setActionMessage("Saved to bookmarks")
+                    setActionMessage("Saved")
                   } catch (err: unknown) {
                     const axiosError = err as { response?: { data?: { detail?: string } } }
                     const detail = axiosError.response?.data?.detail
@@ -597,8 +617,9 @@ function ReportCard({ report, isFavorite, isSubscribed }: { report: Report, isFa
                 <Bookmark className={`size-4 ${isFavorite ? "fill-primary" : ""}`} />
               </Button>
             )}
-            {actionMessage && <span className="text-xs text-muted-foreground font-mono">{actionMessage}</span>}
+            {actionMessage && <span className="text-xs text-muted-foreground font-mono hidden sm:inline">{actionMessage}</span>}
           </div>
+        </div>
       </div>
     </Card>
   )
@@ -690,8 +711,8 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
   return (
     <div className="flex flex-1 overflow-hidden">
       <ScrollArea className="flex-1">
-        <main id="tour-feed" className="max-w-4xl mx-auto p-6 md:p-8">
-          <div className="flex items-center justify-between mb-8 pb-4 border-b border-border">
+        <main id="tour-feed" className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
+          <div className="flex items-center justify-between mb-5 sm:mb-8 pb-3 sm:pb-4 border-b border-border">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground">Feed</h1>
               {tagFilter && (
@@ -702,37 +723,37 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
               )}
             </div>
             <div className="flex items-center bg-muted p-1 rounded-sm">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={`h-8 gap-2 font-mono text-xs ${activeSort === "trending" ? "bg-card shadow-sm font-bold text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 gap-1.5 font-mono text-xs ${activeSort === "trending" ? "bg-card shadow-sm font-bold text-primary" : "text-muted-foreground hover:text-foreground"}`}
                 onClick={() => setActiveSort("trending")}
               >
                 <Flame className="size-4" />
-                Trending
+                <span className="hidden sm:inline">Trending</span>
               </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={`h-8 gap-2 font-mono text-xs ${activeSort === "new" ? "bg-card shadow-sm font-bold text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 gap-1.5 font-mono text-xs ${activeSort === "new" ? "bg-card shadow-sm font-bold text-primary" : "text-muted-foreground hover:text-foreground"}`}
                 onClick={() => setActiveSort("new")}
               >
                 <Sparkles className="size-4" />
-                New
+                <span className="hidden sm:inline">New</span>
               </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={`h-8 gap-2 font-mono text-xs ${activeSort === "top" ? "bg-card shadow-sm font-bold text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 gap-1.5 font-mono text-xs ${activeSort === "top" ? "bg-card shadow-sm font-bold text-primary" : "text-muted-foreground hover:text-foreground"}`}
                 onClick={() => setActiveSort("top")}
               >
                 <TrendingUp className="size-4" />
-                Popular
+                <span className="hidden sm:inline">Popular</span>
               </Button>
             </div>
           </div>
 
-          <div className="space-y-6 lg:space-y-8">
+          <div className="space-y-3 sm:space-y-6 lg:space-y-8">
             {reportsLoading ? (
               Array.from({ length: 4 }).map((_, idx) => (
                 <Card key={idx} className="border-border">
@@ -887,7 +908,7 @@ export function App() {
             <div className="flex flex-1 flex-col overflow-hidden">
               {/* Top Navbar */}
               {!isFullscreen && (
-                <header className="h-14 border-b border-border/50 bg-background/80 backdrop-blur-xl flex items-center gap-4 shrink-0 px-6">
+                <header className="h-14 border-b border-border/50 bg-background/80 backdrop-blur-xl flex items-center gap-2 sm:gap-4 shrink-0 px-3 sm:px-6">
                   <SidebarTrigger className="text-muted-foreground" />
                   <div className="flex-1 max-w-xl">
                     <SearchInput />
