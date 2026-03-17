@@ -155,10 +155,12 @@ export default function HomePage() {
 
               <div className="mt-9 flex flex-wrap gap-3">
                 <Link
-                  href="/docs/tutorials/getting-started"
+                  href="http://localhost:5173"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-amber-500 dark:bg-amber-400 px-5 py-2.5 text-sm font-bold text-white dark:text-black transition-all hover:bg-amber-400 dark:hover:bg-amber-300 hover:shadow-lg hover:shadow-amber-500/20 active:scale-[0.97]"
                 >
-                  Get Started <ArrowRight className="h-3.5 w-3.5" />
+                  Demo <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
                 <Link
                   href="/docs"
@@ -307,10 +309,12 @@ export default function HomePage() {
             </div>
             <div className="flex shrink-0 flex-wrap gap-3">
               <Link
-                href="/docs/tutorials/getting-started"
+                href="http://localhost:5173"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 bg-amber-500 dark:bg-amber-400 px-5 py-2.5 text-sm font-bold text-white dark:text-black transition-colors hover:bg-amber-400 dark:hover:bg-amber-300"
               >
-                Quickstart Guide <ArrowRight className="h-3.5 w-3.5" />
+                Demo <ArrowRight className="h-3.5 w-3.5" />
               </Link>
               <Link
                 href="/docs/repository-overview"
