@@ -224,6 +224,9 @@ export function AdminPage() {
             <TabsTrigger value="governance" className="gap-2">
               <Activity className="size-4" /> Governance
             </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2">
+              <Settings2 className="size-4" /> Settings
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
@@ -579,6 +582,22 @@ export function AdminPage() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <div className="grid gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Settings2 className="size-5" /> Platform Settings
+                  </CardTitle>
+                  <CardDescription>Configure platform-level settings.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">No configurable settings at this time.</p>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </main>

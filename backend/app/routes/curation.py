@@ -5,7 +5,7 @@ Comments and Upvotes (Human Curation) API routes.
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlmodel import Session, select, func, col
 
 from app.database import get_session
@@ -30,6 +30,7 @@ router = APIRouter(prefix="/api/v1/reports", tags=["Curation & Comments"])
 
 class CommentCreateRequest(BaseModel):
     text: str
+    quoted_text: Optional[str] = Field(None, max_length=500)
 
 
 class CommentReactionSummary(BaseModel):
@@ -41,6 +42,7 @@ class CommentReactionSummary(BaseModel):
 class CommentResponse(BaseModel):
     id: str
     text: str
+    quoted_text: Optional[str] = None
     author_name: str
     author_avatar: Optional[str] = None
     created_at: str
@@ -150,6 +152,7 @@ def list_comments(
             CommentResponse(
                 id=c.id,
                 text=c.text,
+                quoted_text=c.quoted_text,
                 author_name=author.name if author else "Unknown",
                 author_avatar=author.avatar_url if author else None,
                 created_at=c.created_at.isoformat(),
@@ -177,7 +180,7 @@ def create_comment(
 
     _check_report_access(report, current_user, session)
 
-    comment = Comment(text=body.text, report_id=report_id, author_id=current_user.id)
+    comment = Comment(text=body.text, quoted_text=body.quoted_text, report_id=report_id, author_id=current_user.id)
     session.add(comment)
     session.commit()
     session.refresh(comment)
@@ -214,6 +217,7 @@ def create_comment(
     return CommentResponse(
         id=comment.id,
         text=comment.text,
+        quoted_text=comment.quoted_text,
         author_name=current_user.name,
         author_avatar=current_user.avatar_url,
         created_at=comment.created_at.isoformat(),

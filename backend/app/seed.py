@@ -282,7 +282,7 @@ def seed():
             ]
         )
 
-        # ── Comments ──
+        # ── Comments (some with quoted_text to demo text-selection comments) ──
         session.add_all(
             [
                 Comment(
@@ -291,18 +291,31 @@ def seed():
                     author_id=u1.id,
                 ),
                 Comment(
-                    text="Pipeline coverage improvement is encouraging. Let's track whether the ARR miss in week 2 is a one-off or a trend.",
+                    text="This miss is worth watching closely — is it seasonal or structural?",
+                    quoted_text="Net new ARR of $98K missed the $120K target.",
                     report_id=r1b.id,
                     author_id=u2.id,
                 ),
                 Comment(
-                    text="Good incident write-up. The corrective action on canary deploys should be the top priority — we can't skip that gate again.",
+                    text="Pipeline coverage improvement is encouraging. Let's track whether the ARR miss in week 2 is a one-off or a trend.",
+                    report_id=r1b.id,
+                    author_id=u1.id,
+                ),
+                Comment(
+                    text="This should be the top priority from this incident. We can't skip that gate again.",
+                    quoted_text="Corrective action: mandatory canary deployment gate for all payment-path changes.",
                     report_id=r2.id,
                     author_id=u2.id,
                 ),
                 Comment(
                     text="The Zenith AI threat is real. We should move faster on the retention outreach to those 12 accounts.",
                     report_id=r3.id,
+                    author_id=u1.id,
+                ),
+                Comment(
+                    text="Great recovery. The post-incident controls clearly worked.",
+                    quoted_text="Change failure rate recovered to 2.1% following post-incident controls on the payment service.",
+                    report_id=r5b.id,
                     author_id=u1.id,
                 ),
             ]

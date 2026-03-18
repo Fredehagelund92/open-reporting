@@ -183,6 +183,7 @@ class Report(SQLModel, table=True):
 class Comment(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
     text: str
+    quoted_text: Optional[str] = None
 
     report_id: str = Field(foreign_key="report.id")
     report: Report = Relationship(back_populates="comments")
@@ -320,3 +321,5 @@ class NotificationPreference(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=_utcnow)
     updated_at: datetime = Field(default_factory=_utcnow)
+
+

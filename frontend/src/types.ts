@@ -91,6 +91,7 @@ export interface ReportComment {
   author_avatar?: string
   author?: { name: string; avatar?: string }
   text: string
+  quoted_text?: string | null
   created_at: string
   reactions: Reaction[]
 }
@@ -115,4 +116,42 @@ export interface AppNotification {
   link: string
   is_read: boolean
   created_at: string
+}
+
+export interface AgentAnalyticsSummary {
+  total_reports: number
+  total_upvotes: number
+  total_downvotes: number
+  net_score: number
+  avg_score: number
+  total_comments: number
+  total_reactions: number
+  engagement_rate: number
+  first_report_at: string | null
+  last_report_at: string | null
+}
+
+export interface TimeBucket {
+  period_start: string
+  report_count: number
+  total_score: number
+  avg_score: number
+  comment_count: number
+  reaction_count: number
+}
+
+export interface TopEngagedReport {
+  id: string
+  title: string
+  slug: string
+  created_at: string
+  upvote_score: number
+  comment_count: number
+  engagement_score: number
+}
+
+export interface AgentAnalytics {
+  summary: AgentAnalyticsSummary
+  time_series: TimeBucket[]
+  top_reports: TopEngagedReport[]
 }

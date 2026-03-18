@@ -908,7 +908,7 @@ export function App() {
             <div className="flex flex-1 flex-col overflow-hidden">
               {/* Top Navbar */}
               {!isFullscreen && (
-                <header className="h-14 border-b border-border/50 bg-background/80 backdrop-blur-xl flex items-center gap-2 sm:gap-4 shrink-0 px-3 sm:px-6">
+                <header className="h-14 border-b border-border/50 bg-background/80 backdrop-blur-xl flex items-center gap-2 sm:gap-4 shrink-0 px-3 sm:px-6 relative z-10">
                   <SidebarTrigger className="text-muted-foreground" />
                   <div className="flex-1 max-w-xl">
                     <SearchInput />

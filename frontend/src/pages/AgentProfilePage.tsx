@@ -20,11 +20,27 @@ import {
   Clock,
   MessageSquare,
   ArrowBigUp,
+  ArrowBigDown,
   Bell,
   Loader2,
+  TrendingUp,
+  Smile,
+  Trophy,
 } from "lucide-react"
 import { useState, useEffect, useCallback } from "react"
 import { api } from "@/lib/api"
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Line,
+  ComposedChart,
+} from "recharts"
+import type { AgentAnalytics } from "@/types"
 
 const STATUS_STYLES: Record<string, { label: string; color: string }> = {
   IDLE: { label: "Ready", color: "bg-muted text-muted-foreground" },
@@ -59,6 +75,7 @@ export function AgentProfilePage() {
 
   const [agent, setAgent] = useState<ProfileAgent | null>(null)
   const [reports, setReports] = useState<ProfileReport[]>([])
+  const [analytics, setAnalytics] = useState<AgentAnalytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [subscribing, setSubscribing] = useState(false)
@@ -69,17 +86,20 @@ export function AgentProfilePage() {
       // 1. Fetch agent profile
       const res = await api.get(`/agents/profile?name=${agentName}`)
       const agentData = res.data
-      
+
       if (agentData) {
         setAgent(agentData)
-        
-        // 2. Fetch reports for this agent
-        const reportsRes = await api.get(`/reports/?agent_name=${agentName}`)
-        setReports(reportsRes.data)
-        
-        // 3. Check subscription status
-        const subRes = await api.get(`/agents/${agentData.id}/subscription`)
-        setIsSubscribed(subRes.data.subscribed)
+
+        // 2. Fetch reports, analytics, and subscription in parallel
+        const [reportsRes, analyticsRes, subRes] = await Promise.allSettled([
+          api.get(`/reports/?agent_name=${agentName}`),
+          api.get(`/agents/${agentName}/analytics`),
+          api.get(`/agents/${agentData.id}/subscription`),
+        ])
+
+        if (reportsRes.status === "fulfilled") setReports(reportsRes.value.data)
+        if (analyticsRes.status === "fulfilled") setAnalytics(analyticsRes.value.data)
+        if (subRes.status === "fulfilled") setIsSubscribed(subRes.value.data.subscribed)
       }
     } catch (err) {
       console.error("Failed to fetch agent data", err)
@@ -133,6 +153,7 @@ export function AgentProfilePage() {
   }
 
   const statusStyle = STATUS_STYLES[agent.status] ?? STATUS_STYLES.IDLE
+  const hasReports = agent.report_count > 0
 
   return (
     <ScrollArea className="flex-1 bg-card">
@@ -144,65 +165,204 @@ export function AgentProfilePage() {
 
         {/* Agent Profile Header */}
         <Card className="mb-8 overflow-hidden">
-          <div className="h-32 sm:h-48 bg-gradient-to-r from-slate-800 via-slate-700 to-amber-600 relative">
+          <div className="h-20 sm:h-24 bg-gradient-to-r from-slate-800 via-slate-700 to-amber-600 relative">
             <div className="absolute inset-0 bg-black/10" />
           </div>
-          <CardContent className="relative pt-0 pb-10 px-6 flex flex-col items-center text-center">
-            <div className="relative -mt-16 sm:-mt-24 mb-6 z-20">
-              <Avatar className="size-32 sm:size-40 ring-[6px] ring-white dark:ring-slate-900 shadow-2xl transition-transform hover:scale-105 duration-300">
+          <CardContent className="relative pt-0 pb-5 px-5">
+            <div className="flex items-start gap-4 -mt-10 sm:-mt-12">
+              <Avatar className="size-20 sm:size-24 ring-4 ring-white dark:ring-slate-900 shadow-xl shrink-0">
                 <AvatarFallback className="bg-amber-50 dark:bg-slate-800 text-primary">
-                  <Bot className="size-16 sm:size-20" />
+                  <Bot className="size-9 sm:size-11" />
                 </AvatarFallback>
               </Avatar>
-            </div>
-            
-            <div className="max-w-2xl relative z-10">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
-                <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground">{agent.name}</h1>
-                <Badge className={`${statusStyle.color} px-3 py-1 font-bold text-xs uppercase tracking-wider`}>
-                  <Activity className="size-3.5 mr-1.5" />
-                  {statusStyle.label}
-                </Badge>
-              </div>
-              
-              <p className="text-lg text-muted-foreground mb-6 leading-relaxed">{agent.description}</p>
-              
-              {agent.owner_name && (
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50 text-xs font-medium text-muted-foreground mb-8">
-                  <span className="opacity-70">Maintained by</span>
-                  <span className="text-foreground font-bold hover:text-primary transition-colors cursor-pointer">@{agent.owner_name.toLowerCase().replace(/\s+/g, '')}</span>
-                </div>
-              )}
-              
-              <div className="flex flex-wrap justify-center gap-4">
-                <Button 
-                  variant={isSubscribed ? "secondary" : "default"}
-                  className="min-w-[140px] font-bold h-11 transition-all"
-                  onClick={toggleSubscription}
-                  disabled={subscribing}
-                >
-                  {subscribing ? (
-                    <Loader2 className="size-4 mr-2 animate-spin" />
-                  ) : (
-                    <Bell className={`size-4 mr-2 ${isSubscribed ? "fill-primary text-primary" : ""}`} />
-                  )}
-                  {isSubscribed ? "Unsubscribe" : "Subscribe"}
-                </Button>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-8 mt-6 text-sm text-muted-foreground border-t pt-4">
-              <div className="flex items-center gap-1.5">
-                <FileText className="size-4" />
-                <span className="font-semibold text-foreground">{agent.report_count || 0}</span> Reports Published
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Clock className="size-4" />
-                Registered {new Date(agent.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              <div className="pt-12 sm:pt-14 flex-1 min-w-0">
+                <div className="flex items-center gap-2.5 flex-wrap mb-1">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground truncate">{agent.name}</h1>
+                  <Badge className={`${statusStyle.color} px-2 py-0.5 font-bold text-[10px] uppercase tracking-wider`}>
+                    <Activity className="size-3 mr-1" />
+                    {statusStyle.label}
+                  </Badge>
+                </div>
+
+                {agent.description && (
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{agent.description}</p>
+                )}
+
+                <div className="flex items-center gap-4 flex-wrap text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <FileText className="size-3.5" />
+                    <span className="font-semibold text-foreground">{agent.report_count || 0}</span> reports
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="size-3.5" />
+                    {new Date(agent.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                  </span>
+                  {agent.owner_name && (
+                    <span className="flex items-center gap-1">
+                      <span className="opacity-70">by</span>
+                      <span className="text-foreground font-semibold hover:text-primary transition-colors cursor-pointer">@{agent.owner_name.toLowerCase().replace(/\s+/g, '')}</span>
+                    </span>
+                  )}
+                  <Button
+                    variant={isSubscribed ? "secondary" : "default"}
+                    size="sm"
+                    className="h-7 px-3 text-xs font-semibold ml-auto"
+                    onClick={toggleSubscription}
+                    disabled={subscribing}
+                  >
+                    {subscribing ? (
+                      <Loader2 className="size-3 mr-1.5 animate-spin" />
+                    ) : (
+                      <Bell className={`size-3 mr-1.5 ${isSubscribed ? "fill-primary text-primary" : ""}`} />
+                    )}
+                    {isSubscribed ? "Unsubscribe" : "Subscribe"}
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Performance Analytics */}
+        {hasReports && analytics && (
+          <>
+            {/* Summary Stat Cards */}
+            <h2 className="text-lg font-semibold text-foreground mb-4">Performance</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <FileText className="size-5 mx-auto mb-1.5 text-muted-foreground" />
+                  <div className="text-2xl font-bold text-foreground">{analytics.summary.total_reports}</div>
+                  <div className="text-xs text-muted-foreground">Total Reports</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <ArrowBigUp className="size-5 mx-auto mb-1.5 text-muted-foreground" />
+                  <div className="text-2xl font-bold text-foreground">
+                    {analytics.summary.net_score >= 0 ? "+" : ""}{analytics.summary.net_score}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Net Score</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <TrendingUp className="size-5 mx-auto mb-1.5 text-muted-foreground" />
+                  <div className="text-2xl font-bold text-foreground">{analytics.summary.avg_score}</div>
+                  <div className="text-xs text-muted-foreground">Avg Score</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <MessageSquare className="size-5 mx-auto mb-1.5 text-muted-foreground" />
+                  <div className="text-2xl font-bold text-foreground">{analytics.summary.total_comments}</div>
+                  <div className="text-xs text-muted-foreground">Comments</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <Smile className="size-5 mx-auto mb-1.5 text-muted-foreground" />
+                  <div className="text-2xl font-bold text-foreground">{analytics.summary.engagement_rate}</div>
+                  <div className="text-xs text-muted-foreground">Engagement Rate</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Time Series Chart */}
+            {analytics.time_series.length > 1 && (
+              <Card className="mb-6">
+                <CardContent className="p-4 sm:p-6">
+                  <h3 className="text-sm font-semibold text-foreground mb-4">Activity Over Time</h3>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={analytics.time_series}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                        <XAxis
+                          dataKey="period_start"
+                          tick={{ fontSize: 11 }}
+                          className="fill-muted-foreground"
+                        />
+                        <YAxis
+                          yAxisId="left"
+                          tick={{ fontSize: 11 }}
+                          className="fill-muted-foreground"
+                        />
+                        <YAxis
+                          yAxisId="right"
+                          orientation="right"
+                          tick={{ fontSize: 11 }}
+                          className="fill-muted-foreground"
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: "8px",
+                            fontSize: "12px",
+                          }}
+                          labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
+                          itemStyle={{ color: "hsl(var(--muted-foreground))" }}
+                        />
+                        <Area
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="report_count"
+                          name="Reports"
+                          fill="hsl(var(--primary) / 0.15)"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                        />
+                        <Line
+                          yAxisId="right"
+                          type="monotone"
+                          dataKey="avg_score"
+                          name="Avg Score"
+                          stroke="hsl(var(--chart-2, 220 70% 50%))"
+                          strokeWidth={2}
+                          dot={{ r: 3 }}
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Top Reports by Engagement */}
+            {analytics.top_reports.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Top Reports by Engagement</h2>
+                <div className="flex flex-col gap-3">
+                  {analytics.top_reports.map((report, index) => (
+                    <Link key={report.id} to={`/report/${report.slug}`} className="block group">
+                      <Card className="hover:border-border transition-colors p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary text-sm font-bold shrink-0 mt-0.5">
+                            {index === 0 ? <Trophy className="size-4" /> : `#${index + 1}`}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-1 truncate">
+                              {report.title}
+                            </h3>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <span>{new Date(report.created_at).toLocaleDateString()}</span>
+                              <span className="flex items-center gap-1"><ArrowBigUp className="size-3.5" /> {report.upvote_score}</span>
+                              <span className="flex items-center gap-1"><MessageSquare className="size-3.5" /> {report.comment_count}</span>
+                              <Badge variant="secondary" className="text-xs font-normal">
+                                {report.engagement_score} engagement
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
 
         {/* Report History */}
         <h2 className="text-lg font-semibold text-foreground mb-4">Recent Reports</h2>

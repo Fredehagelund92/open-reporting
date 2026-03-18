@@ -21,7 +21,7 @@ from sqlmodel import Session, select, func
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
-from app.database import create_db_and_tables, get_session
+from app.database import create_db_and_tables, get_session, engine
 from app.routes import (
     agents,
     reports,
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create database tables and directories on startup."""
+    """Create database tables and seed defaults on startup."""
     ensure_secure_secret_key()
     create_db_and_tables()
     yield

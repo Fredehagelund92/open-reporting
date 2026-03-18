@@ -6,12 +6,13 @@ Agents authenticate via API Key (Bearer token).
 import secrets
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Header, status
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, status
 from pydantic import BaseModel
-from sqlmodel import Session, select, or_
+from sqlmodel import Session, select, or_, func, col
+from sqlalchemy import case, literal_column
 
-from app.database import get_session
-from app.models import Agent, User, Subscription
+from app.database import get_session, db_url
+from app.models import Agent, Comment, Reaction, Report, Upvote, User, Subscription
 from app.auth.dependencies import get_current_user, get_current_user_optional
 
 router = APIRouter(prefix="/api/v1/agents", tags=["Agents"])
@@ -540,3 +541,257 @@ def unsubscribe_from_agent(
         session.commit()
 
     return {"status": "unsubscribed"}
+
+
+# --- Analytics ---
+
+
+class AgentAnalyticsSummary(BaseModel):
+    total_reports: int
+    total_upvotes: int
+    total_downvotes: int
+    net_score: int
+    avg_score: float
+    total_comments: int
+    total_reactions: int
+    engagement_rate: float
+    first_report_at: Optional[str] = None
+    last_report_at: Optional[str] = None
+
+
+class TimeBucket(BaseModel):
+    period_start: str
+    report_count: int
+    total_score: int
+    avg_score: float
+    comment_count: int
+    reaction_count: int
+
+
+class TopReport(BaseModel):
+    id: str
+    title: str
+    slug: str
+    created_at: str
+    upvote_score: int
+    comment_count: int
+    engagement_score: int
+
+
+class AgentAnalyticsResponse(BaseModel):
+    summary: AgentAnalyticsSummary
+    time_series: list[TimeBucket]
+    top_reports: list[TopReport]
+
+
+@router.get("/{agent_name}/analytics", response_model=AgentAnalyticsResponse)
+def get_agent_analytics(
+    agent_name: str,
+    period: str = Query("weekly", pattern="^(weekly|monthly)$"),
+    lookback: int = Query(12, ge=1, le=52),
+    session: Session = Depends(get_session),
+):
+    """Get performance analytics for an agent, aggregated from report-level curation data."""
+    agent = session.exec(select(Agent).where(Agent.name == agent_name)).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail=f"Agent '{agent_name}' not found.")
+
+    # --- 1. Summary ---
+    report_ids_subq = select(Report.id).where(Report.agent_id == agent.id)
+
+    total_reports = session.exec(
+        select(func.count()).select_from(Report).where(Report.agent_id == agent.id)
+    ).one()
+
+    upvote_counts = session.exec(
+        select(
+            func.coalesce(
+                func.sum(case((Upvote.value == 1, 1), else_=0)), 0
+            ),
+            func.coalesce(
+                func.sum(case((Upvote.value == -1, 1), else_=0)), 0
+            ),
+        )
+        .where(col(Upvote.report_id).in_(report_ids_subq))
+    ).one()
+    total_upvotes, total_downvotes = int(upvote_counts[0]), int(upvote_counts[1])
+    net_score = total_upvotes - total_downvotes
+
+    total_comments = session.exec(
+        select(func.count())
+        .select_from(Comment)
+        .where(col(Comment.report_id).in_(report_ids_subq))
+    ).one()
+
+    total_reactions = session.exec(
+        select(func.count())
+        .select_from(Reaction)
+        .where(col(Reaction.report_id).in_(report_ids_subq))
+    ).one()
+
+    date_range = session.exec(
+        select(func.min(Report.created_at), func.max(Report.created_at)).where(
+            Report.agent_id == agent.id
+        )
+    ).one()
+    first_report_at = date_range[0].isoformat() if date_range[0] else None
+    last_report_at = date_range[1].isoformat() if date_range[1] else None
+
+    avg_score = net_score / total_reports if total_reports > 0 else 0.0
+    engagement_rate = (
+        (total_comments + total_reactions) / total_reports if total_reports > 0 else 0.0
+    )
+
+    summary = AgentAnalyticsSummary(
+        total_reports=total_reports,
+        total_upvotes=total_upvotes,
+        total_downvotes=total_downvotes,
+        net_score=net_score,
+        avg_score=round(avg_score, 2),
+        total_comments=total_comments,
+        total_reactions=total_reactions,
+        engagement_rate=round(engagement_rate, 2),
+        first_report_at=first_report_at,
+        last_report_at=last_report_at,
+    )
+
+    # --- 2. Time series ---
+    is_sqlite = db_url.startswith("sqlite")
+    if is_sqlite:
+        if period == "weekly":
+            period_expr = func.strftime("%Y-%W", Report.created_at)
+        else:
+            period_expr = func.strftime("%Y-%m", Report.created_at)
+    else:
+        if period == "weekly":
+            period_expr = func.to_char(
+                func.date_trunc("week", Report.created_at), "YYYY-WW"
+            )
+        else:
+            period_expr = func.to_char(
+                func.date_trunc("month", Report.created_at), "YYYY-MM"
+            )
+
+    # Subqueries for per-report counts
+    upvote_score_subq = (
+        select(
+            Upvote.report_id,
+            func.coalesce(func.sum(Upvote.value), 0).label("score"),
+        )
+        .group_by(Upvote.report_id)
+        .subquery()
+    )
+
+    comment_count_subq = (
+        select(
+            Comment.report_id,
+            func.count().label("cnt"),
+        )
+        .group_by(Comment.report_id)
+        .subquery()
+    )
+
+    reaction_count_subq = (
+        select(
+            Reaction.report_id,
+            func.count().label("cnt"),
+        )
+        .where(Reaction.report_id.isnot(None))
+        .group_by(Reaction.report_id)
+        .subquery()
+    )
+
+    ts_query = (
+        select(
+            period_expr.label("period_key"),
+            func.count(Report.id).label("report_count"),
+            func.coalesce(func.sum(upvote_score_subq.c.score), 0).label(
+                "total_score"
+            ),
+            func.coalesce(func.sum(comment_count_subq.c.cnt), 0).label(
+                "comment_count"
+            ),
+            func.coalesce(func.sum(reaction_count_subq.c.cnt), 0).label(
+                "reaction_count"
+            ),
+        )
+        .where(Report.agent_id == agent.id)
+        .outerjoin(upvote_score_subq, Report.id == upvote_score_subq.c.report_id)
+        .outerjoin(comment_count_subq, Report.id == comment_count_subq.c.report_id)
+        .outerjoin(reaction_count_subq, Report.id == reaction_count_subq.c.report_id)
+        .group_by(literal_column("period_key"))
+        .order_by(literal_column("period_key").desc())
+        .limit(lookback)
+    )
+
+    ts_rows = session.exec(ts_query).all()
+    time_series = [
+        TimeBucket(
+            period_start=row.period_key,
+            report_count=int(row.report_count),
+            total_score=int(row.total_score),
+            avg_score=round(int(row.total_score) / int(row.report_count), 2)
+            if int(row.report_count) > 0
+            else 0.0,
+            comment_count=int(row.comment_count),
+            reaction_count=int(row.reaction_count),
+        )
+        for row in reversed(ts_rows)
+    ]
+
+    # --- 3. Top reports ---
+    top_query = (
+        select(
+            Report.id,
+            Report.title,
+            Report.slug,
+            Report.created_at,
+            func.coalesce(func.sum(Upvote.value), 0).label("upvote_score"),
+            func.coalesce(
+                select(func.count())
+                .where(Comment.report_id == Report.id)
+                .correlate(Report)
+                .scalar_subquery(),
+                0,
+            ).label("comment_count"),
+        )
+        .where(Report.agent_id == agent.id)
+        .outerjoin(Upvote, Upvote.report_id == Report.id)
+        .group_by(Report.id, Report.title, Report.slug, Report.created_at)
+        .order_by(
+            (
+                func.coalesce(func.sum(Upvote.value), 0)
+                + func.coalesce(
+                    select(func.count())
+                    .where(Comment.report_id == Report.id)
+                    .correlate(Report)
+                    .scalar_subquery(),
+                    0,
+                )
+                * 2
+            ).desc()
+        )
+        .limit(5)
+    )
+
+    top_rows = session.exec(top_query).all()
+    top_reports = [
+        TopReport(
+            id=row.id,
+            title=row.title,
+            slug=row.slug,
+            created_at=row.created_at.isoformat()
+            if hasattr(row.created_at, "isoformat")
+            else str(row.created_at),
+            upvote_score=int(row.upvote_score),
+            comment_count=int(row.comment_count),
+            engagement_score=int(row.upvote_score) + int(row.comment_count) * 2,
+        )
+        for row in top_rows
+    ]
+
+    return AgentAnalyticsResponse(
+        summary=summary,
+        time_series=time_series,
+        top_reports=top_reports,
+    )

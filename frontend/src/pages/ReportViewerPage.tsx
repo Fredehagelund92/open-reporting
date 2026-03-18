@@ -3,7 +3,7 @@
  * URL: /report/:reportId
  */
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
 import {
@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getAvatarColor, getInitials } from "@/lib/user"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { MentionedText } from "@/components/MentionedText"
 import {
   ArrowBigUp,
@@ -30,6 +29,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  X,
+  Highlighter,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -69,6 +70,34 @@ export function ReportViewerPage() {
     enabled: !!report?.id
   })
 
+  // Ref for the report body wrapper (position: relative container for overlays)
+  const reportWrapperRef = useRef<HTMLDivElement>(null)
+  const commentTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const discussionRef = useRef<HTMLElement>(null)
+  const pendingQuoteRef = useRef<string>("")
+  const tooltipClickedRef = useRef(false)
+
+  // Text selection comment state
+  const [selectedQuote, setSelectedQuote] = useState<string | null>(null)
+  const selectedQuoteRef = useRef<string | null>(null)
+  // Keep a ref in sync so event-handler closures can read the latest value
+  useEffect(() => { selectedQuoteRef.current = selectedQuote }, [selectedQuote])
+
+  const [selectionTooltip, setSelectionTooltip] = useState<{
+    top: number
+    left: number
+  } | null>(null)
+
+  // Highlight overlays — absolutely positioned divs rendered by React
+  const [highlightRects, setHighlightRects] = useState<
+    { top: number; left: number; width: number; height: number }[]
+  >([])
+
+  const [showSelectHint, setShowSelectHint] = useState(() => {
+    try { return localStorage.getItem("or-select-hint-dismissed") !== "1" }
+    catch { return true }
+  })
+
   const [vote, setVote] = useState(0)
   const [commentText, setCommentText] = useState("")
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -85,6 +114,8 @@ export function ReportViewerPage() {
     if (!report) return
     setVote(report.user_vote ?? 0)
     setCurrentScore(report.upvote_score ?? 0)
+    setSelectedQuote(null)
+    setHighlightRects([])
   }, [report])
 
   useEffect(() => {
@@ -97,6 +128,115 @@ export function ReportViewerPage() {
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
   }, [report?.series_id, report?.prev_slug, report?.next_slug, navigate])
+
+  // Text selection → highlight overlays + floating "Comment" tooltip.
+  // Reads getClientRects() from the selection Range and renders React-owned
+  // overlay divs. Supports drag-select, double-click, and triple-click.
+  useEffect(() => {
+    const wrapper = reportWrapperRef.current
+    if (!wrapper || !isAuthenticated) return
+
+    /** Read the current selection and compute overlay rects + tooltip pos.
+     *  Returns null if there's no usable selection inside the wrapper. */
+    const readSelection = () => {
+      const sel = window.getSelection()
+      const text = sel?.toString().trim()
+      if (!text || text.length < 2 || !sel || sel.rangeCount === 0) return null
+
+      const range = sel.getRangeAt(0)
+      if (!wrapper.contains(range.commonAncestorContainer)) return null
+
+      const wrapperRect = wrapper.getBoundingClientRect()
+      const clientRects = range.getClientRects()
+      const rects: { top: number; left: number; width: number; height: number }[] = []
+      for (let i = 0; i < clientRects.length; i++) {
+        const r = clientRects[i]
+        if (r.width < 1) continue
+        rects.push({
+          top: r.top - wrapperRect.top,
+          left: r.left - wrapperRect.left,
+          width: r.width,
+          height: r.height,
+        })
+      }
+      if (rects.length === 0) return null
+
+      const firstRect = clientRects[0]
+      return {
+        text: text.slice(0, 500),
+        rects,
+        tooltip: { top: firstRect.top - 44, left: firstRect.left + firstRect.width / 2 },
+      }
+    }
+
+    const applySelection = (result: NonNullable<ReturnType<typeof readSelection>>) => {
+      pendingQuoteRef.current = result.text
+      setHighlightRects(result.rects)
+      setSelectionTooltip(result.tooltip)
+    }
+
+    const clearIfNoQuote = () => {
+      setSelectionTooltip(null)
+      pendingQuoteRef.current = ""
+      if (!selectedQuoteRef.current) setHighlightRects([])
+    }
+
+    const handleSelectionAttempt = () => {
+      // Try reading immediately — works for most selections
+      const result = readSelection()
+      if (result) {
+        applySelection(result)
+        return
+      }
+      // Retry once after a tick — catches fast drags & double-clicks
+      // where the browser hasn't finalised the selection at mouseup time
+      setTimeout(() => {
+        const retry = readSelection()
+        if (retry) applySelection(retry)
+        else clearIfNoQuote()
+      }, 10)
+    }
+
+    const handleMouseUp = (e: MouseEvent) => {
+      // Don't interfere with text selection in fullscreen mode
+      if (!wrapper.contains(e.target as Node)) return
+      const target = e.target as HTMLElement
+      if (target.closest("[data-selection-tooltip]")) return
+      if (tooltipClickedRef.current) {
+        tooltipClickedRef.current = false
+        return
+      }
+      handleSelectionAttempt()
+    }
+
+    const handleMouseDown = (e: MouseEvent) => {
+      // Don't interfere with text selection in fullscreen mode
+      if (!wrapper.contains(e.target as Node)) return
+      const target = e.target as HTMLElement
+      if (target.closest("[data-selection-tooltip]")) return
+      // Only clear tooltip; keep highlight rects until the next selection
+      // resolves (prevents flicker during double/triple-click sequences)
+      setSelectionTooltip(null)
+    }
+
+    // Double-click selects a word — handle it explicitly since the
+    // mouseup in a dblclick sequence fires before the word is selected.
+    const handleDblClick = () => {
+      setTimeout(() => {
+        const result = readSelection()
+        if (result) applySelection(result)
+      }, 0)
+    }
+
+    document.addEventListener("mouseup", handleMouseUp)
+    document.addEventListener("mousedown", handleMouseDown)
+    wrapper.addEventListener("dblclick", handleDblClick)
+    return () => {
+      document.removeEventListener("mouseup", handleMouseUp)
+      document.removeEventListener("mousedown", handleMouseDown)
+      wrapper.removeEventListener("dblclick", handleDblClick)
+    }
+  }, [report?.html_body, isAuthenticated])
 
   const SUGGESTED_USERS = ["Alex PM", "Sara Engineer", "Admin", "ResearchBot"]
   const filteredMentions = SUGGESTED_USERS.filter(u => u.toLowerCase().includes(mentionQuery.toLowerCase()))
@@ -149,8 +289,13 @@ export function ReportViewerPage() {
   const handleSubmitComment = async () => {
     if (!commentText.trim() || !report) return
     try {
-      await api.post(`/reports/${report.id}/comments`, { text: commentText.trim() })
+      await api.post(`/reports/${report.id}/comments`, {
+        text: commentText.trim(),
+        ...(selectedQuote ? { quoted_text: selectedQuote } : {}),
+      })
       setCommentText("")
+      setSelectedQuote(null)
+      setHighlightRects([])
       await queryClient.invalidateQueries({ queryKey: ["comments", report.id] })
       await queryClient.invalidateQueries({ queryKey: ["report", slug] })
     } catch (err) {
@@ -169,7 +314,7 @@ export function ReportViewerPage() {
   const score = currentScore ?? report.upvote_score ?? 0
 
   return (
-    <ScrollArea className="flex-1 bg-background">
+    <div className="flex-1 overflow-auto bg-background">
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-x-hidden">
 
         {/* Back navigation */}
@@ -467,6 +612,26 @@ export function ReportViewerPage() {
           )
         )}
 
+        {/* ─── Select-to-quote hint ─── */}
+        {isAuthenticated && showSelectHint && report.content_type !== "slideshow" && (
+          <div className="mb-3 flex items-center gap-2.5 px-3 py-2 rounded-lg bg-primary/[0.04] border border-primary/10 animate-in fade-in slide-in-from-top-1 duration-500">
+            <Highlighter className="size-3.5 text-primary/50 shrink-0" />
+            <span className="text-[12px] text-muted-foreground">
+              <span className="font-medium text-foreground/70">Select text</span> in the report to quote it in a comment
+            </span>
+            <button
+              onClick={() => {
+                setShowSelectHint(false)
+                try { localStorage.setItem("or-select-hint-dismissed", "1") } catch {}
+              }}
+              className="ml-auto shrink-0 p-0.5 rounded text-muted-foreground/30 hover:text-foreground/60 transition-colors"
+              aria-label="Dismiss hint"
+            >
+              <X className="size-3" />
+            </button>
+          </div>
+        )}
+
         {/* ─── Document Body ─── */}
         <div className="mb-10 rounded-xl border border-border/60 overflow-hidden shadow-sm">
           {/* Document chrome bar */}
@@ -493,16 +658,32 @@ export function ReportViewerPage() {
             {report.content_type === "slideshow" ? (
               <SlideshowViewer htmlBody={report.html_body || ""} />
             ) : (
-              <div
-                className="max-w-none [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_iframe]:max-w-full"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(report.html_body || "", { ADD_TAGS: ["canvas"], ADD_ATTR: ["style"] }) }}
-              />
+              <div ref={reportWrapperRef} className="relative">
+                <div
+                  className="max-w-none [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_iframe]:max-w-full"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(report.html_body || "", { ADD_TAGS: ["canvas"], ADD_ATTR: ["style"] }) }}
+                />
+                {/* Highlight overlays — React-owned, positioned over selected text */}
+                {highlightRects.map((r, i) => (
+                  <div
+                    key={i}
+                    className="absolute pointer-events-none rounded-[2px]"
+                    style={{
+                      top: r.top,
+                      left: r.left,
+                      width: r.width,
+                      height: r.height,
+                      background: "linear-gradient(120deg, rgba(250,204,21,0.22) 0%, rgba(250,204,21,0.38) 100%)",
+                    }}
+                  />
+                ))}
+              </div>
             )}
           </div>
         </div>
 
         {/* ─── Discussion ─── */}
-        <section className="pb-16">
+        <section ref={discussionRef} className="pb-16 scroll-mt-6">
           <div className="flex items-center gap-2.5 mb-5">
             <MessageSquare className="size-4 text-muted-foreground" />
             <h2 className="text-sm font-semibold text-foreground">Discussion</h2>
@@ -523,7 +704,25 @@ export function ReportViewerPage() {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="rounded-lg border border-border bg-card overflow-hidden focus-within:ring-1 focus-within:ring-primary/40 focus-within:border-primary/50 transition-all">
+                    {/* Quoted text preview */}
+                    {selectedQuote && (
+                      <div className="mx-3 mt-3 mb-1 flex items-start gap-2 animate-in slide-in-from-top-2 fade-in duration-300">
+                        <div className="flex-1 min-w-0 relative border-l-[3px] border-primary/50 pl-3 py-1.5 rounded-r-md bg-gradient-to-r from-primary/[0.06] to-transparent">
+                          <p className="text-[13px] text-foreground/70 italic leading-relaxed line-clamp-3">
+                            {selectedQuote.length > 150 ? selectedQuote.slice(0, 150) + "\u2026" : selectedQuote}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => { setSelectedQuote(null); setHighlightRects([]) }}
+                          className="shrink-0 mt-1 p-1 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-muted/80 transition-all duration-150"
+                          aria-label="Remove quote"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    )}
                     <textarea
+                      ref={commentTextareaRef}
                       value={commentText}
                       onChange={(e) => {
                         const val = e.target.value
@@ -618,7 +817,53 @@ export function ReportViewerPage() {
           )}
         </section>
       </main>
-    </ScrollArea>
+
+      {/* ── Selection tooltip (fixed to viewport) ── */}
+      {selectionTooltip && (
+        <div
+          data-selection-tooltip
+          className="fixed z-[200] pointer-events-none animate-in fade-in zoom-in-95 duration-150"
+          style={{
+            top: selectionTooltip.top,
+            left: selectionTooltip.left,
+            transform: "translateX(-50%)",
+          }}
+        >
+          <button
+            className={cn(
+              "pointer-events-auto relative flex items-center gap-1.5",
+              "pl-2.5 pr-3 py-1.5 rounded-full",
+              "bg-foreground text-background text-[11px] font-semibold tracking-wide",
+              "shadow-[0_4px_20px_rgba(0,0,0,0.25)] ring-1 ring-white/10",
+              "hover:scale-105 active:scale-95 transition-transform duration-100",
+              // Downward caret via pseudo — pure CSS
+              "after:absolute after:left-1/2 after:-translate-x-1/2 after:top-full",
+              "after:border-[5px] after:border-transparent after:border-t-foreground",
+            )}
+            onMouseDown={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              tooltipClickedRef.current = true
+              const quote = pendingQuoteRef.current
+              if (quote) {
+                // <mark> highlight is already in the DOM from mouseup — commit
+                // the quote and scroll to the discussion section.
+                setSelectedQuote(quote)
+                setSelectionTooltip(null)
+                pendingQuoteRef.current = ""
+                setTimeout(() => {
+                  discussionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  setTimeout(() => commentTextareaRef.current?.focus(), 400)
+                }, 50)
+              }
+            }}
+          >
+            <MessageSquare className="size-3 opacity-70" />
+            Comment
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -672,6 +917,9 @@ function CommentItem({ comment, reportId }: { comment: ReportComment; reportId: 
             {new Date(comment.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
           </time>
         </div>
+        {comment.quoted_text && (
+          <QuotedTextBlock text={comment.quoted_text} />
+        )}
         <MentionedText text={comment.text} className="text-sm text-foreground/90 leading-relaxed" />
 
         {/* Reactions */}
@@ -730,5 +978,29 @@ function CommentItem({ comment, reportId }: { comment: ReportComment; reportId: 
         </div>
       </div>
     </div>
+  )
+}
+
+function QuotedTextBlock({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const isLong = text.length > 200
+
+  return (
+    <blockquote className="mb-2.5 border-l-[3px] border-primary/30 pl-3 py-1.5 rounded-r-md bg-gradient-to-r from-primary/[0.04] to-transparent">
+      <p className={cn(
+        "text-[13px] text-foreground/60 italic leading-relaxed",
+        !expanded && isLong && "line-clamp-2"
+      )}>
+        {text}
+      </p>
+      {isLong && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-[10px] text-primary/60 hover:text-primary font-semibold mt-1 tracking-wide uppercase transition-colors"
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      )}
+    </blockquote>
   )
 }
