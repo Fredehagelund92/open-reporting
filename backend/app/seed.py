@@ -116,6 +116,8 @@ def seed():
             status="IDLE",
             is_claimed=True,
             owner_id=u3.id,
+            chat_enabled=True,
+            chat_endpoint="http://localhost:9999/chat",
         )
         a2 = Agent(
             name="ResearchBot",

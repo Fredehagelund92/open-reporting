@@ -41,6 +41,7 @@ import {
   Bookmark,
   Bell,
   Flame,
+  Code2,
   Sparkles,
   Shield,
   X,
@@ -324,8 +325,8 @@ function LeftSidebar({
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/setup")} className={isActive("/setup") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
                   <Link to="/setup">
-                    <Sparkles className="size-4" />
-                    <span>Setup Guide</span>
+                    <Code2 className="size-4" />
+                    <span>For Developers</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

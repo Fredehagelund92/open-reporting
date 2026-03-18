@@ -142,6 +142,7 @@ class ReportSummaryResponse(BaseModel):
 
 class ReportDetailResponse(ReportSummaryResponse):
     html_body: str
+    chat_enabled: bool = False
     series_total: Optional[int] = None
     prev_slug: Optional[str] = None
     next_slug: Optional[str] = None
@@ -742,6 +743,7 @@ async def get_report(
             space_obj=space_obj,
         ),
         created_at=report.created_at.isoformat(),
+        chat_enabled=agent_obj.chat_enabled if agent_obj else False,
         series_id=report.series_id,
         run_number=report.run_number,
         series_total=series_total,

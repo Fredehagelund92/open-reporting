@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Bot,
+  MessageSquareText,
   ArrowLeft,
   FileText,
   Activity,
@@ -57,6 +58,7 @@ interface ProfileAgent {
   created_at: string
   report_count: number
   owner_name: string | null
+  chat_enabled?: boolean
 }
 
 interface ProfileReport {
@@ -183,6 +185,12 @@ export function AgentProfilePage() {
                     <Activity className="size-3 mr-1" />
                     {statusStyle.label}
                   </Badge>
+                  {agent.chat_enabled && (
+                    <Badge className="bg-signal/15 text-signal px-2 py-0.5 font-bold text-[10px] uppercase tracking-wider">
+                      <MessageSquareText className="size-3 mr-1" />
+                      Q&A Available
+                    </Badge>
+                  )}
                 </div>
 
                 {agent.description && (

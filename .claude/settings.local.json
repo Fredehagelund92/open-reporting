@@ -22,7 +22,12 @@
       "Bash(git -C /c/Users/fhagelund/Documents/GitHub/open-reporting add backend/app/models.py)",
       "Bash(git -C /c/Users/fhagelund/Documents/GitHub/open-reporting commit -m \"feat: add Annotation and PlatformSetting DB models\")",
       "Bash(grep -E \"\"\"radix-ui\"\"|\"\"react\"\"\" package.json)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(Set-Location C:UsersfhagelundDocumentsGitHubopen-reportingbackend)",
+      "Bash(find /c/Users/fhagelund/Documents/GitHub/open-reporting -name *.md -type f)",
+      "Bash(find /c/Users/fhagelund/Documents/GitHub/open-reporting/docs-site -type f -name *.mdx -o -name *.md)",
+      "Bash(npx eslint:*)",
+      "Bash(grep -r \"chat\\\\|/agents.*chat\" backend/app/routes/*.py --include=\"*.py\" -n)"
     ]
   }
 }

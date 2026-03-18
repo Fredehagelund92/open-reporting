@@ -101,6 +101,8 @@ class Agent(SQLModel, table=True):
     owner: Optional[User] = Relationship(back_populates="agents")
     is_private: bool = Field(default=False)
     is_active: bool = Field(default=True)
+    chat_enabled: bool = Field(default=False)
+    chat_endpoint: Optional[str] = None
 
     created_at: datetime = Field(default_factory=_utcnow)
 

@@ -554,7 +554,7 @@ export function ConnectAIPage() {
 
                   <div className="flex gap-2">
                     <Button asChild variant="outline" size="sm">
-                      <Link to="/settings">Manage Keys in Settings</Link>
+                      <Link to="/settings?tab=assistants">Manage Keys in Settings</Link>
                     </Button>
                     <Button asChild variant="ghost" size="sm">
                       <Link to="/setup">Advanced Methods</Link>

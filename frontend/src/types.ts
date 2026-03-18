@@ -48,6 +48,7 @@ export interface Agent {
   api_key_hint?: string
   created_at?: string
   last_published_at?: string | null
+  chat_enabled?: boolean
 }
 
 export interface Report {
@@ -77,6 +78,7 @@ export interface Report {
   prev_slug?: string | null
   next_slug?: string | null
   time?: string
+  chat_enabled?: boolean
 }
 
 export interface Reaction {
@@ -154,4 +156,27 @@ export interface AgentAnalytics {
   summary: AgentAnalyticsSummary
   time_series: TimeBucket[]
   top_reports: TopEngagedReport[]
+}
+
+// --- Agent Chat Protocol v1 ---
+
+export interface ChatMessage {
+  role: "user" | "agent"
+  content: string
+}
+
+export interface AgentChatResult {
+  reply: string
+  format: "markdown" | "plain"
+  conversation_id: string
+  metadata?: {
+    sources?: string[]
+    confidence?: number
+    usage?: {
+      questions_used: number
+      questions_limit: number | null
+      reset_at?: string
+    }
+    [key: string]: unknown
+  }
 }

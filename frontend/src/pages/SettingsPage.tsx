@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -7,18 +7,21 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Save, User as UserIcon, Upload, X, Bot, RefreshCw, Copy, Plus, FileText, CheckCircle2, AlertCircle, Bell, Mail } from "lucide-react"
+import { Loader2, Save, User as UserIcon, Upload, X, Bot, RefreshCw, Copy, Plus, FileText, CheckCircle2, AlertCircle, Bell, Mail, MoreHorizontal, ShieldCheck, KeyRound } from "lucide-react"
 import { getAvatarColor, getInitials } from "@/lib/user"
 import { api } from "@/lib/api"
 import { LoginButton } from "@/components/LoginButton"
 import { buildAgentConnectPrompt, normalizeApiBaseUrl } from "@/lib/agentPrompts"
 import { HelpTip } from "@/components/HelpTip"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { NotificationSettings } from "@/components/NotificationSettings"
 
 export function SettingsPage() {
   const { user, refreshUser } = useAuth()
-  
+  const [searchParams] = useSearchParams()
+  const defaultTab = searchParams.get("tab") === "assistants" ? "assistants" : searchParams.get("tab") === "notifications" ? "notifications" : "profile"
+
   // Local state for the form
   const [name, setName] = useState(user?.name || "")
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar || "")
@@ -88,7 +91,7 @@ export function SettingsPage() {
           <p className="text-muted-foreground text-sm mt-1">Manage your account settings and preferences.</p>
         </div>
 
-        <Tabs defaultValue="profile" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="profile" className="gap-2">
               <UserIcon className="size-4" /> Profile
@@ -367,151 +370,141 @@ function MyAgentsSection() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Bot className="size-5" /> My AI Assistants
-            </CardTitle>
-            <CardDescription className="mt-1">
-              Manage the AI assistants that publish reports on your behalf.
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-white gap-1.5">
-              <Link to="/connect?mode=reuse">
-                <Plus className="size-4" />
-                Setup Assistant
-              </Link>
-            </Button>
-          </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-foreground">My AI Assistants</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Manage connections and API keys for your assistants.
+          </p>
         </div>
-        <div className="rounded-md border border-primary/20 bg-primary/10 p-3 text-sm text-primary">
-          <p className="font-semibold mb-1">Returning user? Quick reconnect</p>
-          <ol className="list-decimal pl-4 space-y-1 text-xs">
-            <li>Click <strong>Copy Prompt</strong> on your AI assistant.</li>
-            <li>Paste it into your assistant chat (ChatGPT/Claude/Cursor).</li>
-            <li>Click <strong>Verify Key</strong> to confirm it works.</li>
-          </ol>
+        <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-white gap-1.5">
+          <Link to="/connect?mode=reuse">
+            <Plus className="size-4" />
+            New Assistant
+          </Link>
+        </Button>
+      </div>
+
+      {rotationNotice && (
+        <div className="rounded-md border border-signal/20 bg-signal/10 p-3 text-xs text-signal flex items-start gap-2">
+          <AlertCircle className="size-4 shrink-0 mt-0.5" />
+          <span>{rotationNotice}</span>
         </div>
-        {rotationNotice && (
-          <div className="rounded-md border border-signal/20 bg-signal/10 p-3 text-xs text-signal flex items-start gap-2">
-            <AlertCircle className="size-4 shrink-0 mt-0.5" />
-            <span>{rotationNotice}</span>
-          </div>
-        )}
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="size-6 text-muted-foreground animate-spin" />
-          </div>
-        ) : agents.length === 0 ? (
-          <div className="text-center py-8">
-            <Bot className="size-10 text-muted mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground mb-4">You haven&apos;t set up any assistants yet.</p>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="size-5 text-muted-foreground animate-spin" />
+        </div>
+      ) : agents.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="text-center py-10">
+            <Bot className="size-8 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground mb-4">No assistants yet.</p>
             <Button asChild variant="outline" size="sm">
               <Link to="/connect?mode=create" className="gap-2">
                 <Plus className="size-4" /> Setup Your First Assistant
               </Link>
             </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {agents.map((agent) => (
-              <div key={agent.id}>
-                <div className="flex items-center gap-4 p-4 rounded-lg border border-border bg-muted/50 hover:bg-muted transition-colors">
-                  <div className="size-10 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
-                    <Bot className="size-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-semibold text-foreground truncate">
-                        {agent.name}
-                      </span>
-                      <Badge
-                        className={`text-[10px] ${
-                          agent.status === "IDLE"
-                            ? "bg-signal/15 text-signal"
-                            : agent.status === "GENERATING"
-                            ? "bg-primary/15 text-primary"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {formatStatusLabel(agent.status)}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="font-mono inline-flex items-center gap-1.5">
-                        {revealedKey?.id === agent.id ? revealedKey.key : agent.api_key_hint}
-                        <HelpTip text="This masked key hint helps you identify which connection key this assistant is using." />
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <FileText className="size-3" /> {agent.report_count} reports
-                      </span>
-                      <span>
-                        Last publish:{" "}
-                        {agent.last_published_at
-                          ? new Date(agent.last_published_at).toLocaleDateString()
-                          : "Never"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-muted-foreground hover:text-primary"
-                      onClick={() => handleCopyPrompt(agent)}
-                    >
-                      <Copy className="size-3.5 mr-1" />
-                      {copiedId === agent.id ? "Copied!" : "Copy Prompt"}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {agents.map((agent) => (
+            <div key={agent.id} className="group rounded-lg border border-border bg-card hover:border-primary/30 transition-colors">
+              <div className="flex items-center gap-3 px-4 py-3">
+                {/* Status dot + Name */}
+                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                  <div
+                    className={`size-2 rounded-full shrink-0 ${
+                      agent.status === "IDLE"
+                        ? "bg-signal"
+                        : agent.status === "GENERATING"
+                        ? "bg-primary animate-pulse"
+                        : "bg-muted-foreground/30"
+                    }`}
+                    title={formatStatusLabel(agent.status)}
+                  />
+                  <span className="font-semibold text-sm text-foreground truncate">
+                    {agent.name}
+                  </span>
+                  <span className="text-xs text-muted-foreground font-mono hidden sm:inline">
+                    {revealedKey?.id === agent.id ? revealedKey.key : agent.api_key_hint}
+                  </span>
+                  <HelpTip text="Masked API key hint — use Copy Prompt or Verify to work with the full key." />
+                </div>
+
+                {/* Stats */}
+                <span className="text-xs text-muted-foreground hidden md:flex items-center gap-1 shrink-0">
+                  <FileText className="size-3" /> {agent.report_count}
+                </span>
+
+                {/* Primary action */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2.5 text-xs text-muted-foreground hover:text-primary shrink-0"
+                  onClick={() => handleCopyPrompt(agent)}
+                >
+                  <Copy className="size-3 mr-1.5" />
+                  {copiedId === agent.id ? "Copied!" : "Copy Prompt"}
+                </Button>
+
+                {/* Overflow menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground shrink-0">
+                      <MoreHorizontal className="size-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-muted-foreground hover:text-signal"
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
                       onClick={() => handleVerifyKey(agent)}
                       disabled={verifyState[agent.id]?.status === "running"}
+                      className="gap-2 text-xs"
                     >
                       {verifyState[agent.id]?.status === "running" ? (
                         <Loader2 className="size-3.5 animate-spin" />
                       ) : (
-                        <CheckCircle2 className="size-3.5 mr-1" />
+                        <ShieldCheck className="size-3.5" />
                       )}
                       Verify Key
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-muted-foreground hover:text-destructive"
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
                       onClick={() => handleRegenerate(agent.id)}
                       disabled={regeneratingId === agent.id}
+                      className="gap-2 text-xs text-destructive focus:text-destructive"
                     >
                       {regeneratingId === agent.id ? (
                         <Loader2 className="size-3.5 animate-spin" />
                       ) : (
-                        <RefreshCw className="size-3.5 mr-1" />
+                        <KeyRound className="size-3.5" />
                       )}
-                      New Key
-                    </Button>
-                  </div>
-                </div>
-                {verifyState[agent.id]?.text && (
-                  <p
-                    className={`text-xs mt-1 ml-14 ${
-                      verifyState[agent.id]?.status === "success" ? "text-signal" : "text-destructive"
-                    }`}
-                  >
-                    {verifyState[agent.id]?.text}
-                  </p>
-                )}
+                      Regenerate Key
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+
+              {/* Verify feedback — shown inline below the row */}
+              {verifyState[agent.id]?.text && (
+                <div className={`px-4 pb-3 -mt-1 text-xs flex items-center gap-1.5 ${
+                  verifyState[agent.id]?.status === "success" ? "text-signal" : "text-destructive"
+                }`}>
+                  {verifyState[agent.id]?.status === "success" ? (
+                    <CheckCircle2 className="size-3" />
+                  ) : (
+                    <AlertCircle className="size-3" />
+                  )}
+                  {verifyState[agent.id]?.text}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

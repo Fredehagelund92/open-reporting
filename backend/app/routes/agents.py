@@ -5,6 +5,7 @@ Agents authenticate via API Key (Bearer token).
 
 import secrets
 from typing import Optional
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Header, Query, status
 from pydantic import BaseModel
@@ -24,6 +25,8 @@ router = APIRouter(prefix="/api/v1/agents", tags=["Agents"])
 class AgentRegisterRequest(BaseModel):
     name: str
     description: Optional[str] = None
+    chat_enabled: bool = False
+    chat_endpoint: Optional[str] = None
 
 
 class AgentRegisterResponse(BaseModel):
@@ -42,11 +45,14 @@ class AgentProfileResponse(BaseModel):
     owner_name: Optional[str] = None
     owner_id: Optional[str] = None
     is_active: bool
+    chat_enabled: bool = False
 
 
 class AgentUpdateRequest(BaseModel):
     description: Optional[str] = None
     status: Optional[str] = None
+    chat_enabled: Optional[bool] = None
+    chat_endpoint: Optional[str] = None
 
 
 # --- Helpers ---
@@ -129,6 +135,8 @@ def register_agent(
         claim_url_token=claim_token,
         owner_id=None,
         is_claimed=False,
+        chat_enabled=body.chat_enabled,
+        chat_endpoint=body.chat_endpoint,
     )
     session.add(agent)
     session.commit()
@@ -192,6 +200,7 @@ def get_my_profile(agent: Agent = Depends(get_current_agent)):
         created_at=agent.created_at.isoformat(),
         report_count=len(agent.reports) if agent.reports else 0,
         is_active=agent.is_active,
+        chat_enabled=agent.chat_enabled,
     )
 
 
@@ -210,6 +219,22 @@ def update_my_profile(
                 status_code=422, detail="Status must be IDLE, GENERATING, or OFFLINE."
             )
         agent.status = body.status
+    if body.chat_endpoint is not None:
+        agent.chat_endpoint = body.chat_endpoint
+    if body.chat_enabled is not None:
+        if body.chat_enabled and not (agent.chat_endpoint or body.chat_endpoint):
+            raise HTTPException(
+                status_code=422,
+                detail="chat_endpoint must be a valid HTTP(S) URL when chat_enabled is true.",
+            )
+        if body.chat_enabled:
+            endpoint = body.chat_endpoint or agent.chat_endpoint or ""
+            if not endpoint.startswith(("http://", "https://")):
+                raise HTTPException(
+                    status_code=422,
+                    detail="chat_endpoint must be a valid HTTP(S) URL.",
+                )
+        agent.chat_enabled = body.chat_enabled
 
     session.add(agent)
     session.commit()
@@ -224,6 +249,7 @@ def update_my_profile(
         created_at=agent.created_at.isoformat(),
         report_count=len(agent.reports) if agent.reports else 0,
         is_active=agent.is_active,
+        chat_enabled=agent.chat_enabled,
     )
 
 
@@ -390,6 +416,7 @@ def list_agents(
             owner_name=a.owner.name if a.owner else None,
             owner_id=a.owner_id,
             is_active=a.is_active,
+            chat_enabled=a.chat_enabled,
         )
         for a in agents
     ]
@@ -432,6 +459,7 @@ def update_agent_status(
         owner_name=agent.owner.name if agent.owner else None,
         owner_id=agent.owner_id,
         is_active=agent.is_active,
+        chat_enabled=agent.chat_enabled,
     )
 
 
@@ -463,6 +491,7 @@ def get_agent_profile(
         owner_name=agent.owner.name if agent.owner else None,
         owner_id=agent.owner_id,
         is_active=agent.is_active,
+        chat_enabled=agent.chat_enabled,
     )
 
 
@@ -795,3 +824,140 @@ def get_agent_analytics(
         time_series=time_series,
         top_reports=top_reports,
     )
+
+
+# --- Agent Chat Proxy ---
+
+import hashlib
+import hmac
+from datetime import datetime, timezone
+
+
+class ChatHistoryEntry(BaseModel):
+    role: str
+    content: str
+
+
+class AgentChatRequest(BaseModel):
+    question: str
+    report_id: str
+    conversation_id: Optional[str] = None
+    history: Optional[list[ChatHistoryEntry]] = None
+
+
+class AgentChatResponse(BaseModel):
+    reply: str
+    format: str = "markdown"
+    conversation_id: str
+    metadata: Optional[dict] = None
+
+
+@router.post("/{agent_id}/chat", response_model=AgentChatResponse)
+async def proxy_agent_chat(
+    agent_id: str,
+    body: AgentChatRequest,
+    session: Session = Depends(get_session),
+):
+    """Proxy a user question to the agent's chat endpoint using the OpenRep Chat Protocol v1."""
+    agent = session.get(Agent, agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found.")
+    if not agent.chat_enabled or not agent.chat_endpoint:
+        raise HTTPException(status_code=400, detail="This agent does not support Q&A chat.")
+
+    report = session.get(Report, body.report_id)
+    if not report or report.agent_id != agent.id:
+        raise HTTPException(status_code=404, detail="Report not found or does not belong to this agent.")
+
+    import httpx
+
+    conversation_id = body.conversation_id or str(uuid4())
+    history = [entry.model_dump() for entry in body.history] if body.history else [
+        {"role": "user", "content": body.question}
+    ]
+    turn = len([h for h in history if h["role"] == "user"])
+
+    report_context: dict = {
+        "id": report.id,
+        "title": report.title,
+        "summary": report.summary,
+        "slug": report.slug,
+        "content_type": report.content_type,
+        "tags": report.tags if hasattr(report, "tags") and report.tags else [],
+        "created_at": report.created_at.isoformat() if report.created_at else None,
+        "series_id": getattr(report, "series_id", None),
+        "run_number": getattr(report, "run_number", None),
+        "meta": {},
+    }
+    # Only include html_body on turn 1
+    if turn <= 1:
+        report_context["html_body"] = report.html_body
+
+    payload = {
+        "protocol_version": 1,
+        "conversation_id": conversation_id,
+        "turn": turn,
+        "message": body.question,
+        "history": history,
+        "report": report_context,
+    }
+
+    import json as json_mod
+
+    payload_bytes = json_mod.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
+    timestamp = datetime.now(timezone.utc).isoformat()
+    signature = hmac.new(
+        (agent.api_key or "").encode(),
+        payload_bytes,
+        hashlib.sha256,
+    ).hexdigest()
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-OpenRep-Protocol": "1",
+        "X-OpenRep-Signature": f"sha256={signature}",
+        "X-OpenRep-Timestamp": timestamp,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(agent.chat_endpoint, json=payload, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+
+            # Handle error response from agent
+            if "error" in data:
+                err = data["error"]
+                raise HTTPException(
+                    status_code=502,
+                    detail=err.get("message", "Agent returned an error."),
+                )
+
+            # Handle needs_html_body: re-send with html_body included
+            if data.get("needs_html_body"):
+                payload["report"]["html_body"] = report.html_body
+                payload_bytes = json_mod.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
+                signature = hmac.new(
+                    (agent.api_key or "").encode(),
+                    payload_bytes,
+                    hashlib.sha256,
+                ).hexdigest()
+                headers["X-OpenRep-Signature"] = f"sha256={signature}"
+                headers["X-OpenRep-Timestamp"] = datetime.now(timezone.utc).isoformat()
+                resp = await client.post(agent.chat_endpoint, json=payload, headers=headers)
+                resp.raise_for_status()
+                data = resp.json()
+
+            # Backward compat: accept "answer" if "reply" is absent
+            reply = data.get("reply") or data.get("answer", "")
+
+            return AgentChatResponse(
+                reply=reply,
+                format=data.get("format", "markdown"),
+                conversation_id=conversation_id,
+                metadata=data.get("metadata"),
+            )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Agent chat endpoint timed out.")
+    except (httpx.HTTPStatusError, httpx.RequestError) as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to reach agent chat endpoint: {exc}")

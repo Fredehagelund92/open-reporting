@@ -45,6 +45,7 @@ import { SlideshowViewer } from "@/components/SlideshowViewer"
 
 import { cn } from "@/lib/utils"
 import { type Report, type ReportComment } from "@/types"
+import { ReportAgentChat } from "@/components/ReportTerminalChat"
 
 export function ReportViewerPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -110,12 +111,15 @@ export function ReportViewerPage() {
   const [saveMessage, setSaveMessage] = useState("")
   const [isDeleting, setIsDeleting] = useState(false)
 
+
   useEffect(() => {
     if (!report) return
     setVote(report.user_vote ?? 0)
     setCurrentScore(report.upvote_score ?? 0)
     setSelectedQuote(null)
     setHighlightRects([])
+    setSelectionTooltip(null)
+    pendingQuoteRef.current = ""
   }, [report])
 
   useEffect(() => {
@@ -134,7 +138,7 @@ export function ReportViewerPage() {
   // overlay divs. Supports drag-select, double-click, and triple-click.
   useEffect(() => {
     const wrapper = reportWrapperRef.current
-    if (!wrapper || !isAuthenticated) return
+    if (!wrapper || !isAuthenticated || isFullscreen) return
 
     /** Read the current selection and compute overlay rects + tooltip pos.
      *  Returns null if there's no usable selection inside the wrapper. */
@@ -165,7 +169,7 @@ export function ReportViewerPage() {
       return {
         text: text.slice(0, 500),
         rects,
-        tooltip: { top: firstRect.top - 44, left: firstRect.left + firstRect.width / 2 },
+        tooltip: { top: firstRect.top - wrapperRect.top - 44, left: firstRect.left - wrapperRect.left + firstRect.width / 2 },
       }
     }
 
@@ -236,12 +240,22 @@ export function ReportViewerPage() {
       document.removeEventListener("mousedown", handleMouseDown)
       wrapper.removeEventListener("dblclick", handleDblClick)
     }
-  }, [report?.html_body, isAuthenticated])
+  }, [report?.html_body, isAuthenticated, isFullscreen])
 
   const SUGGESTED_USERS = ["Alex PM", "Sara Engineer", "Admin", "ResearchBot"]
   const filteredMentions = SUGGESTED_USERS.filter(u => u.toLowerCase().includes(mentionQuery.toLowerCase()))
 
-  const handleToggleFullscreen = (val: boolean) => setIsFullscreen(val)
+  const handleToggleFullscreen = (val: boolean) => {
+    setIsFullscreen(val)
+    if (val) {
+      // Clear selection highlight and comment tooltip when entering fullscreen
+      setSelectionTooltip(null)
+      setHighlightRects([])
+      setSelectedQuote(null)
+      pendingQuoteRef.current = ""
+      window.getSelection()?.removeAllRanges()
+    }
+  }
 
   const handleVote = async (direction: 1 | -1) => {
     if (!isAuthenticated || !report || isVoting) return
@@ -315,6 +329,14 @@ export function ReportViewerPage() {
 
   return (
     <div className="flex-1 overflow-auto bg-background">
+      {/* Floating agent chat bubble (bottom-right) */}
+      {report.chat_enabled && (
+        <ReportAgentChat
+          report={report}
+          chatEnabled={report.chat_enabled}
+        />
+      )}
+
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-x-hidden">
 
         {/* Back navigation */}
@@ -677,6 +699,49 @@ export function ReportViewerPage() {
                     }}
                   />
                 ))}
+
+                {/* ── Selection tooltip — absolute inside wrapper, same coordinate space as highlights ── */}
+                {selectionTooltip && (
+                  <div
+                    data-selection-tooltip
+                    className="absolute z-[200] pointer-events-none animate-in fade-in zoom-in-95 duration-150"
+                    style={{
+                      top: selectionTooltip.top,
+                      left: selectionTooltip.left,
+                      transform: "translateX(-50%)",
+                    }}
+                  >
+                    <button
+                      className={cn(
+                        "pointer-events-auto relative flex items-center gap-1.5",
+                        "pl-2.5 pr-3 py-1.5 rounded-full",
+                        "bg-foreground text-background text-[11px] font-semibold tracking-wide",
+                        "shadow-[0_4px_20px_rgba(0,0,0,0.25)] ring-1 ring-white/10",
+                        "hover:scale-105 active:scale-95 transition-transform duration-100",
+                        "after:absolute after:left-1/2 after:-translate-x-1/2 after:top-full",
+                        "after:border-[5px] after:border-transparent after:border-t-foreground",
+                      )}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        tooltipClickedRef.current = true
+                        const quote = pendingQuoteRef.current
+                        if (quote) {
+                          setSelectedQuote(quote)
+                          setSelectionTooltip(null)
+                          pendingQuoteRef.current = ""
+                          setTimeout(() => {
+                            discussionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+                            setTimeout(() => commentTextareaRef.current?.focus(), 400)
+                          }, 50)
+                        }
+                      }}
+                    >
+                      <MessageSquare className="size-3 opacity-70" />
+                      Comment
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -818,51 +883,6 @@ export function ReportViewerPage() {
         </section>
       </main>
 
-      {/* ── Selection tooltip (fixed to viewport) ── */}
-      {selectionTooltip && (
-        <div
-          data-selection-tooltip
-          className="fixed z-[200] pointer-events-none animate-in fade-in zoom-in-95 duration-150"
-          style={{
-            top: selectionTooltip.top,
-            left: selectionTooltip.left,
-            transform: "translateX(-50%)",
-          }}
-        >
-          <button
-            className={cn(
-              "pointer-events-auto relative flex items-center gap-1.5",
-              "pl-2.5 pr-3 py-1.5 rounded-full",
-              "bg-foreground text-background text-[11px] font-semibold tracking-wide",
-              "shadow-[0_4px_20px_rgba(0,0,0,0.25)] ring-1 ring-white/10",
-              "hover:scale-105 active:scale-95 transition-transform duration-100",
-              // Downward caret via pseudo — pure CSS
-              "after:absolute after:left-1/2 after:-translate-x-1/2 after:top-full",
-              "after:border-[5px] after:border-transparent after:border-t-foreground",
-            )}
-            onMouseDown={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              tooltipClickedRef.current = true
-              const quote = pendingQuoteRef.current
-              if (quote) {
-                // <mark> highlight is already in the DOM from mouseup — commit
-                // the quote and scroll to the discussion section.
-                setSelectedQuote(quote)
-                setSelectionTooltip(null)
-                pendingQuoteRef.current = ""
-                setTimeout(() => {
-                  discussionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-                  setTimeout(() => commentTextareaRef.current?.focus(), 400)
-                }, 50)
-              }
-            }}
-          >
-            <MessageSquare className="size-3 opacity-70" />
-            Comment
-          </button>
-        </div>
-      )}
     </div>
   )
 }

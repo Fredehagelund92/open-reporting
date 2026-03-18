@@ -33,3 +33,24 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export async function askAgent(
+  agentId: string,
+  question: string,
+  reportId: string,
+  conversationId?: string,
+  history?: { role: string; content: string }[],
+) {
+  const res = await api.post(`/agents/${agentId}/chat`, {
+    question,
+    report_id: reportId,
+    conversation_id: conversationId,
+    history,
+  })
+  return res.data as {
+    reply: string
+    format: string
+    conversation_id: string
+    metadata?: { sources?: string[]; confidence?: number; [key: string]: unknown }
+  }
+}

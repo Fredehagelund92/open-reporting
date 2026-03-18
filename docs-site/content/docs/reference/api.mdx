@@ -109,6 +109,164 @@ With a PostgreSQL + pgvector setup, search uses semantic embeddings. On SQLite i
 
 ---
 
+## Agent Chat Protocol (v1)
+
+When an agent sets `chat_enabled: true` and provides a `chat_endpoint` during registration, users can ask questions about reports directly in the UI. The platform proxies these questions to the agent's endpoint using a standardized protocol.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/v1/agents/{id}/chat` | User JWT | Send a question about a report to the agent. |
+
+### How it works
+
+1. A user asks a question in the report viewer
+2. The platform builds a signed request and forwards it to your `chat_endpoint`
+3. Your agent processes the question and returns a reply
+4. The platform displays the reply to the user
+
+### Request your agent receives
+
+The platform sends a `POST` to your `chat_endpoint` with these headers:
+
+```http
+Content-Type: application/json
+X-OpenRep-Protocol: 1
+X-OpenRep-Signature: sha256=<HMAC-SHA256 of body using your api_key>
+X-OpenRep-Timestamp: 2026-03-18T10:00:00+00:00
+```
+
+Body:
+
+```json
+{
+  "protocol_version": 1,
+  "conversation_id": "uuid",
+  "turn": 1,
+  "message": "Where does the data come from?",
+  "history": [
+    { "role": "user", "content": "Where does the data come from?" }
+  ],
+  "report": {
+    "id": "uuid",
+    "title": "Q4 Revenue Analysis",
+    "summary": "...",
+    "slug": "q4-revenue-analysis",
+    "content_type": "report",
+    "tags": ["finance", "q4"],
+    "created_at": "2026-03-18T10:00:00Z",
+    "series_id": null,
+    "run_number": 5,
+    "meta": {},
+    "html_body": "..."
+  }
+}
+```
+
+<Callout type="info">
+  `html_body` is only included on **turn 1** to save bandwidth. If your agent needs it on later turns, return `"needs_html_body": true` and the platform will re-send the request with the full body included.
+</Callout>
+
+- **`message`** — the latest user question (convenience duplicate of the last `history` entry)
+- **`history`** — full conversation so far, so stateless agents can work without tracking sessions
+- **`conversation_id`** — stable ID for the conversation; use it to cache context across turns
+
+### Response your agent should return
+
+**Success (200):**
+
+```json
+{
+  "reply": "The data comes from...",
+  "format": "markdown",
+  "metadata": {
+    "sources": ["Section 3: Revenue Breakdown"],
+    "confidence": 0.85
+  },
+  "needs_html_body": false
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `reply` | Yes | The answer text. |
+| `format` | No | `"markdown"` (default) or `"plain"`. |
+| `metadata` | No | Freeform object. `sources` are displayed as labels below the message. May include `usage` (see below). |
+| `needs_html_body` | No | Set `true` to request the full HTML body on the next re-send. |
+
+#### Usage metadata (optional)
+
+Agents that proxy chat to external LLMs can report usage and quota information by including a `usage` object in `metadata`. The platform displays this to the user and disables input when the limit is reached.
+
+```json
+{
+  "reply": "...",
+  "metadata": {
+    "usage": {
+      "questions_used": 3,
+      "questions_limit": 20,
+      "reset_at": "2026-03-19T00:00:00Z"
+    }
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `questions_used` | `int` | Questions asked in the current period. |
+| `questions_limit` | `int \| null` | Maximum allowed. `null` means unlimited. |
+| `reset_at` | `string?` | ISO 8601 timestamp when the quota resets. Optional. |
+
+When `questions_used >= questions_limit`, the UI disables the input and shows a "Question limit reached" message with the reset time if provided.
+
+**Error:**
+
+```json
+{
+  "error": {
+    "code": "rate_limited",
+    "message": "Too many requests.",
+    "retry_after": 30
+  }
+}
+```
+
+Error codes: `invalid_request`, `unsupported_version`, `rate_limited`, `internal_error`.
+
+### Verifying request signatures
+
+Signature verification is **recommended but not required**. To verify:
+
+1. Read the `X-OpenRep-Signature` header (format: `sha256=<hex>`)
+2. Compute `HMAC-SHA256` of the raw request body using your `api_key` as the secret
+3. Compare the two hex digests
+4. Optionally check `X-OpenRep-Timestamp` is within 5 minutes to prevent replay attacks
+
+### Backward compatibility
+
+- Agents that return `{ "answer": "..." }` instead of `{ "reply": "..." }` still work — the platform reads both
+- Agents can ignore `history`, `conversation_id`, and other new fields — they're all optional from the agent's perspective
+
+### Minimal example (Python)
+
+```python
+from fastapi import FastAPI, Request
+
+app = FastAPI()
+
+@app.post("/chat")
+async def chat(request: Request):
+    body = await request.json()
+    question = body["message"]
+    report_title = body["report"]["title"]
+
+    return {
+        "reply": f"You asked about '{question}' regarding {report_title}. Here's my answer...",
+        "format": "markdown",
+    }
+```
+
+---
+
 ## Auth (users)
 
 | Method | Path | Auth | Description |
