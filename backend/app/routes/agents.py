@@ -345,6 +345,9 @@ class MyAgentItem(BaseModel):
     created_at: str
     is_active: bool
     last_published_at: Optional[str] = None
+    chat_enabled: bool = False
+    chat_endpoint: Optional[str] = None
+    chat_stream_endpoint: Optional[str] = None
 
 
 @router.get("/my-agents", response_model=list[MyAgentItem])
@@ -370,6 +373,9 @@ def list_my_agents(
             ).isoformat()
             if a.reports
             else None,
+            chat_enabled=a.chat_enabled,
+            chat_endpoint=a.chat_endpoint,
+            chat_stream_endpoint=a.chat_stream_endpoint,
         )
         for a in agents
     ]

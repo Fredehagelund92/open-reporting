@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Save, User as UserIcon, Upload, X, Bot, RefreshCw, Copy, Plus, FileText, CheckCircle2, AlertCircle, Bell, Mail, MoreHorizontal, ShieldCheck, KeyRound } from "lucide-react"
+import { Loader2, Save, User as UserIcon, Upload, X, Bot, RefreshCw, Copy, Plus, FileText, CheckCircle2, AlertCircle, Bell, Mail, MoreHorizontal, ShieldCheck, KeyRound, MessageSquareText, ChevronDown, ChevronUp } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 import { getAvatarColor, getInitials } from "@/lib/user"
 import { api } from "@/lib/api"
 import { LoginButton } from "@/components/LoginButton"
@@ -278,6 +279,15 @@ interface AgentItem {
   report_count: number
   created_at: string
   last_published_at?: string | null
+  chat_enabled?: boolean
+  chat_endpoint?: string | null
+  chat_stream_endpoint?: string | null
+}
+
+interface ChatSettings {
+  chat_enabled: boolean
+  chat_endpoint: string
+  chat_stream_endpoint: string
 }
 
 function MyAgentsSection() {
@@ -288,6 +298,10 @@ function MyAgentsSection() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [verifyState, setVerifyState] = useState<Record<string, { status: "idle" | "running" | "success" | "error"; text: string }>>({})
   const [rotationNotice, setRotationNotice] = useState<string | null>(null)
+  const [expandedChat, setExpandedChat] = useState<string | null>(null)
+  const [chatDraft, setChatDraft] = useState<Record<string, ChatSettings>>({})
+  const [chatSaving, setChatSaving] = useState<string | null>(null)
+  const [chatSaveStatus, setChatSaveStatus] = useState<Record<string, "idle" | "success" | "error">>({})
 
   const apiBase = import.meta.env.VITE_API_BASE_URL || window.location.origin
   const normalizedApiBase = normalizeApiBaseUrl(apiBase)
@@ -359,6 +373,53 @@ function MyAgentsSection() {
         ...prev,
         [agent.id]: { status: "error", text: "Key check failed. Copy reconnect prompt or regenerate key." },
       }))
+    }
+  }
+
+  const toggleChatPanel = (agent: AgentItem) => {
+    if (expandedChat === agent.id) {
+      setExpandedChat(null)
+    } else {
+      setExpandedChat(agent.id)
+      if (!chatDraft[agent.id]) {
+        setChatDraft((prev) => ({
+          ...prev,
+          [agent.id]: {
+            chat_enabled: agent.chat_enabled ?? false,
+            chat_endpoint: agent.chat_endpoint ?? "",
+            chat_stream_endpoint: agent.chat_stream_endpoint ?? "",
+          },
+        }))
+      }
+    }
+  }
+
+  const updateChatDraft = (agentId: string, patch: Partial<ChatSettings>) => {
+    setChatDraft((prev) => ({
+      ...prev,
+      [agentId]: { ...prev[agentId], ...patch },
+    }))
+  }
+
+  const saveChatSettings = async (agentId: string) => {
+    const draft = chatDraft[agentId]
+    if (!draft) return
+    setChatSaving(agentId)
+    setChatSaveStatus((prev) => ({ ...prev, [agentId]: "idle" }))
+    try {
+      await api.patch(`/agents/${agentId}/chat-settings`, {
+        chat_enabled: draft.chat_enabled,
+        chat_endpoint: draft.chat_endpoint || "",
+        chat_stream_endpoint: draft.chat_stream_endpoint || "",
+      })
+      setChatSaveStatus((prev) => ({ ...prev, [agentId]: "success" }))
+      setTimeout(() => setChatSaveStatus((prev) => ({ ...prev, [agentId]: "idle" })), 3000)
+      fetchAgents()
+    } catch {
+      setChatSaveStatus((prev) => ({ ...prev, [agentId]: "error" }))
+      setTimeout(() => setChatSaveStatus((prev) => ({ ...prev, [agentId]: "idle" })), 3000)
+    } finally {
+      setChatSaving(null)
     }
   }
 
@@ -471,6 +532,13 @@ function MyAgentsSection() {
                       )}
                       Verify Key
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => toggleChatPanel(agent)}
+                      className="gap-2 text-xs"
+                    >
+                      <MessageSquareText className="size-3.5" />
+                      Chat Settings
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => handleRegenerate(agent.id)}
@@ -499,6 +567,69 @@ function MyAgentsSection() {
                     <AlertCircle className="size-3" />
                   )}
                   {verifyState[agent.id]?.text}
+                </div>
+              )}
+
+              {/* Chat Settings Panel */}
+              {expandedChat === agent.id && chatDraft[agent.id] && (
+                <div className="px-4 pb-4 border-t border-border/50 mt-1 pt-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor={`chat-enabled-${agent.id}`} className="text-xs font-medium">Enable Q&A Chat</Label>
+                    <Switch
+                      id={`chat-enabled-${agent.id}`}
+                      checked={chatDraft[agent.id].chat_enabled}
+                      onCheckedChange={(v) => updateChatDraft(agent.id, { chat_enabled: v })}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`chat-ep-${agent.id}`} className="text-xs font-medium">Chat Endpoint URL</Label>
+                    <Input
+                      id={`chat-ep-${agent.id}`}
+                      type="url"
+                      placeholder="https://your-agent.example.com/chat"
+                      value={chatDraft[agent.id].chat_endpoint}
+                      onChange={(e) => updateChatDraft(agent.id, { chat_endpoint: e.target.value })}
+                      className="h-8 text-xs"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Required when chat is enabled.</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`chat-stream-${agent.id}`} className="text-xs font-medium">Stream Endpoint URL (optional)</Label>
+                    <Input
+                      id={`chat-stream-${agent.id}`}
+                      type="url"
+                      placeholder="https://your-agent.example.com/chat/stream"
+                      value={chatDraft[agent.id].chat_stream_endpoint}
+                      onChange={(e) => updateChatDraft(agent.id, { chat_stream_endpoint: e.target.value })}
+                      className="h-8 text-xs"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Enables SSE streaming for real-time responses.</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => saveChatSettings(agent.id)}
+                      disabled={chatSaving === agent.id}
+                    >
+                      {chatSaving === agent.id ? (
+                        <Loader2 className="size-3 mr-1.5 animate-spin" />
+                      ) : (
+                        <Save className="size-3 mr-1.5" />
+                      )}
+                      Save
+                    </Button>
+                    {chatSaveStatus[agent.id] === "success" && (
+                      <span className="flex items-center gap-1 text-xs text-green-600">
+                        <CheckCircle2 className="size-3" /> Saved
+                      </span>
+                    )}
+                    {chatSaveStatus[agent.id] === "error" && (
+                      <span className="flex items-center gap-1 text-xs text-destructive">
+                        <AlertCircle className="size-3" /> Failed to save
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
