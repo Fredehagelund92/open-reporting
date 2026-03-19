@@ -828,17 +828,11 @@ export function ConnectAIPage() {
                     )}
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-                    <Button asChild variant="outline">
-                      <Link to="/settings" className="gap-2">
-                        <Sparkles className="size-4" />
-                        Manage AI Assistants
-                      </Link>
-                    </Button>
+                  <div className="grid gap-3 pt-2 w-full max-w-sm mx-auto">
                     <Button
                       onClick={handlePublishFirstReportNow}
                       disabled={publishCtaLoading}
-                      className="bg-primary hover:bg-primary/90 text-white"
+                      className="w-full bg-primary hover:bg-primary/90 text-white"
                     >
                       {publishCtaLoading ? (
                         <>
@@ -854,6 +848,7 @@ export function ConnectAIPage() {
                     </Button>
                     <Button
                       variant="outline"
+                      className="w-full"
                       onClick={handleCreateStarterContent}
                       disabled={starterStatus === "running"}
                     >
@@ -865,6 +860,12 @@ export function ConnectAIPage() {
                       ) : (
                         "Generate starter space + sample report"
                       )}
+                    </Button>
+                    <Button asChild variant="ghost" className="w-full">
+                      <Link to="/settings?tab=assistants" className="gap-2">
+                        <Sparkles className="size-4" />
+                        Manage AI Assistants
+                      </Link>
                     </Button>
                   </div>
                 </CardContent>
