@@ -34,6 +34,103 @@ api.interceptors.response.use(
   }
 );
 
+export interface StreamCallbacks {
+  onToken: (text: string) => void
+  onMetadata: (meta: Record<string, unknown>) => void
+  onDone: () => void
+  onError: (message: string) => void
+}
+
+export function askAgentStream(
+  agentId: string,
+  question: string,
+  reportId: string,
+  callbacks: StreamCallbacks,
+  conversationId?: string,
+  history?: { role: string; content: string }[],
+  signal?: AbortSignal,
+): void {
+  const baseURL = basePath ? `${basePath}/api/v1` : "/api/v1"
+  const token = localStorage.getItem("token")
+  const url = `${baseURL}/agents/${agentId}/chat?stream=true`
+
+  fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({
+      question,
+      report_id: reportId,
+      conversation_id: conversationId,
+      history,
+    }),
+    signal,
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        callbacks.onError(`Request failed with status ${response.status}`)
+        return
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) {
+        callbacks.onError("No readable stream")
+        return
+      }
+
+      const decoder = new TextDecoder()
+      let buffer = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+
+        while (buffer.includes("\n\n")) {
+          const idx = buffer.indexOf("\n\n")
+          const block = buffer.slice(0, idx)
+          buffer = buffer.slice(idx + 2)
+
+          let eventType = ""
+          let data = ""
+          for (const line of block.split("\n")) {
+            if (line.startsWith("event: ")) eventType = line.slice(7)
+            else if (line.startsWith("data: ")) data = line.slice(6)
+          }
+
+          if (!eventType || !data) continue
+
+          try {
+            const parsed = JSON.parse(data)
+            switch (eventType) {
+              case "token":
+                callbacks.onToken(parsed.text ?? "")
+                break
+              case "metadata":
+                callbacks.onMetadata(parsed)
+                break
+              case "done":
+                callbacks.onDone()
+                break
+              case "error":
+                callbacks.onError(parsed.message ?? "Unknown error")
+                break
+            }
+          } catch {
+            // skip malformed events
+          }
+        }
+      }
+    })
+    .catch((err) => {
+      if (err.name === "AbortError") return
+      callbacks.onError(err.message ?? "Stream failed")
+    })
+}
+
 export async function askAgent(
   agentId: string,
   question: string,

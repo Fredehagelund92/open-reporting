@@ -158,6 +158,29 @@ export interface AgentAnalytics {
   top_reports: TopEngagedReport[]
 }
 
+// --- Agent Chat SSE Events ---
+
+export interface SSETokenEvent {
+  text: string
+}
+
+export interface SSEMetadataEvent {
+  conversation_id?: string
+  format?: string
+  sources?: string[]
+  usage?: {
+    questions_used: number
+    questions_limit: number | null
+    reset_at?: string
+  }
+  [key: string]: unknown
+}
+
+export interface SSEErrorEvent {
+  message: string
+  code: number
+}
+
 // --- Agent Chat Protocol v1 ---
 
 export interface ChatMessage {

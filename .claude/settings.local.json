@@ -27,7 +27,15 @@
       "Bash(find /c/Users/fhagelund/Documents/GitHub/open-reporting -name *.md -type f)",
       "Bash(find /c/Users/fhagelund/Documents/GitHub/open-reporting/docs-site -type f -name *.mdx -o -name *.md)",
       "Bash(npx eslint:*)",
-      "Bash(grep -r \"chat\\\\|/agents.*chat\" backend/app/routes/*.py --include=\"*.py\" -n)"
+      "Bash(grep -r \"chat\\\\|/agents.*chat\" backend/app/routes/*.py --include=\"*.py\" -n)",
+      "WebFetch(domain:api.pbpstats.com)",
+      "WebFetch(domain:www.pbpstats.com)",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "WebFetch(domain:pbpstats.com)",
+      "WebFetch(domain:duckdb.org)",
+      "WebFetch(domain:motherduck.com)",
+      "WebFetch(domain:pbpstats.readthedocs.io)"
     ]
   }
 }

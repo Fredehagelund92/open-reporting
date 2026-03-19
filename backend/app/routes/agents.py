@@ -46,6 +46,8 @@ class AgentProfileResponse(BaseModel):
     owner_id: Optional[str] = None
     is_active: bool
     chat_enabled: bool = False
+    chat_endpoint: Optional[str] = None
+    chat_stream_endpoint: Optional[str] = None
 
 
 class AgentUpdateRequest(BaseModel):
@@ -53,6 +55,13 @@ class AgentUpdateRequest(BaseModel):
     status: Optional[str] = None
     chat_enabled: Optional[bool] = None
     chat_endpoint: Optional[str] = None
+    chat_stream_endpoint: Optional[str] = None
+
+
+class AgentChatSettingsUpdate(BaseModel):
+    chat_enabled: Optional[bool] = None
+    chat_endpoint: Optional[str] = None
+    chat_stream_endpoint: Optional[str] = None
 
 
 # --- Helpers ---
@@ -221,6 +230,13 @@ def update_my_profile(
         agent.status = body.status
     if body.chat_endpoint is not None:
         agent.chat_endpoint = body.chat_endpoint
+    if body.chat_stream_endpoint is not None:
+        if body.chat_stream_endpoint and not body.chat_stream_endpoint.startswith(("http://", "https://")):
+            raise HTTPException(
+                status_code=422,
+                detail="chat_stream_endpoint must be a valid HTTP(S) URL.",
+            )
+        agent.chat_stream_endpoint = body.chat_stream_endpoint
     if body.chat_enabled is not None:
         if body.chat_enabled and not (agent.chat_endpoint or body.chat_endpoint):
             raise HTTPException(
@@ -480,6 +496,8 @@ def get_agent_profile(
         ):
             raise HTTPException(status_code=403, detail="Unrecognized agent.")
 
+    is_owner = current_user and current_user.id == agent.owner_id
+
     return AgentProfileResponse(
         id=agent.id,
         name=agent.name,
@@ -492,6 +510,67 @@ def get_agent_profile(
         owner_id=agent.owner_id,
         is_active=agent.is_active,
         chat_enabled=agent.chat_enabled,
+        chat_endpoint=agent.chat_endpoint if is_owner else None,
+        chat_stream_endpoint=agent.chat_stream_endpoint if is_owner else None,
+    )
+
+
+@router.patch("/{agent_id}/chat-settings", response_model=AgentProfileResponse)
+def update_agent_chat_settings(
+    agent_id: str,
+    body: AgentChatSettingsUpdate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Update chat settings for an agent (owner only)."""
+    agent = session.get(Agent, agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found.")
+    if agent.owner_id != current_user.id and current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="You do not own this agent.")
+
+    if body.chat_endpoint is not None:
+        if body.chat_endpoint and not body.chat_endpoint.startswith(("http://", "https://")):
+            raise HTTPException(
+                status_code=422,
+                detail="chat_endpoint must be a valid HTTP(S) URL.",
+            )
+        agent.chat_endpoint = body.chat_endpoint
+    if body.chat_stream_endpoint is not None:
+        if body.chat_stream_endpoint and not body.chat_stream_endpoint.startswith(("http://", "https://")):
+            raise HTTPException(
+                status_code=422,
+                detail="chat_stream_endpoint must be a valid HTTP(S) URL.",
+            )
+        agent.chat_stream_endpoint = body.chat_stream_endpoint
+    if body.chat_enabled is not None:
+        if body.chat_enabled:
+            endpoint = body.chat_endpoint or agent.chat_endpoint or ""
+            if not endpoint.startswith(("http://", "https://")):
+                raise HTTPException(
+                    status_code=422,
+                    detail="chat_endpoint must be a valid HTTP(S) URL when enabling chat.",
+                )
+        agent.chat_enabled = body.chat_enabled
+
+    session.add(agent)
+    session.commit()
+    session.refresh(agent)
+
+    return AgentProfileResponse(
+        id=agent.id,
+        name=agent.name,
+        description=agent.description,
+        status=agent.status,
+        is_claimed=agent.is_claimed,
+        created_at=agent.created_at.isoformat(),
+        report_count=len(agent.reports) if agent.reports else 0,
+        owner_name=agent.owner.name if agent.owner else None,
+        owner_id=agent.owner_id,
+        is_active=agent.is_active,
+        chat_enabled=agent.chat_enabled,
+        chat_endpoint=agent.chat_endpoint,
+        chat_stream_endpoint=agent.chat_stream_endpoint,
     )
 
 
@@ -830,7 +909,11 @@ def get_agent_analytics(
 
 import hashlib
 import hmac
+import json as json_mod
 from datetime import datetime, timezone
+
+import httpx
+from fastapi.responses import StreamingResponse
 
 
 class ChatHistoryEntry(BaseModel):
@@ -852,31 +935,15 @@ class AgentChatResponse(BaseModel):
     metadata: Optional[dict] = None
 
 
-@router.post("/{agent_id}/chat", response_model=AgentChatResponse)
-async def proxy_agent_chat(
-    agent_id: str,
+def _build_chat_payload(
+    agent: Agent,
     body: AgentChatRequest,
-    session: Session = Depends(get_session),
-):
-    """Proxy a user question to the agent's chat endpoint using the OpenRep Chat Protocol v1."""
-    agent = session.get(Agent, agent_id)
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found.")
-    if not agent.chat_enabled or not agent.chat_endpoint:
-        raise HTTPException(status_code=400, detail="This agent does not support Q&A chat.")
-
-    report = session.get(Report, body.report_id)
-    if not report or report.agent_id != agent.id:
-        raise HTTPException(status_code=404, detail="Report not found or does not belong to this agent.")
-
-    import httpx
-
-    conversation_id = body.conversation_id or str(uuid4())
-    history = [entry.model_dump() for entry in body.history] if body.history else [
-        {"role": "user", "content": body.question}
-    ]
-    turn = len([h for h in history if h["role"] == "user"])
-
+    report: Report,
+    conversation_id: str,
+    history: list[dict],
+    turn: int,
+) -> tuple[dict, dict]:
+    """Build the chat payload and signed headers. Returns (payload, headers)."""
     report_context: dict = {
         "id": report.id,
         "title": report.title,
@@ -889,7 +956,6 @@ async def proxy_agent_chat(
         "run_number": getattr(report, "run_number", None),
         "meta": {},
     }
-    # Only include html_body on turn 1
     if turn <= 1:
         report_context["html_body"] = report.html_body
 
@@ -901,8 +967,6 @@ async def proxy_agent_chat(
         "history": history,
         "report": report_context,
     }
-
-    import json as json_mod
 
     payload_bytes = json_mod.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
     timestamp = datetime.now(timezone.utc).isoformat()
@@ -919,45 +983,147 @@ async def proxy_agent_chat(
         "X-OpenRep-Timestamp": timestamp,
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(agent.chat_endpoint, json=payload, headers=headers)
-            resp.raise_for_status()
-            data = resp.json()
+    return payload, headers
 
-            # Handle error response from agent
-            if "error" in data:
-                err = data["error"]
-                raise HTTPException(
-                    status_code=502,
-                    detail=err.get("message", "Agent returned an error."),
-                )
 
-            # Handle needs_html_body: re-send with html_body included
-            if data.get("needs_html_body"):
-                payload["report"]["html_body"] = report.html_body
-                payload_bytes = json_mod.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
-                signature = hmac.new(
-                    (agent.api_key or "").encode(),
-                    payload_bytes,
-                    hashlib.sha256,
-                ).hexdigest()
-                headers["X-OpenRep-Signature"] = f"sha256={signature}"
-                headers["X-OpenRep-Timestamp"] = datetime.now(timezone.utc).isoformat()
+def _format_sse(event: str, data: dict) -> str:
+    """Format a single SSE event."""
+    return f"event: {event}\ndata: {json_mod.dumps(data)}\n\n"
+
+
+@router.post("/{agent_id}/chat", response_model=AgentChatResponse)
+async def proxy_agent_chat(
+    agent_id: str,
+    body: AgentChatRequest,
+    stream: bool = Query(False),
+    session: Session = Depends(get_session),
+):
+    """Proxy a user question to the agent's chat endpoint using the OpenRep Chat Protocol v1.
+
+    Pass `?stream=true` to receive an SSE stream instead of a JSON response.
+    """
+    agent = session.get(Agent, agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found.")
+    if not agent.chat_enabled or not agent.chat_endpoint:
+        raise HTTPException(status_code=400, detail="This agent does not support Q&A chat.")
+
+    report = session.get(Report, body.report_id)
+    if not report or report.agent_id != agent.id:
+        raise HTTPException(status_code=404, detail="Report not found or does not belong to this agent.")
+
+    conversation_id = body.conversation_id or str(uuid4())
+    history = [entry.model_dump() for entry in body.history] if body.history else [
+        {"role": "user", "content": body.question}
+    ]
+    turn = len([h for h in history if h["role"] == "user"])
+
+    payload, headers = _build_chat_payload(agent, body, report, conversation_id, history, turn)
+
+    if not stream:
+        # --- Existing JSON response path ---
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
                 resp = await client.post(agent.chat_endpoint, json=payload, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
 
-            # Backward compat: accept "answer" if "reply" is absent
-            reply = data.get("reply") or data.get("answer", "")
+                if "error" in data:
+                    err = data["error"]
+                    raise HTTPException(
+                        status_code=502,
+                        detail=err.get("message", "Agent returned an error."),
+                    )
 
-            return AgentChatResponse(
-                reply=reply,
-                format=data.get("format", "markdown"),
-                conversation_id=conversation_id,
-                metadata=data.get("metadata"),
-            )
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Agent chat endpoint timed out.")
-    except (httpx.HTTPStatusError, httpx.RequestError) as exc:
-        raise HTTPException(status_code=502, detail=f"Failed to reach agent chat endpoint: {exc}")
+                if data.get("needs_html_body"):
+                    payload["report"]["html_body"] = report.html_body
+                    payload, headers = _build_chat_payload(agent, body, report, conversation_id, history, turn)
+                    payload["report"]["html_body"] = report.html_body
+                    resp = await client.post(agent.chat_endpoint, json=payload, headers=headers)
+                    resp.raise_for_status()
+                    data = resp.json()
+
+                reply = data.get("reply") or data.get("answer", "")
+
+                return AgentChatResponse(
+                    reply=reply,
+                    format=data.get("format", "markdown"),
+                    conversation_id=conversation_id,
+                    metadata=data.get("metadata"),
+                )
+        except httpx.TimeoutException:
+            raise HTTPException(status_code=504, detail="Agent chat endpoint timed out.")
+        except (httpx.HTTPStatusError, httpx.RequestError) as exc:
+            raise HTTPException(status_code=502, detail=f"Failed to reach agent chat endpoint: {exc}")
+
+    # --- SSE streaming path ---
+    async def _stream_sse():
+        yield _format_sse("metadata", {"conversation_id": conversation_id, "format": "markdown"})
+
+        if agent.chat_stream_endpoint:
+            # Agent supports native streaming — forward SSE events
+            try:
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    async with client.stream(
+                        "POST",
+                        agent.chat_stream_endpoint,
+                        json=payload,
+                        headers=headers,
+                    ) as resp:
+                        resp.raise_for_status()
+                        buffer = ""
+                        async for chunk in resp.aiter_text():
+                            buffer += chunk
+                            while "\n\n" in buffer:
+                                event_block, buffer = buffer.split("\n\n", 1)
+                                # Forward the raw SSE event
+                                yield event_block + "\n\n"
+            except httpx.TimeoutException:
+                yield _format_sse("error", {"message": "Agent timed out", "code": 504})
+            except (httpx.HTTPStatusError, httpx.RequestError) as exc:
+                yield _format_sse("error", {"message": f"Failed to reach agent: {exc}", "code": 502})
+        else:
+            # Agent doesn't stream — call normal endpoint, wrap in synthetic SSE
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    resp = await client.post(agent.chat_endpoint, json=payload, headers=headers)
+                    resp.raise_for_status()
+                    data = resp.json()
+
+                    if "error" in data:
+                        err = data["error"]
+                        yield _format_sse("error", {"message": err.get("message", "Agent error"), "code": 502})
+                        return
+
+                    if data.get("needs_html_body"):
+                        payload["report"]["html_body"] = report.html_body
+                        retry_payload, retry_headers = _build_chat_payload(
+                            agent, body, report, conversation_id, history, turn
+                        )
+                        retry_payload["report"]["html_body"] = report.html_body
+                        resp = await client.post(agent.chat_endpoint, json=retry_payload, headers=retry_headers)
+                        resp.raise_for_status()
+                        data = resp.json()
+
+                    reply = data.get("reply") or data.get("answer", "")
+                    yield _format_sse("token", {"text": reply})
+
+                    metadata = data.get("metadata")
+                    if metadata:
+                        yield _format_sse("metadata", metadata)
+
+            except httpx.TimeoutException:
+                yield _format_sse("error", {"message": "Agent timed out", "code": 504})
+            except (httpx.HTTPStatusError, httpx.RequestError) as exc:
+                yield _format_sse("error", {"message": f"Failed to reach agent: {exc}", "code": 502})
+
+        yield _format_sse("done", {})
+
+    return StreamingResponse(
+        _stream_sse(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )

@@ -103,6 +103,7 @@ class Agent(SQLModel, table=True):
     is_active: bool = Field(default=True)
     chat_enabled: bool = Field(default=False)
     chat_endpoint: Optional[str] = None
+    chat_stream_endpoint: Optional[str] = None
 
     created_at: datetime = Field(default_factory=_utcnow)
 

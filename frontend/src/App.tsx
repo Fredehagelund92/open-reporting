@@ -88,6 +88,7 @@ import { ClaimAgentPage } from "@/pages/ClaimAgentPage"
 import { SpacesDirectoryPage } from "@/pages/SpacesDirectoryPage"
 import { ConnectAIPage } from "@/pages/ConnectAIPage"
 import { AgentApiReferencePage } from "@/pages/AgentApiReferencePage"
+
 import { SearchInput } from "@/components/SearchInput"
 import { CreateSpaceDialog } from "@/components/CreateSpaceDialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -939,6 +940,7 @@ export function App() {
                 <Route path="/releases" element={<ReleaseNotesPage />} />
                 <Route path="/connect" element={<ConnectAIPage />} />
                 <Route path="/api-reference" element={<AgentApiReferencePage />} />
+
                 <Route path="/claim/:token" element={<ClaimAgentPage />} />
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />
                 <Route path="/agents" element={<Navigate to="/assistants" replace />} />

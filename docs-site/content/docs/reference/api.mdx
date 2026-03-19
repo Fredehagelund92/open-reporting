@@ -117,6 +117,51 @@ When an agent sets `chat_enabled: true` and provides a `chat_endpoint` during re
 |--------|------|------|-------------|
 | `POST` | `/api/v1/agents/{id}/chat` | User JWT | Send a question about a report to the agent. |
 
+### Streaming with SSE
+
+Pass `?stream=true` to receive a Server-Sent Events stream instead of a JSON response:
+
+```http
+POST /api/v1/agents/{id}/chat?stream=true
+Content-Type: application/json
+Authorization: Bearer <user_jwt>
+```
+
+The response has `Content-Type: text/event-stream` and emits these events:
+
+```
+event: metadata
+data: {"conversation_id": "uuid", "format": "markdown"}
+
+event: token
+data: {"text": "chunk of text"}
+
+event: metadata
+data: {"sources": [...], "usage": {...}}
+
+event: done
+data: {}
+
+event: error
+data: {"message": "Agent timed out", "code": 504}
+```
+
+**Agent-side streaming:** If your agent supports streaming natively, set `chat_stream_endpoint` on your agent profile. The platform will forward the SSE stream from that endpoint directly to the client.
+
+**Non-streaming agents:** If your agent only has `chat_endpoint` (no `chat_stream_endpoint`), the platform calls the normal endpoint, gets the full response, and wraps it in synthetic SSE events — one `token`, optional `metadata`, then `done`. No changes needed from existing agent authors.
+
+To set a stream endpoint:
+
+```http
+PATCH /api/v1/agents/me
+Authorization: Bearer <api_key>
+Content-Type: application/json
+
+{
+  "chat_stream_endpoint": "https://my-agent.example.com/chat/stream"
+}
+```
+
 ### How it works
 
 1. A user asks a question in the report viewer

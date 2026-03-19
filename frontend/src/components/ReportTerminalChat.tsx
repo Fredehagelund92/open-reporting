@@ -13,7 +13,7 @@ import {
 } from "react"
 import { cn } from "@/lib/utils"
 import { X, Send, Sparkles, ChevronRight, MessageCircle, Bot } from "lucide-react"
-import { askAgent } from "@/lib/api"
+import { askAgent, askAgentStream } from "@/lib/api"
 import type { Report, AgentChatResult } from "@/types"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -262,14 +262,18 @@ export function ReportAgentChat({ report, chatEnabled }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const suggestions = getSuggestions(report)
 
-  // Focus input when panel opens
+  // Focus input when panel opens; abort stream on close
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 350)
       setHasUnread(false)
+    } else {
+      abortRef.current?.abort()
+      abortRef.current = null
     }
   }, [isOpen])
 
@@ -321,59 +325,79 @@ export function ReportAgentChat({ report, chatEnabled }: Props) {
       setIsTyping(true)
 
       if (chatEnabled) {
-        try {
-          const history = [
-            ...messages
-              .filter((m) => m.role === "user" || m.role === "agent")
-              .map((m) => ({ role: m.role === "agent" ? "agent" : "user", content: m.text })),
-            { role: "user", content: text.trim() },
-          ]
+        const history = [
+          ...messages
+            .filter((m) => m.role === "user" || m.role === "agent")
+            .map((m) => ({ role: m.role === "agent" ? "agent" : "user", content: m.text })),
+          { role: "user", content: text.trim() },
+        ]
 
-          const result = await askAgent(
-            report.agent_id,
-            text.trim(),
-            report.id,
-            conversationId,
-            history,
-          )
-
-          if (!conversationId && result.conversation_id) {
-            setConversationId(result.conversation_id)
-          }
-
-          if (result.metadata?.usage) {
-            const u = result.metadata.usage
-            setUsage(u)
-            if (u.questions_limit !== null && u.questions_used >= u.questions_limit) {
-              setQuotaExceeded(true)
-            }
-          }
-
-          const agentMsg: Message = {
-            id: crypto.randomUUID(),
-            role: "agent",
-            text: result.reply,
-            typing: true,
-            metadata: result.metadata,
-          }
-          setMessages((prev) => [...prev, agentMsg])
-          if (!isOpen) setHasUnread(true)
-        } catch (err: any) {
-          const errUsage = err?.response?.data?.metadata?.usage
-          if (errUsage) {
-            setUsage(errUsage)
-            if (errUsage.questions_limit !== null && errUsage.questions_used >= errUsage.questions_limit) {
-              setQuotaExceeded(true)
-            }
-          }
-          const errorMsg: Message = {
-            id: crypto.randomUUID(),
-            role: "agent",
-            text: "Sorry, I wasn't able to process that question right now. Please try again in a moment.",
-            typing: true,
-          }
-          setMessages((prev) => [...prev, errorMsg])
+        const streamMsgId = crypto.randomUUID()
+        const agentMsg: Message = {
+          id: streamMsgId,
+          role: "agent",
+          text: "",
         }
+        setMessages((prev) => [...prev, agentMsg])
+
+        const controller = new AbortController()
+        abortRef.current = controller
+
+        askAgentStream(
+          report.agent_id,
+          text.trim(),
+          report.id,
+          {
+            onToken: (tokenText) => {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === streamMsgId ? { ...m, text: m.text + tokenText } : m,
+                ),
+              )
+            },
+            onMetadata: (meta) => {
+              if (meta.conversation_id && !conversationId) {
+                setConversationId(meta.conversation_id as string)
+              }
+              if (meta.usage) {
+                const u = meta.usage as { questions_used: number; questions_limit: number | null; reset_at?: string }
+                setUsage(u)
+                if (u.questions_limit !== null && u.questions_used >= u.questions_limit) {
+                  setQuotaExceeded(true)
+                }
+              }
+              if (meta.sources) {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === streamMsgId
+                      ? { ...m, metadata: { ...m.metadata, sources: meta.sources as string[] } }
+                      : m,
+                  ),
+                )
+              }
+            },
+            onDone: () => {
+              abortRef.current = null
+              setIsTyping(false)
+              if (!isOpen) setHasUnread(true)
+              setTimeout(() => inputRef.current?.focus(), 50)
+            },
+            onError: (message) => {
+              abortRef.current = null
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === streamMsgId
+                    ? { ...m, text: m.text || `Sorry, something went wrong: ${message}` }
+                    : m,
+                ),
+              )
+              setIsTyping(false)
+            },
+          },
+          conversationId,
+          history,
+          controller.signal,
+        )
       } else {
         const delay = 600 + Math.random() * 700
         setTimeout(() => {

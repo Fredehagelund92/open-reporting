@@ -27,8 +27,16 @@ import {
   TrendingUp,
   Smile,
   Trophy,
+  Settings,
+  Save,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useState, useEffect, useCallback } from "react"
+import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import {
   AreaChart,
@@ -58,7 +66,10 @@ interface ProfileAgent {
   created_at: string
   report_count: number
   owner_name: string | null
+  owner_id: string | null
   chat_enabled?: boolean
+  chat_endpoint?: string | null
+  chat_stream_endpoint?: string | null
 }
 
 interface ProfileReport {
@@ -74,6 +85,7 @@ interface ProfileReport {
 
 export function AgentProfilePage() {
   const { agentName } = useParams<{ agentName: string }>()
+  const { user: currentUser } = useAuth()
 
   const [agent, setAgent] = useState<ProfileAgent | null>(null)
   const [reports, setReports] = useState<ProfileReport[]>([])
@@ -81,6 +93,13 @@ export function AgentProfilePage() {
   const [loading, setLoading] = useState(true)
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [subscribing, setSubscribing] = useState(false)
+
+  // Chat settings (owner only)
+  const [chatEnabled, setChatEnabled] = useState(false)
+  const [chatEndpoint, setChatEndpoint] = useState("")
+  const [chatStreamEndpoint, setChatStreamEndpoint] = useState("")
+  const [chatSaving, setChatSaving] = useState(false)
+  const [chatSaveStatus, setChatSaveStatus] = useState<"idle" | "success" | "error">("idle")
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -91,6 +110,9 @@ export function AgentProfilePage() {
 
       if (agentData) {
         setAgent(agentData)
+        setChatEnabled(agentData.chat_enabled ?? false)
+        setChatEndpoint(agentData.chat_endpoint ?? "")
+        setChatStreamEndpoint(agentData.chat_stream_endpoint ?? "")
 
         // 2. Fetch reports, analytics, and subscription in parallel
         const [reportsRes, analyticsRes, subRes] = await Promise.allSettled([
@@ -129,6 +151,29 @@ export function AgentProfilePage() {
       console.error("Failed to toggle subscription", err)
     } finally {
       setSubscribing(false)
+    }
+  }
+
+  const isOwner = !!(currentUser && agent && currentUser.id === agent.owner_id)
+
+  const saveChatSettings = async () => {
+    if (!agent) return
+    setChatSaving(true)
+    setChatSaveStatus("idle")
+    try {
+      const res = await api.patch(`/agents/${agent.id}/chat-settings`, {
+        chat_enabled: chatEnabled,
+        chat_endpoint: chatEndpoint || "",
+        chat_stream_endpoint: chatStreamEndpoint || "",
+      })
+      setAgent({ ...agent, ...res.data })
+      setChatSaveStatus("success")
+      setTimeout(() => setChatSaveStatus("idle"), 3000)
+    } catch {
+      setChatSaveStatus("error")
+      setTimeout(() => setChatSaveStatus("idle"), 3000)
+    } finally {
+      setChatSaving(false)
     }
   }
 
@@ -231,6 +276,74 @@ export function AgentProfilePage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Chat Configuration (Owner Only) */}
+        {isOwner && (
+          <Card className="mb-8">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Settings className="size-5 text-muted-foreground" />
+                <h2 className="text-lg font-semibold text-foreground">Chat Configuration</h2>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="chat-enabled" className="text-sm font-medium">Enable Q&A Chat</Label>
+                  <Switch
+                    id="chat-enabled"
+                    checked={chatEnabled}
+                    onCheckedChange={setChatEnabled}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="chat-endpoint" className="text-sm font-medium">Chat Endpoint URL</Label>
+                  <Input
+                    id="chat-endpoint"
+                    type="url"
+                    placeholder="https://your-agent.example.com/chat"
+                    value={chatEndpoint}
+                    onChange={(e) => setChatEndpoint(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Required when chat is enabled. Must be an HTTP(S) URL.</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="chat-stream-endpoint" className="text-sm font-medium">Stream Endpoint URL (optional)</Label>
+                  <Input
+                    id="chat-stream-endpoint"
+                    type="url"
+                    placeholder="https://your-agent.example.com/chat/stream"
+                    value={chatStreamEndpoint}
+                    onChange={(e) => setChatStreamEndpoint(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Optional. Enables SSE streaming for real-time responses.</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Button onClick={saveChatSettings} disabled={chatSaving} size="sm">
+                    {chatSaving ? (
+                      <Loader2 className="size-4 mr-1.5 animate-spin" />
+                    ) : (
+                      <Save className="size-4 mr-1.5" />
+                    )}
+                    Save Settings
+                  </Button>
+                  {chatSaveStatus === "success" && (
+                    <span className="flex items-center gap-1 text-sm text-green-600">
+                      <CheckCircle2 className="size-4" /> Saved
+                    </span>
+                  )}
+                  {chatSaveStatus === "error" && (
+                    <span className="flex items-center gap-1 text-sm text-destructive">
+                      <AlertCircle className="size-4" /> Failed to save
+                    </span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Performance Analytics */}
         {hasReports && analytics && (
