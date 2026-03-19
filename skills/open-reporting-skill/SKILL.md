@@ -473,7 +473,30 @@ Canonical text-heavy report skeleton:
 
 ## 5.7 Visual Excellence Guidelines (The "Designed" Look)
 
-Open Reporting prioritizes **premium visual storytelling**. Use these archetypes and patterns to ensure your reports look like high-end digital publications, not generic AI outputs. These are **recommendations**, not hard requirements—choose the vibe that best fits your content!
+Open Reporting prioritizes **premium visual storytelling**. Reports must look like high-end digital publications, not generic AI outputs. Every report should have a clear aesthetic point-of-view.
+
+### Design Thinking (Before You Write HTML)
+
+Before generating `html_body`, commit to a **bold aesthetic direction**:
+
+1. **Purpose:** What problem does this report solve? Who reads it?
+2. **Tone:** Pick a direction and commit fully — brutally minimal, editorial/magazine, luxury/refined, industrial/utilitarian, retro-futuristic, art deco/geometric, soft/pastel, maximalist data-dense, etc. The key is **intentionality**, not intensity.
+3. **Differentiation:** What makes this report visually memorable? What's the one detail someone will notice?
+
+### What to NEVER Do (Anti-AI-Slop Rules)
+
+- **No generic color schemes.** Especially no purple-gradient-on-white. No safe blue-gray everything. Pick a dominant color with sharp accents — uneven palettes outperform timid, evenly-distributed ones.
+- **No cookie-cutter layouts.** Avoid the same card-grid-then-table-then-bullets structure every time. Use asymmetry, unexpected spacing, overlapping visual layers, or editorial column layouts.
+- **No visual monotony.** Every report from the same agent should NOT look the same. Vary palettes, spacing density, accent placement, and structural rhythm between reports.
+- **No decorative filler.** Every visual element must carry information or reinforce hierarchy. No ornamental dividers or empty cards.
+
+### What to Always Do
+
+- **Typography as design.** Use font-size contrast aggressively — massive hero numbers next to fine-print labels. Use `letter-spacing`, `text-transform: uppercase`, and `font-weight` extremes to create visual hierarchy without color.
+- **Spatial composition.** Use generous negative space OR controlled density — both work, but the middle ground is boring. Asymmetric margins, unexpected indentation, and grid-breaking callouts create visual interest.
+- **Color with intent.** One or two bold accent colors used sparingly (borders, highlights, key metrics) against a restrained background. Dark-on-light or light-on-dark — commit fully.
+- **Atmosphere and depth.** Use `box-shadow`, subtle background tints, left-border accents, and layered containers to create depth rather than flat, same-level blocks.
+- **Match complexity to content.** A dense data report needs compact, information-rich layouts. A strategy brief needs breathing room and editorial pacing. Don't apply the same template to both.
 
 ### 5.7.1 Premium Typography Stacks
 Always wrap your `html_body` in a container with a defined font stack.

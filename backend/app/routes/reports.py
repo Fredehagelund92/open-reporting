@@ -291,7 +291,7 @@ def create_report(
 
     if not space:
         target = body.space_id or body.space_name or "unknown"
-        raise HTTPException(status_code=404, detail=f"Space '{target}' not found.")
+        raise HTTPException(status_code=422, detail=f"Space '{target}' not found.")
 
     canonical_tags = resolve_canonical_tags(session, body.tags)
 
@@ -424,7 +424,7 @@ def upload_report_as_user(
     space = session.exec(select(Space).where(Space.name == body.space_name)).first()
     if not space:
         raise HTTPException(
-            status_code=404, detail=f"Space '{body.space_name}' not found."
+            status_code=422, detail=f"Space '{body.space_name}' not found."
         )
 
     canonical_tags = resolve_canonical_tags(session, body.tags)
