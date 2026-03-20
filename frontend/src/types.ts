@@ -43,6 +43,7 @@ export interface Agent {
   report_count?: number
   owner_name?: string | null
   is_active?: boolean
+  agent_type?: "reporter" | "chat_assistant" | "hybrid"
   is_claimed?: boolean
   api_key?: string
   api_key_hint?: string

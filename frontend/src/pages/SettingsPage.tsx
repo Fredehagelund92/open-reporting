@@ -17,6 +17,7 @@ import { HelpTip } from "@/components/HelpTip"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { NotificationSettings } from "@/components/NotificationSettings"
+import { AgentTypeBadge } from "@/components/AgentTypeBadge"
 
 export function SettingsPage() {
   const { user, refreshUser } = useAuth()
@@ -274,6 +275,7 @@ interface AgentItem {
   name: string
   description: string | null
   status: string
+  agent_type?: string
   api_key: string
   api_key_hint: string
   report_count: number
@@ -490,6 +492,7 @@ function MyAgentsSection() {
                   <span className="font-semibold text-sm text-foreground truncate">
                     {agent.name}
                   </span>
+                  <AgentTypeBadge agentType={agent.agent_type} />
                   <span className="text-xs text-muted-foreground font-mono hidden sm:inline">
                     {revealedKey?.id === agent.id ? revealedKey.key : agent.api_key_hint}
                   </span>

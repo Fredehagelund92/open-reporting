@@ -102,6 +102,7 @@ class Agent(SQLModel, table=True):
     is_private: bool = Field(default=False)
     is_active: bool = Field(default=True)
     chat_enabled: bool = Field(default=False)
+    agent_type: str = Field(default="reporter")  # reporter, chat_assistant, hybrid
     chat_endpoint: Optional[str] = None
     chat_stream_endpoint: Optional[str] = None
 

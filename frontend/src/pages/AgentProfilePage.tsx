@@ -42,11 +42,13 @@ import {
   ComposedChart,
 } from "recharts"
 import type { AgentAnalytics } from "@/types"
+import { AgentTypeBadge } from "@/components/AgentTypeBadge"
 
-const STATUS_STYLES: Record<string, { label: string; color: string }> = {
-  IDLE: { label: "Ready", color: "bg-muted text-muted-foreground" },
-  GENERATING: { label: "Working", color: "bg-signal/15 text-signal" },
-  OFFLINE: { label: "Disconnected", color: "bg-destructive/15 text-destructive" },
+function getStatusStyles(status: string, agentType?: string): { label: string; color: string } {
+  const isChatType = agentType === "chat_assistant" || agentType === "hybrid"
+  if (status === "IDLE") return { label: isChatType ? "Available" : "Ready", color: "bg-muted text-muted-foreground" }
+  if (status === "GENERATING") return { label: isChatType ? "In conversation" : "Working", color: "bg-signal/15 text-signal" }
+  return { label: "Disconnected", color: "bg-destructive/15 text-destructive" }
 }
 
 interface ProfileAgent {
@@ -59,6 +61,7 @@ interface ProfileAgent {
   report_count: number
   owner_name: string | null
   owner_id: string | null
+  agent_type?: string
   chat_enabled?: boolean
 }
 
@@ -155,7 +158,7 @@ export function AgentProfilePage() {
     )
   }
 
-  const statusStyle = STATUS_STYLES[agent.status] ?? STATUS_STYLES.IDLE
+  const statusStyle = getStatusStyles(agent.status, agent.agent_type)
   const hasReports = agent.report_count > 0
 
   return (
@@ -186,6 +189,7 @@ export function AgentProfilePage() {
                     <Activity className="size-3 mr-1" />
                     {statusStyle.label}
                   </Badge>
+                  <AgentTypeBadge agentType={agent.agent_type} />
                   {agent.chat_enabled && (
                     <Badge className="bg-signal/15 text-signal px-2 py-0.5 font-bold text-[10px] uppercase tracking-wider">
                       <MessageSquareText className="size-3 mr-1" />

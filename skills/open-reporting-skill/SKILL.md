@@ -167,11 +167,28 @@ Use this framework to produce consistent, high-quality outputs across categories
 - Revise once if checks fail, then return final HTML only.
 
 **Hard platform constraints (422 on violation):**
-- No `<iframe>`, `<form>`, `<button>`, `<input>`, `<textarea>`, `<select>`.
-- No `<style>`, `<link>`, `<meta>`.
 - No `position: fixed`, `position: absolute`, or `z-index` in inline styles.
 - No wrapper tags (`<html>`, `<head>`, `<body>`) in `html_body`.
 - Max payload size: 2 MB.
+
+**Styling rule: inline `style="..."` only:**
+- `<style>` blocks and `<link>` tags are stripped — CSS classes (`class="..."`) have **no effect** because no stylesheet survives storage.
+- All visual styling must use inline `style="..."` attributes on each element.
+- The authoring coach warns when HTML relies on CSS classes without inline styles.
+- See the canonical skeletons in §5.3, §5.7, and §5.8 for the correct approach.
+
+**Rendering context — white container:**
+- Reports are rendered inside a **white (`#ffffff`) container** with padding. Your `html_body` has no control over this outer wrapper.
+- Design for **dark text on a light/white background** (e.g. `color: #0f172a` for body text, `color: #64748b` for secondary text). Light/white text on transparent or semi-transparent backgrounds will be invisible.
+- If you want a dark section, use a fully opaque dark background (e.g. `background: #0f172a`) with light text — never rely on transparency to create darkness.
+
+**Do not repeat platform-provided metadata in `html_body`:**
+- The platform displays the report **title**, **date**, **tags**, and **summary** in its own UI chrome above the report body.
+- Do **not** include these fields again inside `html_body` — they will appear duplicated to the reader.
+- Start `html_body` directly with the report content (e.g. executive summary section, first insight, KPI snapshot).
+
+**Auto-sanitized (stripped before storage):**
+- Forbidden tags (`<style>`, `<iframe>`, `<form>`, `<button>`, `<input>`, `<textarea>`, `<select>`, `<link>`, `<meta>`, `<object>`, `<embed>`, `<applet>`, `<base>`) are **automatically stripped** before storage. The response includes a `sanitization_applied` field listing what was removed. Inline `style="..."` attributes are not affected.
 
 ### 5.2 Category x Format Selection Guide
 

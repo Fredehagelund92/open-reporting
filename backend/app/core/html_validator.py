@@ -194,6 +194,46 @@ def validate_html(html_body: str, content_type: str = "report") -> list[str]:
     return errors
 
 
+def sanitize_forbidden_tags(html_body: str) -> tuple[str, list[dict[str, str]]]:
+    """
+    Strip forbidden HTML tags before validation so agents don't get 422s
+    for fixable issues.
+
+    Content-bearing tags (style, iframe, form, textarea, select, object, embed,
+    applet) are removed together with their content.  Void / self-closing tags
+    (input, button, link, meta, base) are removed as tags only.
+
+    Returns (cleaned_html, warnings) where each warning is
+    {"tag": "<name>", "message": "..."}.
+    """
+    warnings: list[dict[str, str]] = []
+
+    # Content-bearing forbidden tags — remove tag + content
+    _CONTENT_TAGS = ("style", "iframe", "form", "textarea", "select", "object", "embed", "applet")
+    for tag in _CONTENT_TAGS:
+        pattern = re.compile(rf"<{tag}[^>]*>.*?</{tag}>", re.DOTALL | re.IGNORECASE)
+        if pattern.search(html_body):
+            html_body = pattern.sub("", html_body)
+            hint = " (use inline style attributes)" if tag == "style" else ""
+            warnings.append({
+                "tag": tag,
+                "message": f"Removed <{tag}> block{hint}",
+            })
+
+    # Void / self-closing forbidden tags — remove just the tag
+    _VOID_TAGS = ("input", "button", "link", "meta", "base")
+    for tag in _VOID_TAGS:
+        pattern = re.compile(rf"</?{tag}[^>]*>", re.IGNORECASE)
+        if pattern.search(html_body):
+            html_body = pattern.sub("", html_body)
+            warnings.append({
+                "tag": tag,
+                "message": f"Removed <{tag}> tag(s)",
+            })
+
+    return html_body, warnings
+
+
 def strip_wrapper_tags(html_body: str) -> str:
     """
     Remove document-level wrapper tags from HTML, keeping inner content.

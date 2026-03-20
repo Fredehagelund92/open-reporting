@@ -34,7 +34,7 @@ from app.models import (
 from app.routes.agents import get_current_agent
 from app.auth.dependencies import get_current_user_optional, get_current_user
 from app.core.cache import cache
-from app.core.html_validator import validate_html, strip_wrapper_tags
+from app.core.html_validator import validate_html, strip_wrapper_tags, sanitize_forbidden_tags
 from app.core.authoring_coach import (
     evaluate_authoring_quality,
     get_authoring_coach_mode,
@@ -118,6 +118,7 @@ class AuthoringCoachResponse(BaseModel):
     mode: str
     issues: list[AuthoringCoachIssueResponse] = []
     suggested_edits: list[str] = []
+    sanitization_applied: Optional[list[dict]] = None
 
 
 class ReportSummaryResponse(BaseModel):
@@ -136,6 +137,7 @@ class ReportSummaryResponse(BaseModel):
     can_delete: bool = False
     created_at: str
     authoring_coach: Optional[AuthoringCoachResponse] = None
+    sanitization_applied: Optional[list[dict]] = None
     series_id: Optional[str] = None
     run_number: Optional[int] = None
 
@@ -216,7 +218,8 @@ def evaluate_authoring_coach(
             status_code=422, detail="content_type must be 'report' or 'slideshow'."
         )
 
-    html_errors = validate_html(body.html_body, content_type=body.content_type)
+    clean_html, sanitization_warnings = sanitize_forbidden_tags(body.html_body)
+    html_errors = validate_html(clean_html, content_type=body.content_type)
     if html_errors:
         return AuthoringCoachResponse(
             readiness_status="blocked",
@@ -232,9 +235,13 @@ def evaluate_authoring_coach(
                 for error in html_errors
             ],
             suggested_edits=["Resolve HTML validation errors before publishing."],
+            sanitization_applied=sanitization_warnings or None,
         )
 
-    return _run_authoring_coach(body)
+    body_for_coach = body.model_copy(update={"html_body": clean_html})
+    coach_response = _run_authoring_coach(body_for_coach)
+    coach_response.sanitization_applied = sanitization_warnings or None
+    return coach_response
 
 
 @router.post(
@@ -261,12 +268,14 @@ def create_report(
             status_code=422, detail="content_type must be 'report' or 'slideshow'."
         )
 
-    # Validate HTML content
-    html_errors = validate_html(body.html_body, content_type=body.content_type)
+    # Sanitize forbidden tags, then validate
+    clean_html, sanitization_warnings = sanitize_forbidden_tags(body.html_body)
+    html_errors = validate_html(clean_html, content_type=body.content_type)
     if html_errors:
         raise HTTPException(status_code=422, detail={"validation_errors": html_errors})
 
-    coach_feedback = _run_authoring_coach(body)
+    body_for_coach = body.model_copy(update={"html_body": clean_html})
+    coach_feedback = _run_authoring_coach(body_for_coach)
     if (
         coach_feedback.mode == "enforce"
         and coach_feedback.readiness_status == "blocked"
@@ -280,7 +289,7 @@ def create_report(
         )
 
     # Strip document wrappers if present
-    clean_html = strip_wrapper_tags(body.html_body)
+    clean_html = strip_wrapper_tags(clean_html)
 
     # Verify the space exists (either via ID or Name)
     space = None
@@ -345,6 +354,7 @@ def create_report(
         comment_count=0,
         created_at=report.created_at.isoformat(),
         authoring_coach=coach_feedback,
+        sanitization_applied=sanitization_warnings or None,
         series_id=report.series_id,
         run_number=report.run_number,
     )
@@ -393,7 +403,8 @@ def upload_report_as_user(
     if agent.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="You do not own this agent.")
 
-    html_errors = validate_html(body.html_body, content_type=body.content_type)
+    clean_html, sanitization_warnings = sanitize_forbidden_tags(body.html_body)
+    html_errors = validate_html(clean_html, content_type=body.content_type)
     if html_errors:
         raise HTTPException(status_code=422, detail={"validation_errors": html_errors})
 
@@ -402,7 +413,7 @@ def upload_report_as_user(
             title=body.title,
             summary=body.summary,
             tags=body.tags,
-            html_body=body.html_body,
+            html_body=clean_html,
             space_name=body.space_name,
             content_type=body.content_type,
         )
@@ -419,7 +430,7 @@ def upload_report_as_user(
             },
         )
 
-    clean_html = strip_wrapper_tags(body.html_body)
+    clean_html = strip_wrapper_tags(clean_html)
 
     space = session.exec(select(Space).where(Space.name == body.space_name)).first()
     if not space:
@@ -472,6 +483,7 @@ def upload_report_as_user(
         comment_count=0,
         created_at=report.created_at.isoformat(),
         authoring_coach=coach_feedback,
+        sanitization_applied=sanitization_warnings or None,
         series_id=report.series_id,
         run_number=report.run_number,
     )
@@ -803,13 +815,15 @@ def update_report(
 
     effective_content_type = report.content_type
 
+    sanitization_warnings: list[dict[str, str]] = []
     if body.html_body is not None:
-        html_errors = validate_html(body.html_body, content_type=effective_content_type)
+        clean_html, sanitization_warnings = sanitize_forbidden_tags(body.html_body)
+        html_errors = validate_html(clean_html, content_type=effective_content_type)
         if html_errors:
             raise HTTPException(
                 status_code=422, detail={"validation_errors": html_errors}
             )
-        report.html_body = strip_wrapper_tags(body.html_body)
+        report.html_body = strip_wrapper_tags(clean_html)
 
     # Re-run coach on the full (post-patch) state
     coach_feedback = _run_authoring_coach(
@@ -874,6 +888,7 @@ def update_report(
         comment_count=int(comment_count),
         created_at=report.created_at.isoformat(),
         authoring_coach=coach_feedback,
+        sanitization_applied=sanitization_warnings or None,
         series_id=report.series_id,
         run_number=report.run_number,
     )

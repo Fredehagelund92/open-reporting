@@ -15,9 +15,11 @@ import {
   CheckCircle2,
   Clock,
   ArrowUpDown,
+  SlidersHorizontal,
 } from "lucide-react"
 
 import { type Agent } from "@/types"
+import { AgentTypeBadge } from "@/components/AgentTypeBadge"
 
 type SortKey = "name" | "status" | "report_count" | "created_at"
 
@@ -26,23 +28,31 @@ function SortIcon({ k, sortKey, sortDir }: { k: SortKey, sortKey: SortKey, sortD
   return sortDir === "asc" ? <ChevronUp className="size-3 text-primary" /> : <ChevronDown className="size-3 text-primary" />
 }
 
-function StatusBadge({ status }: { status: string }) {
+function getStatusLabel(status: string, agentType?: string) {
+  const isChatType = agentType === "chat_assistant" || agentType === "hybrid"
+  if (status === "IDLE") return isChatType ? "Available" : "Ready"
+  if (status === "GENERATING") return isChatType ? "In conversation" : "Working"
+  return "Disconnected"
+}
+
+function StatusBadge({ status, agentType }: { status: string; agentType?: string }) {
+  const label = getStatusLabel(status, agentType)
   if (status === "IDLE") return (
     <Badge variant="outline" className="gap-1 text-signal border-signal/20 bg-signal/10">
       <span className="size-1.5 rounded-full bg-signal animate-pulse inline-block" />
-      Ready
+      {label}
     </Badge>
   )
   if (status === "GENERATING") return (
     <Badge variant="outline" className="gap-1 text-signal border-signal/20 bg-signal/10">
       <span className="size-1.5 rounded-full bg-signal/100 animate-pulse inline-block" />
-      Working
+      {label}
     </Badge>
   )
   return (
     <Badge variant="outline" className="gap-1 text-muted-foreground border-border bg-muted">
       <span className="size-1.5 rounded-full bg-muted-foreground inline-block" />
-      Disconnected
+      {label}
     </Badge>
   )
 }
@@ -52,14 +62,16 @@ export function AgentsDirectoryPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "IDLE" | "GENERATING" | "OFFLINE">("all")
+  const [typeFilter, setTypeFilter] = useState<"all" | "reporter" | "chat_assistant" | "hybrid">("all")
   const [sortKey, setSortKey] = useState<SortKey>("report_count")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
 
   useEffect(() => {
-    api.get("/agents/")
+    const params = typeFilter !== "all" ? `?agent_type=${typeFilter}` : ""
+    api.get(`/agents/${params}`)
       .then((r) => { setAgents(Array.isArray(r.data) ? r.data : []); setLoading(false) })
       .catch(() => setLoading(false))
-  }, [])
+  }, [typeFilter])
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc")
@@ -109,23 +121,50 @@ export function AgentsDirectoryPage() {
               )}
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
-            <div className="relative flex-1 min-w-[220px] max-w-md">
+          <div className="flex flex-wrap gap-3 items-center mb-6">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search AI assistants..." 
-                className="pl-9 bg-card border-border"
+              <Input
+                placeholder="Search assistants..."
+                className="pl-9 h-9 bg-card border-border"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant={statusFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("all")}>All</Button>
-              <Button variant={statusFilter === "IDLE" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("IDLE")}>Ready</Button>
-              <Button variant={statusFilter === "GENERATING" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("GENERATING")}>Working</Button>
-              <Button variant={statusFilter === "OFFLINE" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("OFFLINE")}>Disconnected</Button>
+            <div className="flex items-center rounded-lg border border-border bg-muted/50 p-0.5">
+              {([
+                { value: "all", label: "All" },
+                { value: "IDLE", label: "Ready" },
+                { value: "GENERATING", label: "Working" },
+                { value: "OFFLINE", label: "Offline" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setStatusFilter(opt.value)}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                    statusFilter === opt.value
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
-            <Button asChild className="bg-primary hover:bg-primary/90 text-white gap-2">
+            <div className="relative">
+              <SlidersHorizontal className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+              <select
+                value={typeFilter}
+                onChange={e => setTypeFilter(e.target.value as typeof typeFilter)}
+                className="h-9 pl-8 pr-3 text-xs font-medium rounded-lg border border-border bg-card text-foreground appearance-none cursor-pointer hover:border-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="all">All types</option>
+                <option value="reporter">Reporter</option>
+                <option value="chat_assistant">Chat Assistant</option>
+                <option value="hybrid">Hybrid</option>
+              </select>
+            </div>
+            <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-white gap-2 ml-auto">
               <Link to="/connect">
                 <Bot className="size-4" />
                 Setup Assistant
@@ -199,7 +238,10 @@ export function AgentsDirectoryPage() {
                     </Link>
                   </td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={agent.status || "IDLE"} />
+                    <div className="flex items-center gap-1.5">
+                      <StatusBadge status={agent.status || "IDLE"} agentType={agent.agent_type} />
+                      <AgentTypeBadge agentType={agent.agent_type} />
+                    </div>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell">
                     <span className="font-semibold text-foreground">{agent.report_count}</span>

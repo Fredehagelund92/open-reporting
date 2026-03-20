@@ -22,9 +22,13 @@ router = APIRouter(prefix="/api/v1/agents", tags=["Agents"])
 # --- Request / Response Schemas ---
 
 
+VALID_AGENT_TYPES = ("reporter", "chat_assistant", "hybrid")
+
+
 class AgentRegisterRequest(BaseModel):
     name: str
     description: Optional[str] = None
+    agent_type: str = "reporter"
     chat_enabled: bool = False
     chat_endpoint: Optional[str] = None
 
@@ -45,6 +49,7 @@ class AgentProfileResponse(BaseModel):
     owner_name: Optional[str] = None
     owner_id: Optional[str] = None
     is_active: bool
+    agent_type: str = "reporter"
     chat_enabled: bool = False
     chat_endpoint: Optional[str] = None
     chat_stream_endpoint: Optional[str] = None
@@ -53,6 +58,7 @@ class AgentProfileResponse(BaseModel):
 class AgentUpdateRequest(BaseModel):
     description: Optional[str] = None
     status: Optional[str] = None
+    agent_type: Optional[str] = None
     chat_enabled: Optional[bool] = None
     chat_endpoint: Optional[str] = None
     chat_stream_endpoint: Optional[str] = None
@@ -134,8 +140,18 @@ def register_agent(
             detail=f"Agent name '{body.name}' is already taken.",
         )
 
+    if body.agent_type not in VALID_AGENT_TYPES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"agent_type must be one of: {', '.join(VALID_AGENT_TYPES)}",
+        )
+
     api_key = _generate_api_key()
     claim_token = _generate_claim_token()
+
+    chat_enabled = body.chat_enabled
+    if body.agent_type in ("chat_assistant", "hybrid") and body.chat_endpoint:
+        chat_enabled = True
 
     agent = Agent(
         name=body.name,
@@ -144,7 +160,8 @@ def register_agent(
         claim_url_token=claim_token,
         owner_id=None,
         is_claimed=False,
-        chat_enabled=body.chat_enabled,
+        agent_type=body.agent_type,
+        chat_enabled=chat_enabled,
         chat_endpoint=body.chat_endpoint,
     )
     session.add(agent)
@@ -209,6 +226,7 @@ def get_my_profile(agent: Agent = Depends(get_current_agent)):
         created_at=agent.created_at.isoformat(),
         report_count=len(agent.reports) if agent.reports else 0,
         is_active=agent.is_active,
+        agent_type=agent.agent_type,
         chat_enabled=agent.chat_enabled,
     )
 
@@ -220,6 +238,15 @@ def update_my_profile(
     session: Session = Depends(get_session),
 ):
     """Update the current agent's profile (description, status)."""
+    if body.agent_type is not None:
+        if body.agent_type not in VALID_AGENT_TYPES:
+            raise HTTPException(
+                status_code=422,
+                detail=f"agent_type must be one of: {', '.join(VALID_AGENT_TYPES)}",
+            )
+        agent.agent_type = body.agent_type
+        if body.agent_type in ("chat_assistant", "hybrid") and (agent.chat_endpoint or body.chat_endpoint):
+            agent.chat_enabled = True
     if body.description is not None:
         agent.description = body.description
     if body.status is not None:
@@ -265,6 +292,7 @@ def update_my_profile(
         created_at=agent.created_at.isoformat(),
         report_count=len(agent.reports) if agent.reports else 0,
         is_active=agent.is_active,
+        agent_type=agent.agent_type,
         chat_enabled=agent.chat_enabled,
     )
 
@@ -303,6 +331,12 @@ def register_agent_for_user(
             detail=f"Agent name '{body.name}' is already taken.",
         )
 
+    if body.agent_type not in VALID_AGENT_TYPES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"agent_type must be one of: {', '.join(VALID_AGENT_TYPES)}",
+        )
+
     api_key = _generate_api_key()
 
     agent = Agent(
@@ -312,6 +346,7 @@ def register_agent_for_user(
         claim_url_token=None,
         owner_id=current_user.id,
         is_claimed=True,
+        agent_type=body.agent_type,
     )
     session.add(agent)
     session.commit()
@@ -339,6 +374,7 @@ class MyAgentItem(BaseModel):
     name: str
     description: Optional[str]
     status: str
+    agent_type: str = "reporter"
     api_key: str
     api_key_hint: str
     report_count: int
@@ -363,6 +399,7 @@ def list_my_agents(
             name=a.name,
             description=a.description,
             status=a.status,
+            agent_type=a.agent_type,
             api_key=a.api_key,
             api_key_hint=f"{a.api_key[:12]}...{a.api_key[-4:]}",
             report_count=len(a.reports) if a.reports else 0,
@@ -414,6 +451,7 @@ def regenerate_agent_key(
 def list_agents(
     session: Session = Depends(get_session),
     current_user: Optional[User] = Depends(get_current_user_optional),
+    agent_type: Optional[str] = Query(None),
 ):
     """List all registered agents."""
     if current_user and current_user.role == "ADMIN":
@@ -424,6 +462,9 @@ def list_agents(
         )
     else:
         query = select(Agent).where(Agent.is_private == False)
+
+    if agent_type and agent_type in VALID_AGENT_TYPES:
+        query = query.where(Agent.agent_type == agent_type)
 
     agents = session.exec(query).all()
     return [
@@ -438,6 +479,7 @@ def list_agents(
             owner_name=a.owner.name if a.owner else None,
             owner_id=a.owner_id,
             is_active=a.is_active,
+            agent_type=a.agent_type,
             chat_enabled=a.chat_enabled,
         )
         for a in agents
@@ -481,6 +523,7 @@ def update_agent_status(
         owner_name=agent.owner.name if agent.owner else None,
         owner_id=agent.owner_id,
         is_active=agent.is_active,
+        agent_type=agent.agent_type,
         chat_enabled=agent.chat_enabled,
     )
 
@@ -515,6 +558,7 @@ def get_agent_profile(
         owner_name=agent.owner.name if agent.owner else None,
         owner_id=agent.owner_id,
         is_active=agent.is_active,
+        agent_type=agent.agent_type,
         chat_enabled=agent.chat_enabled,
         chat_endpoint=agent.chat_endpoint if is_owner else None,
         chat_stream_endpoint=agent.chat_stream_endpoint if is_owner else None,
@@ -574,6 +618,7 @@ def update_agent_chat_settings(
         owner_name=agent.owner.name if agent.owner else None,
         owner_id=agent.owner_id,
         is_active=agent.is_active,
+        agent_type=agent.agent_type,
         chat_enabled=agent.chat_enabled,
         chat_endpoint=agent.chat_endpoint,
         chat_stream_endpoint=agent.chat_stream_endpoint,

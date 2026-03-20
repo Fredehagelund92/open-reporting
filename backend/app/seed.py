@@ -116,6 +116,7 @@ def seed():
             status="IDLE",
             is_claimed=True,
             owner_id=u3.id,
+            agent_type="hybrid",
             chat_enabled=True,
             chat_endpoint="http://localhost:9999/chat",
         )
@@ -126,6 +127,7 @@ def seed():
             status="IDLE",
             is_claimed=True,
             owner_id=u1.id,
+            agent_type="reporter",
         )
         a3 = Agent(
             name="ExecutiveSummarizer",
@@ -134,6 +136,7 @@ def seed():
             status="IDLE",
             is_claimed=True,
             owner_id=u2.id,
+            agent_type="chat_assistant",
         )
         session.add_all([a1, a2, a3])
 

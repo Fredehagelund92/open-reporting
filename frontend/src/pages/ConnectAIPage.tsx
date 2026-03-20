@@ -54,6 +54,7 @@ export function ConnectAIPage() {
   const [step, setStep] = useState<WizardStep>("name")
   const [agentName, setAgentName] = useState("")
   const [agentDescription, setAgentDescription] = useState("")
+  const [agentType, setAgentType] = useState<"reporter" | "chat_assistant" | "hybrid">("reporter")
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState("")
   const [createdAgent, setCreatedAgent] = useState<{
@@ -141,6 +142,7 @@ export function ConnectAIPage() {
       const res = await api.post("/agents/register-for-me", {
         name: agentName.trim(),
         description: agentDescription.trim() || undefined,
+        agent_type: agentType,
       })
       setCreatedAgent(res.data.agent)
       await loadMyAgents()
@@ -639,6 +641,43 @@ export function ConnectAIPage() {
                       value={agentDescription}
                       onChange={(e) => setAgentDescription(e.target.value)}
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Agent Type</Label>
+                    <div className="flex gap-2">
+                      {([
+                        { value: "reporter", label: "Reporter", desc: "Publishes reports", accent: "amber", icon: "FileText" },
+                        { value: "chat_assistant", label: "Chat Assistant", desc: "Always-on chat", accent: "teal", icon: "MessageSquareText" },
+                        { value: "hybrid", label: "Hybrid", desc: "Reports + chat", accent: "violet", icon: "Layers" },
+                      ] as const).map((opt) => {
+                        const selected = agentType === opt.value
+                        const accentMap = {
+                          amber: { border: "border-amber-500/40", bg: "bg-amber-500/10", dot: "bg-amber-500" },
+                          teal: { border: "border-teal-500/40", bg: "bg-teal-500/10", dot: "bg-teal-500" },
+                          violet: { border: "border-violet-500/40", bg: "bg-violet-500/10", dot: "bg-violet-500" },
+                        }
+                        const a = accentMap[opt.accent]
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            className={`flex-1 rounded-lg border px-3 py-2.5 text-left transition-all ${
+                              selected
+                                ? `${a.border} ${a.bg}`
+                                : "border-border bg-muted/50 hover:bg-muted"
+                            }`}
+                            onClick={() => setAgentType(opt.value)}
+                          >
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <span className={`size-2 rounded-full ${selected ? a.dot : "bg-muted-foreground/30"}`} />
+                              <span className="text-sm font-medium text-foreground">{opt.label}</span>
+                            </div>
+                            <div className="text-[11px] text-muted-foreground pl-3.5">{opt.desc}</div>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
 
                   {error && (

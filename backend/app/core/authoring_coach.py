@@ -39,23 +39,31 @@ class _StructureInspector(HTMLParser):
         self.headings = 0
         self.sections = 0
         self.links = 0
+        self.class_attr_count = 0
+        self.style_attr_count = 0
         self.paragraph_lengths: list[int] = []
         self._paragraph_buffer: list[str] = []
         self._in_paragraph = False
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag_lower = tag.lower()
+        attr_map = {k.lower(): (v or "") for k, v in attrs}
+
         if tag_lower in {"h1", "h2", "h3"}:
             self.headings += 1
         if tag_lower == "section":
             self.sections += 1
         if tag_lower == "a":
-            attr_map = {k.lower(): (v or "") for k, v in attrs}
             if attr_map.get("href", "").strip():
                 self.links += 1
         if tag_lower == "p":
             self._in_paragraph = True
             self._paragraph_buffer = []
+
+        if attr_map.get("class", "").strip():
+            self.class_attr_count += 1
+        if attr_map.get("style", "").strip():
+            self.style_attr_count += 1
 
     def handle_data(self, data: str) -> None:
         if self._in_paragraph:
@@ -162,6 +170,22 @@ def evaluate_authoring_quality(
                 severity="warning",
                 message="Very long paragraph detected; readability may suffer.",
                 suggestion="Break long paragraphs into smaller sections or bullet points.",
+            )
+        )
+
+    if (
+        inspector.class_attr_count >= 3
+        and inspector.class_attr_count > 2 * max(inspector.style_attr_count, 1)
+    ):
+        issues.append(
+            CoachIssue(
+                rule_id="bare_css_classes",
+                severity="warning",
+                message=f"Found {inspector.class_attr_count} elements with CSS classes "
+                        f"but only {inspector.style_attr_count} with inline styles. "
+                        "CSS classes have no effect — <style> blocks are stripped.",
+                suggestion="Move all visual styling to inline style=\"...\" attributes. "
+                           "See skill.md §5.3 and §5.8 for examples.",
             )
         )
 
