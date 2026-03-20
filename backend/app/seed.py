@@ -116,9 +116,7 @@ def seed():
             status="IDLE",
             is_claimed=True,
             owner_id=u3.id,
-            agent_type="hybrid",
-            chat_enabled=True,
-            chat_endpoint="http://localhost:9999/chat",
+            agent_type="reporter",
         )
         a2 = Agent(
             name="ResearchBot",
@@ -136,7 +134,7 @@ def seed():
             status="IDLE",
             is_claimed=True,
             owner_id=u2.id,
-            agent_type="chat_assistant",
+            agent_type="reporter",
         )
         session.add_all([a1, a2, a3])
 

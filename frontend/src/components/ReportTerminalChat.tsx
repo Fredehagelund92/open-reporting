@@ -25,6 +25,7 @@ interface Message {
   role: Role
   text: string
   typing?: boolean
+  streaming?: boolean
   metadata?: { sources?: string[]; confidence?: number; [key: string]: unknown }
 }
 
@@ -99,6 +100,153 @@ function getMockResponse(query: string, report: Report): string {
   return fallbacks[Math.floor(Math.random() * fallbacks.length)]
 }
 
+// ─── Lightweight markdown renderer for chat bubbles ─────────────────────────
+
+function ChatMarkdown({ text }: { text: string }) {
+  if (!text) return null
+
+  const lines = text.split("\n")
+  const elements: React.ReactNode[] = []
+  let i = 0
+
+  while (i < lines.length) {
+    const line = lines[i]
+
+    // Fenced code block
+    if (line.trimStart().startsWith("```")) {
+      const codeLines: string[] = []
+      i++
+      while (i < lines.length && !lines[i].trimStart().startsWith("```")) {
+        codeLines.push(lines[i])
+        i++
+      }
+      i++ // skip closing ```
+      elements.push(
+        <pre
+          key={elements.length}
+          className="my-1.5 rounded-md bg-muted/80 border border-border/50 px-2.5 py-2 overflow-x-auto"
+        >
+          <code className="text-[11px] leading-relaxed">{codeLines.join("\n")}</code>
+        </pre>,
+      )
+      continue
+    }
+
+    // Heading
+    const headingMatch = line.match(/^(#{1,3})\s+(.+)$/)
+    if (headingMatch) {
+      const level = headingMatch[1].length
+      const sizes = ["text-[15px]", "text-[14px]", "text-[13px]"]
+      elements.push(
+        <div key={elements.length} className={`${sizes[level - 1]} font-bold mt-2 mb-0.5`}>
+          {renderInline(headingMatch[2])}
+        </div>,
+      )
+      i++
+      continue
+    }
+
+    // Unordered list item
+    if (line.match(/^\s*[-*]\s+/)) {
+      const items: React.ReactNode[] = []
+      while (i < lines.length && lines[i].match(/^\s*[-*]\s+/)) {
+        items.push(
+          <li key={items.length} className="ml-3 list-disc">
+            {renderInline(lines[i].replace(/^\s*[-*]\s+/, ""))}
+          </li>,
+        )
+        i++
+      }
+      elements.push(
+        <ul key={elements.length} className="my-1 space-y-0.5">
+          {items}
+        </ul>,
+      )
+      continue
+    }
+
+    // Ordered list item
+    if (line.match(/^\s*\d+[.)]\s+/)) {
+      const items: React.ReactNode[] = []
+      while (i < lines.length && lines[i].match(/^\s*\d+[.)]\s+/)) {
+        items.push(
+          <li key={items.length} className="ml-3 list-decimal">
+            {renderInline(lines[i].replace(/^\s*\d+[.)]\s+/, ""))}
+          </li>,
+        )
+        i++
+      }
+      elements.push(
+        <ol key={elements.length} className="my-1 space-y-0.5">
+          {items}
+        </ol>,
+      )
+      continue
+    }
+
+    // Empty line → spacing
+    if (!line.trim()) {
+      elements.push(<div key={elements.length} className="h-1.5" />)
+      i++
+      continue
+    }
+
+    // Regular paragraph
+    elements.push(
+      <span key={elements.length} className="block">
+        {renderInline(line)}
+      </span>,
+    )
+    i++
+  }
+
+  return <>{elements}</>
+}
+
+/** Parse inline markdown: **bold**, *italic*, `code`, [links](url) */
+function renderInline(text: string): React.ReactNode {
+  // Split on inline patterns, preserving delimiters via capture groups
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/)
+  return parts.map((part, i) => {
+    // Bold
+    const bold = part.match(/^\*\*([^*]+)\*\*$/)
+    if (bold) return <strong key={i} className="font-bold">{bold[1]}</strong>
+
+    // Italic
+    const italic = part.match(/^\*([^*]+)\*$/)
+    if (italic) return <em key={i}>{italic[1]}</em>
+
+    // Inline code
+    const code = part.match(/^`([^`]+)`$/)
+    if (code)
+      return (
+        <code
+          key={i}
+          className="px-1 py-px rounded bg-muted/80 border border-border/50 text-[11px]"
+        >
+          {code[1]}
+        </code>
+      )
+
+    // Link
+    const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+    if (link)
+      return (
+        <a
+          key={i}
+          href={link[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline underline-offset-2"
+        >
+          {link[1]}
+        </a>
+      )
+
+    return part
+  })
+}
+
 // ─── Typewriter ──────────────────────────────────────────────────────────────
 
 function useTypewriter(
@@ -158,9 +306,13 @@ function AgentBubble({
     onDone,
     10,
   )
-  const isDone = !message.typing || !isLast
+  const isStreaming = !!(message.streaming && isLast)
+  const isDone = !isStreaming && (!message.typing || !isLast)
   const initial = agentName.charAt(0).toUpperCase()
-  const sources = message.metadata?.sources
+  const rawSources = message.metadata?.sources
+  const sources = Array.isArray(rawSources)
+    ? rawSources.map((s) => (typeof s === "string" ? s : JSON.stringify(s)))
+    : undefined
 
   return (
     <div className="flex gap-2.5 items-start">
@@ -171,19 +323,17 @@ function AgentBubble({
         <span className="text-[10px] font-medium text-muted-foreground/70">
           {agentName}
         </span>
-        <div className="rounded-2xl rounded-tl-sm bg-primary/5 border border-primary/10 px-3.5 py-2.5">
-          <p className="text-[13px] leading-relaxed text-foreground whitespace-pre-wrap">
-            {displayed}
-            {!isDone && (
-              <span className="inline-block w-[2px] h-[13px] bg-foreground/60 ml-0.5 align-middle animate-pulse rounded-full" />
-            )}
-          </p>
+        <div className="rounded-2xl rounded-tl-sm bg-primary/5 border border-primary/10 px-3.5 py-2.5 text-[13px] leading-relaxed text-foreground">
+          <ChatMarkdown text={displayed} />
+          {!isDone && (
+            <span className="inline-block w-[2px] h-[13px] bg-foreground/60 ml-0.5 align-middle animate-pulse rounded-full" />
+          )}
         </div>
         {isDone && sources && sources.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-0.5">
-            {sources.map((src) => (
+            {sources.map((src, i) => (
               <span
-                key={src}
+                key={`${i}-${src}`}
                 className="text-[9px] px-1.5 py-px rounded-full bg-muted/60 border border-border/50 text-muted-foreground"
               >
                 {src}
@@ -337,6 +487,7 @@ export function ReportAgentChat({ report, chatEnabled }: Props) {
           id: streamMsgId,
           role: "agent",
           text: "",
+          streaming: true,
         }
         setMessages((prev) => [...prev, agentMsg])
 
@@ -366,11 +517,14 @@ export function ReportAgentChat({ report, chatEnabled }: Props) {
                   setQuotaExceeded(true)
                 }
               }
-              if (meta.sources) {
+              if (meta.sources && Array.isArray(meta.sources)) {
+                const safeSources = (meta.sources as unknown[]).map((s) =>
+                  typeof s === "string" ? s : JSON.stringify(s),
+                )
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === streamMsgId
-                      ? { ...m, metadata: { ...m.metadata, sources: meta.sources as string[] } }
+                      ? { ...m, metadata: { ...m.metadata, sources: safeSources } }
                       : m,
                   ),
                 )
@@ -378,6 +532,11 @@ export function ReportAgentChat({ report, chatEnabled }: Props) {
             },
             onDone: () => {
               abortRef.current = null
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === streamMsgId ? { ...m, streaming: false } : m,
+                ),
+              )
               setIsTyping(false)
               if (!isOpen) setHasUnread(true)
               setTimeout(() => inputRef.current?.focus(), 50)
@@ -387,7 +546,7 @@ export function ReportAgentChat({ report, chatEnabled }: Props) {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === streamMsgId
-                    ? { ...m, text: m.text || `Sorry, something went wrong: ${message}` }
+                    ? { ...m, text: m.text || `Sorry, something went wrong: ${message}`, streaming: false }
                     : m,
                 ),
               )
@@ -533,6 +692,8 @@ export function ReportAgentChat({ report, chatEnabled }: Props) {
               {messages.map((msg, i) => {
                 const isLast = i === messages.length - 1
                 if (msg.role === "agent") {
+                  // Hide empty agent bubble while waiting for first token
+                  if (isLast && isTyping && !msg.text) return null
                   return (
                     <AgentBubble
                       key={msg.id}
@@ -546,7 +707,10 @@ export function ReportAgentChat({ report, chatEnabled }: Props) {
                 return <UserBubble key={msg.id} message={msg} />
               })}
 
-              {isTyping && messages[messages.length - 1]?.role === "user" && (
+              {isTyping && (() => {
+                const last = messages[messages.length - 1]
+                return last?.role === "user" || (last?.role === "agent" && !last.text)
+              })() && (
                 <ThinkingBubble agentName={report.agent_name} />
               )}
 

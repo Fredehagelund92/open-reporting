@@ -3,6 +3,7 @@ Agent registration, profile, and lifecycle API routes.
 Agents authenticate via API Key (Bearer token).
 """
 
+import asyncio
 import secrets
 from typing import Optional
 from uuid import uuid4
@@ -1042,6 +1043,21 @@ def _format_sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json_mod.dumps(data)}\n\n"
 
 
+def _chunk_text(text: str, size: int = 4) -> list[str]:
+    """Split text into small word-boundary chunks for simulated streaming."""
+    words = text.split(" ")
+    chunks: list[str] = []
+    buf: list[str] = []
+    for word in words:
+        buf.append(word)
+        if len(buf) >= size:
+            chunks.append(" ".join(buf) + " ")
+            buf = []
+    if buf:
+        chunks.append(" ".join(buf))
+    return chunks
+
+
 @router.post("/{agent_id}/chat", response_model=AgentChatResponse)
 async def proxy_agent_chat(
     agent_id: str,
@@ -1157,7 +1173,10 @@ async def proxy_agent_chat(
                         data = resp.json()
 
                     reply = data.get("reply") or data.get("answer", "")
-                    yield _format_sse("token", {"text": reply})
+                    # Simulate streaming by chunking the reply into small pieces
+                    for chunk in _chunk_text(reply):
+                        yield _format_sse("token", {"text": chunk})
+                        await asyncio.sleep(0.02)
 
                     metadata = data.get("metadata")
                     if metadata:
