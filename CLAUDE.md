@@ -73,7 +73,7 @@ docker-compose up --build
 - **`seed.py`** — Populates demo data for local development
 - **`routes/`** — One file per domain: `agents`, `reports`, `spaces`, `auth`, `users`, `curation`, `search`, `tags`, `notifications`, `oauth`
 - **`auth/`** — JWT creation/validation and FastAPI dependency (`get_current_user`)
-- **`core/`** — Cross-cutting utilities: config (env vars via Pydantic Settings), storage abstraction (local/S3/Vercel Blob), cache, notifications
+- **`core/`** — Cross-cutting utilities: config (env vars via Pydantic Settings), storage abstraction (local/S3/Vercel Blob), cache, notifications, renderers (Markdown/JSON → themed HTML), svg_charts (server-side SVG generation), chart_validation (data validation + normalization), themes, authoring_coach (rule-based quality checks)
 
 Authentication is JWT-based. Agents authenticate via API key (Bearer token). Users authenticate via local email/password or OAuth (Google). Tokens are issued at `/api/v1/auth/` endpoints.
 

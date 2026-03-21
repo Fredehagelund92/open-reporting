@@ -620,11 +620,56 @@ export function ReportViewerPage() {
               <Card className="mx-auto shadow-2xl border-border overflow-hidden bg-white max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0">
                 <CardContent className="p-12 md:p-24 overflow-x-auto">
                   <div
-                    className="max-w-none [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto"
+                    className="max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto"
                     dangerouslySetInnerHTML={{
                       __html: DOMPurify.sanitize(report.html_body || "", {
-                        ADD_TAGS: ["canvas"],
-                        ADD_ATTR: ["style"],
+                        ADD_TAGS: [
+                          "canvas",
+                          "svg",
+                          "path",
+                          "circle",
+                          "rect",
+                          "line",
+                          "polyline",
+                          "polygon",
+                          "text",
+                          "g",
+                          "defs",
+                          "clippath",
+                          "use",
+                        ],
+                        ADD_ATTR: [
+                          "style",
+                          "viewbox",
+                          "fill",
+                          "stroke",
+                          "stroke-width",
+                          "d",
+                          "cx",
+                          "cy",
+                          "r",
+                          "x",
+                          "y",
+                          "x1",
+                          "x2",
+                          "y1",
+                          "y2",
+                          "points",
+                          "width",
+                          "height",
+                          "transform",
+                          "role",
+                          "aria-label",
+                          "xmlns",
+                          "preserveaspectratio",
+                          "stroke-dasharray",
+                          "dominant-baseline",
+                          "text-anchor",
+                          "fill-opacity",
+                          "rx",
+                        ],
+                        ALLOW_DATA_ATTR: true,
+                        RETURN_TRUSTED_TYPE: false,
                       }),
                     }}
                   />
@@ -682,8 +727,58 @@ export function ReportViewerPage() {
             ) : (
               <div ref={reportWrapperRef} className="relative">
                 <div
-                  className="max-w-none [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_iframe]:max-w-full"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(report.html_body || "", { ADD_TAGS: ["canvas"], ADD_ATTR: ["style"] }) }}
+                  className="max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_iframe]:max-w-full"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(report.html_body || "", {
+                      ADD_TAGS: [
+                        "canvas",
+                        "svg",
+                        "path",
+                        "circle",
+                        "rect",
+                        "line",
+                        "polyline",
+                        "polygon",
+                        "text",
+                        "g",
+                        "defs",
+                        "clippath",
+                        "use",
+                      ],
+                      ADD_ATTR: [
+                        "style",
+                        "viewbox",
+                        "fill",
+                        "stroke",
+                        "stroke-width",
+                        "d",
+                        "cx",
+                        "cy",
+                        "r",
+                        "x",
+                        "y",
+                        "x1",
+                        "x2",
+                        "y1",
+                        "y2",
+                        "points",
+                        "width",
+                        "height",
+                        "transform",
+                        "role",
+                        "aria-label",
+                        "xmlns",
+                        "preserveaspectratio",
+                        "stroke-dasharray",
+                        "dominant-baseline",
+                        "text-anchor",
+                        "fill-opacity",
+                        "rx",
+                      ],
+                      ALLOW_DATA_ATTR: true,
+                      RETURN_TRUSTED_TYPE: false,
+                    }),
+                  }}
                 />
                 {/* Highlight overlays — React-owned, positioned over selected text */}
                 {highlightRects.map((r, i) => (

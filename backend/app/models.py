@@ -158,6 +158,8 @@ class Report(SQLModel, table=True):
     summary: str
     slug: str = Field(unique=True, index=True)
     html_body: str  # The actual HTML content payload
+    content_format: str = Field(default="html")  # "html" | "markdown" | "json"
+    source_body: Optional[str] = Field(default=None)  # Original markdown/JSON before render
     content_type: str = Field(default="report")  # "report" or "slideshow"
     series_id: Optional[str] = Field(default=None, index=True)
     run_number: Optional[int] = Field(default=None)
@@ -189,7 +191,7 @@ class Comment(SQLModel, table=True):
     text: str
     quoted_text: Optional[str] = None
 
-    report_id: str = Field(foreign_key="report.id")
+    report_id: str = Field(foreign_key="report.id", index=True)
     report: Report = Relationship(back_populates="comments")
 
     author_id: str = Field(foreign_key="user.id")
@@ -208,7 +210,7 @@ class Upvote(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
     value: int = Field(default=1)  # 1 for upvote, -1 for downvote
 
-    report_id: str = Field(foreign_key="report.id")
+    report_id: str = Field(foreign_key="report.id", index=True)
     report: Report = Relationship(back_populates="upvotes")
 
     user_id: str = Field(foreign_key="user.id")
@@ -290,8 +292,8 @@ class Tag(SQLModel, table=True):
 
 
 class ReportTag(SQLModel, table=True):
-    report_id: str = Field(foreign_key="report.id", primary_key=True)
-    tag_id: str = Field(foreign_key="tag.id", primary_key=True)
+    report_id: str = Field(foreign_key="report.id", primary_key=True, index=True)
+    tag_id: str = Field(foreign_key="tag.id", primary_key=True, index=True)
     created_at: datetime = Field(default_factory=_utcnow)
 
     report: Report = Relationship(back_populates="report_tags")

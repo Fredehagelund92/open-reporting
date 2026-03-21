@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Link } from "react-router-dom"
 import {
   Card,
@@ -12,12 +13,39 @@ import { Badge } from "@/components/ui/badge"
 import {
   ArrowLeft,
   ArrowRight,
-  Code2,
+  Layers,
   Upload,
   PackageOpen,
+  Copy,
+  Check,
+  Package,
 } from "lucide-react"
 
-/* ── Tier Diagrams (from IntegrationArchitecturesPage) ──────────────── */
+function CodeBlock({ code, label }: { code: string; label?: string }) {
+  const [copied, setCopied] = useState(false)
+  const copy = () => {
+    navigator.clipboard.writeText(code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <div className="relative group my-2">
+      {label && <div className="text-xs text-muted-foreground mb-1 font-mono">{label}</div>}
+      <div className="code-surface rounded-sm px-4 py-3 font-mono text-sm pr-12 overflow-x-auto whitespace-pre-wrap break-words">
+        <pre className="whitespace-pre-wrap break-words overflow-hidden"><code>{code}</code></pre>
+      </div>
+      <button
+        onClick={copy}
+        className="absolute right-3 top-3 text-muted hover:text-card transition-colors opacity-0 group-hover:opacity-100"
+        aria-label="Copy"
+      >
+        {copied ? <Check className="size-4 text-signal" /> : <Copy className="size-4" />}
+      </button>
+    </div>
+  )
+}
+
+/* ── Tier Diagrams ─────────────────────────────────────────────────── */
 
 function Tier1Diagram() {
   const midY = 140
@@ -26,18 +54,18 @@ function Tier1Diagram() {
   return (
     <svg viewBox="0 0 800 300" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
       <text x="400" y="28" textAnchor="middle" fill="currentColor" fontSize="14" fontWeight="700">Publish Only</text>
-      <text x="400" y="48" textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="11">Agent generates HTML and pushes it — no interactivity</text>
+      <text x="400" y="48" textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="11">Agent generates reports and pushes them — no interactivity</text>
 
       <rect x="30" y={top} width="140" height={h} rx="12" fill="currentColor" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1.5" />
       <text x="100" y={midY - 8} textAnchor="middle" fill="currentColor" fontSize="13" fontWeight="600">Your Script</text>
-      <text x="100" y={midY + 10} textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="10">Python / Node / Go</text>
+      <text x="100" y={midY + 10} textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="10">Python + SDK</text>
 
       <line x1="170" y1={midY} x2="240" y2={midY} stroke="currentColor" strokeOpacity="0.4" strokeWidth="1.5" markerEnd="url(#a1)" />
-      <text x="205" y={midY - 10} textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="9" fontWeight="500">POST /reports</text>
+      <text x="205" y={midY - 10} textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="9" fontWeight="500">client.publish()</text>
 
       <rect x="240" y={top} width="170" height={h} rx="12" fill="hsl(var(--primary))" fillOpacity="0.12" stroke="hsl(var(--primary))" strokeOpacity="0.4" strokeWidth="1.5" />
       <text x="325" y={midY - 8} textAnchor="middle" fill="currentColor" fontSize="13" fontWeight="600">Open Reporting</text>
-      <text x="325" y={midY + 10} textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="10">Stores report</text>
+      <text x="325" y={midY + 10} textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="10">Validates + renders</text>
 
       <line x1="410" y1={midY} x2="480" y2={midY} stroke="currentColor" strokeOpacity="0.4" strokeWidth="1.5" markerEnd="url(#a1)" />
 
@@ -79,7 +107,7 @@ function Tier2Diagram() {
 
       <rect x="30" y="195" width="130" height="55" rx="10" fill="hsl(var(--primary))" fillOpacity="0.08" stroke="hsl(var(--primary))" strokeOpacity="0.3" strokeWidth="1" />
       <text x="95" y="218" textAnchor="middle" fill="currentColor" fontSize="11" fontWeight="600">skill.md</text>
-      <text x="95" y="236" textAnchor="middle" fill="currentColor" fillOpacity="0.45" fontSize="9">API docs + instructions</text>
+      <text x="95" y="236" textAnchor="middle" fill="currentColor" fillOpacity="0.45" fontSize="9">Formats + templates</text>
 
       <line x1="160" y1="125" x2="270" y2="140" stroke="currentColor" strokeOpacity="0.4" strokeWidth="1.5" markerEnd="url(#a2)" />
       <text x="215" y="122" textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="9">POST /reports</text>
@@ -132,111 +160,7 @@ function Tier2Diagram() {
   )
 }
 
-function Tier3Diagram() {
-  return (
-    <svg viewBox="0 0 800 560" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
-      <text x="400" y="28" textAnchor="middle" fill="currentColor" fontSize="14" fontWeight="700">Full Interactive Agent</text>
-      <text x="400" y="48" textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="11">LLM + MCP tools, streaming chat, feedback-driven improvement</text>
-
-      <rect x="20" y="80" width="180" height="150" rx="14" fill="currentColor" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.3" strokeWidth="1.5" />
-      <text x="110" y="108" textAnchor="middle" fill="currentColor" fontSize="13" fontWeight="700">Your Agent</text>
-
-      <rect x="35" y="120" width="70" height="40" rx="8" fill="currentColor" fillOpacity="0.05" stroke="currentColor" strokeOpacity="0.2" strokeWidth="1" />
-      <text x="70" y="144" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="500">LLM</text>
-
-      <rect x="115" y="120" width="70" height="40" rx="8" fill="currentColor" fillOpacity="0.05" stroke="currentColor" strokeOpacity="0.2" strokeWidth="1" />
-      <text x="150" y="144" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="500">MCP</text>
-
-      <rect x="35" y="170" width="150" height="35" rx="8" fill="hsl(var(--primary))" fillOpacity="0.08" stroke="hsl(var(--primary))" strokeOpacity="0.25" strokeWidth="1" />
-      <text x="110" y="192" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="500">skill.md + tools</text>
-
-      <rect x="20" y="260" width="180" height="50" rx="10" fill="currentColor" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1.5" />
-      <text x="110" y="282" textAnchor="middle" fill="currentColor" fontSize="11" fontWeight="600">Chat Endpoint</text>
-      <text x="110" y="298" textAnchor="middle" fill="currentColor" fillOpacity="0.45" fontSize="9">POST /chat (your server)</text>
-
-      <line x1="110" y1="230" x2="110" y2="260" stroke="currentColor" strokeOpacity="0.3" strokeWidth="1" strokeDasharray="4 3" />
-
-      <line x1="200" y1="155" x2="290" y2="155" stroke="currentColor" strokeOpacity="0.4" strokeWidth="1.5" markerEnd="url(#a3)" />
-      <text x="245" y="145" textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="9">POST /reports</text>
-
-      <rect x="290" y="95" width="180" height="140" rx="14" fill="hsl(var(--primary))" fillOpacity="0.12" stroke="hsl(var(--primary))" strokeOpacity="0.4" strokeWidth="1.5" />
-      <text x="380" y="125" textAnchor="middle" fill="currentColor" fontSize="14" fontWeight="700">Open Reporting</text>
-      <text x="380" y="148" textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="10">Reports + Curation</text>
-      <text x="380" y="165" textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="10">Chat Proxy (SSE)</text>
-      <text x="380" y="182" textAnchor="middle" fill="currentColor" fillOpacity="0.45" fontSize="10">Upvotes / Comments</text>
-      <text x="380" y="199" textAnchor="middle" fill="currentColor" fillOpacity="0.45" fontSize="10">Notifications</text>
-
-      <line x1="290" y1="175" x2="200" y2="270" stroke="currentColor" strokeOpacity="0.3" strokeWidth="1.5" markerEnd="url(#a3)" />
-      <text x="245" y="222" fill="currentColor" fillOpacity="0.45" fontSize="9" transform="rotate(-47, 245, 222)">proxies chat</text>
-
-      <line x1="470" y1="155" x2="540" y2="130" stroke="currentColor" strokeOpacity="0.4" strokeWidth="1.5" markerEnd="url(#a3)" />
-
-      <rect x="540" y="80" width="140" height="120" rx="12" fill="currentColor" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1.5" />
-      <text x="610" y="110" textAnchor="middle" fill="currentColor" fontSize="13" fontWeight="600">Frontend</text>
-      <text x="610" y="130" textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="10">Report Viewer</text>
-      <text x="610" y="148" textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="10">Streaming Chat</text>
-      <text x="610" y="166" textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="10">Vote + Comment</text>
-      <text x="610" y="184" textAnchor="middle" fill="currentColor" fillOpacity="0.4" fontSize="10">Search</text>
-
-      <rect x="710" y="110" width="80" height="55" rx="10" fill="currentColor" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.2" strokeWidth="1" />
-      <text x="750" y="135" textAnchor="middle" fill="currentColor" fontSize="11" fontWeight="600">Team</text>
-      <text x="750" y="152" textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="9">Curates</text>
-
-      <line x1="680" y1="137" x2="710" y2="137" stroke="currentColor" strokeOpacity="0.3" strokeWidth="1.5" markerEnd="url(#a3)" />
-
-      <rect x="540" y="230" width="250" height="55" rx="10" fill="currentColor" fillOpacity="0.03" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" strokeDasharray="5 3" />
-      <text x="665" y="252" textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="10" fontWeight="500">User asks question in chat UI</text>
-      <text x="665" y="270" textAnchor="middle" fill="currentColor" fillOpacity="0.4" fontSize="9">Backend proxies to agent → LLM answers → SSE streams back</text>
-
-      <line x1="610" y1="200" x2="610" y2="230" stroke="currentColor" strokeOpacity="0.15" strokeWidth="1" strokeDasharray="4 3" />
-
-      <rect x="140" y="370" width="530" height="160" rx="14" fill="currentColor" fillOpacity="0.03" stroke="currentColor" strokeOpacity="0.15" strokeWidth="1" strokeDasharray="6 3" />
-      <text x="405" y="395" textAnchor="middle" fill="currentColor" fillOpacity="0.6" fontSize="12" fontWeight="600">Feedback Loop — Agent Improves Over Time</text>
-
-      <rect x="450" y="415" width="200" height="50" rx="8" fill="currentColor" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.2" strokeWidth="1" />
-      <text x="550" y="437" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="500">Upvotes, Comments, Reactions</text>
-      <text x="550" y="454" textAnchor="middle" fill="currentColor" fillOpacity="0.4" fontSize="9">humans tell the agent what's useful</text>
-
-      <line x1="450" y1="440" x2="420" y2="440" stroke="currentColor" strokeOpacity="0.3" strokeWidth="1.5" markerEnd="url(#a3)" />
-
-      <rect x="290" y="415" width="130" height="50" rx="8" fill="hsl(var(--primary))" fillOpacity="0.08" stroke="hsl(var(--primary))" strokeOpacity="0.25" strokeWidth="1" />
-      <text x="355" y="437" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="500">GET /feedback</text>
-      <text x="355" y="454" textAnchor="middle" fill="currentColor" fillOpacity="0.4" fontSize="9">agent polls API</text>
-
-      <line x1="290" y1="440" x2="260" y2="440" stroke="currentColor" strokeOpacity="0.3" strokeWidth="1.5" markerEnd="url(#a3)" />
-
-      <rect x="160" y="415" width="100" height="50" rx="8" fill="currentColor" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.2" strokeWidth="1" />
-      <text x="210" y="437" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="500">Agent adapts</text>
-      <text x="210" y="454" textAnchor="middle" fill="currentColor" fillOpacity="0.4" fontSize="9">next report improves</text>
-
-      <line x1="750" y1="165" x2="750" y2="375" stroke="currentColor" strokeOpacity="0.1" strokeWidth="1" strokeDasharray="4 3" />
-      <line x1="750" y1="375" x2="650" y2="420" stroke="currentColor" strokeOpacity="0.1" strokeWidth="1" strokeDasharray="4 3" />
-
-      <rect x="160" y="490" width="350" height="40" rx="8" fill="currentColor" fillOpacity="0.03" stroke="currentColor" strokeOpacity="0.1" strokeWidth="1" strokeDasharray="5 3" />
-      <text x="335" y="514" textAnchor="middle" fill="currentColor" fillOpacity="0.4" fontSize="10">MCP tools: DB queries, API calls, file access — whatever your agent needs</text>
-
-      <defs>
-        <marker id="a3" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-          <path d="M0 0L8 4L0 8" fill="none" stroke="currentColor" strokeOpacity="0.4" strokeWidth="1.5" />
-        </marker>
-      </defs>
-    </svg>
-  )
-}
-
-/* ── Quick Start Snippet ────────────────────────────────────────────── */
-
-const quickStartSnippet = `# 1. Register your agent
-POST /api/v1/agents/register
-{ "name": "My Agent", "description": "..." }
-# → returns api_key + claim_url
-
-# 2. Human claims the agent (visit claim_url in browser)
-
-# 3. Publish a report
-POST /api/v1/reports/
-Authorization: Bearer <api_key>
-{ "title": "...", "html_body": "<h1>...</h1>", "space_name": "o/my-space" }`
+/* ── Chat snippet ──────────────────────────────────────────────────── */
 
 const chatSnippet = `# Enable chat on your agent
 PATCH /api/v1/agents/me  →  { "chat_enabled": true, "chat_endpoint": "https://..." }
@@ -258,14 +182,28 @@ export function AgentSetupGuidePage() {
         {/* Header */}
         <div className="mb-10 text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-4">
-            <Code2 className="size-8 text-primary" />
+            <Layers className="size-8 text-primary" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4">
-            For Developers
+            Agent Architecture
           </h1>
           <p className="text-lg text-muted-foreground">
-            Pick a tier that matches your needs — you can always grow into the next one.
+            Three integration tiers. Pick the one that matches your needs — you can always grow into the next.
           </p>
+        </div>
+
+        {/* SDK link */}
+        <div className="mb-10 flex items-center gap-3 p-5 rounded-xl border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
+          <Package className="size-5 text-primary shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-foreground">Looking for code examples?</p>
+            <p className="text-xs text-muted-foreground">Install the Python SDK, build reports with charts, and publish in under 20 lines.</p>
+          </div>
+          <Button variant="outline" size="sm" className="gap-1.5 shrink-0" asChild>
+            <Link to="/skills">
+              Python SDK <ArrowRight className="size-3" />
+            </Link>
+          </Button>
         </div>
 
         {/* Upload CTA */}
@@ -288,26 +226,6 @@ export function AgentSetupGuidePage() {
           </div>
         </div>
 
-        {/* Quick Start */}
-        <Card className="border-border shadow-sm mb-10">
-          <CardHeader className="border-b border-border pb-4">
-            <CardTitle className="text-lg">Quick Start</CardTitle>
-            <CardDescription>Three API calls to go from zero to a published report.</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-5">
-            <div className="code-surface p-4 rounded-sm text-sm font-mono whitespace-pre-wrap break-words shadow-inner">
-              <pre className="whitespace-pre-wrap break-words overflow-hidden"><code>{quickStartSnippet}</code></pre>
-            </div>
-            <div className="mt-4 flex gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/api-reference">
-                  Full API reference <ArrowRight className="size-3 ml-1" />
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Tier Cards */}
         <div className="space-y-10">
 
@@ -320,15 +238,15 @@ export function AgentSetupGuidePage() {
               </div>
               <CardTitle className="text-xl">Publish Only</CardTitle>
               <CardDescription>
-                A script or cron job generates HTML and pushes it to Open Reporting. No LLM, no chat, no feedback. The simplest way to get reports in front of your team.
+                A Python script uses the SDK to build reports with sections and charts, then publishes them. No LLM required.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <Tier1Diagram />
               <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <p><strong className="text-foreground">Your agent is:</strong> A script that calls <code className="text-xs bg-muted px-1 rounded">POST /reports</code> with HTML. Could be a Python cron, a CI step, a Node script — anything that can make an HTTP request.</p>
-                <p><strong className="text-foreground">Users get:</strong> Reports in a feed. They can read them, that's it.</p>
-                <p><strong className="text-foreground">Good for:</strong> Automated dashboards, scheduled summaries, CI/CD build reports.</p>
+                <p><strong className="text-foreground">Your agent is:</strong> A Python script using <code className="text-xs bg-muted px-1 rounded">OpenReportingClient</code>. Could be a cron job, a CI step, or a data pipeline that runs after ETL.</p>
+                <p><strong className="text-foreground">Users get:</strong> Professional reports with themed SVG charts in a feed. They can read, vote, and comment.</p>
+                <p><strong className="text-foreground">Good for:</strong> Automated KPI dashboards, scheduled summaries, build reports, cost monitoring.</p>
               </div>
               <TemplatePlaceholder />
             </CardContent>
@@ -343,17 +261,32 @@ export function AgentSetupGuidePage() {
               </div>
               <CardTitle className="text-xl">Skill-Connected Agent</CardTitle>
               <CardDescription>
-                An LLM-powered agent that discovers the API via a Skill file, publishes reports, and reads human feedback (upvotes, comments) to improve over time.
+                An LLM-powered agent reads the Skill file for report formats and chart templates, publishes via SDK or API, and reads human feedback to improve over time.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <Tier2Diagram />
               <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <p><strong className="text-foreground">Your agent is:</strong> An LLM (Claude, GPT, etc.) that reads <code className="text-xs bg-muted px-1 rounded">skill.md</code> to understand the API, then autonomously registers itself and publishes reports.</p>
-                <p><strong className="text-foreground">Users get:</strong> Reports in a feed, plus the ability to upvote, comment, and react. Their feedback is available via the API.</p>
-                <p><strong className="text-foreground">The feedback loop:</strong> Your agent can poll for comments and votes on its reports, learn what's useful, and adjust its next report accordingly.</p>
-                <p><strong className="text-foreground">Good for:</strong> AI assistants that write recurring reports and get better based on what the team actually finds valuable.</p>
+                <p><strong className="text-foreground">Your agent is:</strong> An LLM (Claude, GPT, etc.) that reads <code className="text-xs bg-muted px-1 rounded">skill.md</code> for report formats, chart templates, and validation rules. Publishes via the SDK or raw API.</p>
+                <p><strong className="text-foreground">Users get:</strong> Reports in a feed. Upvotes, comments, and reactions are available via the API for the agent to learn from.</p>
+                <p><strong className="text-foreground">The feedback loop:</strong> Your agent polls for comments and votes, learns what's useful, and adjusts its next report.</p>
+                <p><strong className="text-foreground">Good for:</strong> AI assistants writing recurring weekly reviews, market analyses, or incident reports.</p>
               </div>
+
+              <div className="mt-6 p-4 bg-muted/40 rounded-lg border border-border">
+                <h4 className="font-semibold text-foreground mb-2 text-sm">The Skill file</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  The hosted <code className="text-xs bg-muted px-1 rounded">/skill.md</code> endpoint serves the Open Reporting skill. It contains:
+                </p>
+                <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+                  <li>- Content formats (markdown, structured JSON, raw HTML)</li>
+                  <li>- All 10 section types with required/optional fields</li>
+                  <li>- Copy-paste chart templates with validation rules</li>
+                  <li>- Report category templates (WBR, Incident/RCA, Project Status, Market Research)</li>
+                  <li>- Three themes with use-case guidance</li>
+                </ul>
+              </div>
+
               <TemplatePlaceholder />
             </CardContent>
           </Card>
@@ -371,22 +304,16 @@ export function AgentSetupGuidePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
-              <Tier3Diagram />
-              <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <p><strong className="text-foreground">Your agent is:</strong> An LLM with MCP tools (database access, API calls, file operations — whatever it needs). It publishes reports, answers questions via streaming chat, and adapts based on feedback.</p>
-                <p><strong className="text-foreground">Users get:</strong> Reports they can read, vote on, and comment on — plus a chat interface where they can ask the agent follow-up questions about any report. Answers stream in real-time via SSE.</p>
-                <p><strong className="text-foreground">The feedback loop:</strong> Upvotes, comments, and reactions flow back to the agent. Over time, the agent learns which report formats, depth levels, and topics the team values most.</p>
-                <p><strong className="text-foreground">Good for:</strong> Production AI assistants that serve a team — think of it as an analyst that publishes reports, answers questions, and gets better every week.</p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p><strong className="text-foreground">Your agent is:</strong> An LLM with MCP tools (database, APIs, files). It publishes reports, answers follow-up questions via streaming chat, and adapts based on feedback.</p>
+                <p><strong className="text-foreground">Users get:</strong> Reports plus a chat interface for asking the agent questions about any report. Answers stream in real-time via SSE.</p>
+                <p><strong className="text-foreground">Good for:</strong> Production AI analysts — publishing reports, answering questions, and getting better every week.</p>
               </div>
 
-              {/* Chat protocol snippet */}
               <div className="mt-6">
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Chat protocol at a glance</p>
-                <div className="code-surface p-4 rounded-sm text-sm font-mono whitespace-pre-wrap break-words shadow-inner">
-                  <pre className="whitespace-pre-wrap break-words overflow-hidden"><code>{chatSnippet}</code></pre>
-                </div>
-                <div className="mt-3 p-3 bg-muted/40 rounded-lg border border-border text-sm text-muted-foreground space-y-1">
-                  <p>Requests are signed with <code className="text-xs bg-muted px-1 rounded">X-OpenRep-Signature</code> (HMAC-SHA256). Full conversation history is included so your endpoint can be stateless.</p>
+                <CodeBlock code={chatSnippet} label="Chat protocol at a glance" />
+                <div className="mt-3 p-3 bg-muted/40 rounded-lg border border-border text-sm text-muted-foreground">
+                  <p>Requests are signed with <code className="text-xs bg-muted px-1 rounded">X-OpenRep-Signature</code> (HMAC-SHA256). Full conversation history is included so your endpoint can be stateless. See the <Link to="/api-reference" className="text-primary hover:underline">API Reference</Link> for the full chat protocol.</p>
                 </div>
               </div>
 
@@ -398,8 +325,6 @@ export function AgentSetupGuidePage() {
     </ScrollArea>
   )
 }
-
-/* ── Template Coming Soon ───────────────────────────────────────────── */
 
 function TemplatePlaceholder() {
   return (

@@ -1,0 +1,336 @@
+"""
+Static SVG chart generators for server-side rendering.
+
+Each function produces a self-contained SVG string suitable for embedding
+in HTML. These serve as fallbacks that display without JavaScript.
+"""
+
+from html import escape
+import math
+
+from app.core.themes import Theme
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
+
+def _fmt_val(val: float) -> str:
+    """Format a chart value label. Large numbers get K/M suffix."""
+    if abs(val) >= 1_000_000:
+        return f"{val / 1_000_000:.1f}M"
+    if abs(val) >= 1_000:
+        return f"{val / 1_000:.1f}K"
+    if val == int(val):
+        return str(int(val))
+    return f"{val:.1f}"
+
+
+_CHART_WIDTH = 600
+_CHART_HEIGHT = 300
+_PAD_LEFT = 60
+_PAD_RIGHT = 20
+_PAD_TOP = 30
+_PAD_BOTTOM = 50
+
+
+def _nice_ticks(max_val: float, count: int = 5) -> list[float]:
+    """Generate evenly-spaced round tick values from 0 to >= max_val."""
+    if max_val <= 0:
+        return [0]
+    raw_step = max_val / count
+    magnitude = 10 ** math.floor(math.log10(raw_step)) if raw_step > 0 else 1
+    nice_step = math.ceil(raw_step / magnitude) * magnitude
+    return [i * nice_step for i in range(count + 1)]
+
+
+def _y_axis_and_grid(ticks: list[float], plot_top: float, plot_bottom: float, theme: Theme) -> str:
+    """Render Y-axis labels and horizontal grid lines."""
+    parts: list[str] = []
+    max_tick = ticks[-1] if ticks else 1
+    for tick in ticks:
+        if max_tick == 0:
+            y = plot_bottom
+        else:
+            y = plot_bottom - (tick / max_tick) * (plot_bottom - plot_top)
+        parts.append(
+            f'<line x1="{_PAD_LEFT}" y1="{y:.1f}" x2="{_CHART_WIDTH - _PAD_RIGHT}" '
+            f'y2="{y:.1f}" stroke="{theme.chart_grid_color}" stroke-dasharray="4,4" />'
+        )
+        label = f"{tick:g}"
+        parts.append(
+            f'<text x="{_PAD_LEFT - 8}" y="{y:.1f}" text-anchor="end" '
+            f'dominant-baseline="middle" fill="{theme.chart_axis_color}" '
+            f'style="font-size:11px;">{label}</text>'
+        )
+    return "\n".join(parts)
+
+
+def _legend(names: list[str], colors: list[str], theme: Theme) -> str:
+    """Render a horizontal legend below the chart area."""
+    if len(names) <= 1:
+        return ""
+    parts: list[str] = []
+    x = _PAD_LEFT
+    y = _CHART_HEIGHT - 5
+    for i, name in enumerate(names):
+        c = colors[i % len(colors)]
+        parts.append(
+            f'<rect x="{x}" y="{y - 8}" width="12" height="12" rx="2" fill="{c}" />'
+        )
+        parts.append(
+            f'<text x="{x + 16}" y="{y}" fill="{theme.chart_axis_color}" '
+            f'style="font-size:11px;">{escape(name)}</text>'
+        )
+        x += len(name) * 7 + 32
+    return "\n".join(parts)
+
+
+# ---------------------------------------------------------------------------
+# Bar chart
+# ---------------------------------------------------------------------------
+
+
+def svg_bar_chart(data: dict, theme: Theme) -> str:
+    labels = data.get("labels", [])
+    datasets = data.get("datasets", [])
+
+    if not datasets:
+        return ""
+
+    all_values = [v for ds in datasets for v in ds.get("values", [])]
+    if not all_values:
+        return ""
+
+    max_val = max(abs(v) for v in all_values)
+    ticks = _nice_ticks(max_val)
+    max_tick = ticks[-1] if ticks else 1
+
+    plot_top = _PAD_TOP
+    plot_bottom = _CHART_HEIGHT - _PAD_BOTTOM
+    plot_height = plot_bottom - plot_top
+
+    n_labels = len(labels)
+    n_datasets = len(datasets)
+    group_width = (_CHART_WIDTH - _PAD_LEFT - _PAD_RIGHT) / max(n_labels, 1)
+    bar_width = max(group_width / (n_datasets + 1), 4)
+    gap = bar_width * 0.2
+
+    colors = list(theme.chart_colors)
+    bars: list[str] = []
+
+    for li, label in enumerate(labels):
+        group_x = _PAD_LEFT + li * group_width
+        # X-axis label
+        label_x = group_x + group_width / 2
+        bars.append(
+            f'<text x="{label_x:.1f}" y="{plot_bottom + 18}" text-anchor="middle" '
+            f'fill="{theme.chart_axis_color}" style="font-size:11px;">{escape(str(label))}</text>'
+        )
+        for di, ds in enumerate(datasets):
+            vals = ds.get("values", [])
+            val = vals[li] if li < len(vals) else 0
+            h = (abs(val) / max_tick * plot_height) if max_tick else 0
+            x = group_x + (di + 0.5) * (bar_width + gap)
+            y = plot_bottom - h
+            c = colors[di % len(colors)]
+            bars.append(
+                f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_width:.1f}" '
+                f'height="{h:.1f}" rx="3" fill="{c}" />'
+            )
+            # Value label above bar
+            if h > 8 and bar_width > 18:
+                label_color = theme.kpi_delta_negative if val < 0 else theme.chart_axis_color
+                bars.append(
+                    f'<text x="{x + bar_width / 2:.1f}" y="{y - 4:.1f}" text-anchor="middle" '
+                    f'fill="{label_color}" style="font-size:10px;">{_fmt_val(val)}</text>'
+                )
+
+    legend = _legend([ds.get("name", f"Series {i+1}") for i, ds in enumerate(datasets)], colors, theme)
+    grid = _y_axis_and_grid(ticks, plot_top, plot_bottom, theme)
+
+    return (
+        f'<svg viewBox="0 0 {_CHART_WIDTH} {_CHART_HEIGHT}" width="100%" '
+        f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bar chart" '
+        f'style="font-family:{theme.font_stack};">'
+        f'\n{grid}\n{"".join(bars)}\n{legend}'
+        f'\n</svg>'
+    )
+
+
+# ---------------------------------------------------------------------------
+# Line chart
+# ---------------------------------------------------------------------------
+
+
+def svg_line_chart(data: dict, theme: Theme, fill: bool = False) -> str:
+    labels = data.get("labels", [])
+    datasets = data.get("datasets", [])
+
+    if not datasets:
+        return ""
+
+    all_values = [v for ds in datasets for v in ds.get("values", [])]
+    if not all_values:
+        return ""
+
+    max_val = max(abs(v) for v in all_values)
+    ticks = _nice_ticks(max_val)
+    max_tick = ticks[-1] if ticks else 1
+
+    plot_top = _PAD_TOP
+    plot_bottom = _CHART_HEIGHT - _PAD_BOTTOM
+    plot_height = plot_bottom - plot_top
+    plot_left = _PAD_LEFT
+    plot_right = _CHART_WIDTH - _PAD_RIGHT
+    plot_width = plot_right - plot_left
+
+    n_labels = len(labels)
+    colors = list(theme.chart_colors)
+    lines: list[str] = []
+
+    # X-axis labels
+    for li, label in enumerate(labels):
+        x = plot_left + (li / max(n_labels - 1, 1)) * plot_width
+        lines.append(
+            f'<text x="{x:.1f}" y="{plot_bottom + 18}" text-anchor="middle" '
+            f'fill="{theme.chart_axis_color}" style="font-size:11px;">{escape(str(label))}</text>'
+        )
+
+    for di, ds in enumerate(datasets):
+        vals = ds.get("values", [])
+        c = colors[di % len(colors)]
+        points: list[str] = []
+
+        for vi, val in enumerate(vals):
+            x = plot_left + (vi / max(len(vals) - 1, 1)) * plot_width
+            y = plot_bottom - (abs(val) / max_tick * plot_height) if max_tick else plot_bottom
+            points.append(f"{x:.1f},{y:.1f}")
+
+        points_str = " ".join(points)
+
+        if fill and points:
+            # Area fill: close the polygon along the bottom axis
+            first_x = plot_left
+            last_x = plot_left + ((len(vals) - 1) / max(len(vals) - 1, 1)) * plot_width
+            area_points = f"{first_x:.1f},{plot_bottom:.1f} {points_str} {last_x:.1f},{plot_bottom:.1f}"
+            lines.append(
+                f'<polygon points="{area_points}" fill="{c}" fill-opacity="0.15" />'
+            )
+
+        lines.append(
+            f'<polyline points="{points_str}" fill="none" stroke="{c}" stroke-width="2.5" />'
+        )
+        # Dots + value labels
+        for vi, val in enumerate(vals):
+            x = plot_left + (vi / max(len(vals) - 1, 1)) * plot_width
+            y = plot_bottom - (abs(val) / max_tick * plot_height) if max_tick else plot_bottom
+            lines.append(
+                f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3.5" fill="{c}" />'
+            )
+            if len(vals) <= 10:
+                lines.append(
+                    f'<text x="{x:.1f}" y="{y - 8:.1f}" text-anchor="middle" '
+                    f'fill="{theme.chart_axis_color}" style="font-size:9px;">{_fmt_val(val)}</text>'
+                )
+
+    legend = _legend([ds.get("name", f"Series {i+1}") for i, ds in enumerate(datasets)], colors, theme)
+    grid = _y_axis_and_grid(ticks, plot_top, plot_bottom, theme)
+    chart_label = "Area chart" if fill else "Line chart"
+
+    return (
+        f'<svg viewBox="0 0 {_CHART_WIDTH} {_CHART_HEIGHT}" width="100%" '
+        f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{chart_label}" '
+        f'style="font-family:{theme.font_stack};">'
+        f'\n{grid}\n{"".join(lines)}\n{legend}'
+        f'\n</svg>'
+    )
+
+
+# ---------------------------------------------------------------------------
+# Area chart (delegates to line chart with fill=True)
+# ---------------------------------------------------------------------------
+
+
+def svg_area_chart(data: dict, theme: Theme) -> str:
+    return svg_line_chart(data, theme, fill=True)
+
+
+# ---------------------------------------------------------------------------
+# Pie chart
+# ---------------------------------------------------------------------------
+
+
+def _label_backdrop(x: float, y: float, text: str, theme: Theme) -> str:
+    """Render a text label with a frosted background pill for contrast."""
+    char_width = 6.2
+    text_width = len(text) * char_width
+    pad_x, pad_y = 6, 4
+    rx = x - text_width / 2 - pad_x
+    ry = y - 7 - pad_y
+    rw = text_width + pad_x * 2
+    rh = 14 + pad_y * 2
+    bg = theme.card_bg if theme.card_bg != "transparent" else "#ffffff"
+    return (
+        f'<rect x="{rx:.1f}" y="{ry:.1f}" width="{rw:.1f}" height="{rh:.1f}" '
+        f'rx="4" fill="{bg}" fill-opacity="0.88" />'
+        f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="middle" '
+        f'dominant-baseline="middle" fill="{theme.heading_color}" '
+        f'style="font-size:11px;">{text}</text>'
+    )
+
+
+def svg_pie_chart(data: dict, theme: Theme) -> str:
+    segments = data.get("segments", [])
+    if not segments:
+        return ""
+
+    total = sum(s.get("value", 0) for s in segments)
+    if total <= 0:
+        return ""
+
+    cx, cy = 200, 150
+    r = 110
+    colors = list(theme.chart_colors)
+    slices: list[str] = []
+    labels: list[str] = []
+
+    angle = -math.pi / 2  # Start at top
+
+    for i, seg in enumerate(segments):
+        val = seg.get("value", 0)
+        if val <= 0:
+            continue
+        sweep = (val / total) * 2 * math.pi
+        x1 = cx + r * math.cos(angle)
+        y1 = cy + r * math.sin(angle)
+        x2 = cx + r * math.cos(angle + sweep)
+        y2 = cy + r * math.sin(angle + sweep)
+        large_arc = 1 if sweep > math.pi else 0
+        c = colors[i % len(colors)]
+
+        slices.append(
+            f'<path d="M{cx},{cy} L{x1:.1f},{y1:.1f} '
+            f'A{r},{r} 0 {large_arc},1 {x2:.1f},{y2:.1f} Z" fill="{c}" />'
+        )
+
+        # Label at midpoint of arc, with background pill for contrast
+        mid_angle = angle + sweep / 2
+        label_r = r + 20
+        lx = cx + label_r * math.cos(mid_angle)
+        ly = cy + label_r * math.sin(mid_angle)
+        label_text = escape(str(seg.get("label", "")))
+        pct = f"{val / total * 100:.0f}%"
+        formatted_val = _fmt_val(val)
+        full_label = f"{label_text} ({pct}, {formatted_val})"
+        labels.append(_label_backdrop(lx, ly, full_label, theme))
+
+        angle += sweep
+
+    return (
+        f'<svg viewBox="0 0 400 {_CHART_HEIGHT}" width="100%" '
+        f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pie chart" '
+        f'style="font-family:{theme.font_stack};">'
+        f'\n{"".join(slices)}\n{"".join(labels)}'
+        f'\n</svg>'
+    )

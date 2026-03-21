@@ -34,6 +34,7 @@ from app.core.tags import (
     attach_tags_to_report,
     recalculate_tag_usage_counts,
 )
+from app.core.renderers import render_structured_to_html, render_markdown_to_html
 
 SEED_DIR = Path(__file__).resolve().parent.parent / "seed"
 
@@ -243,15 +244,234 @@ def seed():
                 "space": s3,
                 "tags": ["board", "strategy", "fundraise", "h1-review"],
             },
+            # ── Chart-based reports (structured_body) ──
+            {
+                "title": "Q1 Revenue Analytics Dashboard",
+                "summary": "Multi-chart financial overview with bar, line, area, and pie charts demonstrating the new data visualization pipeline.",
+                "structured_body": {
+                    "sections": [
+                        {
+                            "type": "text",
+                            "heading": "Q1 Revenue Analytics",
+                            "body": "This report demonstrates all four chart types rendered from pure data — no hand-crafted HTML or JavaScript.",
+                        },
+                        {
+                            "type": "kpi-grid",
+                            "metrics": [
+                                {"label": "Total Revenue", "value": "$8.47M", "delta": "+12.3%", "trend": "up"},
+                                {"label": "New Customers", "value": "342", "delta": "+28", "trend": "up"},
+                                {"label": "Avg Deal Size", "value": "$24.7K", "delta": "-$1.2K", "trend": "down"},
+                                {"label": "Net Retention", "value": "118%", "delta": "+3pp", "trend": "up"},
+                            ],
+                        },
+                        {
+                            "type": "bar-chart",
+                            "heading": "Revenue by Quarter",
+                            "data": {
+                                "labels": ["Q1 '24", "Q2 '24", "Q3 '24", "Q4 '24", "Q1 '25"],
+                                "datasets": [
+                                    {"name": "New Business", "values": [1200, 1450, 1380, 1620, 1840]},
+                                    {"name": "Expansion", "values": [800, 920, 1050, 1180, 1350]},
+                                    {"name": "Renewals", "values": [3200, 3350, 3500, 3680, 3850]},
+                                ],
+                            },
+                        },
+                        {
+                            "type": "line-chart",
+                            "heading": "Monthly Recurring Revenue Trend",
+                            "data": {
+                                "labels": ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
+                                "datasets": [
+                                    {"name": "MRR ($K)", "values": [620, 645, 658, 680, 710, 745]},
+                                    {"name": "Target", "values": [610, 630, 650, 670, 690, 710]},
+                                ],
+                            },
+                        },
+                        {
+                            "type": "area-chart",
+                            "heading": "Customer Growth (Cumulative)",
+                            "data": {
+                                "labels": ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
+                                "datasets": [
+                                    {"name": "Enterprise", "values": [48, 52, 55, 61, 68, 74]},
+                                    {"name": "Mid-Market", "values": [180, 195, 210, 228, 249, 268]},
+                                ],
+                            },
+                        },
+                        {
+                            "type": "pie-chart",
+                            "heading": "Revenue by Segment",
+                            "data": {
+                                "segments": [
+                                    {"label": "Enterprise", "value": 4200},
+                                    {"label": "Mid-Market", "value": 2800},
+                                    {"label": "SMB", "value": 1100},
+                                    {"label": "Self-Serve", "value": 370},
+                                ],
+                            },
+                        },
+                        {
+                            "type": "callout",
+                            "callout_type": "success",
+                            "message": "Q1 revenue exceeded plan by 5.8%. Enterprise segment grew 22% QoQ driven by 3 new logos above $200K ACV.",
+                        },
+                        {
+                            "type": "table",
+                            "headers": ["Metric", "Q4 '24", "Q1 '25", "QoQ Change"],
+                            "rows": [
+                                ["Revenue", "$7.54M", "$8.47M", "+12.3%"],
+                                ["New Logos", "28", "34", "+21.4%"],
+                                ["Churn Rate", "2.1%", "1.8%", "-0.3pp"],
+                                ["NPS Score", "62", "67", "+5"],
+                            ],
+                        },
+                    ],
+                },
+                "theme": "default",
+                "content_type": "report",
+                "agent": a1,
+                "space": s1,
+                "tags": ["revenue", "charts", "analytics", "q1-review"],
+            },
+            # ── Markdown with embedded chart blocks ──
+            {
+                "title": "Cloud Cost Optimization: March Update",
+                "summary": "Monthly cloud spend decreased 14% following reserved instance migration. Cost per request dropped to $0.0032. Charts demonstrate the new Markdown chart embedding feature.",
+                "markdown_body": """# Cloud Cost Optimization: March Update
+
+## Executive Summary
+
+Cloud spend decreased **14% month-over-month** to $284K following the reserved instance migration completed on March 3rd. Cost per request dropped to **$0.0032** (target: $0.0035).
+
+## Spend by Service
+
+```chart
+{"type": "bar-chart", "heading": "Monthly Spend by Service ($K)", "data": {"labels": ["Compute", "Storage", "Database", "Network", "ML/AI", "Other"], "datasets": [{"name": "February", "values": [142, 68, 52, 34, 28, 6]}, {"name": "March", "values": [118, 62, 48, 30, 22, 4]}]}}
+```
+
+Compute savings of **$24K** from the RI migration account for 68% of the total cost reduction.
+
+## Cost Trend
+
+```chart
+{"type": "line-chart", "heading": "Daily Cloud Spend ($K)", "data": {"labels": ["Mar 1", "Mar 5", "Mar 10", "Mar 15", "Mar 20", "Mar 25", "Mar 31"], "datasets": [{"name": "Actual", "values": [10.8, 9.6, 9.2, 9.0, 9.1, 8.8, 8.7]}, {"name": "Budget", "values": [10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5]}]}}
+```
+
+Daily spend has been **consistently below budget** since March 4th.
+
+## Cost Distribution
+
+```chart
+{"type": "pie-chart", "heading": "Cost by Environment", "data": {"segments": [{"label": "Production", "value": 198}, {"label": "Staging", "value": 42}, {"label": "Dev/Test", "value": 28}, {"label": "CI/CD", "value": 16}]}}
+```
+
+> **Next step:** Dev/Test spend ($28K) is 9.9% of total — we're evaluating spot instances to reduce this by ~40%.
+
+## Action Items
+
+| Action | Owner | Due | Status |
+|--------|-------|-----|--------|
+| Complete spot instance POC for dev | Platform Team | Apr 10 | In Progress |
+| Negotiate storage tier pricing | Cloud Ops | Apr 15 | Not Started |
+| Review ML training job scheduling | ML Infra | Apr 7 | In Progress |
+""",
+                "theme": "minimal",
+                "content_type": "report",
+                "agent": a1,
+                "space": s2,
+                "tags": ["cloud-cost", "infrastructure", "optimization", "charts"],
+            },
+            # ── Executive theme with charts ──
+            {
+                "title": "Sales Pipeline Review: Q1 Close",
+                "summary": "Pipeline coverage at 3.4x for Q2. Win rates improved to 34% from 28% last quarter. Executive-themed report with chart visualizations.",
+                "structured_body": {
+                    "sections": [
+                        {
+                            "type": "text",
+                            "heading": "Sales Pipeline Review",
+                            "body": "End-of-quarter pipeline analysis. All data as of March 31, 2025.",
+                        },
+                        {
+                            "type": "kpi-grid",
+                            "metrics": [
+                                {"label": "Pipeline Value", "value": "$28.6M", "delta": "+18%", "trend": "up"},
+                                {"label": "Coverage Ratio", "value": "3.4x", "delta": "+0.6x", "trend": "up"},
+                                {"label": "Win Rate", "value": "34%", "delta": "+6pp", "trend": "up"},
+                                {"label": "Avg Sales Cycle", "value": "42 days", "delta": "-5 days", "trend": "up"},
+                            ],
+                        },
+                        {
+                            "type": "bar-chart",
+                            "heading": "Pipeline by Stage ($M)",
+                            "data": {
+                                "labels": ["Discovery", "Qualification", "Proposal", "Negotiation", "Closed Won"],
+                                "datasets": [
+                                    {"name": "Value", "values": [8.2, 6.4, 5.8, 4.1, 4.1]},
+                                ],
+                            },
+                        },
+                        {
+                            "type": "area-chart",
+                            "heading": "Weekly Pipeline Movement",
+                            "data": {
+                                "labels": ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8", "W9", "W10", "W11", "W12"],
+                                "datasets": [
+                                    {"name": "Created", "values": [2.1, 1.8, 2.4, 1.6, 2.8, 2.2, 1.9, 3.1, 2.6, 2.0, 2.8, 3.3]},
+                                    {"name": "Closed", "values": [0.8, 1.2, 0.6, 1.4, 0.9, 1.8, 1.1, 0.7, 1.6, 2.1, 1.4, 2.0]},
+                                ],
+                            },
+                        },
+                        {
+                            "type": "pie-chart",
+                            "heading": "Deals by Source",
+                            "data": {
+                                "segments": [
+                                    {"label": "Outbound", "value": 38},
+                                    {"label": "Inbound", "value": 32},
+                                    {"label": "Partner", "value": 18},
+                                    {"label": "Expansion", "value": 12},
+                                ],
+                            },
+                        },
+                        {
+                            "type": "callout",
+                            "callout_type": "info",
+                            "message": "Q2 target is $8.4M. At current win rates, pipeline of $28.6M provides 3.4x coverage — above the 3.0x healthy threshold.",
+                        },
+                    ],
+                },
+                "theme": "executive",
+                "content_type": "report",
+                "agent": a2,
+                "space": s1,
+                "tags": ["sales", "pipeline", "charts", "quarterly"],
+            },
         ]
 
         created_reports = []
         for cfg in reports_config:
+            # Resolve HTML body from the appropriate source
+            if "html_file" in cfg:
+                html_body = _load_seed_html(cfg["html_file"])
+                content_format = "html"
+            elif "structured_body" in cfg:
+                sections = cfg["structured_body"]["sections"]
+                html_body = render_structured_to_html(sections, theme=cfg.get("theme"))
+                content_format = "json"
+            elif "markdown_body" in cfg:
+                html_body = render_markdown_to_html(cfg["markdown_body"], theme=cfg.get("theme"))
+                content_format = "markdown"
+            else:
+                html_body = "<p>No content.</p>"
+                content_format = "html"
+
             report = Report(
                 title=cfg["title"],
                 summary=cfg["summary"],
                 slug=slugify(cfg["title"]),
-                html_body=_load_seed_html(cfg["html_file"]),
+                html_body=html_body,
+                content_format=content_format,
                 content_type=cfg["content_type"],
                 agent_id=cfg["agent"].id,
                 space_id=cfg["space"].id,
@@ -267,7 +487,7 @@ def seed():
 
         session.commit()
 
-        r1, r1b, r2, r3, r4, r5, r5b, r6 = created_reports
+        r1, r1b, r2, r3, r4, r5, r5b, r6, r7, r8, r9 = created_reports
 
         # ── Upvotes ──
         session.add_all(
@@ -282,6 +502,10 @@ def seed():
                 Upvote(value=1, report_id=r5.id, user_id=u1.id),
                 Upvote(value=1, report_id=r5.id, user_id=u2.id),
                 Upvote(value=1, report_id=r5b.id, user_id=u1.id),
+                Upvote(value=1, report_id=r7.id, user_id=u1.id),
+                Upvote(value=1, report_id=r7.id, user_id=u2.id),
+                Upvote(value=1, report_id=r8.id, user_id=u2.id),
+                Upvote(value=1, report_id=r9.id, user_id=u1.id),
             ]
         )
 
@@ -381,7 +605,7 @@ def seed():
 
         print("Database seeded successfully!")
         print(
-            "   -> 3 users, 3 agents, 3 spaces, 8 reports (4 reports + 2 slideshows, 2 in WBR series, 2 in Engineering Velocity series)"
+            "   -> 3 users, 3 agents, 3 spaces, 11 reports (7 reports + 2 slideshows, incl. 3 chart-based reports)"
         )
 
 

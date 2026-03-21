@@ -3,6 +3,7 @@ Report CRUD and listing API routes.
 Agents create reports; Humans read them.
 """
 
+import json as _json
 import re
 import uuid
 from typing import Optional, Annotated
@@ -17,6 +18,7 @@ from fastapi import (
     BackgroundTasks,
 )
 from pydantic import BaseModel, field_validator
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select, func, col, or_
 
 from app.database import get_session, db_url
@@ -39,6 +41,8 @@ from app.core.authoring_coach import (
     evaluate_authoring_quality,
     get_authoring_coach_mode,
 )
+from app.core.chart_validation import extract_chart_blocks_from_markdown
+from app.core.renderers import render_markdown_to_html, render_structured_to_html
 from app.core.tags import (
     resolve_canonical_tags,
     attach_tags_to_report,
@@ -90,7 +94,11 @@ class ReportCreateRequest(BaseModel):
     title: str
     summary: str
     tags: list[str] = []
-    html_body: str
+    html_body: Optional[str] = None
+    markdown_body: Optional[str] = None
+    structured_body: Optional[dict] = None
+    content_format: str = "auto"  # "auto" | "html" | "markdown" | "json"
+    theme: Optional[str] = None  # "default" | "executive" | "minimal"
     space_id: Optional[str] = None
     space_name: Optional[str] = None
     content_type: str = "report"  # "report" or "slideshow"
@@ -153,13 +161,89 @@ class ReportDetailResponse(ReportSummaryResponse):
 # --- Routes ---
 
 
-def _run_authoring_coach(body: ReportCreateRequest) -> AuthoringCoachResponse:
+def _resolve_body(
+    body: ReportCreateRequest,
+) -> tuple[str, str, Optional[str]]:
+    """Resolve the submitted body to (rendered_html, content_format, source_body).
+
+    Supports three input formats:
+    - markdown_body → rendered to themed HTML
+    - structured_body → rendered to themed HTML from JSON sections
+    - html_body → passed through as-is (backward compatible)
+    """
+    fmt = body.content_format
+
+    if fmt == "auto":
+        if body.markdown_body:
+            fmt = "markdown"
+        elif body.structured_body:
+            fmt = "json"
+        elif body.html_body:
+            fmt = "html"
+        else:
+            raise HTTPException(
+                status_code=422,
+                detail="Provide html_body, markdown_body, or structured_body.",
+            )
+
+    if fmt == "markdown":
+        if not body.markdown_body:
+            raise HTTPException(
+                status_code=422, detail="markdown_body is required when content_format is 'markdown'."
+            )
+        rendered = render_markdown_to_html(body.markdown_body, theme=body.theme)
+        return rendered, "markdown", body.markdown_body
+
+    if fmt == "json":
+        if not body.structured_body:
+            raise HTTPException(
+                status_code=422, detail="structured_body is required when content_format is 'json'."
+            )
+        sections = body.structured_body.get("sections", [])
+        if not sections:
+            raise HTTPException(
+                status_code=422, detail="structured_body must contain a 'sections' list."
+            )
+        rendered = render_structured_to_html(sections, theme=body.theme)
+        return rendered, "json", _json.dumps(body.structured_body)
+
+    if fmt == "html":
+        if not body.html_body:
+            raise HTTPException(
+                status_code=422, detail="html_body is required when content_format is 'html'."
+            )
+        return body.html_body, "html", None
+
+    raise HTTPException(
+        status_code=422,
+        detail=f"Invalid content_format: '{fmt}'. Use 'auto', 'html', 'markdown', or 'json'.",
+    )
+
+
+def _run_authoring_coach(
+    body: ReportCreateRequest,
+    resolved_html: Optional[str] = None,
+    resolved_format: str = "html",
+) -> AuthoringCoachResponse:
+    html_for_coach = resolved_html or body.html_body or ""
+
+    chart_sections = None
+    if resolved_format == "json" and body.structured_body:
+        chart_sections = [
+            s for s in body.structured_body.get("sections", [])
+            if isinstance(s, dict) and s.get("type", "").endswith("-chart")
+        ]
+    elif resolved_format == "markdown" and body.markdown_body:
+        chart_sections = extract_chart_blocks_from_markdown(body.markdown_body)
+
     coach_result = evaluate_authoring_quality(
         title=body.title,
         summary=body.summary,
-        html_body=body.html_body,
+        html_body=html_for_coach,
         content_type=body.content_type,
         tags=body.tags,
+        content_format=resolved_format,
+        chart_sections=chart_sections or None,
     )
     return AuthoringCoachResponse(
         readiness_status=coach_result.readiness_status,
@@ -218,7 +302,9 @@ def evaluate_authoring_coach(
             status_code=422, detail="content_type must be 'report' or 'slideshow'."
         )
 
-    clean_html, sanitization_warnings = sanitize_forbidden_tags(body.html_body)
+    rendered_html, content_format, _source = _resolve_body(body)
+
+    clean_html, sanitization_warnings = sanitize_forbidden_tags(rendered_html)
     html_errors = validate_html(clean_html, content_type=body.content_type)
     if html_errors:
         return AuthoringCoachResponse(
@@ -238,10 +324,46 @@ def evaluate_authoring_coach(
             sanitization_applied=sanitization_warnings or None,
         )
 
-    body_for_coach = body.model_copy(update={"html_body": clean_html})
-    coach_response = _run_authoring_coach(body_for_coach)
+    coach_response = _run_authoring_coach(body, resolved_html=clean_html, resolved_format=content_format)
     coach_response.sanitization_applied = sanitization_warnings or None
     return coach_response
+
+
+class PreviewResponse(BaseModel):
+    html_body: str
+    content_format: str
+    authoring_coach: Optional[AuthoringCoachResponse] = None
+    sanitization_applied: Optional[list[dict]] = None
+
+
+@router.post("/preview", response_model=PreviewResponse)
+def preview_report(
+    body: ReportCreateRequest,
+    _auth_ok: None = Depends(_require_user_or_agent),
+):
+    """Preview rendered output without storing. Useful for iteration before publish."""
+    if body.content_type not in ("report", "slideshow"):
+        raise HTTPException(
+            status_code=422, detail="content_type must be 'report' or 'slideshow'."
+        )
+
+    rendered_html, content_format, _source = _resolve_body(body)
+    clean_html, sanitization_warnings = sanitize_forbidden_tags(rendered_html)
+
+    html_errors = validate_html(clean_html, content_type=body.content_type)
+    coach_response = None
+    if not html_errors:
+        coach_response = _run_authoring_coach(
+            body, resolved_html=clean_html, resolved_format=content_format
+        )
+        coach_response.sanitization_applied = sanitization_warnings or None
+
+    return PreviewResponse(
+        html_body=strip_wrapper_tags(clean_html),
+        content_format=content_format,
+        authoring_coach=coach_response,
+        sanitization_applied=sanitization_warnings or None,
+    )
 
 
 @router.post(
@@ -268,14 +390,16 @@ def create_report(
             status_code=422, detail="content_type must be 'report' or 'slideshow'."
         )
 
+    # Resolve body to HTML (handles markdown, json, or html passthrough)
+    rendered_html, content_format, source_body = _resolve_body(body)
+
     # Sanitize forbidden tags, then validate
-    clean_html, sanitization_warnings = sanitize_forbidden_tags(body.html_body)
+    clean_html, sanitization_warnings = sanitize_forbidden_tags(rendered_html)
     html_errors = validate_html(clean_html, content_type=body.content_type)
     if html_errors:
         raise HTTPException(status_code=422, detail={"validation_errors": html_errors})
 
-    body_for_coach = body.model_copy(update={"html_body": clean_html})
-    coach_feedback = _run_authoring_coach(body_for_coach)
+    coach_feedback = _run_authoring_coach(body, resolved_html=clean_html, resolved_format=content_format)
     if (
         coach_feedback.mode == "enforce"
         and coach_feedback.readiness_status == "blocked"
@@ -324,6 +448,8 @@ def create_report(
         summary=body.summary,
         slug=generate_slug(body.title),
         html_body=clean_html,
+        content_format=content_format,
+        source_body=source_body,
         content_type=body.content_type,
         agent_id=agent.id,
         space_id=space.id,
@@ -364,7 +490,11 @@ class UserReportCreateRequest(BaseModel):
     title: str
     summary: str
     tags: list[str] = []
-    html_body: str
+    html_body: Optional[str] = None
+    markdown_body: Optional[str] = None
+    structured_body: Optional[dict] = None
+    content_format: str = "auto"
+    theme: Optional[str] = None
     space_name: str
     agent_id: str
     content_type: str = "report"
@@ -403,21 +533,28 @@ def upload_report_as_user(
     if agent.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="You do not own this agent.")
 
-    clean_html, sanitization_warnings = sanitize_forbidden_tags(body.html_body)
+    # Build a ReportCreateRequest for shared rendering/coach logic
+    create_req = ReportCreateRequest(
+        title=body.title,
+        summary=body.summary,
+        tags=body.tags,
+        html_body=body.html_body,
+        markdown_body=body.markdown_body,
+        structured_body=body.structured_body,
+        content_format=body.content_format,
+        theme=body.theme,
+        space_name=body.space_name,
+        content_type=body.content_type,
+    )
+
+    rendered_html, content_format, source_body = _resolve_body(create_req)
+
+    clean_html, sanitization_warnings = sanitize_forbidden_tags(rendered_html)
     html_errors = validate_html(clean_html, content_type=body.content_type)
     if html_errors:
         raise HTTPException(status_code=422, detail={"validation_errors": html_errors})
 
-    coach_feedback = _run_authoring_coach(
-        ReportCreateRequest(
-            title=body.title,
-            summary=body.summary,
-            tags=body.tags,
-            html_body=clean_html,
-            space_name=body.space_name,
-            content_type=body.content_type,
-        )
-    )
+    coach_feedback = _run_authoring_coach(create_req, resolved_html=clean_html, resolved_format=content_format)
     if (
         coach_feedback.mode == "enforce"
         and coach_feedback.readiness_status == "blocked"
@@ -455,6 +592,8 @@ def upload_report_as_user(
         summary=body.summary,
         slug=generate_slug(body.title),
         html_body=clean_html,
+        content_format=content_format,
+        source_body=source_body,
         content_type=body.content_type,
         agent_id=agent.id,
         space_id=space.id,
@@ -490,7 +629,7 @@ def upload_report_as_user(
 
 
 @router.get("/", response_model=list[ReportSummaryResponse])
-def list_reports(
+async def list_reports(
     space: Optional[str] = Query(
         None, description="Filter by space name, e.g., o/marketing"
     ),
@@ -505,6 +644,13 @@ def list_reports(
 ):
     """List reports with optional space filter, agent filter and sorting."""
 
+    # Check cache
+    cache_viewer = current_user.id if current_user else "anon"
+    cache_key = f"report_list:{sort}:{space}:{agent_id}:{agent_name}:{tag}:{page}:{page_size}:{cache_viewer}"
+    cached_data = await cache.get(cache_key)
+    if cached_data:
+        return [ReportSummaryResponse(**item) for item in cached_data]
+
     # Pre-compute aggregation subqueries
     upvotes_sq = (
         select(Upvote.report_id, func.sum(Upvote.value).label("score"))
@@ -518,16 +664,22 @@ def list_reports(
         .subquery()
     )
 
-    # Base query with aggregations joined in
+    # Base query: join Agent and Space to avoid N+1 lookups
     query = (
         select(
             Report,
+            Agent,
+            Space,
             func.coalesce(upvotes_sq.c.score, 0).label("total_score"),
             func.coalesce(comments_sq.c.comment_count, 0).label("total_comments"),
         )
-        .join(Space)
+        .join(Agent, Report.agent_id == Agent.id)
+        .join(Space, Report.space_id == Space.id)
         .outerjoin(upvotes_sq, Report.id == upvotes_sq.c.report_id)
         .outerjoin(comments_sq, Report.id == comments_sq.c.report_id)
+        .options(
+            selectinload(Report.report_tags).selectinload(ReportTag.tag)
+        )
     )
 
     # Access control
@@ -608,7 +760,7 @@ def list_reports(
 
     user_votes_by_report: dict[str, int] = {}
     if current_user and rows:
-        report_ids = [report.id for report, _, _ in rows]
+        report_ids = [report.id for report, _, _, _, _ in rows]
         user_vote_rows = session.exec(
             select(Upvote.report_id, Upvote.value).where(
                 Upvote.user_id == current_user.id,
@@ -620,10 +772,7 @@ def list_reports(
         }
 
     results = []
-    for report, score, comment_count in rows:
-        agent_obj = session.get(Agent, report.agent_id)
-        space_obj = session.get(Space, report.space_id)
-
+    for report, agent_obj, space_obj, score, comment_count in rows:
         results.append(
             ReportSummaryResponse(
                 id=report.id,
@@ -648,6 +797,9 @@ def list_reports(
                 run_number=report.run_number,
             )
         )
+
+    # Cache for 30 seconds
+    await cache.set(cache_key, [r.model_dump() for r in results], expire_seconds=30)
 
     return results
 
@@ -704,7 +856,9 @@ async def get_report(
         if existing_vote:
             user_vote = existing_vote.value
 
-    comment_count = len(report.comments) if report.comments else 0
+    comment_count = session.exec(
+        select(func.count(Comment.id)).where(Comment.report_id == report.id)
+    ).one()
 
     series_total = prev_slug = next_slug = None
     if report.series_id:
@@ -773,6 +927,10 @@ class ReportUpdateRequest(BaseModel):
     title: Optional[str] = None
     summary: Optional[str] = None
     html_body: Optional[str] = None
+    markdown_body: Optional[str] = None
+    structured_body: Optional[dict] = None
+    content_format: Optional[str] = None  # "html" | "markdown" | "json"
+    theme: Optional[str] = None
     tags: Optional[list[str]] = None
     content_type: Optional[str] = None
 
@@ -816,14 +974,34 @@ def update_report(
     effective_content_type = report.content_type
 
     sanitization_warnings: list[dict[str, str]] = []
-    if body.html_body is not None:
-        clean_html, sanitization_warnings = sanitize_forbidden_tags(body.html_body)
+    update_format = report.content_format or "html"
+
+    # Determine if a new body was submitted
+    has_new_body = body.html_body is not None or body.markdown_body is not None or body.structured_body is not None
+
+    if has_new_body:
+        # Build a temporary create request to use _resolve_body
+        temp_req = ReportCreateRequest(
+            title=report.title,
+            summary=report.summary,
+            html_body=body.html_body,
+            markdown_body=body.markdown_body,
+            structured_body=body.structured_body,
+            content_format=body.content_format or "auto",
+            theme=body.theme,
+            content_type=effective_content_type,
+        )
+        rendered_html, update_format, source_body = _resolve_body(temp_req)
+
+        clean_html, sanitization_warnings = sanitize_forbidden_tags(rendered_html)
         html_errors = validate_html(clean_html, content_type=effective_content_type)
         if html_errors:
             raise HTTPException(
                 status_code=422, detail={"validation_errors": html_errors}
             )
         report.html_body = strip_wrapper_tags(clean_html)
+        report.content_format = update_format
+        report.source_body = source_body
 
     # Re-run coach on the full (post-patch) state
     coach_feedback = _run_authoring_coach(
@@ -833,7 +1011,9 @@ def update_report(
             html_body=report.html_body,
             content_type=effective_content_type,
             tags=body.tags or [],
-        )
+        ),
+        resolved_html=report.html_body,
+        resolved_format=update_format,
     )
     if (
         coach_feedback.mode == "enforce"

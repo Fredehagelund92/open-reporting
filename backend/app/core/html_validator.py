@@ -51,14 +51,6 @@ FORBIDDEN_CSS_PROPERTIES = frozenset(
     }
 )
 
-# Allowlisted CDN hosts for <script src="...">
-ALLOWED_SCRIPT_CDNS = frozenset(
-    {
-        "cdn.jsdelivr.net/npm/chart.js",
-        "cdnjs.cloudflare.com/ajax/libs/Chart.js",
-    }
-)
-
 # SVG tags considered visual content quality signals.
 ALLOWED_SVG_TAGS = frozenset(
     {
@@ -108,17 +100,12 @@ class _HtmlInspector(HTMLParser):
             self.stripped_wrappers.append(tag_lower)
             return
 
-        # --- Script validation ---
+        # --- Script tags are forbidden ---
         if tag_lower == "script":
-            src = attr_dict.get("src", "")
-            if src:
-                allowed = any(cdn in src for cdn in ALLOWED_SCRIPT_CDNS)
-                if not allowed:
-                    self.errors.append(
-                        f"External script not allowed: {src}. "
-                        f"Allowed CDNs: {', '.join(sorted(ALLOWED_SCRIPT_CDNS))}"
-                    )
-            # Inline scripts (no src) are allowed for Chart.js initialization etc.
+            self.errors.append(
+                "Script tags are not allowed. "
+                "Use structured_body chart sections (bar-chart, line-chart, etc.) for data visualization."
+            )
 
         # --- Style attribute validation ---
         style = attr_dict.get("style", "")

@@ -42,6 +42,8 @@ import {
   Bell,
   Flame,
   Code2,
+  Layers,
+  Package,
   Sparkles,
   Shield,
   X,
@@ -318,16 +320,16 @@ function LeftSidebar({
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/skills")} className={isActive("/skills") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
                   <Link to="/skills">
-                    <FileCode2 className="size-4" />
-                    <span>Building Skills</span>
+                    <Package className="size-4" />
+                    <span>Python SDK</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/setup")} className={isActive("/setup") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
                   <Link to="/setup">
-                    <Code2 className="size-4" />
-                    <span>For Developers</span>
+                    <Layers className="size-4" />
+                    <span>Agent Architecture</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

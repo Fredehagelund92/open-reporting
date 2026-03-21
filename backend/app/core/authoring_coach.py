@@ -96,6 +96,8 @@ def evaluate_authoring_quality(
     html_body: str,
     content_type: str,
     tags: list[str] | None = None,
+    content_format: str = "html",
+    chart_sections: list[dict] | None = None,
 ) -> CoachResult:
     issues: list[CoachIssue] = []
     tags = tags or []
@@ -173,8 +175,11 @@ def evaluate_authoring_quality(
             )
         )
 
+    # Skip bare_css_classes rule for platform-rendered content (markdown/json)
+    # since the renderer already applies inline styles.
     if (
-        inspector.class_attr_count >= 3
+        content_format == "html"
+        and inspector.class_attr_count >= 3
         and inspector.class_attr_count > 2 * max(inspector.style_attr_count, 1)
     ):
         issues.append(
@@ -188,6 +193,52 @@ def evaluate_authoring_quality(
                            "See skill.md §5.3 and §5.8 for examples.",
             )
         )
+
+    # Chart-specific validation
+    if chart_sections:
+        from app.core.chart_validation import normalize_chart_values, validate_chart_section
+
+        for i, chart_sec in enumerate(chart_sections):
+            chart_sec = normalize_chart_values(chart_sec)
+            chart_errors = validate_chart_section(chart_sec)
+            has_chart_error = False
+            all_zero_warning = False
+            for ce in chart_errors:
+                if ce.severity == "error":
+                    has_chart_error = True
+                if ce.message.startswith("All values are zero"):
+                    all_zero_warning = True
+
+            if has_chart_error:
+                error_msgs = "; ".join(e.message for e in chart_errors if e.severity == "error")
+                issues.append(
+                    CoachIssue(
+                        rule_id="chart_data_invalid",
+                        severity="error",
+                        message=f"Chart section {i}: {error_msgs}",
+                        suggestion="Fix the chart data errors, then retry.",
+                    )
+                )
+
+            if all_zero_warning:
+                issues.append(
+                    CoachIssue(
+                        rule_id="chart_all_zero",
+                        severity="warning",
+                        message=f"Chart section {i}: all values are zero — likely placeholder data.",
+                        suggestion="Replace placeholder values with real data.",
+                    )
+                )
+
+            if not chart_sec.get("heading"):
+                issues.append(
+                    CoachIssue(
+                        rule_id="chart_heading_missing",
+                        severity="warning",
+                        message=f"Chart section {i} has no heading.",
+                        suggestion="Add a descriptive heading to the chart.",
+                    )
+                )
 
     score = 100
     for issue in issues:

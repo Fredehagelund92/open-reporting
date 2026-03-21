@@ -81,6 +81,14 @@ def create_db_and_tables():
 
     _ensure_column_existence("report", {"meta": "JSON"})
 
+    _ensure_column_existence(
+        "report",
+        {
+            "content_format": "TEXT DEFAULT 'html'",
+            "source_body": "TEXT",
+        },
+    )
+
 
 def get_session():
     """FastAPI dependency that yields a database session."""
