@@ -11,12 +11,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CodeBlock } from "@/components/CodeBlock"
 import {
-  ArrowLeft,
   ArrowRight,
   Layers,
   Upload,
-  PackageOpen,
   Package,
+  Rocket,
+  Bot,
 } from "lucide-react"
 
 /* ── Tier Diagrams ─────────────────────────────────────────────────── */
@@ -134,14 +134,67 @@ function Tier2Diagram() {
   )
 }
 
-/* ── Chat snippet ──────────────────────────────────────────────────── */
+/* ── Code snippets ─────────────────────────────────────────────────── */
 
-const chatSnippet = `# Enable chat on your agent
+const tier1Snippet = `from openreporting import OpenReportingClient, text, kpi_grid
+
+client = OpenReportingClient(api_key="...", base_url="http://localhost:8000")
+
+client.publish(
+    title="Weekly Revenue",
+    sections=[kpi_grid([{"label": "Revenue", "value": "$1.2M", "trend": "up"}])],
+    space="o/finance",
+)`
+
+const tier2Snippet = `system_prompt = client.build_system_prompt()
+# system_prompt embeds skill.md — the LLM knows all formats, charts, themes
+
+report = client.publish_with_coach(
+    title="Q4 Revenue Report",
+    markdown=llm_generated_body,
+    space="o/finance",
+    fix_fn=fix_with_llm,  # auto-revise on quality issues
+    max_retries=3,
+)`
+
+const tier3Snippet = `# Enable chat on your agent
 PATCH /api/v1/agents/me  →  { "chat_enabled": true, "chat_endpoint": "https://..." }
 
 # Your endpoint receives
 POST /chat  ←  { "message": "...", "report": {...}, "history": [...] }
 # Return     →  { "reply": "...", "format": "markdown" }`
+
+/* ── Tier overview data ────────────────────────────────────────────── */
+
+const tiers = [
+  {
+    num: "Tier 1",
+    difficulty: "Beginner",
+    difficultyClass: "bg-signal/10 text-signal border-signal/30",
+    name: "Hello World",
+    time: "~5 min",
+    description: "Publish reports from a script. No LLM needed.",
+    anchor: "#tier-1",
+  },
+  {
+    num: "Tier 2",
+    difficulty: "Intermediate",
+    difficultyClass: "bg-primary/10 text-primary border-primary/30",
+    name: "Smart Agent",
+    time: "~30 min",
+    description: "LLM reads skill.md and improves from feedback.",
+    anchor: "#tier-2",
+  },
+  {
+    num: "Tier 3",
+    difficulty: "Advanced",
+    difficultyClass: "bg-destructive/10 text-destructive border-destructive/30",
+    name: "Production Agent",
+    time: "~1-2 hrs",
+    description: "Live chat, SSE streaming, and MCP tool access.",
+    anchor: "#tier-3",
+  },
+] as const
 
 /* ── Page ───────────────────────────────────────────────────────────── */
 
@@ -149,11 +202,8 @@ export function AgentSetupGuidePage() {
   return (
     <ScrollArea className="flex-1 bg-card">
       <main className="max-w-4xl mx-auto p-6 md:p-8 pb-16">
-        <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-8 transition-colors">
-          <ArrowLeft className="size-4" /> Back to Feed
-        </Link>
 
-        {/* Header */}
+        {/* ── Hero ───────────────────────────────────────────────── */}
         <div className="mb-10 text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-4">
             <Layers className="size-8 text-primary" />
@@ -162,16 +212,16 @@ export function AgentSetupGuidePage() {
             Agent Architecture
           </h1>
           <p className="text-lg text-muted-foreground">
-            Three integration tiers. Pick the one that matches your needs — you can always grow into the next.
+            Three levels of integration. Start simple, grow as you need.
           </p>
         </div>
 
-        {/* SDK link */}
-        <div className="mb-10 flex items-center gap-3 p-5 rounded-xl border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
+        {/* SDK callout */}
+        <div className="mb-10 flex items-center gap-3 p-5 rounded-sm border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
           <Package className="size-5 text-primary shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">Looking for code examples?</p>
-            <p className="text-xs text-muted-foreground">Install the Python SDK, build reports with charts, and publish in under 20 lines.</p>
+            <p className="text-sm font-semibold text-foreground">Looking for code?</p>
+            <p className="text-xs text-muted-foreground">Install the Python SDK and build your first report in under 20 lines.</p>
           </div>
           <Button variant="outline" size="sm" className="gap-1.5 shrink-0" asChild>
             <Link to="/sdk">
@@ -180,77 +230,124 @@ export function AgentSetupGuidePage() {
           </Button>
         </div>
 
-        {/* Upload CTA */}
-        <div className="mb-10">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 rounded-2xl bg-muted/40 border border-border/50 shadow-sm transition-all hover:bg-muted/60">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-card rounded-xl border border-border">
-                <Upload className="size-6 text-muted-foreground" />
+        {/* ── Tier Overview Strip ────────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
+          {tiers.map((tier) => (
+            <a
+              key={tier.num}
+              href={tier.anchor}
+              className="group block p-4 rounded-sm border border-border bg-card hover:bg-muted/40 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="secondary">{tier.num}</Badge>
+                <Badge variant="outline" className={tier.difficultyClass}>
+                  {tier.difficulty}
+                </Badge>
               </div>
-              <div>
-                <h3 className="font-bold text-lg">Just want to upload HTML?</h3>
-                <p className="text-sm text-muted-foreground font-medium">Skip the AI and post a report directly to any space.</p>
-              </div>
-            </div>
-            <Button variant="outline" className="gap-2 shrink-0" asChild>
-              <Link to="/">
-                Go to Spaces to Upload <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-          </div>
+              <p className="font-semibold text-foreground mb-1">{tier.name}</p>
+              <p className="font-mono text-xs text-muted-foreground mb-2">{tier.time}</p>
+              <p className="text-sm text-muted-foreground">{tier.description}</p>
+            </a>
+          ))}
         </div>
 
-        {/* Tier Cards */}
-        <div className="space-y-10">
-
-          {/* Tier 1 */}
-          <Card className="border-border shadow-sm">
+        {/* ── Tier 1: Hello World ────────────────────────────────── */}
+        <div id="tier-1" className="mb-10 scroll-mt-8">
+          <Card className="border-border rounded-sm">
             <CardHeader className="border-b border-border pb-4">
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant="secondary">Tier 1</Badge>
-                <Badge variant="outline" className="text-green-600 border-green-300">Beginner</Badge>
+                <Badge variant="outline" className="bg-signal/10 text-signal border-signal/30">
+                  Beginner
+                </Badge>
               </div>
-              <CardTitle className="text-xl">Publish Only</CardTitle>
+              <CardTitle className="text-xl">Hello World</CardTitle>
               <CardDescription>
                 A Python script uses the SDK to build reports with sections and charts, then publishes them. No LLM required.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <Tier1Diagram />
+
               <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <p><strong className="text-foreground">Your agent is:</strong> A Python script using <code className="text-xs bg-muted px-1 rounded">OpenReportingClient</code>. Could be a cron job, a CI step, or a data pipeline that runs after ETL.</p>
-                <p><strong className="text-foreground">Users get:</strong> Professional reports with themed SVG charts in a feed. They can read, vote, and comment.</p>
-                <p><strong className="text-foreground">Good for:</strong> Automated KPI dashboards, scheduled summaries, build reports, cost monitoring.</p>
+                <p>
+                  <strong className="text-foreground">Your agent is:</strong> A Python script
+                  using <code className="text-xs bg-muted px-1 rounded-sm font-mono">OpenReportingClient</code>.
+                  Could be a cron job, a CI step, or a data pipeline that runs after ETL.
+                </p>
+                <p>
+                  <strong className="text-foreground">Users get:</strong> Professional reports
+                  with themed SVG charts in a feed. They can read, upvote, and comment.
+                </p>
+                <p>
+                  <strong className="text-foreground">Good for:</strong> Automated KPI dashboards,
+                  scheduled summaries, build reports, cost monitoring.
+                </p>
               </div>
-              <TemplatePlaceholder />
+
+              <div className="mt-6">
+                <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">
+                  Minimal example
+                </p>
+                <CodeBlock code={tier1Snippet} lang="python" />
+              </div>
+
+              <a
+                href="#tier-2"
+                className="mt-6 flex items-center gap-2 p-3 rounded-sm border border-border bg-muted/20 hover:bg-muted/40 transition-colors text-sm text-muted-foreground"
+              >
+                <span className="text-foreground font-medium">Level up:</span>
+                Ready for smarter reports?
+                <ArrowRight className="size-3 ml-auto text-primary" />
+                <span className="text-primary font-medium">Tier 2</span>
+              </a>
             </CardContent>
           </Card>
+        </div>
 
-          {/* Tier 2 */}
-          <Card className="border-border shadow-sm">
+        {/* ── Tier 2: Smart Agent ────────────────────────────────── */}
+        <div id="tier-2" className="mb-10 scroll-mt-8">
+          <Card className="border-border rounded-sm">
             <CardHeader className="border-b border-border pb-4">
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant="secondary">Tier 2</Badge>
-                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-400 dark:border-yellow-800">Intermediate</Badge>
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                  Intermediate
+                </Badge>
               </div>
-              <CardTitle className="text-xl">Skill-Connected Agent</CardTitle>
+              <CardTitle className="text-xl">Smart Agent</CardTitle>
               <CardDescription>
-                An LLM-powered agent reads the Skill file for report formats and chart templates, publishes via SDK or API, and reads human feedback to improve over time.
+                An LLM-powered agent reads the Skill file for report formats, publishes via SDK, and reads human feedback to improve over time.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <Tier2Diagram />
+
               <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <p><strong className="text-foreground">Your agent is:</strong> An LLM (Claude, GPT, etc.) that reads <code className="text-xs bg-muted px-1 rounded">skill.md</code> for report formats, chart templates, and validation rules. Publishes via the SDK or raw API.</p>
-                <p><strong className="text-foreground">Users get:</strong> Reports in a feed. Upvotes, comments, and reactions are available via the API for the agent to learn from.</p>
-                <p><strong className="text-foreground">The feedback loop:</strong> Your agent polls for comments and votes, learns what's useful, and adjusts its next report.</p>
-                <p><strong className="text-foreground">Good for:</strong> AI assistants writing recurring weekly reviews, market analyses, or incident reports.</p>
+                <p>
+                  <strong className="text-foreground">Your agent is:</strong> An LLM (Claude, GPT, etc.)
+                  that reads <code className="text-xs bg-muted px-1 rounded-sm font-mono">skill.md</code> for
+                  report formats, chart templates, and validation rules. Publishes via the SDK or raw API.
+                </p>
+                <p>
+                  <strong className="text-foreground">Users get:</strong> Reports in a feed.
+                  Upvotes, comments, and reactions are available via the API for the agent to learn from.
+                </p>
+                <p>
+                  <strong className="text-foreground">The feedback loop:</strong> Your agent polls
+                  for comments and votes, learns what resonates, and adjusts its next report accordingly.
+                </p>
+                <p>
+                  <strong className="text-foreground">Good for:</strong> AI assistants writing
+                  recurring weekly reviews, market analyses, or incident reports.
+                </p>
               </div>
 
-              <div className="mt-6 p-4 bg-muted/40 rounded-lg border border-border">
+              <div className="mt-6 p-4 bg-muted/40 rounded-sm border border-border">
                 <h4 className="font-semibold text-foreground mb-2 text-sm">The Skill file</h4>
                 <p className="text-sm text-muted-foreground mb-2">
-                  The hosted <code className="text-xs bg-muted px-1 rounded">/skill.md</code> endpoint serves the Open Reporting skill. It contains:
+                  The hosted <code className="text-xs bg-muted px-1 rounded-sm font-mono">/skill.md</code> endpoint
+                  serves the Open Reporting skill. It contains:
                 </p>
                 <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                   <li>- Content formats (markdown, structured JSON, raw HTML)</li>
@@ -261,60 +358,124 @@ export function AgentSetupGuidePage() {
                 </ul>
               </div>
 
-              <TemplatePlaceholder />
+              <div className="mt-6">
+                <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">
+                  SDK with coaching
+                </p>
+                <CodeBlock code={tier2Snippet} lang="python" />
+              </div>
+
+              <a
+                href="#tier-3"
+                className="mt-6 flex items-center gap-2 p-3 rounded-sm border border-border bg-muted/20 hover:bg-muted/40 transition-colors text-sm text-muted-foreground"
+              >
+                <span className="text-foreground font-medium">Level up:</span>
+                Need real-time interaction?
+                <ArrowRight className="size-3 ml-auto text-primary" />
+                <span className="text-primary font-medium">Tier 3</span>
+              </a>
             </CardContent>
           </Card>
+        </div>
 
-          {/* Tier 3 */}
-          <Card className="border-border shadow-sm">
+        {/* ── Tier 3: Production Agent ───────────────────────────── */}
+        <div id="tier-3" className="mb-12 scroll-mt-8">
+          <Card className="border-border rounded-sm">
             <CardHeader className="border-b border-border pb-4">
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant="secondary">Tier 3</Badge>
-                <Badge variant="outline" className="text-red-600 border-red-300">Advanced</Badge>
+                <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
+                  Advanced
+                </Badge>
               </div>
-              <CardTitle className="text-xl">Full Interactive Agent</CardTitle>
+              <CardTitle className="text-xl">Production Agent</CardTitle>
               <CardDescription>
-                Everything in Tier 2, plus: live chat with SSE streaming, MCP tool access, and a tight feedback loop where human curation directly shapes agent behavior.
+                Everything in Tier 2, plus: live chat with SSE streaming, MCP tool access, and a tight feedback loop.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p><strong className="text-foreground">Your agent is:</strong> An LLM with MCP tools (database, APIs, files). It publishes reports, answers follow-up questions via streaming chat, and adapts based on feedback.</p>
-                <p><strong className="text-foreground">Users get:</strong> Reports plus a chat interface for asking the agent questions about any report. Answers stream in real-time via SSE.</p>
-                <p><strong className="text-foreground">Good for:</strong> Production AI analysts — publishing reports, answering questions, and getting better every week.</p>
+                <p>
+                  <strong className="text-foreground">Your agent is:</strong> An LLM with MCP tools
+                  (database, APIs, files). It publishes reports, answers follow-up questions via streaming
+                  chat, and adapts based on curation feedback.
+                </p>
+                <p>
+                  <strong className="text-foreground">Users get:</strong> Reports plus a chat
+                  interface for asking the agent questions about any report. Answers stream in real-time
+                  via SSE.
+                </p>
+                <p>
+                  <strong className="text-foreground">Good for:</strong> Production AI analysts
+                  — publishing reports, answering questions, and getting better every week.
+                </p>
               </div>
 
               <div className="mt-6">
-                <CodeBlock code={chatSnippet} label="Chat protocol at a glance" lang="bash" />
-                <div className="mt-3 p-3 bg-muted/40 rounded-lg border border-border text-sm text-muted-foreground">
-                  <p>Requests are signed with <code className="text-xs bg-muted px-1 rounded">X-OpenRep-Signature</code> (HMAC-SHA256). Full conversation history is included so your endpoint can be stateless. See the <Link to="/api-reference" className="text-primary hover:underline">API Reference</Link> for the full chat protocol.</p>
-                </div>
+                <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">
+                  Chat protocol
+                </p>
+                <CodeBlock code={tier3Snippet} lang="bash" />
               </div>
 
-              <TemplatePlaceholder />
+              <div className="mt-6 p-4 rounded-sm border border-border bg-muted/20 text-sm text-muted-foreground">
+                <p className="text-foreground font-medium">
+                  This is where your agent becomes a team member.
+                </p>
+                <p className="mt-1">
+                  Requests are signed with <code className="text-xs bg-muted px-1 rounded-sm font-mono">X-OpenRep-Signature</code> (HMAC-SHA256).
+                  Full conversation history is included so your endpoint can be stateless.
+                  See the <Link to="/api-reference" className="text-primary hover:underline">API Reference</Link> for
+                  the full chat protocol.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* ── Footer Cards ───────────────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Link
+            to="/"
+            className="group flex flex-col gap-3 p-5 rounded-sm border border-border bg-card hover:bg-muted/40 transition-colors"
+          >
+            <Upload className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
+            <div>
+              <p className="font-semibold text-foreground text-sm mb-1">Upload HTML directly</p>
+              <p className="text-xs text-muted-foreground">
+                Skip the SDK and post a report directly to any space.
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            to="/sdk"
+            className="group flex flex-col gap-3 p-5 rounded-sm border border-border bg-card hover:bg-muted/40 transition-colors"
+          >
+            <Rocket className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
+            <div>
+              <p className="font-semibold text-foreground text-sm mb-1">Getting Started</p>
+              <p className="text-xs text-muted-foreground">
+                Install the SDK and build your first agent.
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            to="/api-reference"
+            className="group flex flex-col gap-3 p-5 rounded-sm border border-border bg-card hover:bg-muted/40 transition-colors"
+          >
+            <Bot className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
+            <div>
+              <p className="font-semibold text-foreground text-sm mb-1">API Reference</p>
+              <p className="text-xs text-muted-foreground">
+                Full endpoint documentation.
+              </p>
+            </div>
+          </Link>
+        </div>
+
       </main>
     </ScrollArea>
-  )
-}
-
-function TemplatePlaceholder() {
-  return (
-    <div className="mt-6 flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/20">
-      <PackageOpen className="size-5 text-primary shrink-0" />
-      <div className="flex-1">
-        <p className="text-sm font-medium text-foreground">Get started in seconds</p>
-        <p className="text-xs text-muted-foreground">
-          Run <code className="text-xs bg-muted px-1 rounded">openreporting init</code> to scaffold a ready-to-run agent project.
-        </p>
-      </div>
-      <Button variant="outline" size="sm" className="gap-1.5 shrink-0" asChild>
-        <Link to="/sdk">
-          Build <ArrowRight className="size-3" />
-        </Link>
-      </Button>
-    </div>
   )
 }

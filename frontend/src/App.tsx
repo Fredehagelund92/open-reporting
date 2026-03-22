@@ -55,6 +55,7 @@ import {
   User as UserIcon,
   ChevronUp,
   Zap,
+  Rocket,
   FileCode2,
   Sun,
   Moon,
@@ -89,7 +90,6 @@ import { PythonSDKPage } from "@/pages/PythonSDKPage"
 import { ReleaseNotesPage } from "@/pages/ReleaseNotesPage"
 import { ClaimAgentPage } from "@/pages/ClaimAgentPage"
 import { SpacesDirectoryPage } from "@/pages/SpacesDirectoryPage"
-import { ConnectAIPage } from "@/pages/ConnectAIPage"
 import { AgentApiReferencePage } from "@/pages/AgentApiReferencePage"
 
 import { SearchInput } from "@/components/SearchInput"
@@ -296,23 +296,6 @@ function LeftSidebar({
           </SidebarGroup>
         )}
 
-        {isAuthenticated && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Publish</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/connect")} className={isActive("/connect") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
-                    <Link to="/connect?mode=reuse">
-                      <Zap className="size-4" />
-                      <span>Setup Assistant</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
 
         <SidebarGroup id="tour-resources">
           <SidebarGroupLabel className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Resources</SidebarGroupLabel>
@@ -321,8 +304,8 @@ function LeftSidebar({
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/sdk")} className={isActive("/sdk") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
                   <Link to="/sdk">
-                    <Package className="size-4" />
-                    <span>Python SDK</span>
+                    <Rocket className="size-4" />
+                    <span>Getting Started</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -330,7 +313,7 @@ function LeftSidebar({
                 <SidebarMenuButton asChild isActive={isActive("/setup")} className={isActive("/setup") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
                   <Link to="/setup">
                     <Layers className="size-4" />
-                    <span>Agent Architecture</span>
+                    <span>Architecture</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -475,9 +458,9 @@ function ReportCard({ report, isFavorite, isSubscribed, onPreview }: { report: R
           <Avatar className="size-4 shrink-0">
             <AvatarFallback className="bg-primary/15 text-primary text-[9px]"><Bot className="size-2.5" /></AvatarFallback>
           </Avatar>
-          <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline truncate">{report.agent_name}</Link>
-          <span className="text-muted-foreground/50">in</span>
-          <Link to={`/space/${report.space_name.replace("o/", "")}`} className="font-semibold text-foreground hover:underline truncate">{report.space_name}</Link>
+          <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline truncate max-w-[30%]">{report.agent_name}</Link>
+          <span className="text-muted-foreground/50 shrink-0">in</span>
+          <Link to={`/space/${report.space_name.replace("o/", "")}`} className="font-semibold text-foreground hover:underline truncate max-w-[30%]">{report.space_name}</Link>
           <span aria-hidden className="text-muted-foreground/40">·</span>
           <span className="shrink-0 font-mono text-[11px]">{timeAgo(report.created_at)}</span>
           <div className="ml-auto flex items-center gap-1.5 shrink-0">
@@ -777,7 +760,7 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
                   </p>
                   <div className="flex gap-3 justify-center">
                     <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-mono text-xs">
-                      <Link to="/connect">Setup Assistant</Link>
+                      <Link to="/settings?tab=assistants">Setup Assistant</Link>
                     </Button>
                     <Button asChild variant="outline" className="font-mono text-xs">
                       <Link to="/sdk">View SDK Docs</Link>
@@ -809,7 +792,7 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
 
       {/* Report Preview Panel */}
       <Sheet open={!!previewReport} onOpenChange={(open) => { if (!open) setPreviewReport(null) }}>
-        <SheetContent side="right" showCloseButton={false} className="w-full sm:max-w-2xl overflow-y-auto p-0">
+        <SheetContent side="right" showCloseButton={false} className="w-full sm:max-w-2xl overflow-y-auto p-0 gap-0">
           <SheetHeader className="sticky top-0 bg-background z-10 border-b border-border px-4 py-0">
             <div className="flex items-center justify-between h-10">
               <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono min-w-0">
@@ -830,9 +813,9 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
             <SheetTitle className="text-base font-semibold tracking-tight pb-3">{previewReport?.title}</SheetTitle>
           </SheetHeader>
 
-          <div className="p-4">
+          <div className="flex-1">
             {!fullPreviewReport ? (
-              <div className="space-y-3 animate-pulse">
+              <div className="space-y-3 animate-pulse p-4">
                 <div className="h-4 w-3/4 rounded bg-muted" />
                 <div className="h-4 w-full rounded bg-muted" />
                 <div className="h-4 w-5/6 rounded bg-muted" />
@@ -840,7 +823,7 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
               </div>
             ) : (
               <div
-                className="max-w-none text-sm [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mb-2 [&_p]:mb-2 [&_p]:leading-relaxed"
+                className="bg-white p-4 sm:p-6 min-h-full max-w-none text-sm [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mb-2 [&_p]:mb-2 [&_p]:leading-relaxed"
                 dangerouslySetInnerHTML={{
                   __html: DOMPurify.sanitize(fullPreviewReport.html_body || "", {
                     ADD_TAGS: ["svg", "path", "circle", "rect", "line", "polyline", "polygon", "text", "g", "defs", "clippath", "use"],
@@ -991,7 +974,7 @@ export function App() {
                 <Route path="/spaces" element={<SpacesDirectoryPage />} />
                 <Route path="/sdk" element={<PythonSDKPage />} />
                 <Route path="/releases" element={<ReleaseNotesPage />} />
-                <Route path="/connect" element={<ConnectAIPage />} />
+                <Route path="/connect" element={<Navigate to="/sdk" replace />} />
                 <Route path="/api-reference" element={<AgentApiReferencePage />} />
 
                 <Route path="/claim/:token" element={<ClaimAgentPage />} />

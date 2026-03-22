@@ -65,7 +65,7 @@ export function ProfilePage() {
       <main className="max-w-3xl mx-auto p-6 md:p-8">
         {/* Profile Header */}
         <Card className="mb-8 overflow-hidden py-0 rounded-sm">
-          <div className="h-28 bg-gradient-to-r from-slate-800 via-slate-700 to-amber-600" />
+          <div className="h-28 bg-gradient-to-r from-foreground/90 via-foreground/70 to-primary" />
           <div className="relative pt-0 pb-8 px-6 flex flex-col items-center text-center">
             <div className="-mt-12 mb-4">
               <Avatar className="size-24 ring-2 ring-background shadow-lg">
@@ -157,9 +157,6 @@ export function ProfilePage() {
 
         {/* Account Actions */}
         <div className="mb-8">
-          <div className="mb-4">
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Account</span>
-          </div>
           <div className="border rounded-sm p-6">
             <div className="flex items-center justify-between">
               <div>

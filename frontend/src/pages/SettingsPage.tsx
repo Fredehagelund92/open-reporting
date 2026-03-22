@@ -111,7 +111,7 @@ export function SettingsPage() {
               {/* Left Column: Identity Card */}
               <div className="md:col-span-4 space-y-6">
                 <Card className="overflow-hidden border-none shadow-md bg-card/50 backdrop-blur-sm py-0">
-                  <div className="h-20 bg-gradient-to-br from-indigo-500/20 via-indigo-500/10 to-transparent" />
+                  <div className="h-20 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent" />
                   <CardContent className="relative pt-0 pb-6 px-6 text-center">
                     <div className="flex justify-center -mt-10 mb-4">
                       <div className="relative group">
@@ -140,11 +140,8 @@ export function SettingsPage() {
                     <p className="text-muted-foreground text-sm truncate mb-4">{user.email}</p>
                     
                     <div className="flex items-center justify-center gap-2">
-                      <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider bg-muted/50 border-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+                      <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider bg-muted/50 border-primary/20 text-primary">
                         {user.role}
-                      </Badge>
-                      <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider bg-muted/50">
-                        Standard Account
                       </Badge>
                     </div>
 
@@ -164,8 +161,8 @@ export function SettingsPage() {
                   </CardContent>
                 </Card>
 
-                <div className="p-4 rounded-xl border border-indigo-500/10 bg-indigo-500/5 space-y-2">
-                  <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Community Identity</p>
+                <div className="p-4 rounded-xl border border-primary/10 bg-primary/5 space-y-2">
+                  <p className="text-xs font-semibold text-primary uppercase tracking-widest">Community Identity</p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     This is how the community sees you across Open Reporting. Your profile details are public and help build trust within the platform.
                   </p>
@@ -192,7 +189,7 @@ export function SettingsPage() {
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           required
-                          className="bg-background/50 border-border/50 focus:ring-indigo-500/50"
+                          className="bg-background/50 border-border/50 focus:ring-primary/50"
                         />
                         <p className="text-[11px] text-muted-foreground">
                           This is the name people see on your reports and comments.
@@ -217,9 +214,9 @@ export function SettingsPage() {
                       </div>
 
                       <div className="pt-4 border-t border-border/10">
-                        <div className="flex items-center justify-between p-4 rounded-lg bg-indigo-500/5 border border-indigo-500/10">
+                        <div className="flex items-center justify-between p-4 rounded-lg bg-primary/5 border border-primary/10">
                           <div className="space-y-0.5">
-                            <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">Two-Factor Authentication</p>
+                            <p className="text-sm font-semibold text-primary">Two-Factor Authentication</p>
                             <p className="text-xs text-muted-foreground">Enhanced security for your account.</p>
                           </div>
                           <Badge variant="outline" className="bg-white/50 dark:bg-black/50 text-[10px] font-bold">COMING SOON</Badge>
@@ -236,7 +233,7 @@ export function SettingsPage() {
                           </span>
                         )}
                       </div>
-                      <Button type="submit" disabled={isSaving || !name.trim()} className="bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-indigo-500/20 shadow-lg">
+                      <Button type="submit" disabled={isSaving || !name.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-primary/20 shadow-lg">
                         {isSaving ? (
                           <>
                             <Loader2 className="mr-2 size-4 animate-spin" />
@@ -305,9 +302,38 @@ function MyAgentsSection() {
   const [chatSaving, setChatSaving] = useState<string | null>(null)
   const [chatSaveStatus, setChatSaveStatus] = useState<Record<string, "idle" | "success" | "error">>({})
 
+  // Inline agent creation
+  const [showCreate, setShowCreate] = useState(false)
+  const [newName, setNewName] = useState("")
+  const [newType, setNewType] = useState<"reporter" | "chat_assistant">("reporter")
+  const [isCreating, setIsCreating] = useState(false)
+  const [createError, setCreateError] = useState("")
+  const [createdKey, setCreatedKey] = useState<string | null>(null)
+
   const apiBase = import.meta.env.VITE_API_BASE_URL || window.location.origin
   const normalizedApiBase = normalizeApiBaseUrl(apiBase)
   const skillUrl = `${window.location.origin}/skill.md`
+
+  const handleCreateAgent = async () => {
+    if (!newName.trim()) return
+    setIsCreating(true)
+    setCreateError("")
+    setCreatedKey(null)
+    try {
+      const res = await api.post("/agents/register-for-me", {
+        name: newName.trim(),
+        agent_type: newType,
+      })
+      setCreatedKey(res.data.agent.api_key)
+      setNewName("")
+      setNewType("reporter")
+      fetchAgents()
+    } catch {
+      setCreateError("Failed to create assistant.")
+    } finally {
+      setIsCreating(false)
+    }
+  }
 
   const fetchAgents = async () => {
     try {
@@ -441,11 +467,9 @@ function MyAgentsSection() {
             Manage connections and API keys for your assistants.
           </p>
         </div>
-        <Button asChild size="sm" className="gap-1.5">
-          <Link to="/connect?mode=reuse">
-            <Plus className="size-4" />
-            New Assistant
-          </Link>
+        <Button size="sm" className="gap-1.5" onClick={() => { setShowCreate(true); setCreatedKey(null); setCreateError("") }}>
+          <Plus className="size-4" />
+          New Assistant
         </Button>
       </div>
 
@@ -454,6 +478,71 @@ function MyAgentsSection() {
           <AlertCircle className="size-4 shrink-0 mt-0.5" />
           <span>{rotationNotice}</span>
         </div>
+      )}
+
+      {showCreate && (
+        <Card className="border-primary/20">
+          <CardContent className="pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-foreground">Create a new assistant</p>
+              <Button variant="ghost" size="icon-sm" onClick={() => setShowCreate(false)}><X className="size-4" /></Button>
+            </div>
+            <Input
+              placeholder="Assistant name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCreateAgent()}
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setNewType("reporter")}
+                className={`flex items-start gap-3 rounded-sm border p-3 text-left transition-colors ${
+                  newType === "reporter"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted-foreground/30"
+                }`}
+              >
+                <FileText className={`size-4 mt-0.5 shrink-0 ${newType === "reporter" ? "text-primary" : "text-muted-foreground"}`} />
+                <div>
+                  <p className={`text-sm font-medium ${newType === "reporter" ? "text-foreground" : "text-muted-foreground"}`}>Reporter</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">Publishes reports and presentations</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewType("chat_assistant")}
+                className={`flex items-start gap-3 rounded-sm border p-3 text-left transition-colors ${
+                  newType === "chat_assistant"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted-foreground/30"
+                }`}
+              >
+                <MessageSquareText className={`size-4 mt-0.5 shrink-0 ${newType === "chat_assistant" ? "text-primary" : "text-muted-foreground"}`} />
+                <div>
+                  <p className={`text-sm font-medium ${newType === "chat_assistant" ? "text-foreground" : "text-muted-foreground"}`}>Interactive</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">Publishes reports + enables chat</p>
+                </div>
+              </button>
+            </div>
+            <Button size="sm" className="w-full" disabled={isCreating || !newName.trim()} onClick={handleCreateAgent}>
+              {isCreating ? <Loader2 className="size-4 animate-spin" /> : "Create Assistant"}
+            </Button>
+            {createError && <p className="text-xs text-destructive">{createError}</p>}
+            {createdKey && (
+              <div className="rounded-md border border-signal/20 bg-signal/5 p-3">
+                <p className="text-xs font-semibold text-foreground mb-1">Assistant created! Your API key:</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs font-mono bg-muted/50 px-2 py-1 rounded break-all">{createdKey}</code>
+                  <Button variant="ghost" size="icon-sm" onClick={() => { navigator.clipboard.writeText(createdKey); }}>
+                    <Copy className="size-3.5" />
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2">Save this key now — it won't be shown again in full.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {loading ? (
@@ -465,10 +554,8 @@ function MyAgentsSection() {
           <CardContent className="text-center py-10">
             <Bot className="size-8 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground mb-4">No assistants yet.</p>
-            <Button asChild variant="outline" size="sm">
-              <Link to="/connect?mode=create" className="gap-2">
-                <Plus className="size-4" /> Setup Your First Assistant
-              </Link>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => { setShowCreate(true); setCreatedKey(null); setCreateError("") }}>
+              <Plus className="size-4" /> Create Your First Assistant
             </Button>
           </CardContent>
         </Card>

@@ -113,7 +113,7 @@ export function AgentsDirectoryPage() {
             </p>
           </div>
           <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-mono text-xs">
-            <Link to="/connect"><Bot className="size-3.5 mr-1.5" /> Setup Assistant</Link>
+            <Link to="/settings?tab=assistants"><Bot className="size-3.5 mr-1.5" /> New Assistant</Link>
           </Button>
         </div>
 

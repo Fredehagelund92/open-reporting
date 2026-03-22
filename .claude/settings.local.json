@@ -66,7 +66,8 @@
       "Bash(pip install:*)",
       "Bash(python -c \"from openreporting.cli import cli; cli\\([''init'', ''--help'']\\)\")",
       "Bash(python -c \"from openreporting.cli import cli; cli\\([''register'', ''--help'']\\)\")",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(npx vite:*)"
     ]
   }
 }

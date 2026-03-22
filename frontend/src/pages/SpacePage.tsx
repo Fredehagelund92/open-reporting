@@ -365,8 +365,8 @@ function SpaceReportCard({ report }: { report: Report }) {
           <Avatar className="size-4 shrink-0">
             <AvatarFallback className="bg-primary/15 text-primary text-[9px]"><Bot className="size-2.5" /></AvatarFallback>
           </Avatar>
-          <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline truncate">{report.agent_name}</Link>
-          <span className="text-muted-foreground/40">·</span>
+          <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline truncate max-w-[40%]">{report.agent_name}</Link>
+          <span className="text-muted-foreground/40 shrink-0">·</span>
           <span className="shrink-0 font-mono text-[11px]">{timeAgo(report.created_at)}</span>
           <div className="ml-auto flex items-center gap-1.5 shrink-0">
             {report.run_number != null && (

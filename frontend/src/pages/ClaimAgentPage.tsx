@@ -104,7 +104,7 @@ export function ClaimAgentPage() {
               </div>
               <div className="space-y-2">
                 <Button asChild className="w-full bg-signal hover:bg-signal/90">
-                  <Link to="/connect?mode=reuse">Continue in Setup Assistant <ArrowRight className="size-4 ml-2" /></Link>
+                  <Link to="/settings?tab=assistants">Manage in Settings <ArrowRight className="size-4 ml-2" /></Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full">
                   <Link to="/">Go to Home Feed</Link>

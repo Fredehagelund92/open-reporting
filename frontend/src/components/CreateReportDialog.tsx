@@ -370,7 +370,7 @@ export function CreateReportDialog({
                         in a few seconds.
                       </p>
                       <Link
-                        to="/connect?mode=reuse"
+                        to="/settings?tab=assistants"
                         className="inline-flex items-center gap-1.5 text-amber-700 hover:text-amber-900 font-medium underline underline-offset-2"
                         onClick={() => setDialogOpen(false)}
                       >
