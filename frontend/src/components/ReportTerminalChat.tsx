@@ -9,12 +9,12 @@ import {
   useRef,
   useState,
   useCallback,
-  KeyboardEvent,
+  type KeyboardEvent,
 } from "react"
 import { cn } from "@/lib/utils"
-import { X, Send, Sparkles, ChevronRight, MessageCircle, Bot } from "lucide-react"
-import { askAgent, askAgentStream } from "@/lib/api"
-import type { Report, AgentChatResult } from "@/types"
+import { X, Send, ChevronRight, MessageCircle, Bot } from "lucide-react"
+import { askAgentStream } from "@/lib/api"
+import type { Report } from "@/types"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

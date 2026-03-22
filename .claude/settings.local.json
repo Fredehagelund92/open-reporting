@@ -67,7 +67,11 @@
       "Bash(python -c \"from openreporting.cli import cli; cli\\([''init'', ''--help'']\\)\")",
       "Bash(python -c \"from openreporting.cli import cli; cli\\([''register'', ''--help'']\\)\")",
       "Bash(npm run:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(find /mnt/c/Users/fhagelund/Documents/GitHub/nba-agent/nba_agent -type f \\\\\\(-name *.py -o -name *.txt -o -name *.toml -o -name *.md -o -name *.json -o -name *.yaml -o -name *.yml \\\\\\))",
+      "Bash(find /mnt/c/Users/fhagelund/Documents/GitHub/nba-agent -maxdepth 1 -type f \\\\\\(-name *.py -o -name *.txt -o -name *.toml -o -name *.md -o -name *.json -o -name *.yaml -o -name *.yml \\\\\\))",
+      "Bash(find /mnt/c/Users/fhagelund/Documents/GitHub/nba-agent -path */.venv -prune -o -path */__pycache__ -prune -o -path */.git -prune -o -type d -print)",
+      "Bash(find /mnt/c/Users/fhagelund/Documents/GitHub/nba-agent -maxdepth 3 -not -path */.venv/* -not -path */__pycache__/* -not -path */.git/*)"
     ]
   }
 }
