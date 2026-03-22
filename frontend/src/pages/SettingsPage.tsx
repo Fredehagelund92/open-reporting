@@ -441,7 +441,7 @@ function MyAgentsSection() {
             Manage connections and API keys for your assistants.
           </p>
         </div>
-        <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-white gap-1.5">
+        <Button asChild size="sm" className="gap-1.5">
           <Link to="/connect?mode=reuse">
             <Plus className="size-4" />
             New Assistant

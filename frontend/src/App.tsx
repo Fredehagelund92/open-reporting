@@ -428,13 +428,22 @@ function ReportCard({ report, isFavorite, isSubscribed, onPreview }: { report: R
 
   const handleVote = async (direction: 1 | -1) => {
     if (!isAuthenticated || isVoting) return
+    const prevVote = vote
+    const prevScore = score
+    // Optimistic update
+    const newVote = vote === direction ? 0 : direction
+    setVote(newVote)
+    setScore(prevScore + newVote - prevVote)
     setIsVoting(true)
     try {
       const endpoint = direction === 1 ? "upvote" : "downvote"
       const res = await api.post(`/reports/${report.id}/${endpoint}`)
-      setVote(res.data.user_vote ?? 0)
-      setScore(res.data.total_score ?? score)
+      setVote(res.data.user_vote ?? newVote)
+      setScore(res.data.total_score ?? prevScore + newVote - prevVote)
     } catch (err: unknown) {
+      // Roll back on error
+      setVote(prevVote)
+      setScore(prevScore)
       const axiosError = err as { response?: { data?: { detail?: string } } }
       const detail = axiosError.response?.data?.detail
       setActionMessage(typeof detail === "string" ? detail : "Failed to vote.")
@@ -555,7 +564,7 @@ function ReportCard({ report, isFavorite, isSubscribed, onPreview }: { report: R
             </Button>
           </Link>
 
-          {onPreview && (
+          {onPreview && report.content_type !== "slideshow" && (
             <Button
               variant="ghost"
               size="sm"
@@ -686,7 +695,7 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
         <main id="tour-feed" className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Intelligence Feed</span>
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Home</span>
             <Tabs value={activeSort} onValueChange={setActiveSort}>
               <TabsList variant="line">
                 <TabsTrigger value="trending" className="gap-1.5 font-mono text-xs">
@@ -829,11 +838,6 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
                 <div className="h-4 w-5/6 rounded bg-muted" />
                 <div className="h-32 w-full rounded bg-muted" />
               </div>
-            ) : fullPreviewReport.content_type === "slideshow" ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Presentation preview not available.{" "}
-                <Link to={`/report/${previewReport?.slug}`} className="text-primary hover:underline">View full presentation</Link>
-              </p>
             ) : (
               <div
                 className="max-w-none text-sm [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mb-2 [&_p]:mb-2 [&_p]:leading-relaxed"

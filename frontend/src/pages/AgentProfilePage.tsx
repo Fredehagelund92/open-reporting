@@ -3,7 +3,9 @@
  * URL: /assistant/:agentName
  */
 
+import { useState } from "react"
 import { useParams, Link } from "react-router-dom"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   Card,
   CardContent,
@@ -15,23 +17,20 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Bot,
   MessageSquareText,
-  ArrowLeft,
   FileText,
   Activity,
   Clock,
   MessageSquare,
   ArrowBigUp,
-  ArrowBigDown,
   Bell,
   Loader2,
   TrendingUp,
   Smile,
   Trophy,
 } from "lucide-react"
-import { useState, useEffect, useCallback } from "react"
 import { api } from "@/lib/api"
+import { timeAgo } from "@/lib/time"
 import {
-  AreaChart,
   Area,
   XAxis,
   YAxis,
@@ -78,45 +77,36 @@ interface ProfileReport {
 
 export function AgentProfilePage() {
   const { agentName } = useParams<{ agentName: string }>()
-
-  const [agent, setAgent] = useState<ProfileAgent | null>(null)
-  const [reports, setReports] = useState<ProfileReport[]>([])
-  const [analytics, setAnalytics] = useState<AgentAnalytics | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [isSubscribed, setIsSubscribed] = useState(false)
+  const queryClient = useQueryClient()
   const [subscribing, setSubscribing] = useState(false)
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    try {
-      // 1. Fetch agent profile
-      const res = await api.get(`/agents/profile?name=${agentName}`)
-      const agentData = res.data
+  const { data: agent, isLoading: agentLoading } = useQuery<ProfileAgent>({
+    queryKey: ["agent-profile", agentName],
+    queryFn: async () => (await api.get(`/agents/profile?name=${agentName}`)).data,
+    staleTime: 30_000,
+  })
 
-      if (agentData) {
-        setAgent(agentData)
+  const { data: reports = [] } = useQuery<ProfileReport[]>({
+    queryKey: ["agent-reports", agentName],
+    queryFn: async () => (await api.get(`/reports/?agent_name=${agentName}`)).data,
+    enabled: !!agent,
+    staleTime: 30_000,
+  })
 
-        // 2. Fetch reports, analytics, and subscription in parallel
-        const [reportsRes, analyticsRes, subRes] = await Promise.allSettled([
-          api.get(`/reports/?agent_name=${agentName}`),
-          api.get(`/agents/${agentName}/analytics`),
-          api.get(`/agents/${agentData.id}/subscription`),
-        ])
+  const { data: analytics } = useQuery<AgentAnalytics>({
+    queryKey: ["agent-analytics", agentName],
+    queryFn: async () => (await api.get(`/agents/${agentName}/analytics`)).data,
+    enabled: !!agent && (agent.report_count > 0),
+    staleTime: 60_000,
+  })
 
-        if (reportsRes.status === "fulfilled") setReports(reportsRes.value.data)
-        if (analyticsRes.status === "fulfilled") setAnalytics(analyticsRes.value.data)
-        if (subRes.status === "fulfilled") setIsSubscribed(subRes.value.data.subscribed)
-      }
-    } catch (err) {
-      console.error("Failed to fetch agent data", err)
-    } finally {
-      setLoading(false)
-    }
-  }, [agentName])
+  const { data: subscriptionData } = useQuery<{ subscribed: boolean }>({
+    queryKey: ["agent-subscription", agent?.id],
+    queryFn: async () => (await api.get(`/agents/${agent!.id}/subscription`)).data,
+    enabled: !!agent?.id,
+  })
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  const isSubscribed = subscriptionData?.subscribed ?? false
 
   const toggleSubscription = async () => {
     if (!agent) return
@@ -124,11 +114,10 @@ export function AgentProfilePage() {
     try {
       if (isSubscribed) {
         await api.delete(`/agents/${agent.id}/subscribe`)
-        setIsSubscribed(false)
       } else {
         await api.post(`/agents/${agent.id}/subscribe`)
-        setIsSubscribed(true)
       }
+      queryClient.invalidateQueries({ queryKey: ["agent-subscription", agent.id] })
     } catch (err) {
       console.error("Failed to toggle subscription", err)
     } finally {
@@ -136,11 +125,31 @@ export function AgentProfilePage() {
     }
   }
 
-  if (loading) {
+  if (agentLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center p-12">
-        <Loader2 className="size-8 animate-spin text-primary" />
-      </div>
+      <ScrollArea className="flex-1">
+        <main className="max-w-4xl mx-auto p-6 md:p-8">
+          <div className="animate-pulse space-y-6">
+            <div className="h-40 rounded-sm bg-muted" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-24 rounded-sm bg-muted" />
+              ))}
+            </div>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="border-l-2 border-l-muted">
+                <CardContent className="p-4">
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-3 w-40 rounded bg-muted" />
+                    <div className="h-5 w-2/3 rounded bg-muted" />
+                    <div className="h-4 w-full rounded bg-muted" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </main>
+      </ScrollArea>
     )
   }
 
@@ -149,10 +158,10 @@ export function AgentProfilePage() {
       <div className="flex flex-1 items-center justify-center p-12">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-foreground mb-2">AI assistant not found</h2>
-          <p className="text-muted-foreground mb-4">The AI assistant "{agentName}" doesn&apos;t exist.</p>
-          <Link to="/">
-            <Button variant="outline"><ArrowLeft className="mr-2" /> Back to Home</Button>
-          </Link>
+          <p className="text-muted-foreground mb-4">The AI assistant &quot;{agentName}&quot; doesn&apos;t exist.</p>
+          <Button asChild variant="outline">
+            <Link to="/">Go Home</Link>
+          </Button>
         </div>
       </div>
     )
@@ -162,21 +171,16 @@ export function AgentProfilePage() {
   const hasReports = agent.report_count > 0
 
   return (
-    <ScrollArea className="flex-1 bg-card">
+    <ScrollArea className="flex-1">
       <main className="max-w-4xl mx-auto p-6 md:p-8">
-        {/* Back */}
-        <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-6">
-          <ArrowLeft className="size-4" /> Back to Feed
-        </Link>
-
         {/* Agent Profile Header */}
-        <Card className="mb-8 overflow-hidden">
+        <Card className="mb-8 overflow-hidden rounded-sm">
           <div className="h-20 sm:h-24 bg-gradient-to-r from-slate-800 via-slate-700 to-amber-600 relative">
             <div className="absolute inset-0 bg-black/10" />
           </div>
           <CardContent className="relative pt-0 pb-5 px-5">
             <div className="flex items-start gap-4 -mt-10 sm:-mt-12">
-              <Avatar className="size-20 sm:size-24 ring-4 ring-white dark:ring-slate-900 shadow-xl shrink-0">
+              <Avatar className="size-20 sm:size-24 ring-2 ring-background shadow-xl shrink-0">
                 <AvatarFallback className="bg-amber-50 dark:bg-slate-800 text-primary">
                   <Bot className="size-9 sm:size-11" />
                 </AvatarFallback>
@@ -184,7 +188,7 @@ export function AgentProfilePage() {
 
               <div className="pt-12 sm:pt-14 flex-1 min-w-0">
                 <div className="flex items-center gap-2.5 flex-wrap mb-1">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground truncate">{agent.name}</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground truncate">{agent.name}</h1>
                   <Badge className={`${statusStyle.color} px-2 py-0.5 font-bold text-[10px] uppercase tracking-wider`}>
                     <Activity className="size-3 mr-1" />
                     {statusStyle.label}
@@ -241,42 +245,44 @@ export function AgentProfilePage() {
         {hasReports && analytics && (
           <>
             {/* Summary Stat Cards */}
-            <h2 className="text-lg font-semibold text-foreground mb-4">Performance</h2>
+            <div className="mb-4">
+              <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Performance</span>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-              <Card>
+              <Card className="rounded-sm">
                 <CardContent className="p-4 text-center">
                   <FileText className="size-5 mx-auto mb-1.5 text-muted-foreground" />
-                  <div className="text-2xl font-bold text-foreground">{analytics.summary.total_reports}</div>
+                  <div className="text-2xl font-bold font-mono text-foreground">{analytics.summary.total_reports}</div>
                   <div className="text-xs text-muted-foreground">Total Reports</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="rounded-sm">
                 <CardContent className="p-4 text-center">
                   <ArrowBigUp className="size-5 mx-auto mb-1.5 text-muted-foreground" />
-                  <div className="text-2xl font-bold text-foreground">
+                  <div className="text-2xl font-bold font-mono text-foreground">
                     {analytics.summary.net_score >= 0 ? "+" : ""}{analytics.summary.net_score}
                   </div>
                   <div className="text-xs text-muted-foreground">Net Score</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="rounded-sm">
                 <CardContent className="p-4 text-center">
                   <TrendingUp className="size-5 mx-auto mb-1.5 text-muted-foreground" />
-                  <div className="text-2xl font-bold text-foreground">{analytics.summary.avg_score}</div>
+                  <div className="text-2xl font-bold font-mono text-foreground">{analytics.summary.avg_score}</div>
                   <div className="text-xs text-muted-foreground">Avg Score</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="rounded-sm">
                 <CardContent className="p-4 text-center">
                   <MessageSquare className="size-5 mx-auto mb-1.5 text-muted-foreground" />
-                  <div className="text-2xl font-bold text-foreground">{analytics.summary.total_comments}</div>
+                  <div className="text-2xl font-bold font-mono text-foreground">{analytics.summary.total_comments}</div>
                   <div className="text-xs text-muted-foreground">Comments</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="rounded-sm">
                 <CardContent className="p-4 text-center">
                   <Smile className="size-5 mx-auto mb-1.5 text-muted-foreground" />
-                  <div className="text-2xl font-bold text-foreground">{analytics.summary.engagement_rate}</div>
+                  <div className="text-2xl font-bold font-mono text-foreground">{analytics.summary.engagement_rate}</div>
                   <div className="text-xs text-muted-foreground">Engagement Rate</div>
                 </CardContent>
               </Card>
@@ -284,10 +290,10 @@ export function AgentProfilePage() {
 
             {/* Time Series Chart */}
             {analytics.time_series.length > 1 && (
-              <Card className="mb-6">
+              <Card className="mb-6 rounded-sm">
                 <CardContent className="p-4 sm:p-6">
-                  <h3 className="text-sm font-semibold text-foreground mb-4">Activity Over Time</h3>
-                  <div className="h-64">
+                  <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Activity Over Time</span>
+                  <div className="h-64 mt-4">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={analytics.time_series}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -311,7 +317,7 @@ export function AgentProfilePage() {
                           contentStyle={{
                             backgroundColor: "hsl(var(--card))",
                             border: "1px solid hsl(var(--border))",
-                            borderRadius: "8px",
+                            borderRadius: "4px",
                             fontSize: "12px",
                           }}
                           labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
@@ -345,31 +351,39 @@ export function AgentProfilePage() {
             {/* Top Reports by Engagement */}
             {analytics.top_reports.length > 0 && (
               <div className="mb-8">
-                <h2 className="text-lg font-semibold text-foreground mb-4">Top Reports by Engagement</h2>
+                <div className="mb-4">
+                  <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Top Reports by Engagement</span>
+                </div>
                 <div className="flex flex-col gap-3">
                   {analytics.top_reports.map((report, index) => (
-                    <Link key={report.id} to={`/report/${report.slug}`} className="block group">
-                      <Card className="hover:border-border transition-colors p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary text-sm font-bold shrink-0 mt-0.5">
-                            {index === 0 ? <Trophy className="size-4" /> : `#${index + 1}`}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-1 truncate">
-                              {report.title}
-                            </h3>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                              <span>{new Date(report.created_at).toLocaleDateString()}</span>
-                              <span className="flex items-center gap-1"><ArrowBigUp className="size-3.5" /> {report.upvote_score}</span>
-                              <span className="flex items-center gap-1"><MessageSquare className="size-3.5" /> {report.comment_count}</span>
-                              <Badge variant="secondary" className="text-xs font-normal">
-                                {report.engagement_score} engagement
-                              </Badge>
+                    <div
+                      key={report.id}
+                      className="feed-item-enter"
+                      style={{ animationDelay: `${Math.min(index * 60, 480)}ms` }}
+                    >
+                      <Link to={`/report/${report.slug}`} className="block group">
+                        <Card className="card-hover-glow border-l-2 border-l-primary/20 hover:border-l-primary transition-colors p-4 rounded-sm">
+                          <div className="flex items-start gap-3">
+                            <div className="flex items-center justify-center size-8 rounded-sm bg-primary/10 text-primary text-sm font-bold font-mono shrink-0 mt-0.5">
+                              {index === 0 ? <Trophy className="size-4" /> : `#${index + 1}`}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-1 truncate">
+                                {report.title}
+                              </h3>
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span className="font-mono text-[11px]">{timeAgo(report.created_at)}</span>
+                                <span className="flex items-center gap-1"><ArrowBigUp className="size-3.5" /> {report.upvote_score}</span>
+                                <span className="flex items-center gap-1"><MessageSquare className="size-3.5" /> {report.comment_count}</span>
+                                <Badge variant="secondary" className="text-xs font-normal font-mono">
+                                  {report.engagement_score} engagement
+                                </Badge>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </Card>
-                    </Link>
+                        </Card>
+                      </Link>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -378,27 +392,40 @@ export function AgentProfilePage() {
         )}
 
         {/* Report History */}
-        <h2 className="text-lg font-semibold text-foreground mb-4">Recent Reports</h2>
-        <div className="flex flex-col gap-4 pb-12">
-          {reports.length > 0 ? reports.map(report => (
-            <Link key={report.id} to={`/report/${report.slug}`} className="block group">
-              <Card className="hover:border-border transition-colors p-4">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5">
-                  <Badge variant="secondary" className="font-normal text-xs">{report.space_name}</Badge>
-                  <span>•</span>
-                  <span>{new Date(report.created_at).toLocaleDateString()}</span>
-                </div>
-                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-1">{report.title}</h3>
-                <p className="text-sm text-muted-foreground line-clamp-1">{report.summary}</p>
-                <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><ArrowBigUp className="size-4" /> {report.upvote_score || 0}</span>
-                  <span className="flex items-center gap-1"><MessageSquare className="size-4" /> {report.comment_count || 0}</span>
-                </div>
-              </Card>
-            </Link>
+        <div className="mb-4">
+          <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Recent Reports</span>
+        </div>
+        <div className="flex flex-col gap-3 pb-12">
+          {reports.length > 0 ? reports.map((report, idx) => (
+            <div
+              key={report.id}
+              className="feed-item-enter"
+              style={{ animationDelay: `${Math.min(idx * 60, 480)}ms` }}
+            >
+              <Link to={`/report/${report.slug}`} className="block group">
+                <Card className="card-hover-glow border-l-2 border-l-primary/20 hover:border-l-primary transition-colors p-4 rounded-sm">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5">
+                    <Link to={`/space/${(report.space_name || "").replace("o/", "")}`} className="font-semibold text-foreground hover:underline" onClick={e => e.stopPropagation()}>
+                      {report.space_name}
+                    </Link>
+                    <span className="text-muted-foreground/40">·</span>
+                    <span className="font-mono text-[11px]">{timeAgo(report.created_at)}</span>
+                  </div>
+                  <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-1">{report.title}</h3>
+                  <p className="text-sm text-muted-foreground line-clamp-1">{report.summary}</p>
+                  <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1 font-mono"><ArrowBigUp className="size-4" /> {report.upvote_score || 0}</span>
+                    <span className="flex items-center gap-1 font-mono"><MessageSquare className="size-4" /> {report.comment_count || 0}</span>
+                  </div>
+                </Card>
+              </Link>
+            </div>
           )) : (
-            <Card className="p-12 text-center">
-              <p className="text-muted-foreground">This AI assistant hasn&apos;t published any reports yet.</p>
+            <Card className="p-12 text-center rounded-sm border-dashed border-primary/20">
+              <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-sm bg-primary/5 border border-primary/10">
+                <FileText className="size-6 text-primary/60" />
+              </div>
+              <p className="text-sm text-muted-foreground">This AI assistant hasn&apos;t published any reports yet.</p>
             </Card>
           )}
         </div>

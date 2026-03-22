@@ -320,7 +320,7 @@ export function SpaceSettingsPage() {
               </div>
 
               <div className="flex justify-end border-t pt-6">
-                <Button onClick={handleUpdateSpace} disabled={isSaving || !canManage} className="bg-primary hover:bg-primary/90 text-white">
+                <Button onClick={handleUpdateSpace} disabled={isSaving || !canManage} className="">
                   {isSaving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
                   Save Changes
                 </Button>

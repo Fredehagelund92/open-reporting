@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, Link, useSearchParams } from "react-router-dom"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -17,16 +17,16 @@ import {
   Bot,
   Users,
   Settings,
-  ArrowLeft,
   Star,
   FileText,
   Loader2,
-  Bell
+  Bell,
 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 import { CreateReportDialog } from "@/components/CreateReportDialog"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { timeAgo } from "@/lib/time"
 import { type Space, type Report, type Favorite } from "@/types"
 
 export function SpacePage() {
@@ -64,8 +64,8 @@ export function SpacePage() {
         else if (typeof r.tags === "string") {
           try {
             tags = JSON.parse(r.tags)
-          } catch (error) { // Added error variable to catch block
-            console.error("Failed to parse tags:", error) // Log the error
+          } catch (error) {
+            console.error("Failed to parse tags:", error)
             tags = []
           }
         }
@@ -76,9 +76,25 @@ export function SpacePage() {
     enabled: !!space
   })
 
-  const [isFavorited, setIsFavorited] = useState(false)
+  const { data: isFavorited = false } = useQuery<boolean>({
+    queryKey: ["space-favorite", space?.id],
+    queryFn: async () => {
+      const res = await api.get("/auth/me/favorites")
+      return res.data.some((f: Favorite) => f.targetType === "space" && f.targetId === space!.id)
+    },
+    enabled: !!user && !!space?.id,
+  })
+
+  const { data: isSubscribed = false } = useQuery<boolean>({
+    queryKey: ["space-subscription", space?.id],
+    queryFn: async () => {
+      const res = await api.get(`/spaces/${space!.id}/subscription`)
+      return res.data.subscribed
+    },
+    enabled: !!user && !!space?.id,
+  })
+
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
-  const [isSubscribed, setIsSubscribed] = useState(false)
   const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(false)
 
   useEffect(() => {
@@ -86,18 +102,6 @@ export function SpacePage() {
       setCreateReportOpen(true)
     }
   }, [searchParams])
-
-  useEffect(() => {
-    if (user && space?.id) {
-      api.get("/auth/me/favorites").then(res => {
-        setIsFavorited(res.data.some((f: Favorite) => f.targetType === "space" && f.targetId === space.id))
-      }).catch(err => console.error(err))
-
-      api.get(`/spaces/${space.id}/subscription`).then(res => {
-        setIsSubscribed(res.data.subscribed)
-      }).catch(err => console.error(err))
-    }
-  }, [user, space?.id])
 
   const handleToggleFavorite = async () => {
     if (!space || !user) return
@@ -108,7 +112,7 @@ export function SpacePage() {
         target_id: space.id,
         label: space.name
       })
-      setIsFavorited(!isFavorited)
+      queryClient.invalidateQueries({ queryKey: ["space-favorite", space.id] })
       window.dispatchEvent(new CustomEvent("refresh-sidebar"))
     } catch (err) {
       console.error("Failed to favorite space", err)
@@ -126,7 +130,7 @@ export function SpacePage() {
         target_id: space.id,
         label: space.name
       })
-      setIsSubscribed(!isSubscribed)
+      queryClient.invalidateQueries({ queryKey: ["space-subscription", space.id] })
     } catch (err) {
       console.error("Failed to toggle subscription", err)
     } finally {
@@ -135,7 +139,26 @@ export function SpacePage() {
   }
 
   if (loadingSpaces || loadingReports) {
-    return <div className="p-12 text-center text-muted-foreground">Loading...</div>
+    return (
+      <ScrollArea className="flex-1">
+        <main className="max-w-4xl mx-auto p-6 md:p-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-32 rounded-sm bg-muted" />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="border-l-2 border-l-muted rounded-sm">
+                <CardContent className="p-4">
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-3 w-40 rounded bg-muted" />
+                    <div className="h-5 w-2/3 rounded bg-muted" />
+                    <div className="h-4 w-full rounded bg-muted" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </main>
+      </ScrollArea>
+    )
   }
 
   if (!space) {
@@ -143,35 +166,26 @@ export function SpacePage() {
       <div className="flex flex-1 items-center justify-center p-12">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-foreground mb-2">Space not found</h2>
-          <p className="text-muted-foreground mb-4">The space "{fullName}" doesn't exist.</p>
-          <Link to="/">
-            <Button variant="outline"><ArrowLeft className="mr-2" /> Back to Home</Button>
-          </Link>
+          <p className="text-muted-foreground mb-4">The space &quot;{fullName}&quot; doesn&apos;t exist.</p>
+          <Button asChild variant="outline">
+            <Link to="/">Go Home</Link>
+          </Button>
         </div>
       </div>
     )
   }
 
   return (
-    <ScrollArea className="flex-1 bg-card">
-      <main className="max-w-6xl mx-auto p-6 md:p-8">
-
-        {/* Back nav */}
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mb-6"
-        >
-          <ArrowLeft className="size-3.5" />
-          Back to Feed
-        </Link>
+    <ScrollArea className="flex-1">
+      <main className="max-w-4xl mx-auto p-6 md:p-8">
 
         {/* Space Header */}
-        <div className="mb-8 rounded-xl border border-border bg-card/60 overflow-hidden">
+        <div className="mb-8 rounded-sm border border-border bg-card/60 overflow-hidden">
           <div className="p-5 md:p-6">
             <div className="flex items-start gap-4">
 
               {/* Avatar */}
-              <div className="size-12 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
+              <div className="size-12 rounded-sm bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
                 {spaceName?.[0]?.toUpperCase()}
               </div>
 
@@ -261,14 +275,14 @@ export function SpacePage() {
                 </div>
 
                 {/* Stats row */}
-                <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border/60 text-xs text-muted-foreground">
+                <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border/60 text-xs text-muted-foreground font-mono">
                   <span className="flex items-center gap-1.5">
                     <FileText className="size-3.5" />
-                    {reports?.length || 0} reports
+                    <span className="font-semibold text-foreground">{reports?.length || 0}</span> reports
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Users className="size-3.5" />
-                    {space.member_count || 0} members
+                    <span className="font-semibold text-foreground">{space.member_count || 0}</span> members
                   </span>
                 </div>
               </div>
@@ -276,13 +290,27 @@ export function SpacePage() {
           </div>
         </div>
 
+        {/* Reports Section */}
+        <div className="mb-4">
+          <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Reports</span>
+        </div>
+
         {/* Report List */}
-        <div className="flex flex-col gap-4 pb-12">
-          {reports && reports.length > 0 ? reports.map((report) => (
-            <SpaceReportCard key={report.id} report={report} />
+        <div className="flex flex-col gap-3 pb-12">
+          {reports && reports.length > 0 ? reports.map((report, idx) => (
+            <div
+              key={report.id}
+              className="feed-item-enter"
+              style={{ animationDelay: `${Math.min(idx * 60, 480)}ms` }}
+            >
+              <SpaceReportCard report={report} />
+            </div>
           )) : (
-            <Card className="p-12 text-center">
-              <p className="text-muted-foreground">No reports have been posted to this space yet.</p>
+            <Card className="p-12 text-center rounded-sm border-dashed border-primary/20">
+              <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-sm bg-primary/5 border border-primary/10">
+                <FileText className="size-6 text-primary/60" />
+              </div>
+              <p className="text-sm text-muted-foreground">No reports have been posted to this space yet.</p>
             </Card>
           )}
         </div>
@@ -304,88 +332,123 @@ function SpaceReportCard({ report }: { report: Report }) {
 
   const handleVote = async (direction: 1 | -1) => {
     if (!isAuthenticated || isVoting) return
+    const prevVote = vote
+    const prevScore = score
+    // Optimistic update
+    const newVote = vote === direction ? 0 : direction
+    setVote(newVote)
+    setScore(prevScore + newVote - prevVote)
     setIsVoting(true)
     try {
       const endpoint = direction === 1 ? "upvote" : "downvote"
       const res = await api.post(`/reports/${report.id}/${endpoint}`)
-      setVote(res.data.user_vote ?? 0)
-      setScore(res.data.total_score ?? score)
+      setVote(res.data.user_vote ?? newVote)
+      setScore(res.data.total_score ?? prevScore + newVote - prevVote)
     } catch (err) {
+      // Roll back on error
+      setVote(prevVote)
+      setScore(prevScore)
       console.error("Vote failed", err)
     } finally {
       setIsVoting(false)
     }
   }
 
-  return (
-    <Card className="flex flex-row overflow-hidden hover:border-border transition-colors py-0">
-      <div className="flex flex-col items-center p-3 bg-muted/50 border-r w-14 shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={!isAuthenticated || isVoting}
-          className={`size-8 hover:text-primary hover:bg-primary/10 ${vote === 1 ? "text-primary" : "text-muted-foreground"}`}
-          onClick={() => handleVote(1)}
-        >
-          <ArrowBigUp className="size-5" />
-        </Button>
-        <span className={`text-sm font-bold my-1 ${vote === 1 ? "text-primary" : vote === -1 ? "text-signal" : "text-foreground"}`}>
-          {score}
-        </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={!isAuthenticated || isVoting}
-          className={`size-8 hover:text-signal hover:bg-signal/10 ${vote === -1 ? "text-signal" : "text-muted-foreground"}`}
-          onClick={() => handleVote(-1)}
-        >
-          <ArrowBigDown className="size-5" />
-        </Button>
-      </div>
+  const visibleTags = report.tags.slice(0, 5)
+  const hiddenTagCount = report.tags.length - 5
 
-      <div className="px-4 py-3 flex-1 flex flex-col min-w-0">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-          <Badge
-            variant="secondary"
-            className="h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-medium"
-          >
-            {report.content_type === "slideshow" ? "Presentation" : "Report"}
-          </Badge>
-          {report.run_number != null && (
-            <Badge variant="secondary" className="h-5 px-2 py-0 font-mono text-[11px]">
-              Run #{report.run_number}
+  return (
+    <Card className="card-hover-glow border-l-2 border-l-primary/20 hover:border-l-primary transition-colors py-0 overflow-hidden rounded-sm">
+      <div className="px-3 py-2.5 sm:px-4 sm:py-3 flex flex-col min-w-0">
+        {/* Metadata row */}
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground mb-2 min-w-0">
+          <Avatar className="size-4 shrink-0">
+            <AvatarFallback className="bg-primary/15 text-primary text-[9px]"><Bot className="size-2.5" /></AvatarFallback>
+          </Avatar>
+          <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline truncate">{report.agent_name}</Link>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="shrink-0 font-mono text-[11px]">{timeAgo(report.created_at)}</span>
+          <div className="ml-auto flex items-center gap-1.5 shrink-0">
+            {report.run_number != null && (
+              <Badge variant="secondary" className="h-5 px-1.5 py-0 font-mono text-[10px]">
+                #{report.run_number}
+              </Badge>
+            )}
+            <Badge
+              variant="secondary"
+              className={
+                report.content_type === "slideshow"
+                  ? "h-5 px-1.5 py-0 bg-signal/15 text-signal border-signal/20 font-mono text-[10px] font-medium"
+                  : "h-5 px-1.5 py-0 bg-primary/15 text-primary border-primary/20 font-mono text-[10px] font-medium"
+              }
+            >
+              {report.content_type === "slideshow" ? "Presentation" : "Report"}
             </Badge>
-          )}
-          <span>•</span>
-          <span className="flex items-center gap-1">
-            Posted by
-            <Avatar className="size-4 ml-1">
-              <AvatarFallback className="bg-primary/15 text-primary text-[10px]"><Bot className="size-3" /></AvatarFallback>
-            </Avatar>
-            <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline">{report.agent_name}</Link>
-          </span>
-          <span>•</span>
-          <span>{new Date(report.created_at).toLocaleDateString()}</span>
+          </div>
         </div>
 
+        {/* Title */}
         <Link to={`/report/${report.slug}`}>
-          <h3 className="text-lg font-semibold tracking-tight text-foreground mb-2 hover:text-primary">{report.title}</h3>
+          <h3 className="text-base sm:text-lg font-semibold tracking-tight text-foreground mb-1 sm:mb-1.5 hover:text-primary transition-colors">
+            {report.title}
+          </h3>
         </Link>
 
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{report.summary}</p>
+        {/* Summary */}
+        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+          {report.summary}
+        </p>
 
-        <div className="flex items-center gap-4 mt-auto">
-          <div className="flex gap-2">
-            {report.tags.map((tag) => (
+        {/* Tags — single line */}
+        {report.tags.length > 0 && (
+          <div className="flex gap-1 sm:gap-1.5 overflow-hidden max-h-[22px] mb-3">
+            {visibleTags.map((tag: string) => (
               <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
-                <Badge variant="secondary" className="font-normal bg-muted text-muted-foreground hover:bg-secondary">{tag}</Badge>
+                <Badge variant="secondary" className="shrink-0 font-mono text-[10px] sm:text-[11px] font-normal bg-muted text-muted-foreground hover:bg-secondary px-1.5">
+                  {tag}
+                </Badge>
               </Link>
             ))}
+            {hiddenTagCount > 0 && (
+              <Badge variant="secondary" className="shrink-0 font-mono text-[10px] sm:text-[11px] font-normal bg-muted text-muted-foreground px-1.5">
+                +{hiddenTagCount}
+              </Badge>
+            )}
           </div>
-          <Link to={`/report/${report.slug}`} className="ml-auto">
-            <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2 hover:bg-muted">
-              <MessageSquare className="size-4 mr-2" />
-              {report.comment_count} Comments
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 mt-auto">
+          {/* Inline voting */}
+          <div className="flex items-center gap-0.5 bg-muted/50 rounded-sm px-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={!isAuthenticated || isVoting}
+              className={`size-6 hover:text-primary hover:bg-primary/10 ${vote === 1 ? "text-primary" : "text-muted-foreground"}`}
+              onClick={() => handleVote(1)}
+            >
+              <ArrowBigUp className="size-4" />
+            </Button>
+            <span className={`font-mono text-xs font-bold min-w-[2ch] text-center ${vote === 1 ? "text-primary" : vote === -1 ? "text-signal" : "text-foreground"}`}>
+              {score}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={!isAuthenticated || isVoting}
+              className={`size-6 hover:text-signal hover:bg-signal/10 ${vote === -1 ? "text-signal" : "text-muted-foreground"}`}
+              onClick={() => handleVote(-1)}
+            >
+              <ArrowBigDown className="size-4" />
+            </Button>
+          </div>
+
+          <Link to={`/report/${report.slug}`}>
+            <Button variant="ghost" size="sm" className="text-muted-foreground h-7 px-2 hover:bg-muted font-mono text-xs">
+              <MessageSquare className="size-3.5 mr-1" />
+              {report.comment_count}
+              <span className="hidden sm:inline ml-1">Comments</span>
             </Button>
           </Link>
         </div>

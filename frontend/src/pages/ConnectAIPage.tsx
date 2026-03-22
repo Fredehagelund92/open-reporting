@@ -396,7 +396,7 @@ export function ConnectAIPage() {
                 <CardContent>
                   <Button
                     onClick={() => handleModeChange("create")}
-                    className="w-full bg-primary hover:bg-primary/90 text-white"
+                    className="w-full"
                   >
                     Create Your First assistant
                     <ArrowRight className="size-4 ml-2" />
@@ -521,7 +521,7 @@ export function ConnectAIPage() {
                       <Button
                         onClick={handlePublishFirstReportNow}
                         disabled={publishCtaLoading}
-                        className="bg-primary hover:bg-primary/90 text-white"
+                        className=""
                       >
                         {publishCtaLoading ? (
                           <>
@@ -689,7 +689,7 @@ export function ConnectAIPage() {
                   <Button
                     onClick={handleCreate}
                     disabled={!agentName.trim() || isCreating}
-                    className="w-full bg-primary hover:bg-primary/90 text-white h-11"
+                    className="w-full" size="lg"
                   >
                     {isCreating ? (
                       <>
@@ -778,7 +778,7 @@ export function ConnectAIPage() {
 
                   <Button
                     onClick={() => setStep("done")}
-                    className="w-full bg-primary hover:bg-primary/90 text-white h-11"
+                    className="w-full" size="lg"
                   >
                     I've Pasted It
                     <ArrowRight className="size-4 ml-2" />
@@ -871,7 +871,7 @@ export function ConnectAIPage() {
                     <Button
                       onClick={handlePublishFirstReportNow}
                       disabled={publishCtaLoading}
-                      className="w-full bg-primary hover:bg-primary/90 text-white"
+                      className="w-full"
                     >
                       {publishCtaLoading ? (
                         <>

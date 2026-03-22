@@ -20,7 +20,6 @@ import {
   ArrowBigDown,
   MessageSquare,
   Bot,
-  ArrowLeft,
   Send,
   Bookmark,
   Maximize2,
@@ -40,6 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { timeAgo } from "@/lib/time"
 import DOMPurify from "dompurify"
 import { SlideshowViewer } from "@/components/SlideshowViewer"
 
@@ -259,13 +259,22 @@ export function ReportViewerPage() {
 
   const handleVote = async (direction: 1 | -1) => {
     if (!isAuthenticated || !report || isVoting) return
+    const prevVote = vote
+    const prevScore = currentScore ?? report.upvote_score ?? 0
+    // Optimistic update
+    const newVote = vote === direction ? 0 : direction
+    setVote(newVote)
+    setCurrentScore(prevScore + newVote - prevVote)
     setIsVoting(true)
     try {
       const endpoint = direction === 1 ? "upvote" : "downvote"
       const res = await api.post(`/reports/${report.id}/${endpoint}`)
-      setVote(res.data.user_vote ?? 0)
-      setCurrentScore(res.data.total_score ?? currentScore ?? report.upvote_score ?? 0)
+      setVote(res.data.user_vote ?? newVote)
+      setCurrentScore(res.data.total_score ?? prevScore + newVote - prevVote)
     } catch (err) {
+      // Roll back on error
+      setVote(prevVote)
+      setCurrentScore(prevScore)
       console.error("Vote failed", err)
     } finally {
       setIsVoting(false)
@@ -290,11 +299,9 @@ export function ReportViewerPage() {
           <div className="font-mono text-5xl font-bold text-muted-foreground/20">404</div>
           <h2 className="text-xl font-semibold text-foreground">Report not found</h2>
           <p className="text-sm text-muted-foreground">This report doesn't exist or has been removed.</p>
-          <Link to="/">
-            <Button variant="outline" size="sm" className="mt-1">
-              <ArrowLeft className="mr-2 size-3.5" /> Back to Feed
-            </Button>
-          </Link>
+          <Button asChild variant="outline" size="sm" className="mt-1">
+            <Link to="/">Go Home</Link>
+          </Button>
         </div>
       </div>
     )
@@ -339,20 +346,9 @@ export function ReportViewerPage() {
 
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-x-hidden">
 
-        {/* Back navigation */}
-        {!isFullscreen && (
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors mb-8 group"
-          >
-            <ArrowLeft className="size-3 group-hover:-translate-x-0.5 transition-transform" />
-            Feed
-          </Link>
-        )}
-
         {/* Series Navigation */}
         {report.series_id && (
-          <div className="mb-6 flex items-center gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
+          <div className="mb-6 flex items-center gap-3 rounded-sm border border-border/60 bg-muted/20 px-3 py-2">
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60 shrink-0">Series</span>
             <code className="font-mono text-xs font-semibold text-foreground bg-card border border-border/60 rounded px-1.5 py-0.5 shrink-0">
               {report.series_id}
@@ -681,7 +677,7 @@ export function ReportViewerPage() {
 
         {/* ─── Select-to-quote hint ─── */}
         {isAuthenticated && showSelectHint && report.content_type !== "slideshow" && (
-          <div className="mb-3 flex items-center gap-2.5 px-3 py-2 rounded-lg bg-primary/[0.04] border border-primary/10 animate-in fade-in slide-in-from-top-1 duration-500">
+          <div className="mb-3 flex items-center gap-2.5 px-3 py-2 rounded-sm bg-primary/[0.04] border border-primary/10 animate-in fade-in slide-in-from-top-1 duration-500">
             <Highlighter className="size-3.5 text-primary/50 shrink-0" />
             <span className="text-[12px] text-muted-foreground">
               <span className="font-medium text-foreground/70">Select text</span> in the report to quote it in a comment
@@ -700,7 +696,7 @@ export function ReportViewerPage() {
         )}
 
         {/* ─── Document Body ─── */}
-        <div className="mb-10 rounded-xl border border-border/60 overflow-hidden shadow-sm">
+        <div className="mb-10 rounded-sm border border-border/60 overflow-hidden shadow-sm">
           {/* Document chrome bar */}
           <div className="flex items-center gap-3 px-4 py-2.5 bg-muted/40 border-b border-border/60">
             <div className="flex gap-1.5 shrink-0">
@@ -845,9 +841,8 @@ export function ReportViewerPage() {
         {/* ─── Discussion ─── */}
         <section ref={discussionRef} className="pb-16 scroll-mt-6">
           <div className="flex items-center gap-2.5 mb-5">
-            <MessageSquare className="size-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-foreground">Discussion</h2>
-            <span className="font-mono text-[10px] text-muted-foreground bg-muted rounded px-1.5 py-0.5 tabular-nums">
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Discussion</span>
+            <span className="font-mono text-[10px] text-muted-foreground bg-muted rounded-sm px-1.5 py-0.5 tabular-nums">
               {comments.length}
             </span>
           </div>
@@ -863,7 +858,7 @@ export function ReportViewerPage() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <div className="rounded-lg border border-border bg-card overflow-hidden focus-within:ring-1 focus-within:ring-primary/40 focus-within:border-primary/50 transition-all">
+                  <div className="rounded-sm border border-border bg-card overflow-hidden focus-within:ring-1 focus-within:ring-primary/40 focus-within:border-primary/50 transition-all">
                     {/* Quoted text preview */}
                     {selectedQuote && (
                       <div className="mx-3 mt-3 mb-1 flex items-start gap-2 animate-in slide-in-from-top-2 fade-in duration-300">
@@ -934,7 +929,7 @@ export function ReportViewerPage() {
 
                   {/* Mention dropdown */}
                   {showMentions && filteredMentions.length > 0 && (
-                    <div className="absolute left-0 w-52 mt-1 rounded-lg shadow-2xl z-[100] overflow-hidden bg-card border border-border animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="absolute left-0 w-52 mt-1 rounded-sm shadow-2xl z-[100] overflow-hidden bg-card border border-border animate-in fade-in slide-in-from-top-1 duration-150">
                       <div className="p-1.5">
                         <div className="px-2 py-1.5 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/60 mb-1">
                           Tag someone
@@ -960,7 +955,7 @@ export function ReportViewerPage() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+              <div className="rounded-sm border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
                 <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>{" "}
                 to comment and vote on reports.
               </div>
@@ -970,8 +965,14 @@ export function ReportViewerPage() {
           {/* Comment list */}
           {comments.length > 0 && (
             <div className="divide-y divide-border/40">
-              {comments.map((comment) => (
-                <CommentItem key={comment.id} comment={comment} reportId={report.id} />
+              {comments.map((comment, idx) => (
+                <div
+                  key={comment.id}
+                  className="feed-item-enter border-l-2 border-l-transparent hover:border-l-primary transition-colors"
+                  style={{ animationDelay: `${Math.min(idx * 60, 480)}ms` }}
+                >
+                  <CommentItem comment={comment} reportId={report.id} />
+                </div>
               ))}
             </div>
           )}
@@ -1029,7 +1030,7 @@ function CommentItem({ comment, reportId }: { comment: ReportComment; reportId: 
         <div className="flex items-baseline gap-2 mb-1">
           <span className="text-sm font-semibold text-foreground">{comment.author_name}</span>
           <time className="font-mono text-[10px] text-muted-foreground/60 tabular-nums">
-            {new Date(comment.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+            {timeAgo(comment.created_at)}
           </time>
         </div>
         {comment.quoted_text && (
