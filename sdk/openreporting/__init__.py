@@ -1,5 +1,6 @@
 """Python SDK for the Open Reporting platform."""
 
+from openreporting.chat import ChatHandler
 from openreporting.capabilities import (
     CATEGORIES,
     CHART_TYPES,
@@ -43,6 +44,7 @@ from openreporting.sections import (
 )
 
 __all__ = [
+    "ChatHandler",
     "OpenReportingClient",
     "build_system_prompt",
     "strip_fences",

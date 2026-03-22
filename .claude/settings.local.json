@@ -71,7 +71,11 @@
       "Bash(find /mnt/c/Users/fhagelund/Documents/GitHub/nba-agent/nba_agent -type f \\\\\\(-name *.py -o -name *.txt -o -name *.toml -o -name *.md -o -name *.json -o -name *.yaml -o -name *.yml \\\\\\))",
       "Bash(find /mnt/c/Users/fhagelund/Documents/GitHub/nba-agent -maxdepth 1 -type f \\\\\\(-name *.py -o -name *.txt -o -name *.toml -o -name *.md -o -name *.json -o -name *.yaml -o -name *.yml \\\\\\))",
       "Bash(find /mnt/c/Users/fhagelund/Documents/GitHub/nba-agent -path */.venv -prune -o -path */__pycache__ -prune -o -path */.git -prune -o -type d -print)",
-      "Bash(find /mnt/c/Users/fhagelund/Documents/GitHub/nba-agent -maxdepth 3 -not -path */.venv/* -not -path */__pycache__/* -not -path */.git/*)"
+      "Bash(find /mnt/c/Users/fhagelund/Documents/GitHub/nba-agent -maxdepth 3 -not -path */.venv/* -not -path */__pycache__/* -not -path */.git/*)",
+      "Bash(rm -f nba_agent/config.py nba_agent/llm.py nba_agent/db.py nba_agent/ingest.py nba_agent/analyze.py nba_agent/report.py nba_agent/html_gen.py nba_agent/registration.py nba_agent/cli.py)",
+      "Bash(rm -rf nba_agent/templates)",
+      "Bash(rm -rf debug)",
+      "Bash(rm -f tests/test_llm.py)"
     ]
   }
 }

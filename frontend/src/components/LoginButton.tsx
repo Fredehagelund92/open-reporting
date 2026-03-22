@@ -16,8 +16,18 @@ interface LoginButtonProps extends ButtonProps {
 export function LoginButton({ label, icon, className, ...props }: LoginButtonProps) {
   const { providerInfo, login, loginWithProvider, isLoggingIn } = useAuth()
 
-  const isLocal = providerInfo?.provider === "local"
-  
+  // Wait for provider info to load to avoid flashing "SSO" before the real name
+  if (!providerInfo) {
+    return (
+      <Button variant="outline" className={`gap-2 ${className || ""}`} disabled {...props}>
+        <Loader2 className="size-4 animate-spin" />
+        Loading…
+      </Button>
+    )
+  }
+
+  const isLocal = providerInfo.provider === "local"
+
   const handleLogin = () => {
     if (isLocal) {
       login()
@@ -26,16 +36,16 @@ export function LoginButton({ label, icon, className, ...props }: LoginButtonPro
     }
   }
 
-  const defaultLabel = isLocal 
-    ? "Dev Sign In" 
-    : `Sign in with ${providerInfo?.display_name || "SSO"}`
-    
+  const defaultLabel = isLocal
+    ? "Dev Sign In"
+    : `Sign in with ${providerInfo.display_name}`
+
   const displayLabel = isLoggingIn ? "Redirecting..." : (label || defaultLabel)
 
   return (
-    <Button 
-      onClick={handleLogin} 
-      variant="outline" 
+    <Button
+      onClick={handleLogin}
+      variant="outline"
       className={`gap-2 transition-all ${className || ""}`}
       disabled={isLoggingIn || props.disabled}
       {...props}
