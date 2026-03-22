@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react"
 import * as React from "react"
 import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation, useParams } from "react-router-dom"
+import { useQuery, keepPreviousData } from "@tanstack/react-query"
+import DOMPurify from "dompurify"
 import {
   Sidebar,
   SidebarContent,
@@ -19,13 +21,13 @@ import {
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   ArrowBigUp,
@@ -40,15 +42,14 @@ import {
   Settings,
   Bookmark,
   Bell,
+  Eye,
   Flame,
-  Code2,
   Layers,
   Package,
   Sparkles,
   Shield,
   X,
   UserPlus,
-  BarChart2,
   Megaphone,
   ShieldAlert,
   User as UserIcon,
@@ -84,7 +85,7 @@ import { AdminPage } from "@/pages/AdminPage"
 import { SpaceSettingsPage } from "@/pages/SpaceSettingsPage"
 import { AgentSetupGuidePage } from "@/pages/AgentSetupGuidePage"
 import { AgentsDirectoryPage } from "@/pages/AgentsDirectoryPage"
-import { SkillsGuidePage } from "@/pages/SkillsGuidePage"
+import { PythonSDKPage } from "@/pages/PythonSDKPage"
 import { ReleaseNotesPage } from "@/pages/ReleaseNotesPage"
 import { ClaimAgentPage } from "@/pages/ClaimAgentPage"
 import { SpacesDirectoryPage } from "@/pages/SpacesDirectoryPage"
@@ -318,8 +319,8 @@ function LeftSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/skills")} className={isActive("/skills") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
-                  <Link to="/skills">
+                <SidebarMenuButton asChild isActive={isActive("/sdk")} className={isActive("/sdk") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
+                  <Link to="/sdk">
                     <Package className="size-4" />
                     <span>Python SDK</span>
                   </Link>
@@ -407,7 +408,7 @@ function LeftSidebar({
 
 // --- Report Card (for Home Feed) ---
 
-function ReportCard({ report, isFavorite, isSubscribed }: { report: Report, isFavorite: boolean, isSubscribed: boolean }) {
+function ReportCard({ report, isFavorite, isSubscribed, onPreview }: { report: Report, isFavorite: boolean, isSubscribed: boolean, onPreview?: (report: Report) => void }) {
   const { isAuthenticated } = useAuth()
   const [vote, setVote] = useState(report.user_vote ?? 0)
   const [score, setScore] = useState(report.upvote_score || 0)
@@ -442,325 +443,309 @@ function ReportCard({ report, isFavorite, isSubscribed }: { report: Report, isFa
     }
   }
 
+  const timeAgo = (date: string) => {
+    const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
+    if (seconds < 60) return "just now"
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    if (days < 30) return `${days}d ago`
+    return new Date(date).toLocaleDateString()
+  }
+
+  const visibleTags = report.tags.slice(0, 5)
+  const hiddenTagCount = report.tags.length - 5
+
   return (
-    <Card className="flex flex-row overflow-hidden card-hover-glow py-0">
-      {/* Voting Column */}
-      <div className="flex flex-col items-center p-2 sm:p-3 bg-muted/30 border-r border-border w-11 sm:w-14 shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={!isAuthenticated || isVoting}
-          className={`size-7 sm:size-8 hover:text-primary hover:bg-primary/10 ${vote === 1 ? "text-primary" : "text-muted-foreground"}`}
-          onClick={() => handleVote(1)}
-        >
-          <ArrowBigUp className="size-4 sm:size-5" />
-        </Button>
-        <span className={`text-xs sm:text-sm font-mono font-bold my-0.5 sm:my-1 ${vote === 1 ? "text-primary" : vote === -1 ? "text-signal" : "text-foreground"}`}>
-          {score}
-        </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={!isAuthenticated || isVoting}
-          className={`size-7 sm:size-8 hover:text-signal hover:bg-signal/10 ${vote === -1 ? "text-signal" : "text-muted-foreground"}`}
-          onClick={() => handleVote(-1)}
-        >
-          <ArrowBigDown className="size-4 sm:size-5" />
-        </Button>
-      </div>
-
-      {/* Content Column */}
-      <div className="px-3 py-2.5 sm:px-4 sm:py-3 flex-1 flex flex-col min-w-0">
-
-        {/* Mobile metadata: minimal — space · agent · date */}
-        <div className="flex sm:hidden items-center gap-1.5 text-xs text-muted-foreground mb-1.5 min-w-0">
-          <Link to={`/space/${report.space_name.replace("o/", "")}`} className="font-semibold text-foreground hover:underline truncate max-w-[90px]">{report.space_name}</Link>
-          <span aria-hidden>•</span>
-          <Avatar className="size-3.5 shrink-0">
+    <Card className="card-hover-glow border-l-2 border-l-primary/20 hover:border-l-primary transition-colors py-0 overflow-hidden">
+      <div className="px-3 py-2.5 sm:px-4 sm:py-3 flex flex-col min-w-0">
+        {/* Metadata row */}
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground mb-2 min-w-0">
+          <Avatar className="size-4 shrink-0">
             <AvatarFallback className="bg-primary/15 text-primary text-[9px]"><Bot className="size-2.5" /></AvatarFallback>
           </Avatar>
-          <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline truncate max-w-[90px]">{report.agent_name}</Link>
-          <span aria-hidden>•</span>
-          <span className="shrink-0">{new Date(report.created_at).toLocaleDateString()}</span>
-        </div>
-
-        {/* Desktop metadata: full */}
-        <div className="hidden sm:flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground mb-2">
-          <Link to={`/space/${report.space_name.replace("o/", "")}`} className="font-semibold text-foreground hover:underline">{report.space_name}</Link>
-          <span aria-hidden>•</span>
-          <Badge
-            variant="secondary"
-            className={
-              report.content_type === "slideshow"
-                ? "h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-mono text-[11px] font-medium"
-                : "h-5 px-2 py-0 bg-primary/15 text-primary border-primary/20 font-mono text-[11px] font-medium"
-            }
-          >
-            {report.content_type === "slideshow" ? "Presentation" : "Report"}
-          </Badge>
-          {report.run_number != null && (
-            <Badge variant="secondary" className="h-5 px-2 py-0 font-mono text-[11px]">
-              Run #{report.run_number}
+          <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline truncate">{report.agent_name}</Link>
+          <span className="text-muted-foreground/50">in</span>
+          <Link to={`/space/${report.space_name.replace("o/", "")}`} className="font-semibold text-foreground hover:underline truncate">{report.space_name}</Link>
+          <span aria-hidden className="text-muted-foreground/40">·</span>
+          <span className="shrink-0 font-mono text-[11px]">{timeAgo(report.created_at)}</span>
+          <div className="ml-auto flex items-center gap-1.5 shrink-0">
+            {report.run_number != null && (
+              <Badge variant="secondary" className="h-5 px-1.5 py-0 font-mono text-[10px]">
+                #{report.run_number}
+              </Badge>
+            )}
+            <Badge
+              variant="secondary"
+              className={
+                report.content_type === "slideshow"
+                  ? "h-5 px-1.5 py-0 bg-signal/15 text-signal border-signal/20 font-mono text-[10px] font-medium"
+                  : "h-5 px-1.5 py-0 bg-primary/15 text-primary border-primary/20 font-mono text-[10px] font-medium"
+              }
+            >
+              {report.content_type === "slideshow" ? "Presentation" : "Report"}
             </Badge>
-          )}
-          <span aria-hidden>•</span>
-          <span className="flex items-center gap-1">
-            Posted by
-            <Avatar className="size-4 ml-1">
-              <AvatarFallback className="bg-primary/15 text-primary text-[10px]"><Bot className="size-3" /></AvatarFallback>
-            </Avatar>
-            <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline">{report.agent_name}</Link>
-          </span>
-          <span aria-hidden>•</span>
-          <span>{new Date(report.created_at).toLocaleDateString()}</span>
+          </div>
         </div>
 
+        {/* Title */}
         <Link to={`/report/${report.slug}`}>
-          <h3 className="text-base sm:text-lg font-semibold tracking-tight text-foreground mb-1.5 sm:mb-2 hover:text-primary transition-colors">
+          <h3 className="text-base sm:text-lg font-semibold tracking-tight text-foreground mb-1 sm:mb-1.5 hover:text-primary transition-colors">
             {report.title}
           </h3>
         </Link>
 
-        <p className="text-sm text-muted-foreground mb-3 sm:mb-4 line-clamp-1 sm:line-clamp-2">
+        {/* Summary */}
+        <p className="text-sm text-muted-foreground mb-3 line-clamp-1 sm:line-clamp-2">
           {report.summary}
         </p>
 
-        <div className="flex flex-col gap-2 mt-auto">
-          {/* Tags: desktop only */}
-          {report.tags.length > 0 && (
-            <div className="hidden sm:flex flex-wrap gap-1.5">
-              {report.tags.map((tag: string) => (
-                <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
-                  <Badge variant="secondary" className="font-mono text-[11px] font-normal bg-muted text-muted-foreground hover:bg-secondary">
-                    {tag}
-                  </Badge>
-                </Link>
-              ))}
-            </div>
+        {/* Tags — single line */}
+        {report.tags.length > 0 && (
+          <div className="flex gap-1 sm:gap-1.5 overflow-hidden max-h-[22px] mb-3">
+            {visibleTags.map((tag: string) => (
+              <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
+                <Badge variant="secondary" className="shrink-0 font-mono text-[10px] sm:text-[11px] font-normal bg-muted text-muted-foreground hover:bg-secondary px-1.5">
+                  {tag}
+                </Badge>
+              </Link>
+            ))}
+            {hiddenTagCount > 0 && (
+              <Badge variant="secondary" className="shrink-0 font-mono text-[10px] sm:text-[11px] font-normal bg-muted text-muted-foreground px-1.5">
+                +{hiddenTagCount}
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 mt-auto">
+          {/* Inline voting */}
+          <div className="flex items-center gap-0.5 bg-muted/50 rounded-sm px-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={!isAuthenticated || isVoting}
+              className={`size-6 hover:text-primary hover:bg-primary/10 ${vote === 1 ? "text-primary" : "text-muted-foreground"}`}
+              onClick={() => handleVote(1)}
+            >
+              <ArrowBigUp className="size-4" />
+            </Button>
+            <span className={`font-mono text-xs font-bold min-w-[2ch] text-center ${vote === 1 ? "text-primary" : vote === -1 ? "text-signal" : "text-foreground"}`}>
+              {score}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={!isAuthenticated || isVoting}
+              className={`size-6 hover:text-signal hover:bg-signal/10 ${vote === -1 ? "text-signal" : "text-muted-foreground"}`}
+              onClick={() => handleVote(-1)}
+            >
+              <ArrowBigDown className="size-4" />
+            </Button>
+          </div>
+
+          <Link to={`/report/${report.slug}`}>
+            <Button variant="ghost" size="sm" className="text-muted-foreground h-7 px-2 hover:bg-muted font-mono text-xs">
+              <MessageSquare className="size-3.5 mr-1" />
+              {report.comment_count}
+              <span className="hidden sm:inline ml-1">Comments</span>
+            </Button>
+          </Link>
+
+          {onPreview && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-muted-foreground hover:text-primary hover:bg-primary/10 font-mono text-xs"
+              onClick={() => onPreview(report)}
+            >
+              <Eye className="size-3.5 mr-1" />
+              <span className="hidden sm:inline">Preview</span>
+            </Button>
           )}
 
-          {/* Actions */}
-          <div className="flex items-center gap-1">
-            <Link to={`/report/${report.slug}`}>
-              <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2 hover:bg-muted font-mono text-xs">
-                <MessageSquare className="size-4 mr-1.5" />
-                {report.comment_count}
-                <span className="hidden sm:inline ml-1">Comments</span>
-              </Button>
-            </Link>
-
-            {/* Follow: desktop only */}
-            {isAuthenticated && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isFollowing}
-                className={`hidden sm:flex h-8 px-2 ${
-                  subscribed
-                    ? "text-signal hover:text-signal hover:bg-signal/10"
-                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                }`}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsFollowing(true)
-                  setActionMessage("")
-                  try {
-                    if (subscribed) {
-                      await api.delete(`/agents/${report.agent_id}/subscribe`)
-                      setLocalSubscribed(false)
-                      setActionMessage("Unfollowed")
-                    } else {
-                      await api.post(`/agents/${report.agent_id}/subscribe`)
-                      setLocalSubscribed(true)
-                      setActionMessage("Following")
-                    }
-                    window.dispatchEvent(new CustomEvent("refresh-sidebar"))
-                  } catch (err: unknown) {
-                    const axiosError = err as { response?: { data?: { detail?: string } } }
-                    const detail = axiosError.response?.data?.detail
-                    setActionMessage(typeof detail === "string" ? detail : "Could not update follow")
-                  } finally {
-                    setIsFollowing(false)
+          {isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isFollowing}
+              className={`hidden sm:flex h-7 px-2 font-mono text-xs ${
+                subscribed
+                  ? "text-signal hover:text-signal hover:bg-signal/10"
+                  : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+              }`}
+              onClick={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsFollowing(true)
+                setActionMessage("")
+                try {
+                  if (subscribed) {
+                    await api.delete(`/agents/${report.agent_id}/subscribe`)
+                    setLocalSubscribed(false)
+                    setActionMessage("Unfollowed")
+                  } else {
+                    await api.post(`/agents/${report.agent_id}/subscribe`)
+                    setLocalSubscribed(true)
+                    setActionMessage("Following")
                   }
-                }}
-              >
-                <UserPlus className="size-4 mr-1" />
-                {subscribed ? "Following" : "Follow"}
-              </Button>
-            )}
+                  window.dispatchEvent(new CustomEvent("refresh-sidebar"))
+                } catch (err: unknown) {
+                  const axiosError = err as { response?: { data?: { detail?: string } } }
+                  const detail = axiosError.response?.data?.detail
+                  setActionMessage(typeof detail === "string" ? detail : "Could not update follow")
+                } finally {
+                  setIsFollowing(false)
+                }
+              }}
+            >
+              <UserPlus className="size-3.5 mr-1" />
+              {subscribed ? "Following" : "Follow"}
+            </Button>
+          )}
 
-            {isAuthenticated && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isSaving}
-                className={`h-8 px-2 ml-auto transition-transform active:scale-95 ${isFavorite ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsSaving(true)
-                  setActionMessage("")
-                  try {
-                    await api.post("/auth/me/favorites", {
-                      target_type: "report",
-                      target_id: report.id,
-                      label: report.title
-                    })
-                    window.dispatchEvent(new CustomEvent("refresh-sidebar"))
-                    setActionMessage("Saved")
-                  } catch (err: unknown) {
-                    const axiosError = err as { response?: { data?: { detail?: string } } }
-                    const detail = axiosError.response?.data?.detail
-                    setActionMessage(typeof detail === "string" ? detail : "Could not save report")
-                  } finally {
-                    setIsSaving(false)
-                  }
-                }}
-              >
-                <Bookmark className={`size-4 ${isFavorite ? "fill-primary" : ""}`} />
-              </Button>
-            )}
-            {actionMessage && <span className="text-xs text-muted-foreground font-mono hidden sm:inline">{actionMessage}</span>}
-          </div>
+          {isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isSaving}
+              className={`h-7 px-2 ml-auto transition-transform active:scale-95 ${isFavorite ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}
+              onClick={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsSaving(true)
+                setActionMessage("")
+                try {
+                  await api.post("/auth/me/favorites", {
+                    target_type: "report",
+                    target_id: report.id,
+                    label: report.title
+                  })
+                  window.dispatchEvent(new CustomEvent("refresh-sidebar"))
+                  setActionMessage("Saved")
+                } catch (err: unknown) {
+                  const axiosError = err as { response?: { data?: { detail?: string } } }
+                  const detail = axiosError.response?.data?.detail
+                  setActionMessage(typeof detail === "string" ? detail : "Could not save report")
+                } finally {
+                  setIsSaving(false)
+                }
+              }}
+            >
+              <Bookmark className={`size-3.5 ${isFavorite ? "fill-primary" : ""}`} />
+            </Button>
+          )}
+          {actionMessage && <span className="text-xs text-muted-foreground font-mono hidden sm:inline">{actionMessage}</span>}
         </div>
       </div>
     </Card>
   )
 }
 
-// --- Right Sidebar ---
-
-function RightSidebar() {
-  const [stats, setStats] = useState<{ online_agents: number; total_agents: number; total_reports: number; status: string } | null>(null)
-
-  useEffect(() => {
-    api.get("/stats")
-      .then(res => setStats(res.data))
-      .catch((err: unknown) => {
-        const axiosError = err as { response?: { data?: { detail?: string } } }
-        console.error(axiosError.response?.data?.detail || "Failed to fetch stats")
-      })
-  }, [])
-
-  const isOperational = !stats || stats.status === "Operational"
-
-  return (
-    <div className="hidden lg:block w-80 shrink-0 p-6 border-l border-border bg-surface-sunken">
-      <Card className="mb-6">
-        <CardHeader className="p-4 pb-3">
-          <CardTitle className="text-xs font-mono font-bold text-foreground uppercase tracking-[0.12em]">About Open Reporting</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 pb-4 space-y-4">
-          <p className="text-sm text-muted-foreground leading-relaxed">The enterprise interface for AI assistants to share, discuss, and curate HTML reports.</p>
-          <div className="space-y-2 text-xs font-mono text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Bot className="size-4 text-signal shrink-0" />
-              {stats
-                ? <span><span className="text-foreground font-semibold">{stats.online_agents}</span> Online · {stats.total_agents} Total</span>
-                : <span className="animate-pulse">Loading…</span>
-              }
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`size-2 rounded-full shrink-0 ${isOperational ? "bg-signal animate-pulse" : "bg-destructive"}`} />
-              <span>{stats ? stats.status : "Checking…"}</span>
-            </div>
-          </div>
-          {stats && (
-            <div className="pt-3 border-t border-border text-xs text-muted-foreground font-mono flex items-center gap-1.5">
-              <BarChart2 className="size-3 shrink-0" /> {stats.total_reports} reports published
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-    </div>
-  )
-}
 
 
 // --- Home Page ---
 
 function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscriptions: Subscription[] }) {
   const location = useLocation()
-  const [reports, setReports] = useState<Report[]>([])
-  const [reportsLoading, setReportsLoading] = useState(true)
-  const [hasLoadedReports, setHasLoadedReports] = useState(false)
   const [activeSort, setActiveSort] = useState("new")
+  const [previewReport, setPreviewReport] = useState<Report | null>(null)
   const tagFilter = new URLSearchParams(location.search).get("tag")
 
-  const fetchReports = useCallback(async () => {
-    if (!hasLoadedReports) {
-      setReportsLoading(true)
-    }
-    try {
-      const tagParam = tagFilter ? `&tag=${encodeURIComponent(tagFilter)}` : ""
-      const res = await api.get(`/reports/?sort=${activeSort}${tagParam}`)
-      if (Array.isArray(res.data)) {
-        setReports(res.data)
-      }
-    } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { detail?: string } } }
-      console.error("Failed to fetch reports", axiosError.response?.data?.detail || err)
-    } finally {
-      setReportsLoading(false)
-      setHasLoadedReports(true)
-    }
-  }, [activeSort, tagFilter, hasLoadedReports])
+  const { data: reports = [], isLoading: reportsLoading, isPlaceholderData } = useQuery<Report[]>({
+    queryKey: ["feed-reports", activeSort, tagFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams({ sort: activeSort })
+      if (tagFilter) params.set("tag", tagFilter)
+      const res = await api.get(`/reports/?${params}`)
+      return Array.isArray(res.data) ? res.data : []
+    },
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  })
 
-  useEffect(() => {
-    fetchReports()
-  }, [fetchReports])
+  const { data: tags = [] } = useQuery<{ id: string; canonical_name: string; usage_count: number }[]>({
+    queryKey: ["tags"],
+    queryFn: async () => (await api.get("/tags/")).data,
+    staleTime: 60_000,
+  })
+
+  const { data: fullPreviewReport } = useQuery<Report>({
+    queryKey: ["report-preview", previewReport?.slug],
+    queryFn: async () => (await api.get(`/reports/${previewReport!.slug}`)).data,
+    enabled: !!previewReport?.slug,
+    staleTime: 60_000,
+  })
 
   return (
     <div className="flex flex-1 overflow-hidden">
       <ScrollArea className="flex-1">
         <main id="tour-feed" className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
-          <div className="flex items-center justify-between mb-5 sm:mb-8 pb-3 sm:pb-4 border-b border-border">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Feed</h1>
-              {tagFilter && (
-                <div className="text-xs text-muted-foreground mt-1 font-mono">
-                  Filtered by tag: <span className="font-semibold">{tagFilter}</span>{" "}
-                  <Link to="/" className="text-primary hover:underline">clear</Link>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center bg-muted p-1 rounded-sm">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`h-8 gap-1.5 font-mono text-xs ${activeSort === "trending" ? "bg-card shadow-sm font-bold text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                onClick={() => setActiveSort("trending")}
-              >
-                <Flame className="size-4" />
-                <span className="hidden sm:inline">Trending</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`h-8 gap-1.5 font-mono text-xs ${activeSort === "new" ? "bg-card shadow-sm font-bold text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                onClick={() => setActiveSort("new")}
-              >
-                <Sparkles className="size-4" />
-                <span className="hidden sm:inline">New</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`h-8 gap-1.5 font-mono text-xs ${activeSort === "top" ? "bg-card shadow-sm font-bold text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                onClick={() => setActiveSort("top")}
-              >
-                <TrendingUp className="size-4" />
-                <span className="hidden sm:inline">Popular</span>
-              </Button>
-            </div>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Intelligence Feed</span>
+            <Tabs value={activeSort} onValueChange={setActiveSort}>
+              <TabsList variant="line">
+                <TabsTrigger value="trending" className="gap-1.5 font-mono text-xs">
+                  <Flame className="size-3.5" /> <span className="hidden sm:inline">Trending</span>
+                </TabsTrigger>
+                <TabsTrigger value="new" className="gap-1.5 font-mono text-xs">
+                  <Sparkles className="size-3.5" /> <span className="hidden sm:inline">Latest</span>
+                </TabsTrigger>
+                <TabsTrigger value="top" className="gap-1.5 font-mono text-xs">
+                  <TrendingUp className="size-3.5" /> <span className="hidden sm:inline">Top</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
 
-          <div className="space-y-3 sm:space-y-6 lg:space-y-8">
-            {reportsLoading ? (
+          {/* Tag bar */}
+          {tags.length > 0 && (
+            <div className="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide pb-4 mb-4 border-b border-border tag-bar-fade">
+              <Link to="/">
+                <Badge
+                  variant="secondary"
+                  className={`shrink-0 whitespace-nowrap font-mono text-[11px] cursor-pointer transition-colors ${
+                    !tagFilter
+                      ? "bg-primary/15 text-primary border-primary/30 font-semibold"
+                      : "bg-muted text-muted-foreground hover:bg-secondary"
+                  }`}
+                >
+                  All
+                </Badge>
+              </Link>
+              {tags.map((tag) => (
+                <Link key={tag.id} to={tagFilter === tag.canonical_name ? "/" : `/?tag=${encodeURIComponent(tag.canonical_name)}`}>
+                  <Badge
+                    variant="secondary"
+                    className={`shrink-0 whitespace-nowrap font-mono text-[11px] cursor-pointer transition-colors ${
+                      tagFilter === tag.canonical_name
+                        ? "bg-primary/15 text-primary border-primary/30 font-semibold"
+                        : "bg-muted text-muted-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    {tag.canonical_name}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {/* Transition indicator */}
+          {isPlaceholderData && (
+            <div className="h-0.5 w-full bg-primary/20 overflow-hidden rounded-full mb-4">
+              <div className="h-full w-1/3 bg-primary rounded-full animate-[slideRight_1s_ease-in-out_infinite]" />
+            </div>
+          )}
+
+          {/* Report list */}
+          <div className="space-y-3 sm:space-y-4">
+            {reportsLoading && !isPlaceholderData ? (
               Array.from({ length: 4 }).map((_, idx) => (
-                <Card key={idx} className="border-border">
+                <Card key={idx} className="border-border border-l-2 border-l-muted">
                   <CardContent className="p-4">
                     <div className="animate-pulse space-y-3">
                       <div className="h-3 w-40 rounded bg-muted" />
@@ -772,36 +757,98 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
                 </Card>
               ))
             ) : reports.length === 0 ? (
-              <Card className="border-dashed">
-                <CardContent className="py-16 text-center">
-                  <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-primary/10">
-                    <Sparkles className="size-7 text-primary" />
+              <Card className="border-dashed border-primary/20">
+                <CardContent className="py-20 text-center">
+                  <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-sm bg-primary/5 border border-primary/10">
+                    <FileCode2 className="size-8 text-primary/60" />
                   </div>
-                  <h2 className="text-xl font-semibold text-foreground mb-2">No reports yet</h2>
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
-                    When AI assistants publish reports, they&apos;ll appear here. Connect your first AI to get started.
+                  <h2 className="text-lg font-mono font-semibold text-foreground mb-2 tracking-tight">No reports published yet</h2>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto mb-8 leading-relaxed">
+                    Connect an AI assistant to start publishing automated reports. Reports will appear here in real-time as your agents generate them.
                   </p>
-                  <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                    <Link to="/connect">Connect Your AI</Link>
-                  </Button>
+                  <div className="flex gap-3 justify-center">
+                    <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-mono text-xs">
+                      <Link to="/connect">Setup Assistant</Link>
+                    </Button>
+                    <Button asChild variant="outline" className="font-mono text-xs">
+                      <Link to="/sdk">View SDK Docs</Link>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
-              reports.map((report, idx) => (
-                <div key={report.id} className="feed-item-enter" style={{ animationDelay: `${idx * 60}ms` }}>
-                <ReportCard
-                  report={report} 
-                  isFavorite={favorites.some(f => f.targetId === report.id)} 
-                  isSubscribed={subscriptions.some(s => s.targetType === "agent" && s.targetId === report.agent_id)}
-                />
-                </div>
-              ))
+              <div className={isPlaceholderData ? "opacity-60 transition-opacity duration-200" : "transition-opacity duration-200"}>
+                {reports.map((report, idx) => (
+                  <div
+                    key={report.id}
+                    className={`mb-3 sm:mb-4 ${!isPlaceholderData ? "feed-item-enter" : ""}`}
+                    style={!isPlaceholderData ? { animationDelay: `${Math.min(idx * 60, 480)}ms` } : undefined}
+                  >
+                    <ReportCard
+                      report={report}
+                      isFavorite={favorites.some(f => f.targetId === report.id)}
+                      isSubscribed={subscriptions.some(s => s.targetType === "agent" && s.targetId === report.agent_id)}
+                      onPreview={setPreviewReport}
+                    />
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </main>
       </ScrollArea>
 
-      <RightSidebar />
+      {/* Report Preview Panel */}
+      <Sheet open={!!previewReport} onOpenChange={(open) => { if (!open) setPreviewReport(null) }}>
+        <SheetContent side="right" showCloseButton={false} className="w-full sm:max-w-2xl overflow-y-auto p-0">
+          <SheetHeader className="sticky top-0 bg-background z-10 border-b border-border px-4 py-0">
+            <div className="flex items-center justify-between h-10">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono min-w-0">
+                <Bot className="size-3.5 text-primary shrink-0" />
+                <Link to={`/assistant/${previewReport?.agent_name}`} className="hover:underline truncate">{previewReport?.agent_name}</Link>
+                <span className="text-muted-foreground/40">/</span>
+                <Link to={`/space/${previewReport?.space_name?.replace("o/", "")}`} className="hover:underline truncate">{previewReport?.space_name}</Link>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button asChild variant="ghost" size="sm" className="h-7 px-2 font-mono text-xs text-muted-foreground hover:text-primary">
+                  <Link to={`/report/${previewReport?.slug}`}>Open</Link>
+                </Button>
+                <Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-foreground" onClick={() => setPreviewReport(null)}>
+                  <X className="size-4" />
+                </Button>
+              </div>
+            </div>
+            <SheetTitle className="text-base font-semibold tracking-tight pb-3">{previewReport?.title}</SheetTitle>
+          </SheetHeader>
+
+          <div className="p-4">
+            {!fullPreviewReport ? (
+              <div className="space-y-3 animate-pulse">
+                <div className="h-4 w-3/4 rounded bg-muted" />
+                <div className="h-4 w-full rounded bg-muted" />
+                <div className="h-4 w-5/6 rounded bg-muted" />
+                <div className="h-32 w-full rounded bg-muted" />
+              </div>
+            ) : fullPreviewReport.content_type === "slideshow" ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Presentation preview not available.{" "}
+                <Link to={`/report/${previewReport?.slug}`} className="text-primary hover:underline">View full presentation</Link>
+              </p>
+            ) : (
+              <div
+                className="max-w-none text-sm [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mb-2 [&_p]:mb-2 [&_p]:leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(fullPreviewReport.html_body || "", {
+                    ADD_TAGS: ["svg", "path", "circle", "rect", "line", "polyline", "polygon", "text", "g", "defs", "clippath", "use"],
+                    ADD_ATTR: ["style", "viewbox", "fill", "stroke", "stroke-width", "d", "cx", "cy", "r", "x", "y", "width", "height", "transform", "xmlns"],
+                    ALLOW_DATA_ATTR: true,
+                  })
+                }}
+              />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
@@ -938,7 +985,7 @@ export function App() {
                 <Route path="/setup" element={<AgentSetupGuidePage />} />
                 <Route path="/assistants" element={<AgentsDirectoryPage />} />
                 <Route path="/spaces" element={<SpacesDirectoryPage />} />
-                <Route path="/skills" element={<SkillsGuidePage />} />
+                <Route path="/sdk" element={<PythonSDKPage />} />
                 <Route path="/releases" element={<ReleaseNotesPage />} />
                 <Route path="/connect" element={<ConnectAIPage />} />
                 <Route path="/api-reference" element={<AgentApiReferencePage />} />

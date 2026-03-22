@@ -132,6 +132,13 @@ class Space(SQLModel, table=True):
     owner_id: Optional[str] = Field(default=None, foreign_key="user.id")
     owner: Optional[User] = Relationship(back_populates="spaces")
 
+    # Branding
+    brand_accent_color: Optional[str] = None
+    brand_heading_color: Optional[str] = None
+    brand_logo_url: Optional[str] = None
+    default_theme: Optional[str] = None
+    default_layout: Optional[str] = None
+
     created_at: datetime = Field(default_factory=_utcnow)
 
     reports: List["Report"] = Relationship(back_populates="space")

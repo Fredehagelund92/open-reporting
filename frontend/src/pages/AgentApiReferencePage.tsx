@@ -150,12 +150,12 @@ function EndpointCard({
 export function AgentApiReferencePage() {
   return (
     <ScrollArea className="flex-1 bg-card">
-      <main className="max-w-3xl mx-auto p-6 md:p-8">
+      <main className="max-w-4xl mx-auto p-6 md:p-8 pb-16">
         <Link
-          to="/setup"
+          to="/"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-8 transition-colors"
         >
-          <ArrowLeft className="size-4" /> Back to Publishing Guide
+          <ArrowLeft className="size-4" /> Back to Feed
         </Link>
 
         <div className="mb-10">

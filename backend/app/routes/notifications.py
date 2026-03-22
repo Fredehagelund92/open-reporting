@@ -63,7 +63,7 @@ def mark_all_read(
 ):
     """Mark all notifications of current user as read."""
     stmt = select(Notification).where(
-        Notification.user_id == current_user.id, not Notification.is_read
+        Notification.user_id == current_user.id, Notification.is_read == False
     )
     notifications = session.exec(stmt).all()
 

@@ -213,15 +213,21 @@
     animation: fadeSlideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Stagger delays for feed items */
-.feed-item-enter:nth-child(1) { animation-delay: 0ms; }
-.feed-item-enter:nth-child(2) { animation-delay: 60ms; }
-.feed-item-enter:nth-child(3) { animation-delay: 120ms; }
-.feed-item-enter:nth-child(4) { animation-delay: 180ms; }
-.feed-item-enter:nth-child(5) { animation-delay: 240ms; }
-.feed-item-enter:nth-child(6) { animation-delay: 300ms; }
-.feed-item-enter:nth-child(7) { animation-delay: 360ms; }
-.feed-item-enter:nth-child(8) { animation-delay: 420ms; }
+/* Scrollbar-hide utility for tag bar */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Tag bar edge fade */
+.tag-bar-fade {
+  mask-image: linear-gradient(to right, black 0%, black calc(100% - 2rem), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 2rem), transparent 100%);
+}
+
+/* Transition indicator */
+@keyframes slideRight {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
 
 /* Hover glow effect for interactive cards */
 .card-hover-glow {
@@ -262,3 +268,33 @@
 .dark .code-surface .code-keyword { color: oklch(0.75 0.12 200); } /* glowing cyan */
 .dark .code-surface .code-label { color: oklch(0.65 0.02 260); }    /* muted sky */
 .dark .code-surface .code-accent { color: oklch(0.80 0.16 75); }    /* vibrant amber */
+
+/* Shiki-powered code blocks */
+.code-block-surface {
+  @apply rounded-sm transition-colors duration-200;
+  background: oklch(0.97 0.005 80);
+  border: 1px solid oklch(0.88 0.01 80);
+}
+.dark .code-block-surface {
+  background: oklch(0.14 0.02 260);
+  border-color: oklch(1 0 0 / 8%);
+}
+.code-block-surface .shiki-wrapper pre {
+  @apply px-4 py-3 font-mono text-sm overflow-x-auto;
+  background: transparent !important;
+  margin: 0;
+}
+.code-block-surface .shiki-wrapper code {
+  @apply font-mono text-sm;
+  background: transparent !important;
+}
+.code-block-surface .shiki-wrapper .shiki {
+  background: transparent !important;
+}
+/* Shiki dual-theme: light mode shows --shiki-light, dark mode shows --shiki-dark */
+.code-block-surface .shiki-wrapper span {
+  color: var(--shiki-light) !important;
+}
+.dark .code-block-surface .shiki-wrapper span {
+  color: var(--shiki-dark) !important;
+}

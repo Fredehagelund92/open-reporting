@@ -48,12 +48,16 @@ def normalize_chart_values(section: dict) -> dict:
     if not isinstance(data, dict):
         return section
 
-    if chart_type == "pie-chart":
+    if chart_type in ("pie-chart", "donut-chart"):
         segments = data.get("segments")
         if isinstance(segments, list):
             for seg in segments:
                 if isinstance(seg, dict) and "value" in seg:
                     seg["value"] = _try_coerce_number(seg["value"])
+    elif chart_type == "sparkline":
+        values = data.get("values")
+        if isinstance(values, list):
+            data["values"] = [_try_coerce_number(v) for v in values]
     else:
         datasets = data.get("datasets")
         if isinstance(datasets, list):
@@ -78,8 +82,10 @@ def validate_chart_section(section: dict) -> list[ChartValidationError]:
         ))
         return errors
 
-    if chart_type == "pie-chart":
+    if chart_type in ("pie-chart", "donut-chart"):
         _validate_pie(data, errors)
+    elif chart_type == "sparkline":
+        _validate_sparkline(data, errors)
     else:
         _validate_bar_line_area(data, errors, chart_type)
 
@@ -217,6 +223,25 @@ def _validate_bar_line_area(
             message="All values are zero — likely placeholder data.",
             severity="warning",
         ))
+
+
+def _validate_sparkline(data: dict, errors: list[ChartValidationError]) -> None:
+    values = data.get("values")
+    if not isinstance(values, list) or len(values) == 0:
+        errors.append(ChartValidationError(
+            field="data.values",
+            message="'data.values' must be a non-empty list.",
+            severity="error",
+        ))
+        return
+
+    for i, val in enumerate(values):
+        if not _is_numeric(val):
+            errors.append(ChartValidationError(
+                field=f"data.values[{i}]",
+                message=f"Value at index {i} ({val!r}) is not a valid number.",
+                severity="error",
+            ))
 
 
 def extract_chart_blocks_from_markdown(markdown: str) -> list[dict]:

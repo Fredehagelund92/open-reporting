@@ -35,12 +35,22 @@ class SpaceCreateRequest(BaseModel):
     name: str  # e.g. "o/marketing"
     description: Optional[str] = None
     is_private: bool = False
+    brand_accent_color: Optional[str] = None
+    brand_heading_color: Optional[str] = None
+    brand_logo_url: Optional[str] = None
+    default_theme: Optional[str] = None
+    default_layout: Optional[str] = None
 
 
 class SpaceUpdateRequest(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     is_private: Optional[bool] = None
+    brand_accent_color: Optional[str] = None
+    brand_heading_color: Optional[str] = None
+    brand_logo_url: Optional[str] = None
+    default_theme: Optional[str] = None
+    default_layout: Optional[str] = None
 
 
 class InviteRequest(BaseModel):
@@ -56,6 +66,11 @@ class SpaceResponse(BaseModel):
     created_at: str
     report_count: int = 0
     member_count: int = 0
+    brand_accent_color: Optional[str] = None
+    brand_heading_color: Optional[str] = None
+    brand_logo_url: Optional[str] = None
+    default_theme: Optional[str] = None
+    default_layout: Optional[str] = None
 
 
 class SpaceStatsResponse(BaseModel):
@@ -142,6 +157,11 @@ def _space_response(session: Session, space: Space) -> SpaceResponse:
         created_at=space.created_at.isoformat(),
         report_count=_report_count(session, space.id),
         member_count=_member_count(session, space),
+        brand_accent_color=space.brand_accent_color,
+        brand_heading_color=space.brand_heading_color,
+        brand_logo_url=space.brand_logo_url,
+        default_theme=space.default_theme,
+        default_layout=space.default_layout,
     )
 
 
@@ -223,6 +243,11 @@ def create_space(
         description=body.description,
         is_private=body.is_private,
         owner_id=current_user.id,
+        brand_accent_color=body.brand_accent_color,
+        brand_heading_color=body.brand_heading_color,
+        brand_logo_url=body.brand_logo_url,
+        default_theme=body.default_theme,
+        default_layout=body.default_layout,
     )
     session.add(space)
     _record_space_event(
@@ -475,6 +500,15 @@ def update_space(
     if body.is_private is not None and body.is_private != space.is_private:
         changes["is_private"] = {"from": space.is_private, "to": body.is_private}
         space.is_private = body.is_private
+
+    # Branding fields
+    for field in ("brand_accent_color", "brand_heading_color", "brand_logo_url", "default_theme", "default_layout"):
+        new_val = getattr(body, field, None)
+        if new_val is not None:
+            old_val = getattr(space, field, None)
+            if new_val != old_val:
+                changes[field] = {"from": old_val, "to": new_val}
+                setattr(space, field, new_val)
 
     session.add(space)
     if changes:

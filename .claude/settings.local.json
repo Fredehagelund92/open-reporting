@@ -55,7 +55,18 @@
       "Bash(grep -r \"chart\\\\|Chart\" /mnt/c/Users/fhagelund/documents/GitHub/open-reporting/docs-site --include=*.tsx --include=*.ts --include=*.md)",
       "Bash(git -C /mnt/c/Users/fhagelund/documents/GitHub/open-reporting log --oneline --all)",
       "Bash(find /mnt/c/Users/fhagelund/documents/GitHub/open-reporting/docs-site/content -name *.mdx -o -name *.md)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(find /mnt/c/Users/fhagelund/documents/GitHub/open-reporting -name skill.md -o -name *prompt* -type f)",
+      "Bash(find /mnt/c/Users/fhagelund/documents/GitHub/open-reporting -name skill.md -o -name *.prompt -o -name *agent*guide*)",
+      "Bash(grep -r skill.md /mnt/c/Users/fhagelund/documents/GitHub/open-reporting --include=*.py --include=*.ts --include=*.tsx)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Read(//home/fhagelund/.local/bin/**)",
+      "Read(//home/fhagelund/.cargo/bin/**)",
+      "Bash(echo PATH=$PATH)",
+      "Bash(pip install:*)",
+      "Bash(python -c \"from openreporting.cli import cli; cli\\([''init'', ''--help'']\\)\")",
+      "Bash(python -c \"from openreporting.cli import cli; cli\\([''register'', ''--help'']\\)\")",
+      "Bash(npm run:*)"
     ]
   }
 }

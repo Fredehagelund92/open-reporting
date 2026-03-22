@@ -98,7 +98,8 @@ class ReportCreateRequest(BaseModel):
     markdown_body: Optional[str] = None
     structured_body: Optional[dict] = None
     content_format: str = "auto"  # "auto" | "html" | "markdown" | "json"
-    theme: Optional[str] = None  # "default" | "executive" | "minimal"
+    theme: Optional[str] = None
+    layout: Optional[str] = None  # "narrow" | "standard" | "wide" | "full"
     space_id: Optional[str] = None
     space_name: Optional[str] = None
     content_type: str = "report"  # "report" or "slideshow"
@@ -163,6 +164,7 @@ class ReportDetailResponse(ReportSummaryResponse):
 
 def _resolve_body(
     body: ReportCreateRequest,
+    brand_overrides: dict | None = None,
 ) -> tuple[str, str, Optional[str]]:
     """Resolve the submitted body to (rendered_html, content_format, source_body).
 
@@ -191,7 +193,9 @@ def _resolve_body(
             raise HTTPException(
                 status_code=422, detail="markdown_body is required when content_format is 'markdown'."
             )
-        rendered = render_markdown_to_html(body.markdown_body, theme=body.theme)
+        rendered = render_markdown_to_html(
+            body.markdown_body, theme=body.theme, layout=body.layout, brand_overrides=brand_overrides
+        )
         return rendered, "markdown", body.markdown_body
 
     if fmt == "json":
@@ -204,7 +208,9 @@ def _resolve_body(
             raise HTTPException(
                 status_code=422, detail="structured_body must contain a 'sections' list."
             )
-        rendered = render_structured_to_html(sections, theme=body.theme)
+        rendered = render_structured_to_html(
+            sections, theme=body.theme, layout=body.layout, brand_overrides=brand_overrides
+        )
         return rendered, "json", _json.dumps(body.structured_body)
 
     if fmt == "html":
@@ -390,8 +396,34 @@ def create_report(
             status_code=422, detail="content_type must be 'report' or 'slideshow'."
         )
 
+    # Verify the space exists (either via ID or Name)
+    space = None
+    if body.space_id:
+        space = session.get(Space, body.space_id)
+    elif body.space_name:
+        space = session.exec(select(Space).where(Space.name == body.space_name)).first()
+
+    if not space:
+        target = body.space_id or body.space_name or "unknown"
+        raise HTTPException(status_code=422, detail=f"Space '{target}' not found.")
+
+    # Apply space brand defaults when the request doesn't specify theme/layout
+    if body.theme is None and space.default_theme:
+        body.theme = space.default_theme
+    if body.layout is None and space.default_layout:
+        body.layout = space.default_layout
+
+    # Build brand overrides from space branding
+    brand_overrides = {}
+    if space.brand_accent_color:
+        brand_overrides["accent_color"] = space.brand_accent_color
+    if space.brand_heading_color:
+        brand_overrides["heading_color"] = space.brand_heading_color
+
     # Resolve body to HTML (handles markdown, json, or html passthrough)
-    rendered_html, content_format, source_body = _resolve_body(body)
+    rendered_html, content_format, source_body = _resolve_body(
+        body, brand_overrides=brand_overrides or None
+    )
 
     # Sanitize forbidden tags, then validate
     clean_html, sanitization_warnings = sanitize_forbidden_tags(rendered_html)
@@ -414,17 +446,6 @@ def create_report(
 
     # Strip document wrappers if present
     clean_html = strip_wrapper_tags(clean_html)
-
-    # Verify the space exists (either via ID or Name)
-    space = None
-    if body.space_id:
-        space = session.get(Space, body.space_id)
-    elif body.space_name:
-        space = session.exec(select(Space).where(Space.name == body.space_name)).first()
-
-    if not space:
-        target = body.space_id or body.space_name or "unknown"
-        raise HTTPException(status_code=422, detail=f"Space '{target}' not found.")
 
     canonical_tags = resolve_canonical_tags(session, body.tags)
 
@@ -495,6 +516,7 @@ class UserReportCreateRequest(BaseModel):
     structured_body: Optional[dict] = None
     content_format: str = "auto"
     theme: Optional[str] = None
+    layout: Optional[str] = None
     space_name: str
     agent_id: str
     content_type: str = "report"
@@ -533,6 +555,27 @@ def upload_report_as_user(
     if agent.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="You do not own this agent.")
 
+    # Resolve space first for brand defaults
+    space = session.exec(select(Space).where(Space.name == body.space_name)).first()
+    if not space:
+        raise HTTPException(
+            status_code=422, detail=f"Space '{body.space_name}' not found."
+        )
+
+    # Apply space brand defaults
+    theme = body.theme
+    layout = body.layout
+    if theme is None and space.default_theme:
+        theme = space.default_theme
+    if layout is None and space.default_layout:
+        layout = space.default_layout
+
+    brand_overrides = {}
+    if space.brand_accent_color:
+        brand_overrides["accent_color"] = space.brand_accent_color
+    if space.brand_heading_color:
+        brand_overrides["heading_color"] = space.brand_heading_color
+
     # Build a ReportCreateRequest for shared rendering/coach logic
     create_req = ReportCreateRequest(
         title=body.title,
@@ -542,12 +585,15 @@ def upload_report_as_user(
         markdown_body=body.markdown_body,
         structured_body=body.structured_body,
         content_format=body.content_format,
-        theme=body.theme,
+        theme=theme,
+        layout=layout,
         space_name=body.space_name,
         content_type=body.content_type,
     )
 
-    rendered_html, content_format, source_body = _resolve_body(create_req)
+    rendered_html, content_format, source_body = _resolve_body(
+        create_req, brand_overrides=brand_overrides or None
+    )
 
     clean_html, sanitization_warnings = sanitize_forbidden_tags(rendered_html)
     html_errors = validate_html(clean_html, content_type=body.content_type)
@@ -568,12 +614,6 @@ def upload_report_as_user(
         )
 
     clean_html = strip_wrapper_tags(clean_html)
-
-    space = session.exec(select(Space).where(Space.name == body.space_name)).first()
-    if not space:
-        raise HTTPException(
-            status_code=422, detail=f"Space '{body.space_name}' not found."
-        )
 
     canonical_tags = resolve_canonical_tags(session, body.tags)
 
@@ -931,6 +971,7 @@ class ReportUpdateRequest(BaseModel):
     structured_body: Optional[dict] = None
     content_format: Optional[str] = None  # "html" | "markdown" | "json"
     theme: Optional[str] = None
+    layout: Optional[str] = None
     tags: Optional[list[str]] = None
     content_type: Optional[str] = None
 
@@ -989,6 +1030,7 @@ def update_report(
             structured_body=body.structured_body,
             content_format=body.content_format or "auto",
             theme=body.theme,
+            layout=body.layout,
             content_type=effective_content_type,
         )
         rendered_html, update_format, source_body = _resolve_body(temp_req)
@@ -1028,12 +1070,6 @@ def update_report(
         )
 
     if body.tags is not None:
-        # Remove existing tag links and replace
-        existing_links = session.exec(
-            select(ReportTag).where(ReportTag.report_id == report.id)
-        ).all()
-        for link in existing_links:
-            session.delete(link)
         canonical_tags = resolve_canonical_tags(session, body.tags)
         attach_tags_to_report(session, report, canonical_tags)
 

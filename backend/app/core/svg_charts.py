@@ -5,8 +5,8 @@ Each function produces a self-contained SVG string suitable for embedding
 in HTML. These serve as fallbacks that display without JavaScript.
 """
 
-from html import escape
 import math
+from html import escape
 
 from app.core.themes import Theme
 
@@ -333,4 +333,264 @@ def svg_pie_chart(data: dict, theme: Theme) -> str:
         f'style="font-family:{theme.font_stack};">'
         f'\n{"".join(slices)}\n{"".join(labels)}'
         f'\n</svg>'
+    )
+
+
+# ---------------------------------------------------------------------------
+# Horizontal bar chart
+# ---------------------------------------------------------------------------
+
+
+def svg_horizontal_bar_chart(data: dict, theme: Theme) -> str:
+    labels = data.get("labels", [])
+    datasets = data.get("datasets", [])
+
+    if not datasets:
+        return ""
+
+    all_values = [v for ds in datasets for v in ds.get("values", [])]
+    if not all_values:
+        return ""
+
+    max_val = max(abs(v) for v in all_values)
+    if max_val == 0:
+        max_val = 1
+
+    pad_left = 120
+    pad_right = 60
+    pad_top = 20
+    pad_bottom = 30
+
+    n_labels = len(labels)
+    n_datasets = len(datasets)
+    plot_width = _CHART_WIDTH - pad_left - pad_right
+    group_height = (_CHART_HEIGHT - pad_top - pad_bottom) / max(n_labels, 1)
+    bar_height = max(group_height / (n_datasets + 1), 4)
+    gap = bar_height * 0.2
+
+    colors = list(theme.chart_colors)
+    bars: list[str] = []
+
+    for li, label in enumerate(labels):
+        group_y = pad_top + li * group_height
+        label_y = group_y + group_height / 2
+        bars.append(
+            f'<text x="{pad_left - 8}" y="{label_y:.1f}" text-anchor="end" '
+            f'dominant-baseline="middle" fill="{theme.chart_axis_color}" '
+            f'style="font-size:11px;">{escape(str(label))}</text>'
+        )
+        for di, ds in enumerate(datasets):
+            vals = ds.get("values", [])
+            val = vals[li] if li < len(vals) else 0
+            w = (abs(val) / max_val * plot_width) if max_val else 0
+            y = group_y + (di + 0.5) * (bar_height + gap)
+            c = colors[di % len(colors)]
+            bars.append(
+                f'<rect x="{pad_left}" y="{y:.1f}" width="{w:.1f}" '
+                f'height="{bar_height:.1f}" rx="3" fill="{c}" />'
+            )
+            if w > 30:
+                bars.append(
+                    f'<text x="{pad_left + w + 4:.1f}" y="{y + bar_height / 2:.1f}" '
+                    f'dominant-baseline="middle" fill="{theme.chart_axis_color}" '
+                    f'style="font-size:10px;">{_fmt_val(val)}</text>'
+                )
+
+    legend = _legend(
+        [ds.get("name", f"Series {i+1}") for i, ds in enumerate(datasets)], colors, theme
+    )
+
+    return (
+        f'<svg viewBox="0 0 {_CHART_WIDTH} {_CHART_HEIGHT}" width="100%" '
+        f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Horizontal bar chart" '
+        f'style="font-family:{theme.font_stack};">'
+        f'\n{"".join(bars)}\n{legend}'
+        f'\n</svg>'
+    )
+
+
+# ---------------------------------------------------------------------------
+# Stacked bar chart
+# ---------------------------------------------------------------------------
+
+
+def svg_stacked_bar_chart(data: dict, theme: Theme) -> str:
+    labels = data.get("labels", [])
+    datasets = data.get("datasets", [])
+
+    if not datasets:
+        return ""
+
+    n_labels = len(labels)
+    # Compute stacked totals per label
+    stacked_totals = []
+    for li in range(n_labels):
+        total = sum(
+            abs(ds.get("values", [])[li]) if li < len(ds.get("values", [])) else 0
+            for ds in datasets
+        )
+        stacked_totals.append(total)
+
+    max_val = max(stacked_totals) if stacked_totals else 0
+    ticks = _nice_ticks(max_val)
+    max_tick = ticks[-1] if ticks else 1
+
+    plot_top = _PAD_TOP
+    plot_bottom = _CHART_HEIGHT - _PAD_BOTTOM
+    plot_height = plot_bottom - plot_top
+
+    group_width = (_CHART_WIDTH - _PAD_LEFT - _PAD_RIGHT) / max(n_labels, 1)
+    bar_width = group_width * 0.6
+    colors = list(theme.chart_colors)
+    bars: list[str] = []
+
+    for li, label in enumerate(labels):
+        group_x = _PAD_LEFT + li * group_width
+        label_x = group_x + group_width / 2
+        bars.append(
+            f'<text x="{label_x:.1f}" y="{plot_bottom + 18}" text-anchor="middle" '
+            f'fill="{theme.chart_axis_color}" style="font-size:11px;">{escape(str(label))}</text>'
+        )
+        bar_x = group_x + (group_width - bar_width) / 2
+        cum_height = 0.0
+        for di, ds in enumerate(datasets):
+            vals = ds.get("values", [])
+            val = abs(vals[li]) if li < len(vals) else 0
+            h = (val / max_tick * plot_height) if max_tick else 0
+            y = plot_bottom - cum_height - h
+            c = colors[di % len(colors)]
+            bars.append(
+                f'<rect x="{bar_x:.1f}" y="{y:.1f}" width="{bar_width:.1f}" '
+                f'height="{h:.1f}" fill="{c}" />'
+            )
+            cum_height += h
+
+    legend = _legend(
+        [ds.get("name", f"Series {i+1}") for i, ds in enumerate(datasets)], colors, theme
+    )
+    grid = _y_axis_and_grid(ticks, plot_top, plot_bottom, theme)
+
+    return (
+        f'<svg viewBox="0 0 {_CHART_WIDTH} {_CHART_HEIGHT}" width="100%" '
+        f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stacked bar chart" '
+        f'style="font-family:{theme.font_stack};">'
+        f'\n{grid}\n{"".join(bars)}\n{legend}'
+        f'\n</svg>'
+    )
+
+
+# ---------------------------------------------------------------------------
+# Donut chart
+# ---------------------------------------------------------------------------
+
+
+def svg_donut_chart(data: dict, theme: Theme) -> str:
+    segments = data.get("segments", [])
+    if not segments:
+        return ""
+
+    total = sum(s.get("value", 0) for s in segments)
+    if total <= 0:
+        return ""
+
+    cx, cy = 200, 150
+    outer_r = 110
+    inner_r = 65
+    colors = list(theme.chart_colors)
+    slices: list[str] = []
+    labels: list[str] = []
+
+    angle = -math.pi / 2
+
+    for i, seg in enumerate(segments):
+        val = seg.get("value", 0)
+        if val <= 0:
+            continue
+        sweep = (val / total) * 2 * math.pi
+        # Outer arc
+        ox1 = cx + outer_r * math.cos(angle)
+        oy1 = cy + outer_r * math.sin(angle)
+        ox2 = cx + outer_r * math.cos(angle + sweep)
+        oy2 = cy + outer_r * math.sin(angle + sweep)
+        # Inner arc (reversed)
+        ix1 = cx + inner_r * math.cos(angle + sweep)
+        iy1 = cy + inner_r * math.sin(angle + sweep)
+        ix2 = cx + inner_r * math.cos(angle)
+        iy2 = cy + inner_r * math.sin(angle)
+        large_arc = 1 if sweep > math.pi else 0
+        c = colors[i % len(colors)]
+
+        slices.append(
+            f'<path d="M{ox1:.1f},{oy1:.1f} '
+            f'A{outer_r},{outer_r} 0 {large_arc},1 {ox2:.1f},{oy2:.1f} '
+            f'L{ix1:.1f},{iy1:.1f} '
+            f'A{inner_r},{inner_r} 0 {large_arc},0 {ix2:.1f},{iy2:.1f} Z" '
+            f'fill="{c}" />'
+        )
+
+        mid_angle = angle + sweep / 2
+        label_r = outer_r + 20
+        lx = cx + label_r * math.cos(mid_angle)
+        ly = cy + label_r * math.sin(mid_angle)
+        label_text = escape(str(seg.get("label", "")))
+        pct = f"{val / total * 100:.0f}%"
+        full_label = f"{label_text} ({pct})"
+        labels.append(_label_backdrop(lx, ly, full_label, theme))
+
+        angle += sweep
+
+    # Center label
+    center_label = data.get("center_label", "")
+    center_html = ""
+    if center_label:
+        center_html = (
+            f'<text x="{cx}" y="{cy}" text-anchor="middle" dominant-baseline="middle" '
+            f'fill="{theme.heading_color}" style="font-size:16px; font-weight:700;">'
+            f'{escape(str(center_label))}</text>'
+        )
+
+    return (
+        f'<svg viewBox="0 0 400 {_CHART_HEIGHT}" width="100%" '
+        f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Donut chart" '
+        f'style="font-family:{theme.font_stack};">'
+        f'\n{"".join(slices)}\n{"".join(labels)}\n{center_html}'
+        f'\n</svg>'
+    )
+
+
+# ---------------------------------------------------------------------------
+# Sparkline
+# ---------------------------------------------------------------------------
+
+
+def svg_sparkline(data: dict, theme: Theme) -> str:
+    values = data.get("values", [])
+    if not values or not any(isinstance(v, (int, float)) for v in values):
+        return ""
+
+    width, height = 150, 40
+    pad = 4
+    plot_w = width - 2 * pad
+    plot_h = height - 2 * pad
+
+    min_val = min(values)
+    max_val = max(values)
+    val_range = max_val - min_val if max_val != min_val else 1
+
+    points: list[str] = []
+    n = len(values)
+    for i, v in enumerate(values):
+        x = pad + (i / max(n - 1, 1)) * plot_w
+        y = pad + plot_h - ((v - min_val) / val_range) * plot_h
+        points.append(f"{x:.1f},{y:.1f}")
+
+    color = theme.chart_colors[0] if theme.chart_colors else theme.accent_color
+    points_str = " ".join(points)
+
+    return (
+        f'<svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" '
+        f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sparkline" '
+        f'style="display:inline-block; vertical-align:middle;">'
+        f'<polyline points="{points_str}" fill="none" stroke="{color}" stroke-width="1.5" />'
+        f'</svg>'
     )

@@ -20,7 +20,7 @@ def kpi_grid(metrics: list[dict]) -> dict:
     return {"type": "kpi-grid", "metrics": metrics}
 
 
-def table(headers: list[str], rows: list[list]) -> dict:
+def table(headers: list[str], rows: list[list[str | int | float]]) -> dict:
     """A data table section."""
     return {"type": "table", "headers": headers, "rows": rows}
 
@@ -139,3 +139,125 @@ def action_items(items: list[dict]) -> dict:
     Each item dict should contain at minimum a ``text`` key.
     """
     return {"type": "action-items", "items": items}
+
+
+def columns(cols: list[list[dict]]) -> dict:
+    """A multi-column layout wrapping child sections side by side.
+
+    ``cols``: list of columns, where each column is a list of section dicts.
+    """
+    return {
+        "type": "columns",
+        "columns": [{"sections": col} for col in cols],
+    }
+
+
+def summary_header(
+    title: str,
+    *,
+    subtitle: str = "",
+    date: str = "",
+    stats: list[dict] | None = None,
+) -> dict:
+    """A styled report header with title, subtitle, date, and key stats.
+
+    ``stats``: list of ``{"label": str, "value": str}`` dicts.
+    """
+    section: dict = {"type": "summary-header", "title": title}
+    if subtitle:
+        section["subtitle"] = subtitle
+    if date:
+        section["date"] = date
+    if stats:
+        section["stats"] = stats
+    return section
+
+
+def divider(label: str = "") -> dict:
+    """A horizontal divider with an optional centered label."""
+    section: dict = {"type": "divider"}
+    if label:
+        section["label"] = label
+    return section
+
+
+def spacer(height: str = "40px") -> dict:
+    """Vertical whitespace. Height accepts px or rem values."""
+    return {"type": "spacer", "height": height}
+
+
+def horizontal_bar_chart(
+    labels: list[str],
+    datasets: list[dict] | None = None,
+    *,
+    values: list[float] | None = None,
+    heading: str = "",
+) -> dict:
+    """A horizontal bar chart (bars extend right, labels on Y-axis).
+
+    Same data shape as ``bar_chart``.
+    """
+    if datasets is None:
+        datasets = [{"name": "Value", "values": values or []}]
+    section: dict = {
+        "type": "horizontal-bar-chart",
+        "data": {"labels": labels, "datasets": datasets},
+    }
+    if heading:
+        section["heading"] = heading
+    return section
+
+
+def stacked_bar_chart(
+    labels: list[str],
+    datasets: list[dict],
+    *,
+    heading: str = "",
+) -> dict:
+    """A stacked bar chart (datasets stacked vertically per label).
+
+    Same data shape as ``bar_chart`` with multiple datasets.
+    """
+    section: dict = {
+        "type": "stacked-bar-chart",
+        "data": {"labels": labels, "datasets": datasets},
+    }
+    if heading:
+        section["heading"] = heading
+    return section
+
+
+def donut_chart(
+    segments: list[dict],
+    *,
+    heading: str = "",
+    center_label: str = "",
+) -> dict:
+    """A donut chart (pie chart with center cutout).
+
+    ``segments``: list of ``{"label": str, "value": float}``.
+    ``center_label``: optional text displayed in the center of the donut.
+    """
+    section: dict = {
+        "type": "donut-chart",
+        "data": {"segments": segments},
+    }
+    if center_label:
+        section["data"]["center_label"] = center_label
+    if heading:
+        section["heading"] = heading
+    return section
+
+
+def sparkline(values: list[float], *, heading: str = "") -> dict:
+    """A tiny inline sparkline chart (no axes, no labels).
+
+    ``values``: list of numbers to plot.
+    """
+    section: dict = {
+        "type": "sparkline",
+        "data": {"values": values},
+    }
+    if heading:
+        section["heading"] = heading
+    return section

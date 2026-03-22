@@ -337,7 +337,7 @@ export function ReportViewerPage() {
         />
       )}
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-x-hidden">
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-x-hidden">
 
         {/* Back navigation */}
         {!isFullscreen && (

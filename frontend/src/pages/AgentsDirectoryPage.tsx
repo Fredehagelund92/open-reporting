@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Link } from "react-router-dom"
+import { useQuery, keepPreviousData } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
-  ArrowLeft,
   Bot,
   Search,
   ChevronUp,
@@ -58,20 +59,22 @@ function StatusBadge({ status, agentType }: { status: string; agentType?: string
 }
 
 export function AgentsDirectoryPage() {
-  const [agents, setAgents] = useState<Agent[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "IDLE" | "GENERATING" | "OFFLINE">("all")
   const [typeFilter, setTypeFilter] = useState<"all" | "reporter" | "chat_assistant" | "hybrid">("all")
   const [sortKey, setSortKey] = useState<SortKey>("report_count")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
 
-  useEffect(() => {
-    const params = typeFilter !== "all" ? `?agent_type=${typeFilter}` : ""
-    api.get(`/agents/${params}`)
-      .then((r) => { setAgents(Array.isArray(r.data) ? r.data : []); setLoading(false) })
-      .catch(() => setLoading(false))
-  }, [typeFilter])
+  const { data: agents = [], isLoading: loading, isPlaceholderData } = useQuery<Agent[]>({
+    queryKey: ["agents-directory", typeFilter],
+    queryFn: async () => {
+      const params = typeFilter !== "all" ? `?agent_type=${typeFilter}` : ""
+      const r = await api.get(`/agents/${params}`)
+      return Array.isArray(r.data) ? r.data : []
+    },
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  })
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc")
@@ -87,122 +90,106 @@ export function AgentsDirectoryPage() {
     .sort((a, b) => {
       const va = (a[sortKey as keyof Agent] ?? "") as string | number
       const vb = (b[sortKey as keyof Agent] ?? "") as string | number
-      
       const sva = typeof va === "string" ? va.toLowerCase() : va
       const svb = typeof vb === "string" ? vb.toLowerCase() : vb
-      
       if (sva < svb) return sortDir === "asc" ? -1 : 1
       if (sva > svb) return sortDir === "asc" ? 1 : -1
       return 0
     })
 
-
   const onlineCount = agents.filter(a => a.status !== "OFFLINE").length
 
   return (
-    <ScrollArea className="flex-1 bg-card">
-      <main className="max-w-5xl mx-auto p-6 md:p-8">
-        <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-6 transition-colors">
-          <ArrowLeft className="size-4" /> Back to Feed
-        </Link>
-
+    <ScrollArea className="flex-1">
+      <main className="max-w-5xl mx-auto p-4 sm:p-6 md:p-8">
         {/* Header */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="p-2 bg-primary/10 rounded-xl">
-                <Bot className="size-6 text-primary" />
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">AI Assistants</h1>
-            </div>
-            <p className="text-sm text-muted-foreground ml-11">
-              {loading ? "Loading…" : (
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">AI Assistants</span>
+            <p className="text-xs text-muted-foreground font-mono mt-1">
+              {loading ? "Loading\u2026" : (
                 <><span className="font-semibold text-signal">{onlineCount} online</span> · {agents.length} registered</>
               )}
             </p>
           </div>
-          <div className="flex flex-wrap gap-3 items-center mb-6">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                placeholder="Search assistants..."
-                className="pl-9 h-9 bg-card border-border"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center rounded-lg border border-border bg-muted/50 p-0.5">
-              {([
-                { value: "all", label: "All" },
-                { value: "IDLE", label: "Ready" },
-                { value: "GENERATING", label: "Working" },
-                { value: "OFFLINE", label: "Offline" },
-              ] as const).map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setStatusFilter(opt.value)}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                    statusFilter === opt.value
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <div className="relative">
-              <SlidersHorizontal className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
-              <select
-                value={typeFilter}
-                onChange={e => setTypeFilter(e.target.value as typeof typeFilter)}
-                className="h-9 pl-8 pr-3 text-xs font-medium rounded-lg border border-border bg-card text-foreground appearance-none cursor-pointer hover:border-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="all">All types</option>
-                <option value="reporter">Reporter</option>
-                <option value="chat_assistant">Chat Assistant</option>
-                <option value="hybrid">Hybrid</option>
-              </select>
-            </div>
-            <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-white gap-2 ml-auto">
-              <Link to="/connect">
-                <Bot className="size-4" />
-                Setup Assistant
-              </Link>
-            </Button>
+          <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-mono text-xs">
+            <Link to="/connect"><Bot className="size-3.5 mr-1.5" /> Setup Assistant</Link>
+          </Button>
+        </div>
+
+        {/* Controls */}
+        <div className="flex flex-wrap items-center gap-3 mb-4 pb-4 border-b border-border">
+          <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+            <TabsList variant="line">
+              <TabsTrigger value="all" className="font-mono text-xs">All</TabsTrigger>
+              <TabsTrigger value="IDLE" className="font-mono text-xs">Ready</TabsTrigger>
+              <TabsTrigger value="GENERATING" className="font-mono text-xs">Working</TabsTrigger>
+              <TabsTrigger value="OFFLINE" className="font-mono text-xs">Offline</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="relative">
+            <SlidersHorizontal className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+            <select
+              value={typeFilter}
+              onChange={e => setTypeFilter(e.target.value as typeof typeFilter)}
+              className="h-8 pl-8 pr-3 text-xs font-mono rounded-sm border border-border bg-card text-foreground appearance-none cursor-pointer hover:border-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="all">All types</option>
+              <option value="reporter">Reporter</option>
+              <option value="chat_assistant">Chat Assistant</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </div>
+
+          <div className="relative flex-1 min-w-[160px] max-w-xs ml-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search..."
+              className="pl-9 h-8 bg-card border-border font-mono text-xs"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
           </div>
         </div>
 
+        {/* Transition indicator */}
+        {isPlaceholderData && (
+          <div className="h-0.5 w-full bg-primary/20 overflow-hidden rounded-full mb-4">
+            <div className="h-full w-1/3 bg-primary rounded-full animate-[slideRight_1s_ease-in-out_infinite]" />
+          </div>
+        )}
+
         {/* Table */}
-        <div className="border rounded-xl overflow-hidden shadow-sm">
+        <div className="border rounded-sm overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-muted border-b">
+            <thead className="bg-muted/50 border-b">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">
-                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-semibold text-muted-foreground hover:text-foreground" onClick={() => handleSort("name")}>
+                <th className="text-left px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground" onClick={() => handleSort("name")}>
                     Assistant <SortIcon k="name" sortKey={sortKey} sortDir={sortDir} />
                   </Button>
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">
-                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-semibold text-muted-foreground hover:text-foreground" onClick={() => handleSort("status")}>
+                <th className="text-left px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground" onClick={() => handleSort("status")}>
                     Status <SortIcon k="status" sortKey={sortKey} sortDir={sortDir} />
                   </Button>
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden md:table-cell">
-                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-semibold text-muted-foreground hover:text-foreground" onClick={() => handleSort("report_count")}>
+                <th className="text-left px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hidden md:table-cell">
+                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground" onClick={() => handleSort("report_count")}>
                     Reports <SortIcon k="report_count" sortKey={sortKey} sortDir={sortDir} />
                   </Button>
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden lg:table-cell">Claimed</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden lg:table-cell">
-                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-semibold text-muted-foreground hover:text-foreground" onClick={() => handleSort("created_at")}>
+                <th className="text-left px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hidden lg:table-cell">Claimed</th>
+                <th className="text-left px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hidden lg:table-cell">
+                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground" onClick={() => handleSort("created_at")}>
                     Joined <SortIcon k="created_at" sortKey={sortKey} sortDir={sortDir} />
                   </Button>
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {loading && (
+              {loading && !isPlaceholderData && (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     <td className="px-4 py-4"><div className="h-4 bg-muted rounded w-32" /></td>
@@ -215,13 +202,17 @@ export function AgentsDirectoryPage() {
               )}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground font-mono text-xs">
                     No assistants match your search.
                   </td>
                 </tr>
               )}
-              {!loading && filtered.map(agent => (
-                <tr key={agent.id} className="hover:bg-muted/60 transition-colors">
+              {!(loading && !isPlaceholderData) && filtered.map((agent, idx) => (
+                <tr
+                  key={agent.id}
+                  className={`border-l-2 border-l-transparent hover:border-l-primary hover:bg-muted/30 transition-colors ${!isPlaceholderData ? "feed-item-enter" : ""}`}
+                  style={!isPlaceholderData ? { animationDelay: `${Math.min(idx * 40, 400)}ms` } : undefined}
+                >
                   <td className="px-4 py-3">
                     <Link to={`/assistant/${agent.name}`} className="flex items-center gap-3 group">
                       <Avatar className="size-8 shrink-0">
@@ -244,7 +235,7 @@ export function AgentsDirectoryPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell">
-                    <span className="font-semibold text-foreground">{agent.report_count}</span>
+                    <span className="font-semibold text-foreground font-mono">{agent.report_count}</span>
                     <span className="text-muted-foreground text-xs ml-1">rpts</span>
                   </td>
                   <td className="px-4 py-3 hidden lg:table-cell">
@@ -253,7 +244,7 @@ export function AgentsDirectoryPage() {
                       : <Clock className="size-4 text-muted-foreground" />
                     }
                   </td>
-                  <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground text-xs">
+                  <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground text-xs font-mono">
                     {new Date(agent.created_at || "").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                   </td>
                 </tr>
@@ -263,7 +254,7 @@ export function AgentsDirectoryPage() {
         </div>
 
         {!loading && filtered.length > 0 && (
-          <p className="text-xs text-muted-foreground mt-4 text-right">{filtered.length} assistant{filtered.length !== 1 ? "s" : ""} · reports in private spaces are hidden</p>
+          <p className="text-xs text-muted-foreground font-mono mt-4 text-right">{filtered.length} assistant{filtered.length !== 1 ? "s" : ""} · reports in private spaces are hidden</p>
         )}
       </main>
     </ScrollArea>

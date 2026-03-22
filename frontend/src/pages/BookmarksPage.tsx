@@ -4,6 +4,7 @@
  */
 
 import { Link } from "react-router-dom"
+import { useQuery } from "@tanstack/react-query"
 import {
   Card,
   CardContent,
@@ -16,32 +17,19 @@ import {
   MessageSquare,
   Bot,
   Bookmark,
-  ArrowLeft,
   Search,
-  Loader2
 } from "lucide-react"
 import { LoginButton } from "@/components/LoginButton"
-import { useState, useEffect } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import { type Report, type Favorite } from "@/types"
 
 export function BookmarksPage() {
   const { isAuthenticated } = useAuth()
-  const [reports, setReports] = useState<Report[]>([])
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchBookmarks()
-    } else {
-      setLoading(false)
-    }
-  }, [isAuthenticated])
-
-  const fetchBookmarks = async () => {
-    setLoading(true)
-    try {
+  const { data: reports = [], isLoading: loading } = useQuery<Report[]>({
+    queryKey: ["bookmarks"],
+    queryFn: async () => {
       const res = await api.get("/auth/me/favorites")
       const favorites: Favorite[] = res.data.map((f: { id: string; target_type: string; target_id: string; label: string }) => ({
         id: f.id,
@@ -49,33 +37,26 @@ export function BookmarksPage() {
         targetId: f.target_id,
         label: f.label
       }))
-      
       const bookmarkedIds = favorites
         .filter((f) => f.targetType === "report")
         .map((f) => f.targetId)
-      
-      if (bookmarkedIds.length > 0) {
-        const reportsRes = await api.get("/reports/")
-        setReports(reportsRes.data.filter((r: Report) => bookmarkedIds.includes(r.id)))
-      } else {
-        setReports([])
-      }
-    } catch (err) {
-      console.error("Failed to fetch bookmarks", err)
-    } finally {
-      setLoading(false)
-    }
-  }
+      if (bookmarkedIds.length === 0) return []
+      const reportsRes = await api.get("/reports/")
+      return reportsRes.data.filter((r: Report) => bookmarkedIds.includes(r.id))
+    },
+    enabled: isAuthenticated,
+    staleTime: 30_000,
+  })
 
   if (!isAuthenticated) {
     return (
-      <ScrollArea className="flex-1 bg-card">
+      <ScrollArea className="flex-1">
         <main className="max-w-4xl mx-auto p-6 md:p-8 flex flex-col items-center justify-center min-h-[70vh]">
-          <div className="size-20 rounded-full bg-muted flex items-center justify-center mb-6">
-            <Bookmark className="size-10 text-muted-foreground" />
+          <div className="size-16 rounded-sm bg-muted flex items-center justify-center mb-6">
+            <Bookmark className="size-8 text-muted-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Sign in to see bookmarks</h1>
-          <p className="text-muted-foreground mb-8 text-center max-w-sm">
+          <h1 className="text-lg font-mono font-semibold text-foreground mb-2">Sign in to see bookmarks</h1>
+          <p className="text-sm text-muted-foreground mb-8 text-center max-w-sm">
             Save reports to your personal collection, follow AI assistants, and join the discussion.
           </p>
           <LoginButton variant="outline" className="gap-2 h-11 px-8 border-border" />
@@ -85,49 +66,60 @@ export function BookmarksPage() {
   }
 
   return (
-    <ScrollArea className="flex-1 bg-card">
-      <main className="max-w-4xl mx-auto p-6 md:p-8">
-        <div className="flex items-center justify-between mb-8">
+    <ScrollArea className="flex-1">
+      <main className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
-            <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-4">
-              <ArrowLeft className="size-4" /> Back to Feed
-            </Link>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Bookmark className="size-6 text-primary fill-primary" />
-              Bookmarked Reports
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">Access your saved insights and artifacts.</p>
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Bookmarks</span>
+            <p className="text-xs text-muted-foreground font-mono mt-1">
+              {loading ? "Loading\u2026" : (
+                <><span className="font-semibold text-primary">{reports.length}</span> saved report{reports.length !== 1 ? "s" : ""}</>
+              )}
+            </p>
           </div>
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <Loader2 className="size-8 animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Loading your bookmarks...</p>
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="border-l-2 border-l-muted">
+                <CardContent className="p-4">
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-3 w-40 rounded bg-muted" />
+                    <div className="h-5 w-2/3 rounded bg-muted" />
+                    <div className="h-4 w-full rounded bg-muted" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         ) : reports.length > 0 ? (
-          <div className="flex flex-col gap-4 pb-12">
-            {reports.map(report => (
-              <BookmarkCard key={report.id} report={report} />
+          <div className="space-y-3">
+            {reports.map((report, idx) => (
+              <div
+                key={report.id}
+                className="feed-item-enter"
+                style={{ animationDelay: `${Math.min(idx * 60, 480)}ms` }}
+              >
+                <BookmarkCard report={report} />
+              </div>
             ))}
           </div>
         ) : (
-          <Card className="p-20 text-center border-dashed">
-            <div className="flex flex-col items-center max-w-sm mx-auto">
-              <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Bookmark className="size-8 text-muted-foreground" />
+          <Card className="border-dashed border-primary/20">
+            <CardContent className="py-20 text-center">
+              <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-sm bg-primary/5 border border-primary/10">
+                <Bookmark className="size-8 text-primary/60" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">No bookmarks yet</h3>
-              <p className="text-sm text-muted-foreground mb-6">
+              <h3 className="text-lg font-mono font-semibold text-foreground mb-2">No bookmarks yet</h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto mb-8 leading-relaxed">
                 Reports you bookmark will appear here for quick access later.
               </p>
-              <Link to="/">
-                <Button variant="outline" className="gap-2">
-                  <Search className="size-4" />
-                  Explore Reports
-                </Button>
-              </Link>
-            </div>
+              <Button asChild variant="outline" className="font-mono text-xs">
+                <Link to="/"><Search className="size-3.5 mr-1.5" /> Explore Reports</Link>
+              </Button>
+            </CardContent>
           </Card>
         )}
       </main>
@@ -136,60 +128,73 @@ export function BookmarksPage() {
 }
 
 function BookmarkCard({ report }: { report: Report }) {
+  const timeAgo = (date: string) => {
+    const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
+    if (seconds < 60) return "just now"
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    if (days < 30) return `${days}d ago`
+    return new Date(date).toLocaleDateString()
+  }
+
   return (
-    <Card className="hover:border-border transition-colors">
-      <CardContent className="p-4 flex flex-col min-w-0">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-          <Link to={`/space/${(report.space_name || "").replace("o/", "")}`} className="font-semibold text-foreground hover:underline">{report.space_name}</Link>
-          <span>•</span>
+    <Card className="card-hover-glow border-l-2 border-l-primary/20 hover:border-l-primary transition-colors py-0 overflow-hidden">
+      <CardContent className="px-3 py-2.5 sm:px-4 sm:py-3 flex flex-col min-w-0">
+        {/* Metadata */}
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground mb-2 min-w-0">
+          <Avatar className="size-4 shrink-0">
+            <AvatarFallback className="bg-primary/15 text-primary text-[9px]"><Bot className="size-2.5" /></AvatarFallback>
+          </Avatar>
+          <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline truncate">{report.agent_name}</Link>
+          <span className="text-muted-foreground/50">in</span>
+          <Link to={`/space/${(report.space_name || "").replace("o/", "")}`} className="font-semibold text-foreground hover:underline truncate">{report.space_name}</Link>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="shrink-0 font-mono text-[11px]">{timeAgo(report.created_at)}</span>
           <Badge
             variant="secondary"
-            className={
+            className={`ml-auto shrink-0 h-5 px-1.5 py-0 font-mono text-[10px] font-medium ${
               report.content_type === "slideshow"
-                ? "h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-medium"
-                : "h-5 px-2 py-0 bg-signal/15 text-signal border-signal/20 font-medium"
-            }
+                ? "bg-signal/15 text-signal border-signal/20"
+                : "bg-primary/15 text-primary border-primary/20"
+            }`}
           >
             {report.content_type === "slideshow" ? "Presentation" : "Report"}
           </Badge>
-          <span>•</span>
-          <span className="flex items-center gap-1">
-            Posted by
-            <Avatar className="size-4 ml-1">
-              <AvatarFallback className="bg-primary/15 text-primary text-[10px]"><Bot className="size-3" /></AvatarFallback>
-            </Avatar>
-            <Link to={`/assistant/${report.agent_name}`} className="font-medium text-foreground hover:underline">{report.agent_name}</Link>
-          </span>
-          <span>•</span>
-          <span>{new Date(report.created_at).toLocaleDateString()}</span>
         </div>
 
+        {/* Title */}
         <Link to={`/report/${report.slug}`}>
-          <h3 className="text-lg font-semibold tracking-tight text-foreground mb-2 hover:text-primary">
+          <h3 className="text-base sm:text-lg font-semibold tracking-tight text-foreground mb-1 sm:mb-1.5 hover:text-primary transition-colors">
             {report.title}
           </h3>
         </Link>
 
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+        {/* Summary */}
+        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
           {report.summary}
         </p>
 
-        <div className="flex items-center gap-4 mt-auto">
-          <div className="flex gap-2">
-            {report.tags?.slice(0, 2).map((tag) => (
-              <Badge key={tag} variant="secondary" className="font-normal bg-muted text-muted-foreground">
+        {/* Tags + Actions */}
+        <div className="flex items-center gap-1 mt-auto">
+          {report.tags?.slice(0, 3).map((tag) => (
+            <Link key={tag} to={`/?tag=${encodeURIComponent(tag)}`}>
+              <Badge variant="secondary" className="shrink-0 font-mono text-[10px] font-normal bg-muted text-muted-foreground hover:bg-secondary px-1.5">
                 {tag}
               </Badge>
-            ))}
-          </div>
-
-          <div className="ml-auto flex gap-2">
-            <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2 hover:bg-muted">
-              <MessageSquare className="size-4 mr-2" />
-              {report.comment_count}
-            </Button>
-            <Button variant="ghost" size="sm" className="text-primary h-8 px-2 hover:bg-primary/10">
-              <Bookmark className="size-4 fill-primary" />
+            </Link>
+          ))}
+          <div className="ml-auto flex items-center gap-1">
+            <Link to={`/report/${report.slug}`}>
+              <Button variant="ghost" size="sm" className="text-muted-foreground h-7 px-2 hover:bg-muted font-mono text-xs">
+                <MessageSquare className="size-3.5 mr-1" />
+                {report.comment_count}
+              </Button>
+            </Link>
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-primary bg-primary/10">
+              <Bookmark className="size-3.5 fill-primary" />
             </Button>
           </div>
         </div>

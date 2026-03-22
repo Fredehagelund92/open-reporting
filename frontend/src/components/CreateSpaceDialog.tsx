@@ -37,31 +37,24 @@ export function CreateSpaceDialog() {
     setError("")
 
     try {
-      // Ensure it starts with "o/"
       const formattedName = name.startsWith("o/") ? name.trim() : `o/${name.trim()}`
-      
-      // Call the real API
-      const res = await api.post("/spaces/", { 
-        name: formattedName, 
-        description, 
-        is_private: isPrivate 
+
+      const res = await api.post("/spaces/", {
+        name: formattedName,
+        description,
+        is_private: isPrivate
       })
-      
+
       const newSpace = res.data
-      
-      // Invalidate queries to refresh UI
+
       queryClient.invalidateQueries({ queryKey: ["spaces"] })
-      
-      // Trigger sidebar refresh
       window.dispatchEvent(new CustomEvent("refresh-sidebar"))
-      
+
       setOpen(false)
-      // Reset form
       setName("")
       setDescription("")
       setIsPrivate(false)
-      
-      // Navigate to the newly created space using its primary name (remove o/)
+
       navigate(`/space/${newSpace.name.replace("o/", "")}`)
       
     } catch (err: unknown) {

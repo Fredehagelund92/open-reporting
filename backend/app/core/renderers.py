@@ -12,8 +12,17 @@ from html.parser import HTMLParser
 import mistune
 
 from app.core.chart_validation import normalize_chart_values, validate_chart_section
-from app.core.svg_charts import svg_area_chart, svg_bar_chart, svg_line_chart, svg_pie_chart
-from app.core.themes import Theme, get_theme
+from app.core.svg_charts import (
+    svg_area_chart,
+    svg_bar_chart,
+    svg_donut_chart,
+    svg_horizontal_bar_chart,
+    svg_line_chart,
+    svg_pie_chart,
+    svg_sparkline,
+    svg_stacked_bar_chart,
+)
+from app.core.themes import Theme, apply_brand_overrides, get_layout_width, get_theme
 
 
 # ---------------------------------------------------------------------------
@@ -26,6 +35,10 @@ _CHART_RENDERERS = {
     "line-chart": svg_line_chart,
     "area-chart": svg_area_chart,
     "pie-chart": svg_pie_chart,
+    "horizontal-bar-chart": svg_horizontal_bar_chart,
+    "stacked-bar-chart": svg_stacked_bar_chart,
+    "donut-chart": svg_donut_chart,
+    "sparkline": svg_sparkline,
 }
 
 
@@ -63,13 +76,20 @@ def _create_markdown_renderer(theme: Theme):
     return md
 
 
-def render_markdown_to_html(markdown: str, theme: str | None = "default") -> str:
+def render_markdown_to_html(
+    markdown: str,
+    theme: str | None = "default",
+    layout: str | None = None,
+    brand_overrides: dict | None = None,
+) -> str:
     """Render Markdown (GFM) to themed, inline-styled HTML."""
     t = get_theme(theme)
+    if brand_overrides:
+        t = apply_brand_overrides(t, brand_overrides)
     md = _create_markdown_renderer(t)
     raw_html = md(markdown)
     styled = _apply_inline_styles(raw_html, t)
-    return _wrap_container(styled, t)
+    return _wrap_container(styled, t, layout=layout)
 
 
 # ---------------------------------------------------------------------------
@@ -93,10 +113,15 @@ def _section(section_type: str):
 
 
 def render_structured_to_html(
-    sections: list[dict], theme: str | None = "default"
+    sections: list[dict],
+    theme: str | None = "default",
+    layout: str | None = None,
+    brand_overrides: dict | None = None,
 ) -> str:
     """Render a list of typed section dicts to themed HTML."""
     t = get_theme(theme)
+    if brand_overrides:
+        t = apply_brand_overrides(t, brand_overrides)
     fragments: list[str] = []
     for section in sections:
         sec_type = section.get("type", "text")
@@ -108,7 +133,7 @@ def render_structured_to_html(
                 f'<p style="color:{t.text_color};">'
                 f"Unknown section type: {escape(sec_type)}</p>"
             )
-    return _wrap_container("\n".join(fragments), t)
+    return _wrap_container("\n".join(fragments), t, layout=layout)
 
 
 # --- Section renderers ---
@@ -309,6 +334,26 @@ def _render_pie_chart(section: dict, t: Theme) -> str:
     return _render_chart_section(section, t, svg_pie_chart)
 
 
+@_section("horizontal-bar-chart")
+def _render_horizontal_bar_chart(section: dict, t: Theme) -> str:
+    return _render_chart_section(section, t, svg_horizontal_bar_chart)
+
+
+@_section("stacked-bar-chart")
+def _render_stacked_bar_chart(section: dict, t: Theme) -> str:
+    return _render_chart_section(section, t, svg_stacked_bar_chart)
+
+
+@_section("donut-chart")
+def _render_donut_chart(section: dict, t: Theme) -> str:
+    return _render_chart_section(section, t, svg_donut_chart)
+
+
+@_section("sparkline")
+def _render_sparkline(section: dict, t: Theme) -> str:
+    return _render_chart_section(section, t, svg_sparkline)
+
+
 @_section("timeline")
 def _render_timeline(section: dict, t: Theme) -> str:
     events = section.get("events", [])
@@ -348,6 +393,109 @@ def _render_action_items(section: dict, t: Theme) -> str:
             item.get("impact", ""),
         ])
     return _render_table({"headers": headers, "rows": rows}, t)
+
+
+@_section("columns")
+def _render_columns(section: dict, t: Theme, _depth: int = 0) -> str:
+    if _depth >= 2:
+        return f'<p style="color:{t.callout_error_border};">Column nesting too deep (max 2 levels).</p>'
+    columns = section.get("columns", [])
+    if not columns:
+        return ""
+    col_parts: list[str] = []
+    for col in columns:
+        inner_sections = col.get("sections", [])
+        fragments: list[str] = []
+        for inner in inner_sections:
+            sec_type = inner.get("type", "text")
+            renderer = _SECTION_RENDERERS.get(sec_type)
+            if renderer:
+                if sec_type == "columns":
+                    fragments.append(renderer(inner, t, _depth=_depth + 1))
+                else:
+                    fragments.append(renderer(inner, t))
+            else:
+                fragments.append(
+                    f'<p style="color:{t.text_color};">Unknown section type: {escape(sec_type)}</p>'
+                )
+        col_parts.append(
+            f'<div style="flex:1 1 0; min-width:250px;">'
+            f'{"".join(fragments)}'
+            f'</div>'
+        )
+    return (
+        f'<div style="display:flex; gap:24px; flex-wrap:wrap; margin:20px 0;">'
+        f'{"".join(col_parts)}'
+        f'</div>'
+    )
+
+
+@_section("summary-header")
+def _render_summary_header(section: dict, t: Theme) -> str:
+    title = escape(str(section.get("title", "")))
+    subtitle = section.get("subtitle", "")
+    date = section.get("date", "")
+    stats = section.get("stats", [])
+
+    parts: list[str] = []
+    parts.append(
+        f'<div style="border-bottom:3px solid {t.accent_color}; padding-bottom:20px; margin-bottom:24px;">'
+    )
+    header_row = f'<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">'
+    title_part = f'<div>'
+    title_part += f'<h1 style="font-size:28px; font-weight:800; color:{t.heading_color}; margin:0; line-height:1.2;">{title}</h1>'
+    if subtitle:
+        title_part += f'<div style="font-size:14px; color:{t.secondary_text}; margin-top:4px;">{escape(str(subtitle))}</div>'
+    title_part += '</div>'
+    date_part = ""
+    if date:
+        date_part = f'<div style="font-size:13px; color:{t.secondary_text}; white-space:nowrap;">{escape(str(date))}</div>'
+    parts.append(f'{header_row}{title_part}{date_part}</div>')
+
+    if stats:
+        stat_items: list[str] = []
+        for s in stats:
+            label = escape(str(s.get("label", "")))
+            value = escape(str(s.get("value", "")))
+            stat_items.append(
+                f'<div style="display:inline-flex; align-items:baseline; gap:6px; '
+                f'padding:6px 12px; background:{t.card_bg}; border:1px solid {t.border_color}; '
+                f'border-radius:6px; font-size:13px;">'
+                f'<span style="color:{t.secondary_text};">{label}:</span>'
+                f'<span style="font-weight:700; color:{t.heading_color};">{value}</span>'
+                f'</div>'
+            )
+        parts.append(
+            f'<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">'
+            f'{"".join(stat_items)}'
+            f'</div>'
+        )
+    parts.append('</div>')
+    return "".join(parts)
+
+
+@_section("divider")
+def _render_divider(section: dict, t: Theme) -> str:
+    label = section.get("label", "")
+    if not label:
+        return f'<hr style="border:none; border-top:1px solid {t.hr_color}; margin:32px 0;" />'
+    return (
+        f'<div style="display:flex; align-items:center; gap:16px; margin:32px 0;">'
+        f'<div style="flex:1; height:1px; background:{t.hr_color};"></div>'
+        f'<span style="font-size:12px; text-transform:uppercase; letter-spacing:0.05em; '
+        f'color:{t.secondary_text}; white-space:nowrap;">{escape(str(label))}</span>'
+        f'<div style="flex:1; height:1px; background:{t.hr_color};"></div>'
+        f'</div>'
+    )
+
+
+@_section("spacer")
+def _render_spacer(section: dict, t: Theme) -> str:
+    height = section.get("height", "40px")
+    # Sanitize: only allow px or rem values
+    if not isinstance(height, str) or not (height.endswith("px") or height.endswith("rem")):
+        height = "40px"
+    return f'<div style="height:{escape(height)};"></div>'
 
 
 # ---------------------------------------------------------------------------
@@ -492,11 +640,13 @@ def _apply_inline_styles(html: str, theme: Theme) -> str:
     return "".join(styler.output)
 
 
-def _wrap_container(inner_html: str, theme: Theme) -> str:
+def _wrap_container(inner_html: str, theme: Theme, layout: str | None = None) -> str:
     """Wrap rendered content in a themed container div."""
+    max_width = get_layout_width(layout)
+    bg = f" background:{theme.bg_color};" if theme.bg_color != "transparent" else ""
     return (
         f'<div style="font-family:{theme.font_stack}; color:{theme.text_color}; '
-        f'line-height:{theme.line_height}; max-width:800px; margin:0 auto;">'
+        f'line-height:{theme.line_height}; max-width:{max_width}; margin:0 auto;{bg}">'
         f'{inner_html}'
         f'</div>'
     )

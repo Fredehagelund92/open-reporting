@@ -18,7 +18,7 @@ export function normalizeApiBaseUrl(apiBase: string): string {
 const ROLE_INSTRUCTION = (skillUrl: string) =>
   `You are a reporting assistant for Open Reporting. Refer to ${skillUrl} for content formats, section types, category templates, and best practices.`
 
-const FORMAT_INSTRUCTION = `Use \`markdown_body\` (recommended) so the server renders themed HTML. Alternatives: \`structured_body\` with \`{"sections": [...]}\` for dashboard-style layouts, or \`html_body\` for full visual control (inline styles only). Set \`content_format\` to "auto" (default) and optionally pick a \`theme\` ("default", "executive", or "minimal").`
+const FORMAT_INSTRUCTION = `Use \`markdown_body\` (recommended) so the server renders themed HTML. Alternatives: \`structured_body\` with \`{"sections": [...]}\` for dashboard-style layouts, or \`html_body\` for full visual control (inline styles only). Set \`content_format\` to "auto" (default). Pick a \`theme\` ("default", "executive", "minimal", "corporate", "dashboard", "presentation", "earth", or "highcontrast") and a \`layout\` ("narrow", "standard", "wide", or "full") to control content width.`
 
 const CATEGORY_INSTRUCTION = `Select category by intent: Weekly Business Review (default if ambiguous), Incident/RCA, Project Status, or Market Research. Select format: use \`content_type: "slideshow"\` only when a deck/presentation is explicitly requested, otherwise use "report".`
 

@@ -1,7 +1,7 @@
 ---
 name: open-reporting-skill
-version: 5.0.0
-description: Content reference for Open Reporting. Covers report formats, section types, charts, categories, themes, and best practices.
+version: 6.0.0
+description: Content reference for Open Reporting. Covers report formats, section types, charts, layouts, categories, themes, and best practices.
 homepage: https://github.com/fhagelund/open-reporting
 metadata: {"openrep": {"emojiMode": "📊", "category": "reporting", "api_base": "http://localhost:8000/api/v1"}}
 ---
@@ -24,34 +24,73 @@ Provide exactly one of the three. Set `content_format` to `"auto"` (default) and
 
 Each section has a `type` and type-specific fields. The server renders them in order.
 
+### Content Sections
+
 | Type | Required Fields | Optional |
 |------|----------------|----------|
 | `text` | `heading`, `body` (Markdown) | -- |
 | `kpi-grid` | `metrics[]` -> `{label, value}` | `delta`, `trend` per metric |
 | `table` | `headers[]`, `rows[][]` | `caption` |
 | `callout` | `callout_type` (`info`/`warning`/`success`/`error`), `message` | -- |
+| `timeline` | `events[]` -> `{date, title}` | `description` per event |
+| `action-items` | `items[]` -> `{action, owner, due}` | `impact` per item |
+
+### Layout Sections
+
+| Type | Required Fields | Optional |
+|------|----------------|----------|
+| `columns` | `columns[]` -> `{sections: [...]}` | -- |
+| `summary-header` | `title` | `subtitle`, `date`, `stats[]` -> `{label, value}` |
+| `divider` | -- | `label` (centered text) |
+| `spacer` | -- | `height` (e.g. `"40px"`, `"2rem"`) |
+
+### Chart Sections
+
+| Type | Required Fields | Optional |
+|------|----------------|----------|
 | `bar-chart` | `data.labels[]`, `data.datasets[]` -> `{name, values}` | `heading` |
 | `line-chart` | `data.labels[]`, `data.datasets[]` -> `{name, values}` | `heading` |
 | `area-chart` | `data.labels[]`, `data.datasets[]` -> `{name, values}` | `heading` |
 | `pie-chart` | `data.segments[]` -> `{label, value}` | `heading` |
-| `timeline` | `events[]` -> `{date, title}` | `description` per event |
-| `action-items` | `items[]` -> `{action, owner, due}` | `impact` per item |
+| `horizontal-bar-chart` | `data.labels[]`, `data.datasets[]` -> `{name, values}` | `heading` |
+| `stacked-bar-chart` | `data.labels[]`, `data.datasets[]` -> `{name, values}` | `heading` |
+| `donut-chart` | `data.segments[]` -> `{label, value}` | `heading`, `data.center_label` |
+| `sparkline` | `data.values[]` (plain numbers) | `heading` |
 
-**Example -- multi-section report:**
+**Example -- multi-section report with layout:**
 
 ```json
 {
   "structured_body": {
     "sections": [
-      {"type": "text", "heading": "Summary", "body": "All systems green."},
+      {"type": "summary-header", "title": "Q1 Engineering Report", "subtitle": "Platform Team", "date": "2026-03-21", "stats": [
+        {"label": "Uptime", "value": "99.97%"},
+        {"label": "Deploys", "value": "142"}
+      ]},
       {"type": "kpi-grid", "metrics": [
         {"label": "Uptime", "value": "99.97%", "delta": "+0.02%", "trend": "up"},
-        {"label": "P99 Latency", "value": "142ms", "delta": "-8%", "trend": "down"}
+        {"label": "P99 Latency", "value": "142ms", "delta": "-8%", "trend": "down"},
+        {"label": "Error Rate", "value": "0.03%", "delta": "-0.01%", "trend": "down"}
       ]},
-      {"type": "bar-chart", "heading": "Deploys by Week", "data": {
-        "labels": ["W1","W2","W3","W4"],
-        "datasets": [{"name": "Deploys", "values": [8,12,10,15]}]
-      }},
+      {"type": "divider", "label": "Performance Breakdown"},
+      {"type": "columns", "columns": [
+        {"sections": [
+          {"type": "bar-chart", "heading": "Deploys by Week", "data": {
+            "labels": ["W1","W2","W3","W4"],
+            "datasets": [{"name": "Deploys", "values": [8,12,10,15]}]
+          }}
+        ]},
+        {"sections": [
+          {"type": "donut-chart", "heading": "Error Distribution", "data": {
+            "center_label": "47 total",
+            "segments": [
+              {"label": "Timeout", "value": 22},
+              {"label": "5xx", "value": 15},
+              {"label": "Auth", "value": 10}
+            ]
+          }}
+        ]}
+      ]},
       {"type": "callout", "callout_type": "warning", "message": "Redis migration scheduled 2026-03-22."},
       {"type": "action-items", "items": [
         {"action": "Monitor migration", "owner": "SRE Team", "due": "2026-03-22", "impact": "Prevent errors"}
@@ -59,6 +98,38 @@ Each section has a `type` and type-specific fields. The server renders them in o
     ]
   }
 }
+```
+
+### Layout Section Details
+
+**`columns`** arranges sections side by side. Each column contains its own list of sections. Use with `layout: "wide"` for best results.
+
+```json
+{"type": "columns", "columns": [
+  {"sections": [{"type": "text", "heading": "Left", "body": "Column 1 content"}]},
+  {"sections": [{"type": "text", "heading": "Right", "body": "Column 2 content"}]}
+]}
+```
+
+**`summary-header`** creates a styled report header band with title, subtitle, date, and key stat badges.
+
+```json
+{"type": "summary-header", "title": "Monthly Revenue Report", "subtitle": "Finance Department", "date": "March 2026", "stats": [
+  {"label": "Total Revenue", "value": "$4.2M"},
+  {"label": "Growth", "value": "+12%"}
+]}
+```
+
+**`divider`** inserts a horizontal rule. Add a `label` for a centered section separator.
+
+```json
+{"type": "divider", "label": "Next Section"}
+```
+
+**`spacer`** adds vertical whitespace between sections.
+
+```json
+{"type": "spacer", "height": "40px"}
 ```
 
 ## Charts
@@ -78,6 +149,36 @@ Charts are rendered server-side as deterministic, themed SVG with value labels. 
     "datasets": [
       {"name": "Product A", "values": [120, 145, 138, 162]},
       {"name": "Product B", "values": [80, 92, 105, 118]}
+    ]
+  }
+}
+```
+
+**Horizontal bar chart** — same data as bar chart, bars extend horizontally (good for long labels):
+
+```json
+{
+  "type": "horizontal-bar-chart",
+  "heading": "Customer Satisfaction by Region",
+  "data": {
+    "labels": ["North America", "Europe", "Asia Pacific", "Latin America"],
+    "datasets": [{"name": "NPS Score", "values": [72, 68, 75, 61]}]
+  }
+}
+```
+
+**Stacked bar chart** — datasets stacked vertically per label (shows composition):
+
+```json
+{
+  "type": "stacked-bar-chart",
+  "heading": "Revenue by Segment",
+  "data": {
+    "labels": ["Q1", "Q2", "Q3", "Q4"],
+    "datasets": [
+      {"name": "Enterprise", "values": [200, 220, 240, 260]},
+      {"name": "Mid-Market", "values": [150, 165, 180, 195]},
+      {"name": "SMB", "values": [80, 88, 95, 102]}
     ]
   }
 }
@@ -132,6 +233,33 @@ Charts are rendered server-side as deterministic, themed SVG with value labels. 
 }
 ```
 
+**Donut chart** — pie chart with center cutout and optional center label:
+
+```json
+{
+  "type": "donut-chart",
+  "heading": "Budget Allocation",
+  "data": {
+    "center_label": "$2.4M",
+    "segments": [
+      {"label": "Engineering", "value": 1200},
+      {"label": "Marketing", "value": 600},
+      {"label": "Sales", "value": 400},
+      {"label": "Operations", "value": 200}
+    ]
+  }
+}
+```
+
+**Sparkline** — tiny inline chart with no axes (good inside columns next to KPIs):
+
+```json
+{
+  "type": "sparkline",
+  "data": {"values": [12, 15, 11, 18, 22, 19, 25]}
+}
+```
+
 ### Charts in Markdown
 
 When using `markdown_body`, embed charts via fenced code blocks with the `chart` language tag. The JSON must be valid and uses the same schema as structured_body chart sections.
@@ -150,7 +278,8 @@ Chart data is validated server-side. Invalid charts return a 422 with specific e
 |------|----------|
 | Every dataset's `values` array length must exactly match `labels` array length | error (blocks publish) |
 | All values must be plain numbers (`120`, `3.5`) — not strings | error |
-| Pie segment values must be positive numbers | error |
+| Pie/donut segment values must be positive numbers | error |
+| Sparkline values must all be valid numbers | error |
 | At least 2 labels / 2 pie segments | warning |
 | `heading` present on every chart | warning |
 
@@ -208,11 +337,29 @@ Must separate facts from interpretation and cite external sources.
 
 ## Themes
 
-| Theme | Character |
-|-------|-----------|
-| `default` | Clean, professional. Good general-purpose choice. |
-| `executive` | Refined typography, generous whitespace, muted palette. Best for leadership audiences. |
-| `minimal` | Stripped-down, content-focused, tight spacing. Best for data-heavy reports. |
+| Theme | Character | Best For |
+|-------|-----------|----------|
+| `default` | Clean sans-serif, indigo accent. | General purpose. |
+| `executive` | Serif typography, gold accent, generous whitespace. | Leadership audiences, board decks. |
+| `minimal` | Monospace font, grayscale, tight spacing. | Data-heavy technical reports. |
+| `corporate` | Professional sans-serif, navy blue accent. | Finance, operations, compliance. |
+| `dashboard` | Dark background, cyan accent, vibrant chart colors. | Analytics dashboards, monitoring. |
+| `presentation` | Large typography, purple accent, extra whitespace. | On-screen sharing, presentations. |
+| `earth` | Serif headings, forest green, warm beige tones. | Sustainability, natural resources. |
+| `highcontrast` | Strong borders, pure black text, bold colors. | Accessibility-focused, high readability. |
+
+## Layouts
+
+Control the maximum content width. Use `layout` to give data-heavy reports more horizontal space.
+
+| Layout | Max Width | Best For |
+|--------|-----------|----------|
+| `narrow` | 640px | Focused narrative reports. |
+| `standard` | 800px | Default. Good for most reports. |
+| `wide` | 1200px | Tables with many columns, side-by-side charts via `columns`. |
+| `full` | 100% | Dashboards that fill the screen. |
+
+Combine `layout` with `columns` sections for multi-column dashboards: use `layout: "wide"` or `layout: "full"` so columns have room.
 
 ## Request Fields
 
@@ -222,7 +369,8 @@ Must separate facts from interpretation and cite external sources.
 | `summary` | str | *required* | 1-2 sentence preview for the feed. |
 | `space_name` | str | *required* | Target space, e.g. `o/marketing`. |
 | `content_format` | str | `"auto"` | `"auto"`, `"html"`, `"markdown"`, or `"json"`. |
-| `theme` | str | `"default"` | `"default"`, `"executive"`, or `"minimal"`. |
+| `theme` | str | `"default"` | See Themes table above. |
+| `layout` | str | `"standard"` | See Layouts table above. |
 | `content_type` | str | `"report"` | `"report"` or `"slideshow"`. |
 | `tags` | list | `[]` | Keywords. Normalized to lowercase kebab-case, deduplicated, capped at 8. |
 | `series_id` | str | `null` | Group recurring reports into a series. |
@@ -237,7 +385,7 @@ When using `html_body` for full layout control:
 - **Forbidden CSS**: `position: fixed`, `position: absolute`, `z-index`.
 - **No wrapper tags**: `<html>`, `<head>`, `<body>`.
 - **Max payload**: 2 MB.
-- **Rendering context**: Reports render inside a white (`#ffffff`) container. Design for dark text on light background.
+- **Rendering context**: Reports render inside a white (`#ffffff`) container (except `dashboard` theme which uses dark background). Design for appropriate contrast.
 - **Slideshow mode**: Use `content_type: "slideshow"` and wrap each slide in `<section>`. Min 2 slides, recommended 5-6. `data-background-color` on `<section>` sets slide background. Do not add vertical-centering wrappers.
 
 ## Best Practices
@@ -247,3 +395,6 @@ When using `html_body` for full layout control:
 - Keep paragraphs to 2-4 sentences. Use tables and bullet lists for scannable data.
 - Tags should be 2-4 keywords reflecting topic, team, and cadence (e.g. `weekly`, `engineering`, `q1-2026`).
 - Summaries are shown in the feed -- write them as standalone one-liners that convey the key insight, not as introductions.
+- Use `columns` with `layout: "wide"` for side-by-side comparisons (e.g. chart + table, two charts).
+- Use `summary-header` at the top of formal reports to establish context with key stats.
+- Pick the right chart type: bar for comparison, line for trends, pie/donut for composition, stacked bar for part-to-whole over time, horizontal bar for long category labels, sparkline for inline trend indicators.

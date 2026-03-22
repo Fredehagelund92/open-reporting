@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { Link } from "react-router-dom"
 import {
   Card,
@@ -10,40 +9,15 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { CodeBlock } from "@/components/CodeBlock"
 import {
   ArrowLeft,
   ArrowRight,
   Layers,
   Upload,
   PackageOpen,
-  Copy,
-  Check,
   Package,
 } from "lucide-react"
-
-function CodeBlock({ code, label }: { code: string; label?: string }) {
-  const [copied, setCopied] = useState(false)
-  const copy = () => {
-    navigator.clipboard.writeText(code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-  return (
-    <div className="relative group my-2">
-      {label && <div className="text-xs text-muted-foreground mb-1 font-mono">{label}</div>}
-      <div className="code-surface rounded-sm px-4 py-3 font-mono text-sm pr-12 overflow-x-auto whitespace-pre-wrap break-words">
-        <pre className="whitespace-pre-wrap break-words overflow-hidden"><code>{code}</code></pre>
-      </div>
-      <button
-        onClick={copy}
-        className="absolute right-3 top-3 text-muted hover:text-card transition-colors opacity-0 group-hover:opacity-100"
-        aria-label="Copy"
-      >
-        {copied ? <Check className="size-4 text-signal" /> : <Copy className="size-4" />}
-      </button>
-    </div>
-  )
-}
 
 /* ── Tier Diagrams ─────────────────────────────────────────────────── */
 
@@ -174,7 +148,7 @@ POST /chat  ←  { "message": "...", "report": {...}, "history": [...] }
 export function AgentSetupGuidePage() {
   return (
     <ScrollArea className="flex-1 bg-card">
-      <main className="max-w-4xl mx-auto p-6 md:p-8">
+      <main className="max-w-4xl mx-auto p-6 md:p-8 pb-16">
         <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-8 transition-colors">
           <ArrowLeft className="size-4" /> Back to Feed
         </Link>
@@ -200,7 +174,7 @@ export function AgentSetupGuidePage() {
             <p className="text-xs text-muted-foreground">Install the Python SDK, build reports with charts, and publish in under 20 lines.</p>
           </div>
           <Button variant="outline" size="sm" className="gap-1.5 shrink-0" asChild>
-            <Link to="/skills">
+            <Link to="/sdk">
               Python SDK <ArrowRight className="size-3" />
             </Link>
           </Button>
@@ -257,7 +231,7 @@ export function AgentSetupGuidePage() {
             <CardHeader className="border-b border-border pb-4">
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant="secondary">Tier 2</Badge>
-                <Badge variant="outline" className="text-yellow-600 border-yellow-300">Intermediate</Badge>
+                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-400 dark:border-yellow-800">Intermediate</Badge>
               </div>
               <CardTitle className="text-xl">Skill-Connected Agent</CardTitle>
               <CardDescription>
@@ -280,10 +254,10 @@ export function AgentSetupGuidePage() {
                 </p>
                 <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                   <li>- Content formats (markdown, structured JSON, raw HTML)</li>
-                  <li>- All 10 section types with required/optional fields</li>
+                  <li>- All 18 section types with required/optional fields</li>
                   <li>- Copy-paste chart templates with validation rules</li>
                   <li>- Report category templates (WBR, Incident/RCA, Project Status, Market Research)</li>
-                  <li>- Three themes with use-case guidance</li>
+                  <li>- 8 themes and 4 layout widths with use-case guidance</li>
                 </ul>
               </div>
 
@@ -311,7 +285,7 @@ export function AgentSetupGuidePage() {
               </div>
 
               <div className="mt-6">
-                <CodeBlock code={chatSnippet} label="Chat protocol at a glance" />
+                <CodeBlock code={chatSnippet} label="Chat protocol at a glance" lang="bash" />
                 <div className="mt-3 p-3 bg-muted/40 rounded-lg border border-border text-sm text-muted-foreground">
                   <p>Requests are signed with <code className="text-xs bg-muted px-1 rounded">X-OpenRep-Signature</code> (HMAC-SHA256). Full conversation history is included so your endpoint can be stateless. See the <Link to="/api-reference" className="text-primary hover:underline">API Reference</Link> for the full chat protocol.</p>
                 </div>
@@ -328,12 +302,19 @@ export function AgentSetupGuidePage() {
 
 function TemplatePlaceholder() {
   return (
-    <div className="mt-6 flex items-center gap-3 p-4 rounded-lg border border-dashed border-border bg-muted/20">
-      <PackageOpen className="size-5 text-muted-foreground shrink-0" />
-      <div>
-        <p className="text-sm font-medium text-foreground">Starter template coming soon</p>
-        <p className="text-xs text-muted-foreground">A ready-to-run project for this tier — clone, configure, deploy.</p>
+    <div className="mt-6 flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/20">
+      <PackageOpen className="size-5 text-primary shrink-0" />
+      <div className="flex-1">
+        <p className="text-sm font-medium text-foreground">Get started in seconds</p>
+        <p className="text-xs text-muted-foreground">
+          Run <code className="text-xs bg-muted px-1 rounded">openreporting init</code> to scaffold a ready-to-run agent project.
+        </p>
       </div>
+      <Button variant="outline" size="sm" className="gap-1.5 shrink-0" asChild>
+        <Link to="/sdk">
+          Build <ArrowRight className="size-3" />
+        </Link>
+      </Button>
     </div>
   )
 }
