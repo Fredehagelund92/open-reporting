@@ -36,6 +36,39 @@ if TYPE_CHECKING:
 class ChatRequest(BaseModel):
     message: str = ""
     report_context: str | None = None
+    # Fields from the Open Reporting chat protocol
+    report: dict | None = None
+    history: list[dict] | None = None
+    protocol_version: int | None = None
+    conversation_id: str | None = None
+    turn: int | None = None
+
+    model_config = {"extra": "ignore"}
+
+    def get_report_context(self) -> str | None:
+        """Build a report context string from the protocol's report dict."""
+        if self.report_context:
+            return self.report_context
+        if not self.report:
+            return None
+        parts = []
+        if self.report.get("title"):
+            parts.append(f"Title: {self.report['title']}")
+        if self.report.get("summary"):
+            parts.append(f"Summary: {self.report['summary']}")
+        if self.report.get("tags"):
+            parts.append(f"Tags: {', '.join(self.report['tags'])}")
+        if self.report.get("theme"):
+            parts.append(f"Theme: {self.report['theme']}")
+        if self.report.get("html_body"):
+            # Strip HTML tags for a text-only context to keep it concise
+            import re
+            text = re.sub(r"<[^>]+>", " ", self.report["html_body"])
+            text = re.sub(r"\s+", " ", text).strip()
+            if len(text) > 2000:
+                text = text[:2000] + "..."
+            parts.append(f"Report content:\n{text}")
+        return "\n".join(parts) if parts else None
 
 
 class ChatResponse(BaseModel):
@@ -80,7 +113,7 @@ def create_chat_router(
     def handle_chat(req: ChatRequest):
         if not req.message.strip():
             return ChatResponse(reply="No question provided.")
-        return ChatResponse(**_resolve().handle(req.message, req.report_context))
+        return ChatResponse(**_resolve().handle(req.message, req.get_report_context()))
 
     @router.post("/chat/stream")
     def handle_chat_stream(req: ChatRequest):
@@ -90,7 +123,7 @@ def create_chat_router(
                 media_type="text/event-stream",
             )
         return StreamingResponse(
-            _resolve().handle_stream(req.message, req.report_context),
+            _resolve().handle_stream(req.message, req.get_report_context()),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )

@@ -118,12 +118,17 @@ class ChatHandler:
         schema = self.schema
 
         # Step 1: Route — SQL query, direct answer, or off-topic?
+        context_hint = ""
+        if report_context:
+            context_hint = f"Report context:\n{report_context[:500]}\n\n"
+
         routing = self._complete(
             messages=[
                 {
                     "role": "user",
                     "content": (
                         f"Given this schema:\n{schema}\n\n"
+                        f"{context_hint}"
                         f"Question: {question}\n\n"
                         "ALWAYS prefer SQL when the question involves specific data, "
                         "stats, entities, metrics, rankings, comparisons, or asks "
@@ -154,8 +159,7 @@ class ChatHandler:
                 rows = self.query_fn(sql)
                 if rows:
                     data_context = (
-                        f"\nQuery: {sql}\n"
-                        f"Results: {json.dumps(rows[:30], default=str)}"
+                        f"\nData:\n{json.dumps(rows[:30], default=str)}"
                     )
             except Exception:
                 pass  # Fall through to direct answer
@@ -183,6 +187,13 @@ class ChatHandler:
         except _OffTopicError:
             return {"reply": _OFF_TOPIC_REPLY, "format": "markdown"}
 
+        narration_system = (
+            self.system_prompt
+            + "\n\nNEVER mention SQL, queries, databases, table names, or any "
+            "technical implementation details in your response. Answer naturally "
+            "as if you simply know the data."
+        )
+
         reply = self._complete(
             messages=[
                 {
@@ -190,7 +201,7 @@ class ChatHandler:
                     "content": f"{context}\nQuestion: {question}{data_context}",
                 }
             ],
-            system=self.system_prompt,
+            system=narration_system,
             max_tokens=1000,
         )
 
@@ -224,6 +235,13 @@ class ChatHandler:
             yield _sse("done", {})
             return
 
+        narration_system = (
+            self.system_prompt
+            + "\n\nNEVER mention SQL, queries, databases, table names, or any "
+            "technical implementation details in your response. Answer naturally "
+            "as if you simply know the data."
+        )
+
         messages = [
             {
                 "role": "user",
@@ -234,12 +252,12 @@ class ChatHandler:
         # Stream if we have a streaming function, otherwise fall back
         if self._complete_stream is not None:
             try:
-                for chunk in self._complete_stream(messages, self.system_prompt, 1000):
+                for chunk in self._complete_stream(messages, narration_system, 1000):
                     yield _sse("token", {"text": chunk})
             except Exception as exc:
                 yield _sse("error", {"message": f"LLM error: {exc}"})
         else:
-            reply = self._complete(messages, self.system_prompt, 1000)
+            reply = self._complete(messages, narration_system, 1000)
             yield _sse("token", {"text": reply})
 
         yield _sse("done", {})
