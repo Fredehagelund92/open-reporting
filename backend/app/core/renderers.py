@@ -173,17 +173,25 @@ def _render_kpi_grid(section: dict, t: Theme) -> str:
 
         delta_html = ""
         if delta:
+            arrow = ""
+            if trend == "up":
+                arrow = "\u25b2 "
+            elif trend == "down":
+                arrow = "\u25bc "
             delta_html = (
-                f'<div style="margin-top:4px; font-size:13px; color:{delta_color}; '
-                f'font-weight:600;">{escape(str(delta))}</div>'
+                f'<div style="display:inline-block; margin-top:8px; '
+                f'padding:3px 10px; border-radius:6px; background:{delta_color}18; '
+                f'font-size:15px; color:{delta_color}; font-weight:700; '
+                f'letter-spacing:0.01em;">{arrow}{escape(str(delta))}</div>'
             )
 
         cards.append(
             f'<div style="flex:1 1 180px; background:{t.card_bg}; border:1px solid {t.border_color}; '
-            f'border-radius:12px; padding:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">'
-            f'<div style="margin:0 0 8px; font-size:14px; text-transform:uppercase; '
-            f'letter-spacing:0.05em; color:{t.secondary_text};">{label}</div>'
-            f'<div style="font-size:32px; font-weight:800; color:{t.heading_color};">{value}</div>'
+            f'border-radius:8px; padding:24px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+            f'<div style="margin:0 0 10px; font-size:12px; text-transform:uppercase; '
+            f'letter-spacing:0.08em; color:{t.secondary_text}; font-weight:500;">{label}</div>'
+            f'<div style="font-size:32px; font-weight:800; color:{t.heading_color}; '
+            f'line-height:1.1;">{value}</div>'
             f'{delta_html}'
             f'</div>'
         )

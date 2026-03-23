@@ -125,11 +125,14 @@ class ChatHandler:
                     "content": (
                         f"Given this schema:\n{schema}\n\n"
                         f"Question: {question}\n\n"
-                        "If answerable via SQL, return ONLY the SQL query.\n"
-                        "If answerable from context without SQL, return: DIRECT_ANSWER\n"
-                        "If the question is unrelated to this data or asks you to "
-                        "perform tasks outside your scope (e.g. write code, do homework), "
-                        "return: OFF_TOPIC"
+                        "ALWAYS prefer SQL when the question involves specific data, "
+                        "stats, entities, metrics, rankings, comparisons, or asks "
+                        "'why' about something in the data. Return ONLY the SQL query.\n"
+                        "Return DIRECT_ANSWER only for greetings, meta-questions about "
+                        "yourself, or questions truly unanswerable from the data.\n"
+                        "Return OFF_TOPIC if the question is unrelated to this data "
+                        "or asks you to perform tasks outside your scope "
+                        "(e.g. write code, do homework)."
                     ),
                 }
             ],
@@ -144,6 +147,9 @@ class ChatHandler:
         data_context = ""
         if "DIRECT_ANSWER" not in routing.upper():
             sql = routing.strip("`").removeprefix("sql").strip()
+            first_keyword = sql.split()[0].upper() if sql.split() else ""
+            if first_keyword != "SELECT":
+                sql = ""  # reject non-SELECT statements
             try:
                 rows = self.query_fn(sql)
                 if rows:
