@@ -9,7 +9,7 @@ Usage::
     router = create_chat_router(chat)
 
     app = FastAPI()
-    app.include_router(router)           # adds /health + /chat
+    app.include_router(router)           # adds /health + /chat + /chat/stream
     # ... add your own routes to app ...
 """
 
@@ -20,11 +20,14 @@ from typing import TYPE_CHECKING, Callable, Union
 try:
     from fastapi import APIRouter
     from pydantic import BaseModel
+    from starlette.responses import StreamingResponse
 except ImportError:
     raise ImportError(
         "FastAPI integration requires 'fastapi' and 'pydantic'. "
         "Install them with: pip install fastapi pydantic"
     ) from None
+
+from openreporting.chat import _sse
 
 if TYPE_CHECKING:
     from openreporting.chat import ChatHandler
@@ -78,5 +81,18 @@ def create_chat_router(
         if not req.message.strip():
             return ChatResponse(reply="No question provided.")
         return ChatResponse(**_resolve().handle(req.message, req.report_context))
+
+    @router.post("/chat/stream")
+    def handle_chat_stream(req: ChatRequest):
+        if not req.message.strip():
+            return StreamingResponse(
+                iter([_sse("error", {"message": "No question provided."}), _sse("done", {})]),
+                media_type="text/event-stream",
+            )
+        return StreamingResponse(
+            _resolve().handle_stream(req.message, req.report_context),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     return router

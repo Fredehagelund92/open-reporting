@@ -11,7 +11,12 @@ API key), or any LLM via a custom ``complete`` callable.
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Generator
+
+
+def _sse(event: str, data: dict) -> str:
+    """Format a single SSE event."""
+    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
 
 class ChatHandler:
@@ -49,35 +54,11 @@ class ChatHandler:
         Custom LLM function ``(messages, system, max_tokens) -> str``.
         Overrides *api_key* / *model* / *provider* when provided — use
         this to plug in a local model or any other provider.
-
-    Examples
-    --------
-    Anthropic (auto-detected)::
-
-        chat = ChatHandler(
-            system_prompt="You are the Sales Reporter.",
-            schema=get_schema_description,
-            query_fn=query_readonly,
-            api_key=os.environ["ANTHROPIC_API_KEY"],
-        )
-
-    OpenAI (auto-detected)::
-
-        chat = ChatHandler(
-            system_prompt="You are the Sales Reporter.",
-            schema=get_schema_description,
-            query_fn=query_readonly,
-            api_key=os.environ["OPENAI_API_KEY"],
-        )
-
-    Custom LLM::
-
-        chat = ChatHandler(
-            system_prompt="You are the Sales Reporter.",
-            schema=get_schema_description,
-            query_fn=query_readonly,
-            complete=my_llm_function,
-        )
+    complete_stream:
+        Custom streaming LLM function that yields text chunks.
+        ``(messages, system, max_tokens) -> Generator[str]``.
+        If not provided, streaming falls back to the non-streaming
+        ``complete`` function.
     """
 
     def __init__(
@@ -90,6 +71,7 @@ class ChatHandler:
         model: str | None = None,
         provider: str | None = None,
         complete: Callable[..., str] | None = None,
+        complete_stream: Callable[..., Generator[str, None, None]] | None = None,
     ):
         self.system_prompt = system_prompt
         self._schema = schema
@@ -97,14 +79,17 @@ class ChatHandler:
 
         if complete is not None:
             self._complete = complete
+            self._complete_stream = complete_stream
         elif api_key:
             resolved_provider = provider or _detect_provider(api_key)
             if resolved_provider == "anthropic":
                 default_model = model or "claude-sonnet-4-20250514"
                 self._complete = _make_anthropic_complete(api_key, default_model)
+                self._complete_stream = _make_anthropic_complete_stream(api_key, default_model)
             elif resolved_provider == "openai":
                 default_model = model or "gpt-4o"
                 self._complete = _make_openai_complete(api_key, default_model)
+                self._complete_stream = _make_openai_complete_stream(api_key, default_model)
             else:
                 raise ValueError(f"Unknown provider: {resolved_provider!r}")
         else:
@@ -116,29 +101,10 @@ class ChatHandler:
     def schema(self) -> str:
         return self._schema() if callable(self._schema) else self._schema
 
-    def handle(
-        self,
-        question: str,
-        report_context: str | None = None,
-    ) -> dict:
-        """Handle a chat question and return a response dict.
-
-        Parameters
-        ----------
-        question:
-            The user's question.
-        report_context:
-            Optional context about the report being viewed (title,
-            summary, etc.).
-
-        Returns
-        -------
-        dict
-            ``{"reply": str, "format": "markdown"}``
-        """
-        if not question.strip():
-            return {"reply": "No question provided.", "format": "markdown"}
-
+    def _route_and_query(
+        self, question: str, report_context: str | None = None
+    ) -> tuple[str, str]:
+        """Run routing + SQL execution. Returns (data_context, context)."""
         schema = self.schema
 
         # Step 1: Route — should we query the database?
@@ -172,8 +138,26 @@ class ChatHandler:
             except Exception:
                 pass  # Fall through to direct answer
 
-        # Step 3: Generate response
         context = f"\nReport context:\n{report_context}" if report_context else ""
+        return data_context, context
+
+    def handle(
+        self,
+        question: str,
+        report_context: str | None = None,
+    ) -> dict:
+        """Handle a chat question and return a response dict.
+
+        Returns
+        -------
+        dict
+            ``{"reply": str, "format": "markdown"}``
+        """
+        if not question.strip():
+            return {"reply": "No question provided.", "format": "markdown"}
+
+        data_context, context = self._route_and_query(question, report_context)
+
         reply = self._complete(
             messages=[
                 {
@@ -186,6 +170,50 @@ class ChatHandler:
         )
 
         return {"reply": reply, "format": "markdown"}
+
+    def handle_stream(
+        self,
+        question: str,
+        report_context: str | None = None,
+    ) -> Generator[str, None, None]:
+        """Handle a chat question and yield SSE events.
+
+        Yields SSE-formatted strings: ``metadata``, ``token``, ``done``,
+        or ``error`` events.
+        """
+        if not question.strip():
+            yield _sse("error", {"message": "No question provided."})
+            yield _sse("done", {})
+            return
+
+        yield _sse("metadata", {"format": "markdown"})
+
+        try:
+            data_context, context = self._route_and_query(question, report_context)
+        except Exception as exc:
+            yield _sse("error", {"message": f"Query error: {exc}"})
+            yield _sse("done", {})
+            return
+
+        messages = [
+            {
+                "role": "user",
+                "content": f"{context}\nQuestion: {question}{data_context}",
+            }
+        ]
+
+        # Stream if we have a streaming function, otherwise fall back
+        if self._complete_stream is not None:
+            try:
+                for chunk in self._complete_stream(messages, self.system_prompt, 1000):
+                    yield _sse("token", {"text": chunk})
+            except Exception as exc:
+                yield _sse("error", {"message": f"LLM error: {exc}"})
+        else:
+            reply = self._complete(messages, self.system_prompt, 1000)
+            yield _sse("token", {"text": reply})
+
+        yield _sse("done", {})
 
 
 # ── Provider helpers ──────────────────────────────────────────────────────
@@ -224,6 +252,33 @@ def _make_anthropic_complete(api_key: str, model: str) -> Callable[..., str]:
     return complete
 
 
+def _make_anthropic_complete_stream(api_key: str, model: str) -> Callable[..., Generator[str, None, None]]:
+    """Create a streaming ``complete`` callable backed by the Anthropic SDK."""
+    try:
+        import anthropic
+    except ImportError:
+        raise ImportError(
+            "The 'anthropic' package is required for Anthropic chat support. "
+            "Install it with: pip install anthropic"
+        ) from None
+
+    client = anthropic.Anthropic(api_key=api_key)
+
+    def complete_stream(
+        messages: list[dict],
+        system: str | None = None,
+        max_tokens: int = 1000,
+    ) -> Generator[str, None, None]:
+        kwargs: dict = {"model": model, "max_tokens": max_tokens, "messages": messages}
+        if system:
+            kwargs["system"] = system
+        with client.messages.stream(**kwargs) as stream:
+            for text in stream.text_stream:
+                yield text
+
+    return complete_stream
+
+
 def _make_openai_complete(api_key: str, model: str) -> Callable[..., str]:
     """Create a ``complete`` callable backed by the OpenAI SDK."""
     try:
@@ -251,3 +306,36 @@ def _make_openai_complete(api_key: str, model: str) -> Callable[..., str]:
         return resp.choices[0].message.content or ""
 
     return complete
+
+
+def _make_openai_complete_stream(api_key: str, model: str) -> Callable[..., Generator[str, None, None]]:
+    """Create a streaming ``complete`` callable backed by the OpenAI SDK."""
+    try:
+        from openai import OpenAI
+    except ImportError:
+        raise ImportError(
+            "The 'openai' package is required for OpenAI chat support. "
+            "Install it with: pip install openai"
+        ) from None
+
+    client = OpenAI(api_key=api_key)
+
+    def complete_stream(
+        messages: list[dict],
+        system: str | None = None,
+        max_tokens: int = 1000,
+    ) -> Generator[str, None, None]:
+        if system:
+            messages = [{"role": "system", "content": system}] + messages
+        stream = client.chat.completions.create(
+            model=model,
+            max_completion_tokens=max_tokens,
+            messages=messages,
+            stream=True,
+        )
+        for chunk in stream:
+            content = chunk.choices[0].delta.content if chunk.choices else None
+            if content:
+                yield content
+
+    return complete_stream
