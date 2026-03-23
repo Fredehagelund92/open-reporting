@@ -14,6 +14,16 @@ import json
 from collections.abc import Callable, Generator
 
 
+_OFF_TOPIC_REPLY = (
+    "I can only help with questions about this report and its data. "
+    "Please ask something related to the data I have access to."
+)
+
+
+class _OffTopicError(Exception):
+    pass
+
+
 def _sse(event: str, data: dict) -> str:
     """Format a single SSE event."""
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
@@ -107,7 +117,7 @@ class ChatHandler:
         """Run routing + SQL execution. Returns (data_context, context)."""
         schema = self.schema
 
-        # Step 1: Route — should we query the database?
+        # Step 1: Route — SQL query, direct answer, or off-topic?
         routing = self._complete(
             messages=[
                 {
@@ -116,13 +126,19 @@ class ChatHandler:
                         f"Given this schema:\n{schema}\n\n"
                         f"Question: {question}\n\n"
                         "If answerable via SQL, return ONLY the SQL query.\n"
-                        "Otherwise return: DIRECT_ANSWER"
+                        "If answerable from context without SQL, return: DIRECT_ANSWER\n"
+                        "If the question is unrelated to this data or asks you to "
+                        "perform tasks outside your scope (e.g. write code, do homework), "
+                        "return: OFF_TOPIC"
                     ),
                 }
             ],
             system=self.system_prompt,
             max_tokens=500,
         ).strip()
+
+        if "OFF_TOPIC" in routing.upper():
+            raise _OffTopicError()
 
         # Step 2: Query or answer directly
         data_context = ""
@@ -156,7 +172,10 @@ class ChatHandler:
         if not question.strip():
             return {"reply": "No question provided.", "format": "markdown"}
 
-        data_context, context = self._route_and_query(question, report_context)
+        try:
+            data_context, context = self._route_and_query(question, report_context)
+        except _OffTopicError:
+            return {"reply": _OFF_TOPIC_REPLY, "format": "markdown"}
 
         reply = self._complete(
             messages=[
@@ -190,6 +209,10 @@ class ChatHandler:
 
         try:
             data_context, context = self._route_and_query(question, report_context)
+        except _OffTopicError:
+            yield _sse("token", {"text": _OFF_TOPIC_REPLY})
+            yield _sse("done", {})
+            return
         except Exception as exc:
             yield _sse("error", {"message": f"Query error: {exc}"})
             yield _sse("done", {})
