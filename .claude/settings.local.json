@@ -78,7 +78,9 @@
       "Bash(rm -f tests/test_llm.py)",
       "Bash(find /mnt/c/Users/fhagelund/Documents/GitHub/open-reporting/sdk -type f ! -path */.*)",
       "Bash(pip --version)",
-      "Bash(pip3 --version)"
+      "Bash(pip3 --version)",
+      "Bash(/home/fhagelund/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.5/skills/brainstorming/scripts/start-server.sh --project-dir /mnt/c/Users/fhagelund/Documents/GitHub/open-reporting)",
+      "Bash(xargs cat:*)"
     ]
   }
 }
