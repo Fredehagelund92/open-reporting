@@ -105,7 +105,7 @@ export function useChat(report: Report, chatEnabled: boolean) {
 
   // Track current streaming message id for finalizing
   const streamMsgIdRef = useRef<string | null>(null)
-  const streamSourcesRef = useRef<string[] | undefined>()
+  const streamSourcesRef = useRef<string[] | undefined>(undefined)
 
   // Keep isOpenRef in sync
   useEffect(() => {
