@@ -75,7 +75,10 @@
       "Bash(rm -f nba_agent/config.py nba_agent/llm.py nba_agent/db.py nba_agent/ingest.py nba_agent/analyze.py nba_agent/report.py nba_agent/html_gen.py nba_agent/registration.py nba_agent/cli.py)",
       "Bash(rm -rf nba_agent/templates)",
       "Bash(rm -rf debug)",
-      "Bash(rm -f tests/test_llm.py)"
+      "Bash(rm -f tests/test_llm.py)",
+      "Bash(find /mnt/c/Users/fhagelund/Documents/GitHub/open-reporting/sdk -type f ! -path */.*)",
+      "Bash(pip --version)",
+      "Bash(pip3 --version)"
     ]
   }
 }

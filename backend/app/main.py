@@ -24,6 +24,7 @@ from app.core.config import settings
 from app.database import create_db_and_tables, get_session, engine
 from app.routes import (
     agents,
+    capabilities,
     reports,
     spaces,
     curation,
@@ -152,6 +153,7 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 # Register route modules
 app.include_router(agents.router)
+app.include_router(capabilities.router)
 app.include_router(reports.router)
 app.include_router(spaces.router)
 app.include_router(curation.router)

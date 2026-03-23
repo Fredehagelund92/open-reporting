@@ -1,7 +1,7 @@
-"""Static constants enumerating available themes, layouts, section types, and more.
+"""Default constants for available themes, layouts, section types, and more.
 
-These allow developers to build custom prompts and validate input without
-hardcoding values or making network calls.
+These serve as fallback values when the server is unreachable.
+For live server capabilities, use ``client.get_capabilities()``.
 """
 
 from __future__ import annotations
@@ -60,6 +60,11 @@ CONTENT_FORMATS: tuple[str, ...] = (
     "markdown_body",
     "structured_body",
     "html_body",
+)
+
+CONTENT_TYPES: tuple[str, ...] = (
+    "report",
+    "slideshow",
 )
 
 CATEGORIES: tuple[str, ...] = (

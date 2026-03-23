@@ -4,8 +4,8 @@ Provides the standard SQL-routing chat pattern: receive a question,
 decide whether to query a database, execute the query, and narrate
 the results using an LLM.
 
-Works with any LLM via a ``complete`` callable, or uses the Anthropic
-SDK automatically when an ``api_key`` is provided.
+Works with Anthropic or OpenAI out of the box (auto-detected from the
+API key), or any LLM via a custom ``complete`` callable.
 """
 
 from __future__ import annotations
@@ -36,31 +36,48 @@ class ChatHandler:
         A function ``(sql: str) -> list[dict]`` that executes a
         **read-only** SQL query and returns rows as dicts.
     api_key:
-        Anthropic API key.  When provided (and ``complete`` is not),
-        the handler creates an Anthropic client automatically.
-        Requires the ``anthropic`` package to be installed.
+        LLM provider API key. The provider is auto-detected from the
+        key prefix (``sk-ant-`` → Anthropic, otherwise → OpenAI),
+        or can be set explicitly with *provider*.
     model:
-        Model name for the built-in Anthropic backend.
+        Model name. Defaults to ``claude-sonnet-4-20250514`` for
+        Anthropic or ``gpt-4o`` for OpenAI.
+    provider:
+        ``"anthropic"`` or ``"openai"``. Auto-detected from *api_key*
+        if not set.
     complete:
         Custom LLM function ``(messages, system, max_tokens) -> str``.
-        Overrides *api_key* / *model* when provided — use this to plug
-        in OpenAI, a local model, or any other provider.
+        Overrides *api_key* / *model* / *provider* when provided — use
+        this to plug in a local model or any other provider.
 
-    Example
-    -------
-    ::
-
-        from openreporting import ChatHandler
+    Examples
+    --------
+    Anthropic (auto-detected)::
 
         chat = ChatHandler(
-            system_prompt="You are the Sales Reporter on Open Reporting.",
+            system_prompt="You are the Sales Reporter.",
             schema=get_schema_description,
             query_fn=query_readonly,
             api_key=os.environ["ANTHROPIC_API_KEY"],
         )
 
-        result = chat.handle("What were total sales last quarter?")
-        print(result["reply"])
+    OpenAI (auto-detected)::
+
+        chat = ChatHandler(
+            system_prompt="You are the Sales Reporter.",
+            schema=get_schema_description,
+            query_fn=query_readonly,
+            api_key=os.environ["OPENAI_API_KEY"],
+        )
+
+    Custom LLM::
+
+        chat = ChatHandler(
+            system_prompt="You are the Sales Reporter.",
+            schema=get_schema_description,
+            query_fn=query_readonly,
+            complete=my_llm_function,
+        )
     """
 
     def __init__(
@@ -70,7 +87,8 @@ class ChatHandler:
         schema: str | Callable[[], str],
         query_fn: Callable[[str], list[dict]],
         api_key: str | None = None,
-        model: str = "claude-sonnet-4-20250514",
+        model: str | None = None,
+        provider: str | None = None,
         complete: Callable[..., str] | None = None,
     ):
         self.system_prompt = system_prompt
@@ -80,10 +98,18 @@ class ChatHandler:
         if complete is not None:
             self._complete = complete
         elif api_key:
-            self._complete = _make_anthropic_complete(api_key, model)
+            resolved_provider = provider or _detect_provider(api_key)
+            if resolved_provider == "anthropic":
+                default_model = model or "claude-sonnet-4-20250514"
+                self._complete = _make_anthropic_complete(api_key, default_model)
+            elif resolved_provider == "openai":
+                default_model = model or "gpt-4o"
+                self._complete = _make_openai_complete(api_key, default_model)
+            else:
+                raise ValueError(f"Unknown provider: {resolved_provider!r}")
         else:
             raise ValueError(
-                "Provide either 'api_key' (for Anthropic) or a 'complete' callable."
+                "Provide 'api_key' (for Anthropic/OpenAI) or a 'complete' callable."
             )
 
     @property
@@ -162,13 +188,23 @@ class ChatHandler:
         return {"reply": reply, "format": "markdown"}
 
 
+# ── Provider helpers ──────────────────────────────────────────────────────
+
+
+def _detect_provider(api_key: str) -> str:
+    """Guess the provider from the API key prefix."""
+    if api_key.startswith("sk-ant-"):
+        return "anthropic"
+    return "openai"
+
+
 def _make_anthropic_complete(api_key: str, model: str) -> Callable[..., str]:
     """Create a ``complete`` callable backed by the Anthropic SDK."""
     try:
         import anthropic
     except ImportError:
         raise ImportError(
-            "The 'anthropic' package is required for built-in chat support. "
+            "The 'anthropic' package is required for Anthropic chat support. "
             "Install it with: pip install anthropic"
         ) from None
 
@@ -184,5 +220,34 @@ def _make_anthropic_complete(api_key: str, model: str) -> Callable[..., str]:
             kwargs["system"] = system
         resp = client.messages.create(**kwargs)
         return resp.content[0].text
+
+    return complete
+
+
+def _make_openai_complete(api_key: str, model: str) -> Callable[..., str]:
+    """Create a ``complete`` callable backed by the OpenAI SDK."""
+    try:
+        from openai import OpenAI
+    except ImportError:
+        raise ImportError(
+            "The 'openai' package is required for OpenAI chat support. "
+            "Install it with: pip install openai"
+        ) from None
+
+    client = OpenAI(api_key=api_key)
+
+    def complete(
+        messages: list[dict],
+        system: str | None = None,
+        max_tokens: int = 1000,
+    ) -> str:
+        if system:
+            messages = [{"role": "system", "content": system}] + messages
+        resp = client.chat.completions.create(
+            model=model,
+            max_tokens=max_tokens,
+            messages=messages,
+        )
+        return resp.choices[0].message.content or ""
 
     return complete

@@ -10,11 +10,18 @@ Usage::
 
 from __future__ import annotations
 
+from importlib.metadata import version, PackageNotFoundError
+
 import click
+
+try:
+    _version = version("openreporting")
+except PackageNotFoundError:
+    _version = "0.1.0-dev"
 
 
 @click.group()
-@click.version_option(version="0.1.0")
+@click.version_option(version=_version)
 def cli():
     """Open Reporting agent toolkit."""
 

@@ -55,6 +55,7 @@ class OpenReportingClient:
             },
             timeout=30.0,
         )
+        self._capabilities_cache: dict[str, list[str]] | None = None
 
     # ------------------------------------------------------------------
     # URL helpers
@@ -458,18 +459,41 @@ class OpenReportingClient:
             skill_url=skill_url,
         )
 
-    @staticmethod
-    def get_capabilities() -> dict[str, list[str]]:
+    def get_capabilities(self, *, use_cache: bool = True) -> dict[str, list[str]]:
         """Return available themes, layouts, section types, and chart types.
 
-        This is a static lookup (no network call) useful for building
-        custom prompts or validating input.
+        Fetches live data from the server's ``/capabilities`` endpoint.
+        Falls back to built-in defaults if the server is unreachable.
+
+        Parameters
+        ----------
+        use_cache:
+            When ``True`` (default), a successful server response is cached
+            for the lifetime of this client instance.
 
         Example::
 
             caps = client.get_capabilities()
             print(caps["themes"])    # ['default', 'executive', ...]
             print(caps["layouts"])   # ['narrow', 'standard', 'wide', 'full']
+        """
+        if use_cache and self._capabilities_cache is not None:
+            return self._capabilities_cache
+
+        try:
+            response = self._client.get("/capabilities/")
+            self._handle_error(response)
+            data = response.json()
+            self._capabilities_cache = data
+            return data
+        except (httpx.HTTPError, OpenReportingError):
+            return self.get_default_capabilities()
+
+    @staticmethod
+    def get_default_capabilities() -> dict[str, list[str]]:
+        """Return built-in default capabilities (no network call).
+
+        Useful for offline prompt building or when the server is unavailable.
         """
         return {
             "themes": list(THEMES),
