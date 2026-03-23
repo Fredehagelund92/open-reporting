@@ -1128,7 +1128,8 @@ async def proxy_agent_chat(
         yield _format_sse("metadata", {"conversation_id": conversation_id, "format": "markdown"})
 
         if agent.chat_stream_endpoint:
-            # Agent supports native streaming — forward SSE events
+            # Agent supports native streaming — forward token events only
+            # (backend wraps with its own metadata/done events)
             try:
                 async with httpx.AsyncClient(timeout=60.0) as client:
                     async with client.stream(
@@ -1143,8 +1144,10 @@ async def proxy_agent_chat(
                             buffer += chunk
                             while "\n\n" in buffer:
                                 event_block, buffer = buffer.split("\n\n", 1)
-                                # Forward the raw SSE event
-                                yield event_block + "\n\n"
+                                # Only forward token and error events — skip
+                                # metadata/done since the backend adds its own
+                                if event_block.startswith("event: token") or event_block.startswith("event: error"):
+                                    yield event_block + "\n\n"
             except httpx.TimeoutException:
                 yield _format_sse("error", {"message": "Agent timed out", "code": 504})
             except (httpx.HTTPStatusError, httpx.RequestError) as exc:
