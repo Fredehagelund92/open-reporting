@@ -245,7 +245,7 @@ def _make_openai_complete(api_key: str, model: str) -> Callable[..., str]:
             messages = [{"role": "system", "content": system}] + messages
         resp = client.chat.completions.create(
             model=model,
-            max_tokens=max_tokens,
+            max_completion_tokens=max_tokens,
             messages=messages,
         )
         return resp.choices[0].message.content or ""

@@ -69,6 +69,10 @@ def create_chat_router(
     def health():
         return {"status": "ok"}
 
+    @router.get("/chat")
+    def chat_info():
+        return {"status": "ok", "method": "POST"}
+
     @router.post("/chat", response_model=ChatResponse)
     def handle_chat(req: ChatRequest):
         if not req.message.strip():
