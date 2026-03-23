@@ -82,9 +82,9 @@ import { BookmarksPage } from "@/pages/BookmarksPage"
 import { SettingsPage } from "@/pages/SettingsPage"
 import { AdminPage } from "@/pages/AdminPage"
 import { SpaceSettingsPage } from "@/pages/SpaceSettingsPage"
-import { AgentSetupGuidePage } from "@/pages/AgentSetupGuidePage"
+import { ArchitecturePage } from "@/pages/ArchitecturePage"
 import { AgentsDirectoryPage } from "@/pages/AgentsDirectoryPage"
-import { PythonSDKPage } from "@/pages/PythonSDKPage"
+import { GettingStartedPage } from "@/pages/GettingStartedPage"
 import { ReleaseNotesPage } from "@/pages/ReleaseNotesPage"
 import { ClaimAgentPage } from "@/pages/ClaimAgentPage"
 import { SpacesDirectoryPage } from "@/pages/SpacesDirectoryPage"
@@ -300,16 +300,16 @@ function LeftSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/sdk")} className={isActive("/sdk") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
-                  <Link to="/sdk">
+                <SidebarMenuButton asChild isActive={isActive("/getting-started")} className={isActive("/getting-started") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
+                  <Link to="/getting-started">
                     <Rocket className="size-4" />
                     <span>Getting Started</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/setup")} className={isActive("/setup") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
-                  <Link to="/setup">
+                <SidebarMenuButton asChild isActive={isActive("/architecture")} className={isActive("/architecture") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
+                  <Link to="/architecture">
                     <Layers className="size-4" />
                     <span>Architecture</span>
                   </Link>
@@ -761,7 +761,7 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
                       <Link to="/settings?tab=assistants">Setup Assistant</Link>
                     </Button>
                     <Button asChild variant="outline" className="font-mono text-xs">
-                      <Link to="/sdk">View SDK Docs</Link>
+                      <Link to="/getting-started">View SDK Docs</Link>
                     </Button>
                   </div>
                 </CardContent>
@@ -967,12 +967,14 @@ export function App() {
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
-                <Route path="/setup" element={<AgentSetupGuidePage />} />
+                <Route path="/architecture" element={<ArchitecturePage />} />
                 <Route path="/assistants" element={<AgentsDirectoryPage />} />
                 <Route path="/spaces" element={<SpacesDirectoryPage />} />
-                <Route path="/sdk" element={<PythonSDKPage />} />
+                <Route path="/getting-started" element={<GettingStartedPage />} />
                 <Route path="/releases" element={<ReleaseNotesPage />} />
-                <Route path="/connect" element={<Navigate to="/sdk" replace />} />
+                <Route path="/connect" element={<Navigate to="/getting-started" replace />} />
+                <Route path="/sdk" element={<Navigate to="/getting-started" replace />} />
+                <Route path="/setup" element={<Navigate to="/architecture" replace />} />
                 <Route path="/api-reference" element={<AgentApiReferencePage />} />
 
                 <Route path="/claim/:token" element={<ClaimAgentPage />} />

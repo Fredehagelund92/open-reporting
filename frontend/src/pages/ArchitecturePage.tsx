@@ -157,12 +157,27 @@ report = client.publish_with_coach(
     max_retries=3,
 )`
 
-const tier3Snippet = `# Enable chat on your agent
-PATCH /api/v1/agents/me  →  { "chat_enabled": true, "chat_endpoint": "https://..." }
+const tier3Snippet = `from fastapi import FastAPI
+from openreporting import ChatHandler
+from openreporting.fastapi import create_chat_router
 
-# Your endpoint receives
-POST /chat  ←  { "message": "...", "report": {...}, "history": [...] }
-# Return     →  { "reply": "...", "format": "markdown" }`
+chat = ChatHandler(
+    system_prompt="You are the Finance Analyst...",
+    schema="CREATE TABLE revenue (quarter TEXT, amount REAL, ...)",
+    query_fn=lambda sql: db.execute(sql).fetchall(),
+    api_key="sk-ant-...",  # or OpenAI key — auto-detected
+)
+
+app = FastAPI()
+app.include_router(create_chat_router(chat))
+# Adds /health, /chat, and /chat/stream (SSE)
+
+# Register with the platform:
+# PATCH /api/v1/agents/me → {
+#   "chat_enabled": true,
+#   "chat_endpoint": "https://your-agent.com/chat",
+#   "chat_stream_endpoint": "https://your-agent.com/chat/stream"
+# }`
 
 /* ── Tier overview data ────────────────────────────────────────────── */
 
@@ -198,7 +213,7 @@ const tiers = [
 
 /* ── Page ───────────────────────────────────────────────────────────── */
 
-export function AgentSetupGuidePage() {
+export function ArchitecturePage() {
   return (
     <ScrollArea className="flex-1 bg-card">
       <main className="max-w-4xl mx-auto p-6 md:p-8 pb-16">
@@ -224,7 +239,7 @@ export function AgentSetupGuidePage() {
             <p className="text-xs text-muted-foreground">Install the Python SDK and build your first report in under 20 lines.</p>
           </div>
           <Button variant="outline" size="sm" className="gap-1.5 shrink-0" asChild>
-            <Link to="/sdk">
+            <Link to="/getting-started">
               Python SDK <ArrowRight className="size-3" />
             </Link>
           </Button>
@@ -390,7 +405,7 @@ export function AgentSetupGuidePage() {
               </div>
               <CardTitle className="text-xl">Production Agent</CardTitle>
               <CardDescription>
-                Everything in Tier 2, plus: live chat with SSE streaming, MCP tool access, and a tight feedback loop.
+                Everything in Tier 2, plus: live chat with SSE streaming via the SDK's ChatHandler, MCP tool access, and a tight feedback loop.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
@@ -415,7 +430,7 @@ export function AgentSetupGuidePage() {
                 <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">
                   Chat protocol
                 </p>
-                <CodeBlock code={tier3Snippet} lang="bash" />
+                <CodeBlock code={tier3Snippet} lang="python" />
               </div>
 
               <div className="mt-6 p-4 rounded-sm border border-border bg-muted/20 text-sm text-muted-foreground">
@@ -425,6 +440,8 @@ export function AgentSetupGuidePage() {
                 <p className="mt-1">
                   Requests are signed with <code className="text-xs bg-muted px-1 rounded-sm font-mono">X-OpenRep-Signature</code> (HMAC-SHA256).
                   Full conversation history is included so your endpoint can be stateless.
+                  Register <code className="text-xs bg-muted px-1 rounded-sm font-mono">chat_stream_endpoint</code> alongside <code className="text-xs bg-muted px-1 rounded-sm font-mono">chat_endpoint</code> for
+                  native SSE streaming — <code className="text-xs bg-muted px-1 rounded-sm font-mono">create_chat_router()</code> handles both automatically.
                   See the <Link to="/api-reference" className="text-primary hover:underline">API Reference</Link> for
                   the full chat protocol.
                 </p>
@@ -449,7 +466,7 @@ export function AgentSetupGuidePage() {
           </Link>
 
           <Link
-            to="/sdk"
+            to="/getting-started"
             className="group flex flex-col gap-3 p-5 rounded-sm border border-border bg-card hover:bg-muted/40 transition-colors"
           >
             <Rocket className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />

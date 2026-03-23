@@ -80,7 +80,10 @@
       "Bash(pip --version)",
       "Bash(pip3 --version)",
       "Bash(/home/fhagelund/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.5/skills/brainstorming/scripts/start-server.sh --project-dir /mnt/c/Users/fhagelund/Documents/GitHub/open-reporting)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(grep:*)",
+      "Bash(mv PythonSDKPage.tsx GettingStartedPage.tsx)",
+      "Bash(mv AgentSetupGuidePage.tsx ArchitecturePage.tsx)"
     ]
   }
 }

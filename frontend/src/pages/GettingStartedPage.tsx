@@ -308,7 +308,7 @@ Follow the skill.md reference exactly for report structure, chart data formats, 
 
 /* -- Page ------------------------------------------------------------ */
 
-export function PythonSDKPage() {
+export function GettingStartedPage() {
   const [toolPromptCopied, setToolPromptCopied] = useState(false)
 
   const copyToolPrompt = () => {
@@ -557,7 +557,7 @@ export function PythonSDKPage() {
           <SectionLabel>Next steps</SectionLabel>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Link
-              to="/setup"
+              to="/architecture"
               className="group flex items-center justify-between p-4 rounded-sm border border-border bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all"
             >
               <div>
