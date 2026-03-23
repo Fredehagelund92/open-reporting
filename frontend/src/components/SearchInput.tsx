@@ -132,7 +132,7 @@ export function SearchInput() {
             </div>
           ) : !query.trim() && recentSearches.length > 0 ? (
             <div className="py-1 overflow-y-auto">
-              <div className="px-3 py-1.5 text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+              <div className="px-3 py-1.5 text-sm font-medium text-muted-foreground flex items-center justify-between">
                 <span>Recent Searches</span>
                 <button
                   className="text-[10px] text-muted-foreground hover:text-foreground"
@@ -162,7 +162,7 @@ export function SearchInput() {
               {(["report", "space", "agent"] as const).map((type) =>
                 groupedResults[type].length > 0 ? (
                   <div key={type}>
-                    <div className="px-3 py-1.5 text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">
+                    <div className="px-3 py-1.5 text-sm font-medium text-muted-foreground">
                       {type === "report" ? "Reports" : type === "space" ? "Spaces" : "AI Assistants"}
                     </div>
                     {groupedResults[type].map((res) => (

@@ -181,7 +181,7 @@ export function AgentProfilePage() {
           <CardContent className="relative pt-0 pb-5 px-5">
             <div className="flex items-start gap-4 -mt-10 sm:-mt-12">
               <Avatar className="size-20 sm:size-24 ring-2 ring-background shadow-xl shrink-0">
-                <AvatarFallback className="bg-amber-50 dark:bg-slate-800 text-primary">
+                <AvatarFallback className="bg-primary/10 text-primary">
                   <Bot className="size-9 sm:size-11" />
                 </AvatarFallback>
               </Avatar>
@@ -246,7 +246,7 @@ export function AgentProfilePage() {
           <>
             {/* Summary Stat Cards */}
             <div className="mb-4">
-              <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Performance</span>
+              <span className="text-sm font-medium text-muted-foreground">Performance</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
               <Card className="rounded-sm">
@@ -292,7 +292,7 @@ export function AgentProfilePage() {
             {analytics.time_series.length > 1 && (
               <Card className="mb-6 rounded-sm">
                 <CardContent className="p-4 sm:p-6">
-                  <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Activity Over Time</span>
+                  <span className="text-sm font-medium text-muted-foreground">Activity Over Time</span>
                   <div className="h-64 mt-4">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={analytics.time_series}>
@@ -352,7 +352,7 @@ export function AgentProfilePage() {
             {analytics.top_reports.length > 0 && (
               <div className="mb-8">
                 <div className="mb-4">
-                  <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Top Reports by Engagement</span>
+                  <span className="text-sm font-medium text-muted-foreground">Top Reports by Engagement</span>
                 </div>
                 <div className="flex flex-col gap-3">
                   {analytics.top_reports.map((report, index) => (
@@ -362,7 +362,7 @@ export function AgentProfilePage() {
                       style={{ animationDelay: `${Math.min(index * 60, 480)}ms` }}
                     >
                       <Link to={`/report/${report.slug}`} className="block group">
-                        <Card className="card-hover-glow border-l-2 border-l-primary/20 hover:border-l-primary transition-colors p-4 rounded-sm">
+                        <Card className="card-hover-lift transition-colors p-4 rounded-sm">
                           <div className="flex items-start gap-3">
                             <div className="flex items-center justify-center size-8 rounded-sm bg-primary/10 text-primary text-sm font-bold font-mono shrink-0 mt-0.5">
                               {index === 0 ? <Trophy className="size-4" /> : `#${index + 1}`}
@@ -393,7 +393,7 @@ export function AgentProfilePage() {
 
         {/* Report History */}
         <div className="mb-4">
-          <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Recent Reports</span>
+          <span className="text-sm font-medium text-muted-foreground">Recent Reports</span>
         </div>
         <div className="flex flex-col gap-3 pb-12">
           {reports.length > 0 ? reports.map((report, idx) => (
@@ -403,7 +403,7 @@ export function AgentProfilePage() {
               style={{ animationDelay: `${Math.min(idx * 60, 480)}ms` }}
             >
               <Link to={`/report/${report.slug}`} className="block group">
-                <Card className="card-hover-glow border-l-2 border-l-primary/20 hover:border-l-primary transition-colors p-4 rounded-sm">
+                <Card className="card-hover-lift transition-colors p-4 rounded-sm">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5">
                     <Link to={`/space/${(report.space_name || "").replace("o/", "")}`} className="font-semibold text-foreground hover:underline" onClick={e => e.stopPropagation()}>
                       {report.space_name}

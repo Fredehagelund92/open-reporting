@@ -338,13 +338,13 @@ export function CreateReportDialog({
 
         {/* Step indicator */}
         <div className="flex items-center gap-2 pt-1">
-          <div className={`flex items-center gap-1.5 text-xs font-medium ${step === 1 ? "text-amber-700" : "text-slate-400"}`}>
-            <span className={`size-5 rounded-full flex items-center justify-center text-[10px] font-bold ${step === 1 ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-500"}`}>1</span>
+          <div className={`flex items-center gap-1.5 text-xs font-medium ${step === 1 ? "text-primary" : "text-muted-foreground"}`}>
+            <span className={`size-5 rounded-full flex items-center justify-center text-[10px] font-bold ${step === 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>1</span>
             Details
           </div>
-          <div className="h-px flex-1 bg-slate-200" />
-          <div className={`flex items-center gap-1.5 text-xs font-medium ${step === 2 ? "text-amber-700" : "text-slate-400"}`}>
-            <span className={`size-5 rounded-full flex items-center justify-center text-[10px] font-bold ${step === 2 ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-500"}`}>2</span>
+          <div className="h-px flex-1 bg-border" />
+          <div className={`flex items-center gap-1.5 text-xs font-medium ${step === 2 ? "text-primary" : "text-muted-foreground"}`}>
+            <span className={`size-5 rounded-full flex items-center justify-center text-[10px] font-bold ${step === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>2</span>
             Content
           </div>
         </div>
@@ -355,23 +355,23 @@ export function CreateReportDialog({
             <div className="space-y-2">
               <Label>Publish as</Label>
               {agentsLoading ? (
-                <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
                   <Loader2 className="size-4 animate-spin" />
                   Loading AI assistants...
                 </div>
               ) : myAgents.length === 0 ? (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+                <div className="rounded-lg border border-primary/20 bg-primary/10 p-4 text-sm">
                   <div className="flex items-start gap-3">
-                    <Bot className="size-5 text-amber-600 shrink-0 mt-0.5" />
+                    <Bot className="size-5 text-primary shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium text-amber-800 mb-1">No AI assistants yet</p>
-                      <p className="text-amber-700 mb-3">
+                      <p className="font-medium text-primary mb-1">No AI assistants yet</p>
+                      <p className="text-primary mb-3">
                         You need at least one AI assistant to publish reports. Create one
                         in a few seconds.
                       </p>
                       <Link
                         to="/settings?tab=assistants"
-                        className="inline-flex items-center gap-1.5 text-amber-700 hover:text-amber-900 font-medium underline underline-offset-2"
+                        className="inline-flex items-center gap-1.5 text-primary hover:text-primary font-medium underline underline-offset-2"
                         onClick={() => setDialogOpen(false)}
                       >
                         <Plus className="size-3.5" />
@@ -389,9 +389,9 @@ export function CreateReportDialog({
                     {myAgents.map((agent) => (
                       <SelectItem key={agent.id} value={agent.id}>
                         <span className="flex items-center gap-2">
-                          <Bot className="size-3.5 text-slate-400" />
+                          <Bot className="size-3.5 text-muted-foreground" />
                           {agent.name}
-                          <span className="text-slate-400 text-xs">
+                          <span className="text-muted-foreground text-xs">
                             ({agent.report_count} {agent.report_count === 1 ? "report" : "reports"})
                           </span>
                         </span>
@@ -415,7 +415,7 @@ export function CreateReportDialog({
             <div className="space-y-2">
               <Label htmlFor="report-summary">
                 Summary{" "}
-                <span className="text-slate-400 font-normal">(optional)</span>
+                <span className="text-muted-foreground font-normal">(optional)</span>
               </Label>
               <Input
                 id="report-summary"
@@ -443,7 +443,7 @@ export function CreateReportDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="report-tags">Tags <span className="text-slate-400 font-normal">(optional)</span></Label>
+              <Label htmlFor="report-tags">Tags <span className="text-muted-foreground font-normal">(optional)</span></Label>
               <Input
                 id="report-tags"
                 placeholder="Search tags (type + Enter)"
@@ -459,14 +459,14 @@ export function CreateReportDialog({
                 }}
               />
               {tagInput.trim() && (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Will be saved as:{" "}
-                  <span className="font-semibold text-slate-700">{normalizeTagKey(tagInput) || "invalid tag"}</span>
+                  <span className="font-semibold text-foreground">{normalizeTagKey(tagInput) || "invalid tag"}</span>
                 </p>
               )}
               <div className="flex gap-1.5 flex-wrap">
                 {selectedTags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="bg-slate-100 text-slate-600 gap-1 px-1.5 py-0.5">
+                  <Badge key={tag} variant="secondary" className="bg-muted text-foreground gap-1 px-1.5 py-0.5">
                     {tag}
                     <button type="button" onClick={() => removeTag(tag)} aria-label={`Remove ${tag}`}>
                       <X className="size-3" />
@@ -475,12 +475,12 @@ export function CreateReportDialog({
                 ))}
               </div>
               {selectedTags.length > 0 && (
-                <p className="text-xs text-slate-400">{selectedTags.length}/{MAX_TAGS} tags</p>
+                <p className="text-xs text-muted-foreground">{selectedTags.length}/{MAX_TAGS} tags</p>
               )}
 
               {suggestedTags.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-xs text-slate-500">Suggestions</p>
+                  <p className="text-xs text-muted-foreground">Suggestions</p>
                   <div className="flex flex-wrap gap-1.5">
                     {suggestedTags.map((tag) => (
                       <Button key={tag.id} type="button" variant="outline" size="sm" className="h-7 text-xs px-2.5" onClick={() => addTag(tag.canonical_name)}>
@@ -493,7 +493,7 @@ export function CreateReportDialog({
 
               {!tagInput.trim() && recentTags.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-xs text-slate-500">Recent</p>
+                  <p className="text-xs text-muted-foreground">Recent</p>
                   <div className="flex flex-wrap gap-1.5">
                     {recentTags.slice(0, 8).map((tag) => (
                       <Button key={tag} type="button" variant="ghost" size="sm" className="h-7 text-xs px-2.5" onClick={() => addTag(tag)}>
@@ -506,7 +506,7 @@ export function CreateReportDialog({
 
               {!tagInput.trim() && popularTags.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-xs text-slate-500">Popular</p>
+                  <p className="text-xs text-muted-foreground">Popular</p>
                   <div className="flex flex-wrap gap-1.5">
                     {popularTags.slice(0, 8).map((tag) => (
                       <Button key={tag.id} type="button" variant="ghost" size="sm" className="h-7 text-xs px-2.5" onClick={() => addTag(tag.canonical_name)}>
@@ -521,7 +521,7 @@ export function CreateReportDialog({
             <Button
               onClick={() => setStep(2)}
               disabled={!canProceedToStep2}
-              className="w-full bg-amber-500 hover:bg-amber-600 text-white h-11"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-11"
             >
               Next: Add Content
               <ArrowRight className="size-4 ml-2" />
@@ -532,10 +532,10 @@ export function CreateReportDialog({
         {/* ── Step 2: Content ── */}
         {step === 2 && (
           <div className="space-y-4 pt-2">
-            <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 rounded-lg px-3 py-2">
-              <Bot className="size-3.5 text-slate-400" />
+            <div className="flex items-center gap-2 text-sm text-foreground bg-muted rounded-lg px-3 py-2">
+              <Bot className="size-3.5 text-muted-foreground" />
               <span className="font-medium">{myAgents.find((a) => a.id === selectedAgentId)?.name}</span>
-              <span className="text-slate-300">/</span>
+              <span className="text-border">/</span>
               <span className="truncate">{title}</span>
             </div>
 
@@ -563,7 +563,7 @@ export function CreateReportDialog({
                 </TabsContent>
                 <TabsContent value="upload">
                   <div
-                    className="border-2 border-dashed border-slate-200 rounded-lg h-[140px] flex flex-col items-center justify-center text-center p-4 hover:border-amber-300 transition-colors cursor-pointer"
+                    className="border-2 border-dashed border-border rounded-lg h-[140px] flex flex-col items-center justify-center text-center p-4 hover:border-primary/30 transition-colors cursor-pointer"
                     onClick={() => fileInputRef.current?.click()}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
@@ -577,11 +577,11 @@ export function CreateReportDialog({
                       }
                     }}
                   >
-                    <Upload className="size-8 text-slate-300 mx-auto mb-3" />
-                    <p className="text-sm text-slate-600 mb-1">
+                    <Upload className="size-8 text-border mx-auto mb-3" />
+                    <p className="text-sm text-foreground mb-1">
                       Drag and drop an .html file, or click to browse
                     </p>
-                    <p className="text-xs text-slate-400">Max 2MB</p>
+                    <p className="text-xs text-muted-foreground">Max 2MB</p>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -597,7 +597,7 @@ export function CreateReportDialog({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 px-1 text-slate-400 hover:text-red-500"
+                        className="h-6 px-1 text-muted-foreground hover:text-destructive"
                         onClick={() => setHtmlBody("")}
                       >
                         <X className="size-3.5" />
@@ -608,7 +608,7 @@ export function CreateReportDialog({
               </Tabs>
 
               {preflightHints.length > 0 && (
-                <div className="p-3 bg-amber-50 text-amber-800 text-sm rounded-lg border border-amber-100">
+                <div className="p-3 bg-primary/10 text-primary text-sm rounded-lg border border-primary/20">
                   <div className="font-semibold mb-1">Preflight checks found issues:</div>
                   <ul className="list-disc pl-5 space-y-0.5">
                     {preflightHints.map((hint) => (
@@ -619,11 +619,11 @@ export function CreateReportDialog({
               )}
 
               {(isCheckingCoach || coachResult || coachError) && (
-                <div className="rounded-lg border p-3 text-sm bg-slate-50 border-slate-200">
+                <div className="rounded-lg border p-3 text-sm bg-muted border-border">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold text-slate-800">Authoring Coach</p>
+                    <p className="font-semibold text-foreground">Authoring Coach</p>
                     {isCheckingCoach ? (
-                      <span className="inline-flex items-center gap-1 text-slate-500">
+                      <span className="inline-flex items-center gap-1 text-muted-foreground">
                         <Loader2 className="size-3.5 animate-spin" />
                         Checking...
                       </span>
@@ -633,18 +633,18 @@ export function CreateReportDialog({
                           coachResult.readiness_status === "ready"
                             ? "bg-emerald-100 text-emerald-700"
                             : coachResult.readiness_status === "needs_work"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-red-100 text-red-700"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-destructive/10 text-destructive"
                         }`}
                       >
                         {coachResult.readiness_status.replace("_", " ")}
                       </span>
                     ) : null}
                   </div>
-                  {coachError && <p className="mt-2 text-red-600">{coachError}</p>}
+                  {coachError && <p className="mt-2 text-destructive">{coachError}</p>}
                   {coachResult && (
                     <div className="mt-2 space-y-2">
-                      <p className="text-xs text-slate-600">
+                      <p className="text-xs text-foreground">
                         Score: <span className="font-semibold">{coachResult.overall_score}</span>/100
                         {" "}({coachResult.mode} mode)
                       </p>
@@ -652,10 +652,10 @@ export function CreateReportDialog({
                         <ul className="space-y-1.5">
                           {coachResult.issues.slice(0, 5).map((issue) => (
                             <li key={`${issue.rule_id}-${issue.message}`} className="text-xs">
-                              <p className="font-medium text-slate-800">
+                              <p className="font-medium text-foreground">
                                 {issue.severity.toUpperCase()}: {issue.message}
                               </p>
-                              <p className="text-slate-600">{issue.suggestion}</p>
+                              <p className="text-foreground">{issue.suggestion}</p>
                             </li>
                           ))}
                         </ul>
@@ -672,7 +672,7 @@ export function CreateReportDialog({
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex gap-2">
+              <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-lg border border-destructive/20 flex gap-2">
                 <AlertCircle className="size-4 shrink-0 mt-0.5" />
                 <pre className="whitespace-pre-wrap font-sans">{error}</pre>
               </div>
@@ -690,7 +690,7 @@ export function CreateReportDialog({
               <Button
                 onClick={handleSubmit}
                 disabled={!htmlBody.trim() || isSubmitting || isCheckingCoach || coachResult?.readiness_status === "blocked"}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white h-11"
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-11"
               >
                 {isSubmitting ? (
                   <>

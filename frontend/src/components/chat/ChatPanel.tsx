@@ -56,33 +56,6 @@ export function ChatPanel({ report, chatEnabled = false }: Props) {
 
   return (
     <>
-      <style>{`
-        @keyframes chat-shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(300%); }
-        }
-        @keyframes chat-cursor-blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-        @keyframes chat-fab-pulse {
-          0%, 100% { box-shadow: 0 2px 12px hsl(var(--primary) / 0.15); }
-          50% { box-shadow: 0 4px 24px hsl(var(--primary) / 0.30); }
-        }
-        @keyframes chat-panel-in {
-          0% { opacity: 0; transform: scale(0.9) translateY(12px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        @keyframes chat-panel-slide-up {
-          0% { transform: translateY(100%); }
-          100% { transform: translateY(0); }
-        }
-        .chat-messages-area { scrollbar-width: thin; scrollbar-color: hsl(var(--border) / 0.4) transparent; }
-        .chat-messages-area::-webkit-scrollbar { width: 5px; }
-        .chat-messages-area::-webkit-scrollbar-thumb { background: hsl(var(--border) / 0.4); border-radius: 999px; }
-        .chat-messages-area::-webkit-scrollbar-track { background: transparent; }
-      `}</style>
-
       <div
         className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3"
         ref={panelRef}

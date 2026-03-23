@@ -158,11 +158,11 @@ export function SlideshowViewer({
       <div
         className={`relative overflow-hidden ${
           isFullscreen
-            ? "border h-[100vh] rounded-none border-slate-700/30 bg-slate-900/10"
-            : "bg-white dark:bg-slate-900 sm:rounded-xl sm:border sm:border-slate-200 sm:dark:border-slate-800 sm:shadow-xl sm:ring-1 sm:ring-slate-900/5 sm:dark:ring-slate-100/5 sm:p-3 md:p-4"
+            ? "border h-[100vh] rounded-none border-border/30 bg-muted/10"
+            : "bg-background sm:rounded-xl sm:border sm:border-border sm:shadow-xl sm:ring-1 sm:ring-foreground/5 sm:p-3 md:p-4"
         }`}
       >
-        <div className={`relative overflow-hidden ${isFullscreen ? "h-full" : "aspect-[4/3] sm:aspect-video rounded-none sm:rounded-lg sm:border sm:border-slate-200 sm:dark:border-slate-800 bg-slate-50 dark:bg-slate-950"}`}>
+        <div className={`relative overflow-hidden ${isFullscreen ? "h-full" : "aspect-[4/3] sm:aspect-video rounded-none sm:rounded-lg sm:border sm:border-border bg-muted"}`}>
           <div
             className="flex h-full transition-transform duration-400 ease-out"
             style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -214,7 +214,7 @@ export function SlideshowViewer({
                   className={`pointer-events-auto rounded-full shadow ${
                     isCurrentSlideDark
                       ? "border-slate-100/30 bg-slate-900/45 text-white hover:bg-slate-900/60 hover:text-white"
-                      : "bg-white/95 text-slate-700"
+                      : "bg-white/95 text-muted-foreground"
                   }`}
                   onClick={prev}
                   disabled={currentIndex === 0}
@@ -228,7 +228,7 @@ export function SlideshowViewer({
                   className={`pointer-events-auto rounded-full shadow ${
                     isCurrentSlideDark
                       ? "border-slate-100/30 bg-slate-900/45 text-white hover:bg-slate-900/60 hover:text-white"
-                      : "bg-white/95 text-slate-700"
+                      : "bg-white/95 text-muted-foreground"
                   }`}
                   onClick={next}
                   disabled={currentIndex === totalSlides - 1}
@@ -237,7 +237,7 @@ export function SlideshowViewer({
                 </Button>
               </div>
 
-              <div className="absolute left-1/2 bottom-4 -translate-x-1/2 rounded-full bg-slate-900/80 px-3 py-1 text-xs font-medium text-white">
+              <div className="absolute left-1/2 bottom-4 -translate-x-1/2 rounded-full bg-foreground/80 px-3 py-1 text-xs font-medium text-background">
                 {currentIndex + 1} / {totalSlides}
               </div>
             </>
@@ -250,14 +250,14 @@ export function SlideshowViewer({
               isFullscreen ? "absolute left-0 right-0 bottom-0 z-20 pb-4" : ""
             }`}
           >
-            <div className="rounded-full bg-slate-100/90 dark:bg-slate-800/90 px-3 py-1.5">
+            <div className="rounded-full bg-muted/90 px-3 py-1.5">
               <div className="flex items-center gap-1.5">
                 {slides.map((_, index) => (
                   <button
                     key={`dot-${index}`}
                     type="button"
                     className={`h-2.5 w-2.5 rounded-full transition-all ${
-                      index === currentIndex ? "bg-amber-500 scale-110" : "bg-slate-300 hover:bg-slate-400"
+                      index === currentIndex ? "bg-primary scale-110" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
                     }`}
                     onClick={() => goTo(index)}
                     aria-label={`Go to slide ${index + 1}`}
@@ -265,10 +265,10 @@ export function SlideshowViewer({
                 ))}
               </div>
             </div>
-            <span className={`hidden sm:inline ${isFullscreen ? "text-slate-300" : "text-slate-500 dark:text-slate-400"} text-xs`}>
+            <span className="hidden sm:inline text-muted-foreground text-xs">
               Use arrow keys to browse slides
             </span>
-            <span className={`inline sm:hidden ${isFullscreen ? "text-slate-300" : "text-slate-500 dark:text-slate-400"} text-xs`}>
+            <span className="inline sm:hidden text-muted-foreground text-xs">
               Swipe to navigate
             </span>
           </div>

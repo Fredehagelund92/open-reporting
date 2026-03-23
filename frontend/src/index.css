@@ -51,8 +51,8 @@
     --chart-4: oklch(0.55 0.12 260);
     --chart-5: oklch(0.50 0.20 30);
 
-    /* Radius: sharp precision */
-    --radius: 0.25rem;
+    /* Radius: approachable softness */
+    --radius: 0.5rem;
 
     /* Elevated/sunken surfaces */
     --surface-elevated: oklch(1 0 0);
@@ -176,6 +176,10 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+    --shadow-sm: 0 1px 2px oklch(0.18 0.02 260 / 5%);
+    --shadow-md: 0 2px 8px oklch(0.18 0.02 260 / 8%);
+    --shadow-lg: 0 4px 16px oklch(0.18 0.02 260 / 10%);
+    --shadow-hover: 0 4px 12px oklch(0.18 0.02 260 / 8%);
 }
 
 /* ─── BASE STYLES ─── */
@@ -186,9 +190,9 @@
     body {
         @apply bg-background text-foreground;
         font-feature-settings: 'tnum' 1, 'ss01' 1;
-        /* Subtle dot-grid pattern for "terminal/reporting" feel */
-        background-image: radial-gradient(circle, oklch(0.50 0 0 / 6%) 1px, transparent 1px);
-        background-size: 24px 24px;
+        /* Subtle dot-grid texture */
+        background-image: radial-gradient(circle, oklch(0.50 0 0 / 2.5%) 1px, transparent 1px);
+        background-size: 32px 32px;
     }
     html {
         @apply font-sans;
@@ -229,23 +233,36 @@
   100% { transform: translateX(400%); }
 }
 
-/* Hover glow effect for interactive cards */
-.card-hover-glow {
-    transition: border-color 0.2s ease, box-shadow 0.3s ease;
+/* Card hover: clean shadow lift */
+.card-hover-lift {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
-.card-hover-glow:hover {
-    border-color: oklch(0.75 0.16 70 / 40%);
-    box-shadow: 0 0 24px -4px oklch(0.75 0.16 70 / 10%);
+.card-hover-lift:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-1px);
 }
 
-/* Sidebar active indicator bar */
-.sidebar-active-bar {
-  @apply relative;
+/* Chat panel animations (moved from inline <style>) */
+@keyframes chat-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
 }
-.sidebar-active-bar::before {
-  content: '';
-  @apply absolute left-0 top-1 bottom-1 w-[2px] bg-primary rounded-full;
+@keyframes chat-cursor-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
 }
+@keyframes chat-panel-in {
+    0% { opacity: 0; transform: scale(0.9) translateY(12px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes chat-panel-slide-up {
+    0% { transform: translateY(100%); }
+    100% { transform: translateY(0); }
+}
+.chat-messages-area { scrollbar-width: thin; scrollbar-color: oklch(var(--border) / 40%) transparent; }
+.chat-messages-area::-webkit-scrollbar { width: 5px; }
+.chat-messages-area::-webkit-scrollbar-thumb { background: oklch(var(--border) / 40%); border-radius: 999px; }
+.chat-messages-area::-webkit-scrollbar-track { background: transparent; }
 
 /* Theme-responsive code block surface */
 .code-surface {

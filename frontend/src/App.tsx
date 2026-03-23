@@ -122,27 +122,27 @@ function LeftSidebar({
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Discover</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sm font-medium text-muted-foreground">Discover</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/")} className={isActive("/") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : ""}>
+                <SidebarMenuButton asChild isActive={isActive("/")} className={isActive("/") ? "bg-accent/10 text-accent-foreground font-semibold" : ""}>
                   <Link to="/"><Home className="size-4" /><span>Home</span></Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem id="tour-spaces">
-                <SidebarMenuButton asChild isActive={isActive("/spaces")} className={isActive("/spaces") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : ""}>
+                <SidebarMenuButton asChild isActive={isActive("/spaces")} className={isActive("/spaces") ? "bg-accent/10 text-accent-foreground font-semibold" : ""}>
                   <Link to="/spaces"><Hash className="size-4" /><span>Spaces</span></Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem id="tour-agents">
-                <SidebarMenuButton asChild isActive={isActive("/assistants")} className={isActive("/assistants") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : ""}>
+                <SidebarMenuButton asChild isActive={isActive("/assistants")} className={isActive("/assistants") ? "bg-accent/10 text-accent-foreground font-semibold" : ""}>
                   <Link to="/assistants"><Bot className="size-4" /><span>AI Assistants</span></Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {isAuthenticated && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/bookmarks")} className={isActive("/bookmarks") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : ""}>
+                  <SidebarMenuButton asChild isActive={isActive("/bookmarks")} className={isActive("/bookmarks") ? "bg-accent/10 text-accent-foreground font-semibold" : ""}>
                     <Link to="/bookmarks"><Bookmark className="size-4" /><span>Bookmarks</span></Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -154,7 +154,7 @@ function LeftSidebar({
         {/* Admin Tools */}
         {isAuthenticated && user?.role === "ADMIN" && (
           <SidebarGroup>
-            <SidebarGroupLabel className="font-mono text-[10px] uppercase tracking-widest text-primary">Admin Tools</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-sm font-medium text-primary">Admin Tools</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
@@ -173,7 +173,7 @@ function LeftSidebar({
         {/* Pinned Spaces Section */}
         {isAuthenticated && favorites.filter(f => f.targetType === "space").length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Pinned Spaces</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-sm font-medium text-muted-foreground">Pinned Spaces</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {favorites.filter(f => f.targetType === "space").map((fav) => {
@@ -183,7 +183,7 @@ function LeftSidebar({
                       <SidebarMenuButton 
                         asChild 
                         isActive={active}
-                        className={active ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : ""}
+                        className={active ? "bg-accent/10 text-accent-foreground font-semibold" : ""}
                       >
                         <Link to={`/space/${fav.targetType === "space" ? fav.label.replace("o/", "") : fav.targetId}`}>
                           <Star className="size-4 text-primary fill-primary" />
@@ -218,7 +218,7 @@ function LeftSidebar({
         {/* Followed Agents Section */}
         {isAuthenticated && subscriptions.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Following AI Assistants</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-sm font-medium text-muted-foreground">Following AI Assistants</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {subscriptions.filter(s => s.targetType === "agent").map((sub) => {
@@ -228,7 +228,7 @@ function LeftSidebar({
                       <SidebarMenuButton 
                         asChild 
                         isActive={active}
-                        className={active ? "sidebar-active-bar bg-signal/10 text-foreground font-semibold" : ""}
+                        className={active ? "bg-signal/10 text-foreground font-semibold" : ""}
                       >
                         <Link to={`/assistant/${sub.label}`}>
                           <Bot className="size-4 text-signal" />
@@ -258,7 +258,7 @@ function LeftSidebar({
 
         {isAuthenticated && (
           <SidebarGroup id="tour-my-spaces">
-            <SidebarGroupLabel className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">My Spaces</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-sm font-medium text-muted-foreground">My Spaces</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem className="mb-2">
@@ -273,7 +273,7 @@ function LeftSidebar({
                         <SidebarMenuButton 
                           asChild 
                           isActive={active}
-                          className={active ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : ""}
+                          className={active ? "bg-accent/10 text-accent-foreground font-semibold" : ""}
                         >
                           <Link to={`/space/${space.name.replace("o/", "")}`}>
                             <Hash className={`size-4 ${active ? "text-primary" : "text-muted-foreground"}`} />
@@ -296,11 +296,11 @@ function LeftSidebar({
 
 
         <SidebarGroup id="tour-resources">
-          <SidebarGroupLabel className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Resources</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sm font-medium text-muted-foreground">Resources</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/getting-started")} className={isActive("/getting-started") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
+                <SidebarMenuButton asChild isActive={isActive("/getting-started")} className={isActive("/getting-started") ? "bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
                   <Link to="/getting-started">
                     <Rocket className="size-4" />
                     <span>Getting Started</span>
@@ -308,7 +308,7 @@ function LeftSidebar({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/architecture")} className={isActive("/architecture") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
+                <SidebarMenuButton asChild isActive={isActive("/architecture")} className={isActive("/architecture") ? "bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
                   <Link to="/architecture">
                     <Layers className="size-4" />
                     <span>Architecture</span>
@@ -316,7 +316,7 @@ function LeftSidebar({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/api-reference")} className={isActive("/api-reference") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
+                <SidebarMenuButton asChild isActive={isActive("/api-reference")} className={isActive("/api-reference") ? "bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
                   <Link to="/api-reference">
                     <Bot className="size-4" />
                     <span>API Reference</span>
@@ -324,7 +324,7 @@ function LeftSidebar({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/releases")} className={isActive("/releases") ? "sidebar-active-bar bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
+                <SidebarMenuButton asChild isActive={isActive("/releases")} className={isActive("/releases") ? "bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
                   <Link to="/releases">
                     <Megaphone className="size-4" />
                     <span>Release Notes</span>
@@ -449,7 +449,7 @@ function ReportCard({ report, isFavorite, isSubscribed, onPreview }: { report: R
   const hiddenTagCount = report.tags.length - 5
 
   return (
-    <Card className="card-hover-glow border-l-2 border-l-primary/20 hover:border-l-primary transition-colors py-0 overflow-hidden">
+    <Card className="card-hover-lift transition-colors py-0 overflow-hidden">
       <div className="px-3 py-2.5 sm:px-4 sm:py-3 flex flex-col min-w-0">
         {/* Metadata row */}
         <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground mb-2 min-w-0">
@@ -676,7 +676,7 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
         <main id="tour-feed" className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Home</span>
+            <span className="text-sm font-medium text-muted-foreground">Home</span>
             <Tabs value={activeSort} onValueChange={setActiveSort}>
               <TabsList variant="line">
                 <TabsTrigger value="trending" className="gap-1.5 font-mono text-xs">

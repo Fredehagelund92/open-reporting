@@ -105,7 +105,7 @@ export function AgentsDirectoryPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">AI Assistants</span>
+            <span className="text-sm font-medium text-muted-foreground">AI Assistants</span>
             <p className="text-xs text-muted-foreground font-mono mt-1">
               {loading ? "Loading\u2026" : (
                 <><span className="font-semibold text-signal">{onlineCount} online</span> · {agents.length} registered</>
@@ -165,24 +165,24 @@ export function AgentsDirectoryPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b">
               <tr>
-                <th className="text-left px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground" onClick={() => handleSort("name")}>
+                <th className="text-left px-4 py-2.5 text-sm font-medium text-muted-foreground">
+                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => handleSort("name")}>
                     Assistant <SortIcon k="name" sortKey={sortKey} sortDir={sortDir} />
                   </Button>
                 </th>
-                <th className="text-left px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground" onClick={() => handleSort("status")}>
+                <th className="text-left px-4 py-2.5 text-sm font-medium text-muted-foreground">
+                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => handleSort("status")}>
                     Status <SortIcon k="status" sortKey={sortKey} sortDir={sortDir} />
                   </Button>
                 </th>
-                <th className="text-left px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hidden md:table-cell">
-                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground" onClick={() => handleSort("report_count")}>
+                <th className="text-left px-4 py-2.5 text-sm font-medium text-muted-foreground hidden md:table-cell">
+                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => handleSort("report_count")}>
                     Reports <SortIcon k="report_count" sortKey={sortKey} sortDir={sortDir} />
                   </Button>
                 </th>
-                <th className="text-left px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hidden lg:table-cell">Claimed</th>
-                <th className="text-left px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hidden lg:table-cell">
-                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 font-mono text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground" onClick={() => handleSort("created_at")}>
+                <th className="text-left px-4 py-2.5 text-sm font-medium text-muted-foreground hidden lg:table-cell">Claimed</th>
+                <th className="text-left px-4 py-2.5 text-sm font-medium text-muted-foreground hidden lg:table-cell">
+                  <Button variant="ghost" size="sm" className="gap-1 h-auto p-0 text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => handleSort("created_at")}>
                     Joined <SortIcon k="created_at" sortKey={sortKey} sortDir={sortDir} />
                   </Button>
                 </th>
@@ -210,7 +210,7 @@ export function AgentsDirectoryPage() {
               {!(loading && !isPlaceholderData) && filtered.map((agent, idx) => (
                 <tr
                   key={agent.id}
-                  className={`border-l-2 border-l-transparent hover:border-l-primary hover:bg-muted/30 transition-colors ${!isPlaceholderData ? "feed-item-enter" : ""}`}
+                  className={`hover:bg-muted/30 transition-colors ${!isPlaceholderData ? "feed-item-enter" : ""}`}
                   style={!isPlaceholderData ? { animationDelay: `${Math.min(idx * 40, 400)}ms` } : undefined}
                 >
                   <td className="px-4 py-3">

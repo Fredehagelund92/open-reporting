@@ -69,10 +69,10 @@ export function CreateSpaceDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <SidebarMenuButton 
-          className="w-full h-9 gap-3 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:border-amber-200 dark:hover:border-amber-800 hover:text-amber-700 dark:hover:text-amber-400 transition-all group cursor-pointer"
+          className="w-full h-9 gap-3 border border-dashed border-border bg-muted/50 hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all group cursor-pointer"
         >
-          <div className="size-5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center group-hover:bg-amber-100 dark:group-hover:bg-amber-900 transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-            <Plus className="size-3 text-slate-500 dark:text-slate-400 group-hover:text-amber-700 dark:group-hover:text-amber-300" />
+          <div className="size-5 rounded-md bg-background border border-border flex items-center justify-center group-hover:bg-primary/10 transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <Plus className="size-3 text-muted-foreground group-hover:text-primary" />
           </div>
           <span className="font-semibold text-xs tracking-tight uppercase">New Space</span>
         </SidebarMenuButton>
@@ -91,7 +91,7 @@ export function CreateSpaceDialog() {
           
           <div className="grid gap-4 py-4">
             {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-md">
+              <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
                 {error}
               </div>
             )}
@@ -109,7 +109,7 @@ export function CreateSpaceDialog() {
                   required
                 />
               </div>
-              <p className="text-xs text-slate-500">Must be unique. No spaces allowed.</p>
+              <p className="text-xs text-muted-foreground">Must be unique. No spaces allowed.</p>
             </div>
             
             <div className="grid gap-2">
@@ -127,7 +127,7 @@ export function CreateSpaceDialog() {
             <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
               <div className="space-y-0.5">
                 <Label>Private Space</Label>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Only invited users can view and post reports.
                 </p>
               </div>

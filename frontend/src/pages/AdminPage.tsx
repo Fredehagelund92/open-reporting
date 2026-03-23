@@ -205,7 +205,7 @@ export function AdminPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Admin Dashboard</span>
+            <span className="text-sm font-medium text-muted-foreground">Admin Dashboard</span>
             <p className="text-xs text-muted-foreground font-mono mt-1">
               Manage users, roles, and platform settings
             </p>
@@ -260,7 +260,7 @@ export function AdminPage() {
               </div>
             </div>
             <div className="border rounded-sm overflow-hidden">
-              <div className="grid grid-cols-[1.5fr_2fr_1fr_1fr_0.8fr] p-2.5 text-[11px] font-mono uppercase tracking-wider text-muted-foreground border-b bg-muted/30">
+              <div className="grid grid-cols-[1.5fr_2fr_1fr_1fr_0.8fr] p-2.5 text-sm font-medium text-muted-foreground border-b bg-muted/30">
                 <div>User</div>
                 <div>Email</div>
                 <div>Role</div>
@@ -269,7 +269,7 @@ export function AdminPage() {
               </div>
               <div className="divide-y divide-border">
                 {users.filter(u => u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase())).map((u) => (
-                  <div key={u.id} className={`grid grid-cols-[1.5fr_2fr_1fr_1fr_0.8fr] p-2.5 items-center text-sm border-l-2 border-l-transparent hover:border-l-primary hover:bg-muted/30 transition-colors ${!u.is_active ? 'bg-destructive/5 opacity-80' : ''}`}>
+                  <div key={u.id} className={`grid grid-cols-[1.5fr_2fr_1fr_1fr_0.8fr] p-2.5 items-center text-sm hover:bg-muted/30 transition-colors ${!u.is_active ? 'bg-destructive/5 opacity-80' : ''}`}>
                     <div className="flex items-center gap-2.5 font-medium min-w-0">
                       <Avatar className="size-7 border shrink-0">
                         <AvatarImage src={u.avatar} />
@@ -328,7 +328,7 @@ export function AdminPage() {
               <span className="text-xs text-muted-foreground font-mono">{agents.length} assistants</span>
             </div>
             <div className="border rounded-sm overflow-hidden">
-              <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_0.8fr] p-2.5 text-[11px] font-mono uppercase tracking-wider text-muted-foreground border-b bg-muted/30">
+              <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_0.8fr] p-2.5 text-sm font-medium text-muted-foreground border-b bg-muted/30">
                 <div>Assistant</div>
                 <div>Owner</div>
                 <div>Status</div>
@@ -337,7 +337,7 @@ export function AdminPage() {
               </div>
               <div className="divide-y divide-border">
                 {agents.map((a) => (
-                  <div key={a.id} className={`grid grid-cols-[2fr_1.5fr_1fr_1fr_0.8fr] p-2.5 items-center text-sm border-l-2 border-l-transparent hover:border-l-primary hover:bg-muted/30 transition-colors ${!a.is_active ? 'opacity-60 bg-muted/30' : ''}`}>
+                  <div key={a.id} className={`grid grid-cols-[2fr_1.5fr_1fr_1fr_0.8fr] p-2.5 items-center text-sm hover:bg-muted/30 transition-colors ${!a.is_active ? 'opacity-60 bg-muted/30' : ''}`}>
                     <div className="font-medium flex items-center gap-2 min-w-0">
                       <Badge variant="outline" className="text-[9px] h-5 px-1 uppercase shrink-0 font-mono">{a.status}</Badge>
                       <Link to={`/agent/${a.name}`} className="hover:underline truncate text-xs">{a.name}</Link>
@@ -376,7 +376,7 @@ export function AdminPage() {
               <span className="text-xs text-muted-foreground font-mono">{reports.length} reports</span>
             </div>
             <div className="border rounded-sm overflow-hidden">
-              <div className="grid grid-cols-[3fr_1.5fr_1fr_0.8fr] p-2.5 text-[11px] font-mono uppercase tracking-wider text-muted-foreground border-b bg-muted/30">
+              <div className="grid grid-cols-[3fr_1.5fr_1fr_0.8fr] p-2.5 text-sm font-medium text-muted-foreground border-b bg-muted/30">
                 <div>Report</div>
                 <div>Assistant</div>
                 <div>Published</div>
@@ -384,7 +384,7 @@ export function AdminPage() {
               </div>
               <div className="divide-y divide-border">
                 {reports.map((r) => (
-                  <div key={r.id} className="grid grid-cols-[3fr_1.5fr_1fr_0.8fr] p-2.5 items-center text-sm border-l-2 border-l-transparent hover:border-l-primary hover:bg-muted/30 transition-colors">
+                  <div key={r.id} className="grid grid-cols-[3fr_1.5fr_1fr_0.8fr] p-2.5 items-center text-sm hover:bg-muted/30 transition-colors">
                     <div className="font-medium flex items-center gap-2 min-w-0">
                       <Badge variant="secondary" className="text-[9px] h-4 leading-none uppercase shrink-0 font-mono">{r.content_type}</Badge>
                       <Link to={`/report/${r.slug || r.id}`} className="hover:underline truncate text-xs">{r.title}</Link>
@@ -424,14 +424,14 @@ export function AdminPage() {
               </div>
             </div>
             <div className="border rounded-sm overflow-hidden">
-              <div className="grid grid-cols-[2fr_1fr_2fr] p-2.5 text-[11px] font-mono uppercase tracking-wider text-muted-foreground border-b bg-muted/30">
+              <div className="grid grid-cols-[2fr_1fr_2fr] p-2.5 text-sm font-medium text-muted-foreground border-b bg-muted/30">
                 <div>Tag</div>
                 <div>Usage</div>
                 <div className="text-right">Actions</div>
               </div>
               <div className="divide-y divide-border">
                 {tags.filter(t => t.canonical_name.toLowerCase().includes(tagSearch.toLowerCase())).map((t) => (
-                  <div key={t.id} className="grid grid-cols-[2fr_1fr_2fr] p-2.5 items-center text-sm border-l-2 border-l-transparent hover:border-l-primary hover:bg-muted/30 transition-colors">
+                  <div key={t.id} className="grid grid-cols-[2fr_1fr_2fr] p-2.5 items-center text-sm hover:bg-muted/30 transition-colors">
                     <div className="font-medium flex items-center gap-2">
                       <span className="text-xs">{t.canonical_name}</span>
                       <span className="text-[10px] text-muted-foreground font-mono">({t.normalized_key})</span>
@@ -469,7 +469,7 @@ export function AdminPage() {
               <span className="text-xs text-muted-foreground font-mono">{spaces.length} spaces</span>
             </div>
             <div className="border rounded-sm overflow-hidden">
-              <div className="grid grid-cols-[1.5fr_2.5fr_1fr_1fr_1fr] p-2.5 text-[11px] font-mono uppercase tracking-wider text-muted-foreground border-b bg-muted/30">
+              <div className="grid grid-cols-[1.5fr_2.5fr_1fr_1fr_1fr] p-2.5 text-sm font-medium text-muted-foreground border-b bg-muted/30">
                 <div>Space</div>
                 <div>Description</div>
                 <div>Owner</div>
@@ -480,7 +480,7 @@ export function AdminPage() {
                 {loading ? (
                   <div className="p-12 text-center text-muted-foreground font-mono text-xs">Loading...</div>
                 ) : spaces.map((s) => (
-                  <div key={s.id} className="grid grid-cols-[1.5fr_2.5fr_1fr_1fr_1fr] p-2.5 items-center text-sm border-l-2 border-l-transparent hover:border-l-primary hover:bg-muted/30 transition-colors">
+                  <div key={s.id} className="grid grid-cols-[1.5fr_2.5fr_1fr_1fr_1fr] p-2.5 items-center text-sm hover:bg-muted/30 transition-colors">
                     <div className="font-medium flex items-center gap-2 min-w-0">
                       <div className="size-6 rounded-sm bg-primary/15 text-primary flex items-center justify-center text-[10px] uppercase shrink-0 font-mono">{s.name.split("/")[1]?.[0] || "O"}</div>
                       <span className="truncate text-xs">{s.name}</span>
@@ -519,7 +519,7 @@ export function AdminPage() {
               <span className="text-xs text-muted-foreground font-mono">{events.length} events</span>
             </div>
             <div className="border rounded-sm overflow-hidden">
-              <div className="grid grid-cols-[2fr_2fr_2fr_2fr] p-2.5 text-[11px] font-mono uppercase tracking-wider text-muted-foreground border-b bg-muted/30">
+              <div className="grid grid-cols-[2fr_2fr_2fr_2fr] p-2.5 text-sm font-medium text-muted-foreground border-b bg-muted/30">
                 <div>Action</div>
                 <div>Space</div>
                 <div>Actor</div>
@@ -531,7 +531,7 @@ export function AdminPage() {
                     No governance events yet.
                   </div>
                 ) : events.map((event) => (
-                  <div key={event.id} className="grid grid-cols-[2fr_2fr_2fr_2fr] p-2.5 items-center text-sm border-l-2 border-l-transparent hover:border-l-primary hover:bg-muted/30 transition-colors">
+                  <div key={event.id} className="grid grid-cols-[2fr_2fr_2fr_2fr] p-2.5 items-center text-sm hover:bg-muted/30 transition-colors">
                     <div className="font-medium text-foreground text-xs">{event.action.replaceAll("_", " ")}</div>
                     <div className="text-muted-foreground truncate text-xs">{event.space_name || event.space_id}</div>
                     <div className="text-muted-foreground truncate text-xs">

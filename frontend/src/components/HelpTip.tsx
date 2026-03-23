@@ -11,7 +11,7 @@ export function HelpTip({ text }: HelpTipProps) {
       <TooltipTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+          className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
           aria-label="More information"
         >
           <HelpCircle className="size-3.5" />

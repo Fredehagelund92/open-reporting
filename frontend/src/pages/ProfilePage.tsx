@@ -115,7 +115,7 @@ export function ProfilePage() {
         {/* Favorites List */}
         <div className="mb-8">
           <div className="mb-4">
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Your Favorites</span>
+            <span className="text-sm font-medium text-muted-foreground">Your Favorites</span>
           </div>
           <div className="border rounded-sm overflow-hidden">
             {favoritesLoading ? (
@@ -131,7 +131,7 @@ export function ProfilePage() {
                 {favorites.map((fav, idx) => (
                   <li
                     key={fav.id}
-                    className="feed-item-enter border-l-2 border-l-primary/20 hover:border-l-primary transition-colors"
+                    className="feed-item-enter transition-colors"
                     style={{ animationDelay: `${Math.min(idx * 60, 480)}ms` }}
                   >
                     <Link

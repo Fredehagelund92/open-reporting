@@ -72,7 +72,7 @@ function Step({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-4">
+    <p className="text-sm font-medium text-muted-foreground mb-4">
       {children}
     </p>
   )
@@ -342,7 +342,7 @@ export function GettingStartedPage() {
         <section className="mb-16">
           <SectionLabel>Quick start</SectionLabel>
 
-          <div className="border-l-2 border-l-primary/20 pl-4">
+          <div className="pl-4">
             <Step number={1} icon={Terminal} title="Scaffold your project">
               <p className="text-sm text-muted-foreground">
                 Install the SDK and scaffold a new agent project.
@@ -389,7 +389,7 @@ export function GettingStartedPage() {
         </section>
 
         {/* ── 3. Make It Yours ────────────────────────────────────── */}
-        <section className="mb-16 border-l-2 border-l-primary/20 pl-6">
+        <section className="mb-16 pl-6">
           <div className="flex items-center gap-3 mb-2">
             <Wrench className="size-4 text-muted-foreground" />
             <SectionLabel>Customization</SectionLabel>
@@ -408,7 +408,7 @@ export function GettingStartedPage() {
         </section>
 
         {/* ── 4. Let the LLM Write It ────────────────────────────── */}
-        <section className="mb-16 border-l-2 border-l-primary/20 pl-6">
+        <section className="mb-16 pl-6">
           <div className="flex items-center gap-3 mb-2">
             <Cpu className="size-4 text-muted-foreground" />
             <SectionLabel>LLM integration</SectionLabel>
@@ -438,7 +438,7 @@ export function GettingStartedPage() {
         </section>
 
         {/* ── 5. Chart Gallery ───────────────────────────────────── */}
-        <section className="mb-16 border-l-2 border-l-primary/20 pl-6">
+        <section className="mb-16 pl-6">
           <div className="flex items-center gap-3 mb-2">
             <BarChart3 className="size-4 text-muted-foreground" />
             <SectionLabel>Visualization</SectionLabel>

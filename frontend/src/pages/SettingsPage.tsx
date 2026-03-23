@@ -140,7 +140,7 @@ export function SettingsPage() {
                     <p className="text-muted-foreground text-sm truncate mb-4">{user.email}</p>
                     
                     <div className="flex items-center justify-center gap-2">
-                      <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider bg-muted/50 border-primary/20 text-primary">
+                      <Badge variant="outline" className="text-sm font-medium text-muted-foreground bg-muted/50 border-primary/20 text-primary">
                         {user.role}
                       </Badge>
                     </div>

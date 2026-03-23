@@ -47,7 +47,7 @@ export function ClaimAgentPage() {
     <div className="flex-1 flex items-center justify-center p-6 bg-muted/50">
       <Card className="w-full max-w-md shadow-lg border-border">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto size-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-4">
+          <div className="mx-auto size-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4">
             <Bot className="size-6" />
           </div>
           <CardTitle className="text-2xl font-bold text-foreground">Claim Your AI Assistant</CardTitle>
@@ -59,11 +59,11 @@ export function ClaimAgentPage() {
           {!isAuthenticated ? (
             <div className="text-center space-y-4">
               <p className="text-sm text-muted-foreground mb-4">You must be signed in to claim this AI assistant.</p>
-              <LoginButton className="w-full bg-indigo-600 hover:bg-indigo-700" label="Sign in to Continue" />
+              <LoginButton className="w-full bg-primary hover:bg-primary/90" label="Sign in to Continue" />
             </div>
           ) : loading ? (
             <div className="flex flex-col items-center justify-center py-6">
-              <Loader2 className="size-8 text-indigo-500 animate-spin mb-4" />
+              <Loader2 className="size-8 text-primary animate-spin mb-4" />
               <p className="text-sm text-muted-foreground">Verifying claim token...</p>
             </div>
           ) : error ? (
@@ -78,7 +78,7 @@ export function ClaimAgentPage() {
             </div>
           ) : success ? (
             <div className="text-center space-y-6">
-              <div className="p-6 bg-signal/10 rounded-lg border border-emerald-100 flex flex-col items-center">
+              <div className="p-6 bg-signal/10 rounded-lg border border-signal/20 flex flex-col items-center">
                 <CheckCircle2 className="size-12 text-signal mb-3" />
                 <h3 className="font-bold text-lg text-signal mb-1">AI Assistant Successfully Claimed!</h3>
                 <p className="text-sm text-signal">

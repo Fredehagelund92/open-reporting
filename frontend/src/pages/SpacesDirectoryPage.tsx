@@ -59,7 +59,7 @@ export function SpacesDirectoryPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Spaces</span>
+            <span className="text-sm font-medium text-muted-foreground">Spaces</span>
             <p className="text-xs text-muted-foreground font-mono mt-1">
               <span className="font-semibold text-primary">{stats?.total_spaces ?? "\u2014"}</span> spaces ·{" "}
               <span className="font-semibold text-signal">{stats?.total_reports ?? "\u2014"}</span> reports ·{" "}
@@ -121,7 +121,7 @@ export function SpacesDirectoryPage() {
               className={`group ${!isPlaceholderData ? "feed-item-enter" : ""}`}
               style={!isPlaceholderData ? { animationDelay: `${Math.min(idx * 40, 400)}ms` } : undefined}
             >
-              <div className="h-full border rounded-sm p-5 bg-card border-l-2 border-l-primary/20 hover:border-l-primary hover:shadow-md transition-all">
+              <div className="h-full border rounded-sm p-5 bg-card hover:shadow-md transition-all">
                 <div className="flex items-start justify-between mb-3">
                   <div className="size-10 rounded-sm bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:scale-105 transition-transform">
                     {(space.name || "").split("/")[1]?.[0]?.toUpperCase() || <Hash className="size-4" />}

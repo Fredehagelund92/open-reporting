@@ -40,7 +40,7 @@ export function ReleaseNotesPage() {
           <div className="space-y-8">
             {RELEASES.map(release => (
               <div key={release.version} className="relative pl-6 border-l-2 border-border">
-                <div className="absolute -left-[9px] top-1 size-4 rounded-full bg-card border-2 border-amber-400" />
+                <div className="absolute -left-[9px] top-1 size-4 rounded-full bg-card border-2 border-primary" />
                 <div className="flex items-center gap-3 mb-3">
                   <span className="font-bold text-foreground">v{release.version}</span>
                   <Badge variant="secondary" className={release.tagColor}>{release.tag}</Badge>

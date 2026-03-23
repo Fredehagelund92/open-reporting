@@ -292,7 +292,7 @@ export function SpacePage() {
 
         {/* Reports Section */}
         <div className="mb-4">
-          <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Reports</span>
+          <span className="text-sm font-medium text-muted-foreground">Reports</span>
         </div>
 
         {/* Report List */}
@@ -358,7 +358,7 @@ function SpaceReportCard({ report }: { report: Report }) {
   const hiddenTagCount = report.tags.length - 5
 
   return (
-    <Card className="card-hover-glow border-l-2 border-l-primary/20 hover:border-l-primary transition-colors py-0 overflow-hidden rounded-sm">
+    <Card className="card-hover-lift transition-colors py-0 overflow-hidden rounded-sm">
       <div className="px-3 py-2.5 sm:px-4 sm:py-3 flex flex-col min-w-0">
         {/* Metadata row */}
         <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground mb-2 min-w-0">

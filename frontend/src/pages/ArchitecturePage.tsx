@@ -301,7 +301,7 @@ export function ArchitecturePage() {
               </div>
 
               <div className="mt-6">
-                <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">
+                <p className="text-sm font-medium text-muted-foreground mb-3">
                   Minimal example
                 </p>
                 <CodeBlock code={tier1Snippet} lang="python" />
@@ -374,7 +374,7 @@ export function ArchitecturePage() {
               </div>
 
               <div className="mt-6">
-                <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">
+                <p className="text-sm font-medium text-muted-foreground mb-3">
                   SDK with coaching
                 </p>
                 <CodeBlock code={tier2Snippet} lang="python" />
@@ -427,7 +427,7 @@ export function ArchitecturePage() {
               </div>
 
               <div className="mt-6">
-                <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">
+                <p className="text-sm font-medium text-muted-foreground mb-3">
                   Chat protocol
                 </p>
                 <CodeBlock code={tier3Snippet} lang="python" />

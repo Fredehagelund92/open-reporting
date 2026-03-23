@@ -308,7 +308,7 @@ export function ReportViewerPage() {
       <div className="flex flex-1 items-center justify-center p-12">
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
           <div className="size-7 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-          <span className="font-mono text-[10px] uppercase tracking-widest">Loading report</span>
+          <span className="text-sm font-medium text-muted-foreground">Loading report</span>
         </div>
       </div>
     )
@@ -371,7 +371,7 @@ export function ReportViewerPage() {
         {/* Series Navigation */}
         {report.series_id && (
           <div className="mb-6 flex items-center gap-3 rounded-sm border border-border/60 bg-muted/20 px-3 py-2">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60 shrink-0">Series</span>
+            <span className="text-sm font-medium text-muted-foreground shrink-0">Series</span>
             <code className="font-mono text-xs font-semibold text-foreground bg-card border border-border/60 rounded px-1.5 py-0.5 shrink-0">
               {report.series_id}
             </code>
@@ -439,14 +439,14 @@ export function ReportViewerPage() {
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground mb-3">
             <Link
               to={`/space/${(report.space || report.space_name || "").replace("o/", "")}`}
-              className="font-mono font-semibold text-foreground/80 hover:text-primary transition-colors uppercase tracking-wide text-[10px]"
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
             >
               {report.space || report.space_name}
             </Link>
             <span className="text-border" aria-hidden>·</span>
             <Badge
               variant="secondary"
-              className="h-4 px-1.5 py-0 font-mono text-[9px] uppercase tracking-widest bg-primary/10 text-primary border-primary/20"
+              className="h-4 px-1.5 py-0 text-sm font-medium text-muted-foreground bg-primary/10 text-primary border-primary/20"
             >
               {report.content_type === "slideshow" ? "Presentation" : "Report"}
             </Badge>
@@ -590,7 +590,7 @@ export function ReportViewerPage() {
           )}
 
           {saveMessage && (
-            <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest animate-in fade-in duration-200">
+            <span className="text-sm font-medium text-muted-foreground animate-in fade-in duration-200">
               {saveMessage}
             </span>
           )}
@@ -670,26 +670,7 @@ export function ReportViewerPage() {
         )}
 
         {/* ─── Document Body ─── */}
-        <div className="mb-10 rounded-sm border border-border/60 overflow-hidden shadow-sm">
-          {/* Document chrome bar */}
-          <div className="flex items-center gap-3 px-4 py-2.5 bg-muted/40 border-b border-border/60">
-            <div className="flex gap-1.5 shrink-0">
-              <div className="size-2.5 rounded-full bg-border/80" />
-              <div className="size-2.5 rounded-full bg-border/80" />
-              <div className="size-2.5 rounded-full bg-border/80" />
-            </div>
-            <div className="flex items-center gap-2 min-w-0">
-              <Bot className="size-3 text-muted-foreground/50 shrink-0" />
-              <span className="font-mono text-[10px] text-muted-foreground/60 truncate">
-                {report.agent || report.agent_name}
-              </span>
-              <span className="text-border/60 shrink-0">·</span>
-              <span className="font-mono text-[10px] text-muted-foreground/50 uppercase tracking-widest shrink-0">
-                {report.content_type === "slideshow" ? "Presentation" : "Document"}
-              </span>
-            </div>
-          </div>
-
+        <div className="mb-10 rounded-lg border border-border/60 overflow-hidden shadow-sm">
           {/* Content */}
           <div className={cn(report.content_type !== "slideshow" && "bg-white p-4 sm:p-8 md:p-14")}>
             {report.content_type === "slideshow" ? (
@@ -767,7 +748,7 @@ export function ReportViewerPage() {
         {/* ─── Discussion ─── */}
         <section ref={discussionRef} className="pb-16 scroll-mt-6">
           <div className="flex items-center gap-2.5 mb-5">
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Discussion</span>
+            <span className="text-sm font-medium text-muted-foreground">Discussion</span>
             <span className="font-mono text-[10px] text-muted-foreground bg-muted rounded-sm px-1.5 py-0.5 tabular-nums">
               {comments.length}
             </span>
@@ -839,7 +820,7 @@ export function ReportViewerPage() {
                       className="w-full min-h-[84px] bg-transparent border-0 p-3 text-sm resize-none focus:outline-none placeholder:text-muted-foreground/40"
                     />
                     <div className="flex items-center justify-between px-3 py-2 border-t border-border/60 bg-muted/20">
-                      <span className="font-mono text-[10px] text-muted-foreground/40 uppercase tracking-widest hidden sm:block">
+                      <span className="text-sm font-medium text-muted-foreground/40 hidden sm:block">
                         Enter to submit · Shift+Enter for newline
                       </span>
                       <Button
@@ -857,7 +838,7 @@ export function ReportViewerPage() {
                   {showMentions && filteredMentions.length > 0 && (
                     <div className="absolute left-0 w-52 mt-1 rounded-sm shadow-2xl z-[100] overflow-hidden bg-card border border-border animate-in fade-in slide-in-from-top-1 duration-150">
                       <div className="p-1.5">
-                        <div className="px-2 py-1.5 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/60 mb-1">
+                        <div className="px-2 py-1.5 text-sm font-medium text-muted-foreground border-b border-border/60 mb-1">
                           Tag someone
                         </div>
                         {filteredMentions.map((userName, i) => (
@@ -894,7 +875,7 @@ export function ReportViewerPage() {
               {comments.map((comment, idx) => (
                 <div
                   key={comment.id}
-                  className="feed-item-enter border-l-2 border-l-transparent hover:border-l-primary transition-colors"
+                  className="feed-item-enter transition-colors"
                   style={{ animationDelay: `${Math.min(idx * 60, 480)}ms` }}
                 >
                   <CommentItem comment={comment} reportId={report.id} />
@@ -1001,7 +982,7 @@ function CommentItem({ comment, reportId }: { comment: ReportComment; reportId: 
               align="start"
               className="grid grid-cols-3 gap-1 p-2 shadow-2xl border-border bg-card/95 backdrop-blur-sm min-w-[124px] animate-in zoom-in-95 duration-150"
             >
-              <div className="col-span-3 px-1 py-1 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest text-center border-b border-border/60 mb-1">
+              <div className="col-span-3 px-1 py-1 text-sm font-medium text-muted-foreground text-center border-b border-border/60 mb-1">
                 React
               </div>
               {["👍", "❤️", "🚀", "💡", "💯", "✅", "🔥", "👀", "🤔"].map(emoji => (

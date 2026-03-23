@@ -21,7 +21,7 @@ export function MentionedText({ text, className }: MentionedTextProps) {
             <span
               key={i}
               className={cn(
-                "px-1 py-0.5 rounded bg-amber-100 text-amber-700 font-medium cursor-pointer hover:bg-amber-200 transition-colors",
+                "px-1 py-0.5 rounded bg-primary/10 text-primary font-medium cursor-pointer hover:bg-primary/15 transition-colors",
               )}
             >
               {part}
