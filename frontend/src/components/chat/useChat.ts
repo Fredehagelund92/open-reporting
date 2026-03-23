@@ -120,8 +120,9 @@ export function useChat(report: Report, chatEnabled: boolean) {
 
   const closeChat = useCallback(() => {
     setIsOpen(false)
-    streamAbort()
-  }, [streamAbort])
+    // Don't abort the stream — keep it running in background so the
+    // thinking/streaming state is preserved when the user reopens.
+  }, [])
 
   // Focus input when panel opens
   useEffect(() => {

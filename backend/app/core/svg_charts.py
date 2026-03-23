@@ -16,13 +16,17 @@ from app.core.themes import Theme
 # ---------------------------------------------------------------------------
 
 def _fmt_val(val: float) -> str:
-    """Format a chart value label. Large numbers get K/M suffix."""
+    """Format a chart value label with precision scaled to magnitude."""
     if abs(val) >= 1_000_000:
         return f"{val / 1_000_000:.1f}M"
     if abs(val) >= 1_000:
         return f"{val / 1_000:.1f}K"
     if val == int(val):
         return str(int(val))
+    if abs(val) < 1:
+        return f"{val:.3f}"
+    if abs(val) < 10:
+        return f"{val:.2f}"
     return f"{val:.1f}"
 
 
@@ -34,30 +38,43 @@ _PAD_TOP = 30
 _PAD_BOTTOM = 50
 
 
-def _nice_ticks(max_val: float, count: int = 5) -> list[float]:
-    """Generate evenly-spaced round tick values from 0 to >= max_val."""
-    if max_val <= 0:
-        return [0]
-    raw_step = max_val / count
+def _smart_baseline(min_val: float, max_val: float) -> float:
+    """Return a non-zero baseline when values are clustered far from 0."""
+    if min_val <= 0 or min_val <= max_val * 0.6:
+        return 0.0
+    span = max_val - min_val
+    if span <= 0:
+        return 0.0
+    magnitude = 10 ** math.floor(math.log10(span))
+    return math.floor(min_val / magnitude) * magnitude
+
+
+def _nice_ticks(max_val: float, count: int = 5, min_val: float = 0.0) -> list[float]:
+    """Generate evenly-spaced round tick values from min_val to >= max_val."""
+    if max_val <= min_val:
+        return [min_val]
+    raw_step = (max_val - min_val) / count
     magnitude = 10 ** math.floor(math.log10(raw_step)) if raw_step > 0 else 1
     nice_step = math.ceil(raw_step / magnitude) * magnitude
-    return [i * nice_step for i in range(count + 1)]
+    return [min_val + i * nice_step for i in range(count + 1)]
 
 
 def _y_axis_and_grid(ticks: list[float], plot_top: float, plot_bottom: float, theme: Theme) -> str:
     """Render Y-axis labels and horizontal grid lines."""
     parts: list[str] = []
+    min_tick = ticks[0] if ticks else 0
     max_tick = ticks[-1] if ticks else 1
+    tick_range = max_tick - min_tick
     for tick in ticks:
-        if max_tick == 0:
+        if tick_range == 0:
             y = plot_bottom
         else:
-            y = plot_bottom - (tick / max_tick) * (plot_bottom - plot_top)
+            y = plot_bottom - ((tick - min_tick) / tick_range) * (plot_bottom - plot_top)
         parts.append(
             f'<line x1="{_PAD_LEFT}" y1="{y:.1f}" x2="{_CHART_WIDTH - _PAD_RIGHT}" '
             f'y2="{y:.1f}" stroke="{theme.chart_grid_color}" stroke-dasharray="4,4" />'
         )
-        label = f"{tick:g}"
+        label = _fmt_val(tick)
         parts.append(
             f'<text x="{_PAD_LEFT - 8}" y="{y:.1f}" text-anchor="end" '
             f'dominant-baseline="middle" fill="{theme.chart_axis_color}" '
@@ -103,8 +120,11 @@ def svg_bar_chart(data: dict, theme: Theme) -> str:
         return ""
 
     max_val = max(abs(v) for v in all_values)
-    ticks = _nice_ticks(max_val)
+    min_val = min(abs(v) for v in all_values if v != 0) if any(v != 0 for v in all_values) else 0
+    baseline = _smart_baseline(min_val, max_val)
+    ticks = _nice_ticks(max_val, min_val=baseline)
     max_tick = ticks[-1] if ticks else 1
+    tick_range = max_tick - baseline
 
     plot_top = _PAD_TOP
     plot_bottom = _CHART_HEIGHT - _PAD_BOTTOM
@@ -130,10 +150,11 @@ def svg_bar_chart(data: dict, theme: Theme) -> str:
         for di, ds in enumerate(datasets):
             vals = ds.get("values", [])
             val = vals[li] if li < len(vals) else 0
-            h = (abs(val) / max_tick * plot_height) if max_tick else 0
+            h = ((abs(val) - baseline) / tick_range * plot_height) if tick_range else 0
+            h = max(h, 0)
             x = group_x + (di + 0.5) * (bar_width + gap)
             y = plot_bottom - h
-            c = colors[di % len(colors)]
+            c = colors[li % len(colors)] if n_datasets == 1 else colors[di % len(colors)]
             bars.append(
                 f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_width:.1f}" '
                 f'height="{h:.1f}" rx="3" fill="{c}" />'
@@ -281,7 +302,7 @@ def _label_backdrop(x: float, y: float, text: str, theme: Theme) -> str:
 
 
 def svg_pie_chart(data: dict, theme: Theme) -> str:
-    segments = data.get("segments", [])
+    segments = [s for s in data.get("segments", []) if s.get("value", 0) > 0]
     if not segments:
         return ""
 
@@ -353,8 +374,11 @@ def svg_horizontal_bar_chart(data: dict, theme: Theme) -> str:
         return ""
 
     max_val = max(abs(v) for v in all_values)
-    if max_val == 0:
-        max_val = 1
+    min_val = min(abs(v) for v in all_values if v != 0) if any(v != 0 for v in all_values) else 0
+    baseline = _smart_baseline(min_val, max_val)
+    val_range = max_val - baseline
+    if val_range == 0:
+        val_range = 1
 
     pad_left = 120
     pad_right = 60
@@ -382,9 +406,10 @@ def svg_horizontal_bar_chart(data: dict, theme: Theme) -> str:
         for di, ds in enumerate(datasets):
             vals = ds.get("values", [])
             val = vals[li] if li < len(vals) else 0
-            w = (abs(val) / max_val * plot_width) if max_val else 0
+            w = ((abs(val) - baseline) / val_range * plot_width) if val_range else 0
+            w = max(w, 0)
             y = group_y + (di + 0.5) * (bar_height + gap)
-            c = colors[di % len(colors)]
+            c = colors[li % len(colors)] if n_datasets == 1 else colors[di % len(colors)]
             bars.append(
                 f'<rect x="{pad_left}" y="{y:.1f}" width="{w:.1f}" '
                 f'height="{bar_height:.1f}" rx="3" fill="{c}" />'
@@ -485,7 +510,7 @@ def svg_stacked_bar_chart(data: dict, theme: Theme) -> str:
 
 
 def svg_donut_chart(data: dict, theme: Theme) -> str:
-    segments = data.get("segments", [])
+    segments = [s for s in data.get("segments", []) if s.get("value", 0) > 0]
     if not segments:
         return ""
 

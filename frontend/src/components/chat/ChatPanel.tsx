@@ -74,12 +74,10 @@ export function ChatPanel({ report, chatEnabled = false }: Props) {
           0% { transform: translateY(100%); }
           100% { transform: translateY(0); }
         }
-        .chat-messages-area { scrollbar-width: none; }
-        .chat-messages-area::-webkit-scrollbar { width: 0; }
-        .chat-messages-area:hover { scrollbar-width: thin; scrollbar-color: hsl(var(--border)) transparent; }
-        .chat-messages-area:hover::-webkit-scrollbar { width: 5px; }
-        .chat-messages-area:hover::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 999px; }
-        .chat-messages-area:hover::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages-area { scrollbar-width: thin; scrollbar-color: hsl(var(--border) / 0.4) transparent; }
+        .chat-messages-area::-webkit-scrollbar { width: 5px; }
+        .chat-messages-area::-webkit-scrollbar-thumb { background: hsl(var(--border) / 0.4); border-radius: 999px; }
+        .chat-messages-area::-webkit-scrollbar-track { background: transparent; }
       `}</style>
 
       <div
@@ -87,24 +85,26 @@ export function ChatPanel({ report, chatEnabled = false }: Props) {
         ref={panelRef}
       >
         {/* ── Expanded chat panel ── */}
-        {isOpen && (
-          <div
-            className={cn(
-              "flex flex-col overflow-hidden",
-              // Mobile: full-screen takeover
-              "fixed inset-0 sm:relative sm:inset-auto",
-              "bg-background sm:bg-background/95 sm:backdrop-blur-xl",
-              "sm:w-[440px] sm:h-[min(620px,80vh)]",
-              "sm:rounded-2xl sm:border sm:border-border/80 sm:shadow-2xl sm:shadow-black/10",
-            )}
-            style={{
-              animation: window.innerWidth < 640
+        <div
+          className={cn(
+            "flex flex-col overflow-hidden",
+            // Mobile: full-screen takeover
+            "fixed inset-0 sm:relative sm:inset-auto",
+            "bg-background sm:bg-background/95 sm:backdrop-blur-xl",
+            "sm:w-[440px] sm:h-[min(620px,80vh)]",
+            "sm:rounded-2xl sm:border sm:border-border/80 sm:shadow-2xl sm:shadow-black/10",
+            !isOpen && "hidden",
+          )}
+          style={{
+            animation: isOpen
+              ? (window.innerWidth < 640
                 ? "chat-panel-slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
-                : "chat-panel-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-              transformOrigin: "bottom right",
-              paddingTop: "env(safe-area-inset-top, 0px)",
-            }}
-          >
+                : "chat-panel-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards")
+              : undefined,
+            transformOrigin: "bottom right",
+            paddingTop: "env(safe-area-inset-top, 0px)",
+          }}
+        >
             <ChatHeader
               agentName={report.agent_name}
               reportTitle={report.title}
@@ -145,7 +145,6 @@ export function ChatPanel({ report, chatEnabled = false }: Props) {
               inputRef={chat.inputRef}
             />
           </div>
-        )}
 
         {/* ── Floating bubble trigger ── */}
         {!isOpen && (

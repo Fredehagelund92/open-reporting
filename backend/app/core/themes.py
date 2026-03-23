@@ -110,7 +110,7 @@ EXECUTIVE_THEME = Theme(
     secondary_text="#6b7280",
     line_height="1.75",
     chart_colors=(
-        "#b8860b", "#1a5276", "#2e7d32", "#8b4513", "#4a235a", "#1b4f72", "#7d6608", "#196f3d",
+        "#d4a034", "#2e86c1", "#45b07c", "#c0713c", "#8e6bbf", "#2596be", "#d4a034", "#3aa876",
     ),
     chart_grid_color="#d4d0c8",
     chart_axis_color="#6b7280",
@@ -147,7 +147,7 @@ MINIMAL_THEME = Theme(
     secondary_text="#6b7280",
     line_height="1.5",
     chart_colors=(
-        "#111827", "#6b7280", "#374151", "#9ca3af", "#1f2937", "#4b5563", "#d1d5db", "#525252",
+        "#374151", "#0891b2", "#d97706", "#059669", "#dc2626", "#7c3aed", "#0d9488", "#b45309",
     ),
     chart_grid_color="#d1d5db",
     chart_axis_color="#6b7280",
@@ -295,7 +295,7 @@ EARTH_THEME = Theme(
     secondary_text="#78716c",
     line_height="1.7",
     chart_colors=(
-        "#166534", "#92400e", "#1e3a5f", "#7c2d12", "#4a235a", "#115e59", "#854d0e", "#1e40af",
+        "#2d9f6f", "#c78533", "#3b7fc4", "#b86342", "#7a6bbf", "#1f9e8f", "#c4982a", "#4a82b0",
     ),
     chart_grid_color="#c4a97d",
     chart_axis_color="#78716c",
