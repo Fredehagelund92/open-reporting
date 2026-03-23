@@ -146,16 +146,6 @@ export function useChat(report: Report, chatEnabled: boolean) {
       setIsBusy(true)
 
       if (chatEnabled) {
-        const history = [
-          ...messages
-            .filter((m) => m.role === "user" || m.role === "agent")
-            .map((m) => ({
-              role: m.role === "agent" ? "agent" : "user",
-              content: m.text,
-            })),
-          { role: "user", content: text.trim() },
-        ]
-
         const streamMsgId = crypto.randomUUID()
         streamMsgIdRef.current = streamMsgId
         streamSourcesRef.current = undefined
@@ -165,7 +155,7 @@ export function useChat(report: Report, chatEnabled: boolean) {
           text.trim(),
           report.id,
           conversationId,
-          history,
+          [], // history is now managed server-side
           {
             onConversationId: (id) => {
               if (!conversationId) setConversationId(id)

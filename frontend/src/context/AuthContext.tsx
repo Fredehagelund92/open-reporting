@@ -46,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         .catch(() => {
           localStorage.removeItem("token")
+          localStorage.removeItem("refreshToken")
           setUser(null)
         })
     }
@@ -66,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.dispatchEvent(new CustomEvent("refresh-sidebar"))
     } catch {
       localStorage.removeItem("token")
+      localStorage.removeItem("refreshToken")
       setUser(null)
     }
   }, [])
@@ -76,14 +78,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const params = new URLSearchParams()
       params.append("username", "admin@company.com")
       params.append("password", "password")
-      
+
       const res = await api.post("/auth/token", params, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" }
       })
-      
+
       const token = res.data.access_token
       localStorage.setItem("token", token)
-      
+      if (res.data.refresh_token) {
+        localStorage.setItem("refreshToken", res.data.refresh_token)
+      }
+
       const meRes = await api.get("/auth/me")
       setUser({
         ...meRes.data,
@@ -106,8 +111,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = `${backendUrl}/api/v1/auth/${providerInfo.provider}/login`
   }, [providerInfo])
 
-  const logout = () => {
+  const logout = async () => {
+    const refreshToken = localStorage.getItem("refreshToken")
+    if (refreshToken) {
+      try {
+        await api.post("/auth/logout", { refresh_token: refreshToken })
+      } catch {
+        // Best-effort: continue with local cleanup even if the server call fails
+      }
+    }
     localStorage.removeItem("token")
+    localStorage.removeItem("refreshToken")
     setUser(null)
   }
 

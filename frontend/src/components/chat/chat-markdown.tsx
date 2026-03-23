@@ -29,11 +29,15 @@ function renderInline(text: string): React.ReactNode {
       )
 
     const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
-    if (link)
+    if (link) {
+      const url = link[2]
+      // Only allow http/https URLs — block javascript:, data:, etc.
+      if (!/^https?:\/\//i.test(url))
+        return <span key={i}>{link[1]}</span>
       return (
         <a
           key={i}
-          href={link[2]}
+          href={url}
           target="_blank"
           rel="noopener noreferrer"
           className="text-primary underline underline-offset-2"
@@ -41,6 +45,7 @@ function renderInline(text: string): React.ReactNode {
           {link[1]}
         </a>
       )
+    }
 
     return part
   })

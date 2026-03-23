@@ -85,39 +85,45 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 
 class _RateLimitMiddleware(BaseHTTPMiddleware):
-    """IP-based rate limiter for authentication endpoints."""
+    """IP-based rate limiter for authentication and write endpoints."""
 
-    RATE_LIMITED_PATHS = {
-        "/api/v1/auth/register",
-        "/api/v1/auth/token",
-        "/api/v1/auth/login",
-    }
-    MAX_REQUESTS = 10
-    WINDOW_SECONDS = 60
+    # (path_prefix, method, max_requests, window_seconds)
+    RULES: list[tuple[str, str, int, int]] = [
+        # Auth endpoints — strict
+        ("/api/v1/auth/register", "POST", 10, 60),
+        ("/api/v1/auth/token", "POST", 10, 60),
+        ("/api/v1/auth/login", "POST", 10, 60),
+        ("/api/v1/auth/refresh", "POST", 30, 60),
+        # Write endpoints — moderate
+        ("/api/v1/curation/", "POST", 30, 60),  # comments, votes, reactions
+        ("/api/v1/reports", "POST", 10, 60),     # report submission
+        # Search — generous
+        ("/api/v1/search", "GET", 60, 60),
+    ]
 
     def __init__(self, app):
         super().__init__(app)
-        self._requests: dict[str, list[float]] = defaultdict(list)
-        self._lock = threading.Lock()
+        from app.core.rate_limit import get_rate_limiter
+        self._limiter = get_rate_limiter()
 
     async def dispatch(self, request: Request, call_next):
-        if request.url.path in self.RATE_LIMITED_PATHS and request.method == "POST":
-            client_ip = request.client.host if request.client else "unknown"
-            now = time.time()
-            with self._lock:
-                window_start = now - self.WINDOW_SECONDS
-                self._requests[client_ip] = [
-                    t for t in self._requests[client_ip] if t > window_start
-                ]
-                if len(self._requests[client_ip]) >= self.MAX_REQUESTS:
+        path = request.url.path
+        method = request.method
+
+        for rule_path, rule_method, max_req, window in self.RULES:
+            if path.startswith(rule_path) and method == rule_method:
+                client_ip = request.client.host if request.client else "unknown"
+                info = self._limiter.check(
+                    f"ip:{client_ip}:{rule_path}", max_requests=max_req, window_seconds=window
+                )
+                if not info.allowed:
                     return JSONResponse(
                         status_code=429,
-                        content={
-                            "detail": "Too many requests. Please try again later."
-                        },
-                        headers={"Retry-After": str(self.WINDOW_SECONDS)},
+                        content={"detail": "Too many requests. Please try again later."},
+                        headers={"Retry-After": str(window)},
                     )
-                self._requests[client_ip].append(now)
+                break  # Only apply the first matching rule
+
         return await call_next(request)
 
 
@@ -150,6 +156,37 @@ app.add_middleware(
 
 # Session middleware — required by authlib for OAuth state management
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
+
+# ---------------------------------------------------------------------------
+# Security headers
+# ---------------------------------------------------------------------------
+
+
+class _SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add standard security headers to all responses."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https:; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'"
+        )
+        return response
+
+
+app.add_middleware(_SecurityHeadersMiddleware)
+
 
 # Register route modules
 app.include_router(agents.router)

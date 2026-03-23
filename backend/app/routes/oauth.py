@@ -4,13 +4,15 @@ Generic OAuth routes — works with any registered auth provider.
 These routes are only active when AUTH_PROVIDER is NOT 'local'.
 """
 
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlmodel import select
 
 from app.database import get_session_ctx
-from app.models import User
-from app.auth.security import create_access_token
+from app.models import User, RefreshToken
+from app.auth.security import create_access_token, create_refresh_token, REFRESH_TOKEN_EXPIRE_DAYS
 from app.auth.providers import get_active_provider
 from app.core.config import settings
 
@@ -106,10 +108,20 @@ async def oauth_callback(provider: str, request: Request):
                 session.refresh(user)
 
         token = create_access_token(data={"sub": user.id})
+        raw_refresh, refresh_hash = create_refresh_token()
+        rt = RefreshToken(
+            user_id=user.id,
+            token_hash=refresh_hash,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+        )
+        session.add(rt)
+        session.commit()
 
-    # Redirect to frontend callback page with the JWT
+    # Redirect to frontend callback page with the JWT and refresh token
     frontend_url = settings.VITE_FRONTEND_BASE_URL.rstrip("/")
     if not frontend_url.startswith(("http://", "https://")):
         frontend_url = f"https://{frontend_url}"
 
-    return RedirectResponse(url=f"{frontend_url}/auth/callback?token={token}")
+    return RedirectResponse(
+        url=f"{frontend_url}/auth/callback?token={token}&refresh_token={raw_refresh}"
+    )

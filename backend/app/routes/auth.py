@@ -2,16 +2,24 @@
 Authentication routes for Open Reporting.
 """
 
+import hashlib
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from typing import Optional, Annotated
-from datetime import datetime
 from sqlmodel import Session, select
 
 from app.database import get_session
-from app.models import User, Favorite, Subscription
-from app.auth.security import get_password_hash, verify_password, create_access_token
+from app.models import User, Favorite, Subscription, RefreshToken
+from app.auth.security import (
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+    REFRESH_TOKEN_EXPIRE_DAYS,
+)
 from app.auth.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
@@ -29,7 +37,12 @@ class UserRegister(BaseModel):
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 
 class UserProfile(BaseModel):
@@ -80,12 +93,15 @@ class UserStats(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-@router.post("/register", response_model=UserProfile)
+@router.post("/register", response_model=Token)
 def register(user_in: UserRegister, session: Session = Depends(get_session)):
-    """Register a new user."""
+    """Register a new user and return access + refresh tokens."""
     user = session.exec(select(User).where(User.email == user_in.email)).first()
     if user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(
+            status_code=400,
+            detail="Registration failed. Please check your input and try again.",
+        )
 
     hashed_password = get_password_hash(user_in.password)
     new_user = User(
@@ -98,14 +114,20 @@ def register(user_in: UserRegister, session: Session = Depends(get_session)):
     session.commit()
     session.refresh(new_user)
 
-    return UserProfile(
-        id=new_user.id,
-        name=new_user.name,
-        email=new_user.email,
-        role=new_user.role,
-        created_at=new_user.created_at,
-        avatar_url=new_user.avatar_url,
-        provider=new_user.provider,
+    access_token = create_access_token(data={"sub": new_user.id})
+    raw_refresh, refresh_hash = create_refresh_token()
+    rt = RefreshToken(
+        user_id=new_user.id,
+        token_hash=refresh_hash,
+        expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+    )
+    session.add(rt)
+    session.commit()
+
+    return Token(
+        access_token=access_token,
+        refresh_token=raw_refresh,
+        token_type="bearer",
     )
 
 
@@ -115,7 +137,7 @@ def login_for_access_token(
     session: Session = Depends(get_session),
 ):
     """
-    OAuth2 compatible token login, get an access token for future requests.
+    OAuth2 compatible token login, get access + refresh tokens for future requests.
     """
     user = session.exec(select(User).where(User.email == form_data.username)).first()
     if not user or not user.hashed_password:
@@ -124,7 +146,20 @@ def login_for_access_token(
         raise HTTPException(status_code=400, detail="Incorrect email or password")
 
     access_token = create_access_token(data={"sub": user.id})
-    return {"access_token": access_token, "token_type": "bearer"}
+    raw_refresh, refresh_hash = create_refresh_token()
+    rt = RefreshToken(
+        user_id=user.id,
+        token_hash=refresh_hash,
+        expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+    )
+    session.add(rt)
+    session.commit()
+
+    return Token(
+        access_token=access_token,
+        refresh_token=raw_refresh,
+        token_type="bearer",
+    )
 
 
 @router.get("/me", response_model=UserProfile)
@@ -150,6 +185,66 @@ def get_my_stats(current_user: User = Depends(get_current_user)):
         upvotes_given=len(current_user.upvotes),
         reports_viewed=0,
     )
+
+
+# ---------------------------------------------------------------------------
+# Token Refresh & Logout
+# ---------------------------------------------------------------------------
+
+
+@router.post("/refresh", response_model=Token)
+def refresh_access_token(body: RefreshRequest, session: Session = Depends(get_session)):
+    """Exchange a valid refresh token for new access + refresh tokens (rotation)."""
+    token_hash = hashlib.sha256(body.refresh_token.encode()).hexdigest()
+
+    stored = session.exec(
+        select(RefreshToken).where(
+            RefreshToken.token_hash == token_hash,
+            RefreshToken.revoked == False,  # noqa: E712
+        )
+    ).first()
+
+    if not stored or stored.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+
+    user = session.get(User, stored.user_id)
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="User not found or deactivated")
+
+    # Revoke the old refresh token
+    stored.revoked = True
+    session.add(stored)
+
+    # Issue new token pair
+    access_token = create_access_token(data={"sub": user.id})
+    new_raw, new_hash = create_refresh_token()
+    new_rt = RefreshToken(
+        user_id=user.id,
+        token_hash=new_hash,
+        expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+    )
+    session.add(new_rt)
+    session.commit()
+
+    return Token(
+        access_token=access_token,
+        refresh_token=new_raw,
+        token_type="bearer",
+    )
+
+
+@router.post("/logout")
+def logout(body: RefreshRequest, session: Session = Depends(get_session)):
+    """Revoke a refresh token (log out)."""
+    token_hash = hashlib.sha256(body.refresh_token.encode()).hexdigest()
+    stored = session.exec(
+        select(RefreshToken).where(RefreshToken.token_hash == token_hash)
+    ).first()
+    if stored:
+        stored.revoked = True
+        session.add(stored)
+        session.commit()
+    return {"message": "Logged out"}
 
 
 # ---------------------------------------------------------------------------

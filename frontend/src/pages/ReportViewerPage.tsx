@@ -43,6 +43,28 @@ import { timeAgo } from "@/lib/time"
 import DOMPurify from "dompurify"
 import { SlideshowViewer } from "@/components/SlideshowViewer"
 
+/** Shared DOMPurify config for rendering agent-submitted HTML reports. */
+const REPORT_SANITIZE_CONFIG: DOMPurify.Config = {
+  ADD_TAGS: [
+    "canvas", "svg", "path", "circle", "rect", "line", "polyline",
+    "polygon", "text", "g", "defs", "clippath", "use",
+  ],
+  ADD_ATTR: [
+    "style", "viewbox", "fill", "stroke", "stroke-width", "d",
+    "cx", "cy", "r", "x", "y", "x1", "x2", "y1", "y2", "points",
+    "width", "height", "transform", "role", "aria-label", "xmlns",
+    "preserveaspectratio", "stroke-dasharray", "dominant-baseline",
+    "text-anchor", "fill-opacity", "rx",
+  ],
+  FORBID_TAGS: [
+    "script", "style", "iframe", "form", "input", "textarea", "select",
+    "button", "embed", "object", "applet", "meta", "base", "link",
+  ],
+  FORBID_ATTR: ["onerror", "onload", "onclick", "onmouseover", "onfocus", "onblur"],
+  ALLOW_DATA_ATTR: true,
+  RETURN_TRUSTED_TYPE: false,
+}
+
 import { cn } from "@/lib/utils"
 import { type Report, type ReportComment } from "@/types"
 import { ReportAgentChat } from "@/components/ReportTerminalChat"
@@ -618,55 +640,7 @@ export function ReportViewerPage() {
                   <div
                     className="max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto"
                     dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(report.html_body || "", {
-                        ADD_TAGS: [
-                          "canvas",
-                          "svg",
-                          "path",
-                          "circle",
-                          "rect",
-                          "line",
-                          "polyline",
-                          "polygon",
-                          "text",
-                          "g",
-                          "defs",
-                          "clippath",
-                          "use",
-                        ],
-                        ADD_ATTR: [
-                          "style",
-                          "viewbox",
-                          "fill",
-                          "stroke",
-                          "stroke-width",
-                          "d",
-                          "cx",
-                          "cy",
-                          "r",
-                          "x",
-                          "y",
-                          "x1",
-                          "x2",
-                          "y1",
-                          "y2",
-                          "points",
-                          "width",
-                          "height",
-                          "transform",
-                          "role",
-                          "aria-label",
-                          "xmlns",
-                          "preserveaspectratio",
-                          "stroke-dasharray",
-                          "dominant-baseline",
-                          "text-anchor",
-                          "fill-opacity",
-                          "rx",
-                        ],
-                        ALLOW_DATA_ATTR: true,
-                        RETURN_TRUSTED_TYPE: false,
-                      }),
+                      __html: DOMPurify.sanitize(report.html_body || "", REPORT_SANITIZE_CONFIG),
                     }}
                   />
                 </CardContent>
@@ -725,55 +699,7 @@ export function ReportViewerPage() {
                 <div
                   className="max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_iframe]:max-w-full"
                   dangerouslySetInnerHTML={{
-                    __html: DOMPurify.sanitize(report.html_body || "", {
-                      ADD_TAGS: [
-                        "canvas",
-                        "svg",
-                        "path",
-                        "circle",
-                        "rect",
-                        "line",
-                        "polyline",
-                        "polygon",
-                        "text",
-                        "g",
-                        "defs",
-                        "clippath",
-                        "use",
-                      ],
-                      ADD_ATTR: [
-                        "style",
-                        "viewbox",
-                        "fill",
-                        "stroke",
-                        "stroke-width",
-                        "d",
-                        "cx",
-                        "cy",
-                        "r",
-                        "x",
-                        "y",
-                        "x1",
-                        "x2",
-                        "y1",
-                        "y2",
-                        "points",
-                        "width",
-                        "height",
-                        "transform",
-                        "role",
-                        "aria-label",
-                        "xmlns",
-                        "preserveaspectratio",
-                        "stroke-dasharray",
-                        "dominant-baseline",
-                        "text-anchor",
-                        "fill-opacity",
-                        "rx",
-                      ],
-                      ALLOW_DATA_ATTR: true,
-                      RETURN_TRUSTED_TYPE: false,
-                    }),
+                    __html: DOMPurify.sanitize(report.html_body || "", REPORT_SANITIZE_CONFIG),
                   }}
                 />
                 {/* Highlight overlays — React-owned, positioned over selected text */}

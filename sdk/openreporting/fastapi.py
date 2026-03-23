@@ -15,10 +15,17 @@ Usage::
 
 from __future__ import annotations
 
+import hashlib
+import hmac as _hmac
+import threading
+import time as _time
+from collections import defaultdict
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Callable, Union
 
 try:
-    from fastapi import APIRouter
+    from fastapi import APIRouter, Request
+    from fastapi.responses import JSONResponse
     from pydantic import BaseModel
     from starlette.responses import StreamingResponse
 except ImportError:
@@ -31,6 +38,53 @@ from openreporting.chat import _sse
 
 if TYPE_CHECKING:
     from openreporting.chat import ChatHandler
+
+
+# ---------------------------------------------------------------------------
+# In-memory rate limiter
+# ---------------------------------------------------------------------------
+
+_rate_buckets: dict[str, list[float]] = defaultdict(list)
+_rate_lock = threading.Lock()
+
+
+def _check_rate_limit(key: str, max_requests: int, window: int) -> bool:
+    """Returns True if allowed, False if rate limited."""
+    now = _time.time()
+    with _rate_lock:
+        timestamps = _rate_buckets[key]
+        _rate_buckets[key] = [t for t in timestamps if t > now - window]
+        if len(_rate_buckets[key]) >= max_requests:
+            return False
+        _rate_buckets[key].append(now)
+        return True
+
+
+# ---------------------------------------------------------------------------
+# HMAC signature verification
+# ---------------------------------------------------------------------------
+
+
+def _verify_signature(
+    api_key: str, body_bytes: bytes, signature_header: str, timestamp_header: str
+) -> str | None:
+    """Verify HMAC signature and timestamp freshness. Returns error message or None."""
+    # Check timestamp freshness (5 minutes)
+    try:
+        ts = datetime.fromisoformat(timestamp_header)
+        age = (datetime.now(timezone.utc) - ts).total_seconds()
+        if abs(age) > 300:  # 5 minutes
+            return "Request timestamp too old or too far in the future."
+    except (ValueError, TypeError):
+        return "Invalid timestamp header."
+
+    # Verify HMAC signature
+    expected = _hmac.new(api_key.encode(), body_bytes, hashlib.sha256).hexdigest()
+    expected_header = f"sha256={expected}"
+    if not _hmac.compare_digest(signature_header or "", expected_header):
+        return "Invalid request signature."
+
+    return None
 
 
 class ChatRequest(BaseModel):
@@ -79,6 +133,8 @@ class ChatResponse(BaseModel):
 def create_chat_router(
     chat: Union[ChatHandler, Callable[[], ChatHandler]],
     prefix: str = "",
+    rate_limit: int = 30,
+    api_key: str | None = None,
 ) -> APIRouter:
     """Create a FastAPI router with ``/health`` and ``/chat`` endpoints.
 
@@ -90,6 +146,14 @@ def create_chat_router(
         request, not at import time).
     prefix:
         Optional URL prefix for the router (e.g. ``"/agent"``).
+    rate_limit:
+        Maximum number of requests per minute per client IP.  Defaults to
+        ``30``.  Set to ``0`` to disable rate limiting.
+    api_key:
+        If provided, every incoming request must include valid
+        ``X-OpenRep-Signature`` (``sha256=<hex>``) and
+        ``X-OpenRep-Timestamp`` (ISO-8601) headers.  Requests with
+        timestamps older than 5 minutes are rejected.
 
     Returns
     -------
@@ -101,6 +165,28 @@ def create_chat_router(
     def _resolve() -> ChatHandler:
         return chat() if callable(chat) else chat
 
+    async def _security_checks(request: Request) -> JSONResponse | None:
+        """Run rate-limit and HMAC checks. Returns an error response or *None*."""
+        # --- Rate limiting ---
+        if rate_limit > 0:
+            client_ip = request.client.host if request.client else "unknown"
+            if not _check_rate_limit(f"chat:{client_ip}", rate_limit, 60):
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Rate limit exceeded. Try again later."},
+                )
+
+        # --- HMAC signature verification ---
+        if api_key is not None:
+            body_bytes = await request.body()
+            sig_header = request.headers.get("X-OpenRep-Signature", "")
+            ts_header = request.headers.get("X-OpenRep-Timestamp", "")
+            error = _verify_signature(api_key, body_bytes, sig_header, ts_header)
+            if error:
+                return JSONResponse(status_code=401, content={"detail": error})
+
+        return None
+
     @router.get("/health")
     def health():
         return {"status": "ok"}
@@ -110,13 +196,19 @@ def create_chat_router(
         return {"status": "ok", "method": "POST"}
 
     @router.post("/chat", response_model=ChatResponse)
-    def handle_chat(req: ChatRequest):
+    async def handle_chat(request: Request, req: ChatRequest):
+        error_response = await _security_checks(request)
+        if error_response is not None:
+            return error_response
         if not req.message.strip():
             return ChatResponse(reply="No question provided.")
         return ChatResponse(**_resolve().handle(req.message, req.get_report_context()))
 
     @router.post("/chat/stream")
-    def handle_chat_stream(req: ChatRequest):
+    async def handle_chat_stream(request: Request, req: ChatRequest):
+        error_response = await _security_checks(request)
+        if error_response is not None:
+            return error_response
         if not req.message.strip():
             return StreamingResponse(
                 iter([_sse("error", {"message": "No question provided."}), _sse("done", {})]),

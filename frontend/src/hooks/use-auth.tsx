@@ -8,7 +8,7 @@ export interface AuthContextType {
   isLoggingIn: boolean
   login: () => Promise<void>
   loginWithProvider: () => void
-  logout: () => void
+  logout: () => Promise<void> | void
   refreshUser: () => Promise<void>
   setUserFromToken: (token: string) => void
 }

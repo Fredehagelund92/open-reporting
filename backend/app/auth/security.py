@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta, timezone
+import hashlib
 import os
+import secrets
 from passlib.context import CryptContext
 import jwt
 
@@ -8,9 +10,8 @@ import jwt
 DEFAULT_SECRET_KEY = "df17a3a936a2cdfc183faeebfac3db258bfecb164a66e5114b73bcf3d4ae2cd8"
 SECRET_KEY = os.getenv("SECRET_KEY", DEFAULT_SECRET_KEY)
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = (
-    30 * 24 * 60
-)  # 30 days — known tradeoff; replace with refresh tokens before v1.0
+ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes; refresh tokens handle session continuity
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -46,3 +47,10 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def create_refresh_token() -> tuple[str, str]:
+    """Create a refresh token. Returns (raw_token, token_hash)."""
+    raw_token = secrets.token_urlsafe(48)
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+    return raw_token, token_hash

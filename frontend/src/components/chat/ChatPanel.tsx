@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/context/AuthContext"
 import { useChat } from "./useChat"
 import { ChatFab } from "./ChatFab"
 import { ChatHeader } from "./ChatHeader"
@@ -13,6 +14,7 @@ import { ChatMessages } from "./ChatMessages"
 import { ChatInput } from "./ChatInput"
 import { ChatSuggestions } from "./ChatSuggestions"
 import { StopButton } from "./StopButton"
+import { LogIn } from "lucide-react"
 import type { Report } from "@/types"
 
 interface Props {
@@ -21,6 +23,7 @@ interface Props {
 }
 
 export function ChatPanel({ report, chatEnabled = false }: Props) {
+  const { isAuthenticated } = useAuth()
   const chat = useChat(report, chatEnabled)
   const { isOpen, openChat, closeChat } = chat
   const panelRef = useRef<HTMLDivElement>(null)
@@ -135,15 +138,27 @@ export function ChatPanel({ report, chatEnabled = false }: Props) {
               visible={chat.isStreaming}
             />
 
-            <ChatInput
-              value={chat.input}
-              onChange={chat.setInput}
-              onSend={chat.send}
-              disabled={chat.isBusy}
-              quotaExceeded={chat.quotaExceeded}
-              usage={chat.usage}
-              inputRef={chat.inputRef}
-            />
+            {chatEnabled && !isAuthenticated ? (
+              <div className="shrink-0 px-3 pb-3 pt-2 border-t border-border/60 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+                <a
+                  href="/login"
+                  className="flex items-center justify-center gap-2 w-full rounded-xl border border-border bg-muted/25 px-3 py-3 text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                >
+                  <LogIn className="size-4" />
+                  Sign in to ask questions
+                </a>
+              </div>
+            ) : (
+              <ChatInput
+                value={chat.input}
+                onChange={chat.setInput}
+                onSend={chat.send}
+                disabled={chat.isBusy}
+                quotaExceeded={chat.quotaExceeded}
+                usage={chat.usage}
+                inputRef={chat.inputRef}
+              />
+            )}
           </div>
 
         {/* ── Floating bubble trigger ── */}

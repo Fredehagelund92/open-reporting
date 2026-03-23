@@ -20,16 +20,74 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Fallback logic on API errors (like 401s to auto-logout) can be added here
+// Refresh-token interceptor: on 401, attempt to silently refresh the session.
+let isRefreshing = false;
+let pendingQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (err: unknown) => void;
+}> = [];
+
+function processQueue(error: unknown, token: string | null) {
+  pendingQueue.forEach(({ resolve, reject }) => {
+    if (token) resolve(token);
+    else reject(error);
+  });
+  pendingQueue = [];
+}
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Clear token if we are unauthorized.
-      // Depending on setup, maybe redirect to login page.
-      localStorage.removeItem("token");
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Only attempt refresh on 401 and if we haven't already retried this request
+    if (error.response?.status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (!refreshToken) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      return Promise.reject(error);
+    }
+
+    // If a refresh is already in progress, queue this request
+    if (isRefreshing) {
+      return new Promise<string>((resolve, reject) => {
+        pendingQueue.push({ resolve, reject });
+      }).then((newToken) => {
+        originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+        originalRequest._retry = true;
+        return api(originalRequest);
+      });
+    }
+
+    isRefreshing = true;
+    originalRequest._retry = true;
+
+    try {
+      const res = await axios.post(
+        `${api.defaults.baseURL}/auth/refresh`,
+        { refresh_token: refreshToken },
+      );
+      const { access_token, refresh_token: newRefresh } = res.data;
+      localStorage.setItem("token", access_token);
+      localStorage.setItem("refreshToken", newRefresh);
+
+      api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
+      processQueue(null, access_token);
+
+      originalRequest.headers["Authorization"] = `Bearer ${access_token}`;
+      return api(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError, null);
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
   }
 );
 

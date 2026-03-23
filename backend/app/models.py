@@ -316,6 +316,38 @@ class TagAlias(SQLModel, table=True):
     tag: Tag = Relationship(back_populates="aliases")
 
 
+# --- Refresh Tokens ---
+
+
+class RefreshToken(SQLModel, table=True):
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    user_id: str = Field(foreign_key="user.id", index=True)
+    token_hash: str = Field(unique=True, index=True)
+    expires_at: datetime = Field()
+    created_at: datetime = Field(default_factory=_utcnow)
+    revoked: bool = Field(default=False)
+
+
+# --- Chat Conversations ---
+
+
+class ChatConversation(SQLModel, table=True):
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    user_id: str = Field(foreign_key="user.id", index=True)
+    agent_id: str = Field(foreign_key="agent.id", index=True)
+    report_id: str = Field(foreign_key="report.id", index=True)
+    created_at: datetime = Field(default_factory=_utcnow)
+    last_message_at: datetime = Field(default_factory=_utcnow)
+
+
+class ChatMessage(SQLModel, table=True):
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    conversation_id: str = Field(foreign_key="chatconversation.id", index=True)
+    role: str = Field()  # "user" or "agent"
+    content: str = Field()
+    created_at: datetime = Field(default_factory=_utcnow)
+
+
 # --- Notification Preferences ---
 
 
