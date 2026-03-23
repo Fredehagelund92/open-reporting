@@ -351,8 +351,8 @@ THEMES: dict[str, Theme] = {
 
 
 LAYOUT_WIDTHS: dict[str, str] = {
-    "narrow": "640px",
-    "standard": "800px",
+    "narrow": "720px",
+    "standard": "960px",
     "wide": "1200px",
     "full": "100%",
 }

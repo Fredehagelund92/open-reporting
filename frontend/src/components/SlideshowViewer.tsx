@@ -179,19 +179,20 @@ export function SlideshowViewer({
                   className="h-full w-full shrink-0 overflow-y-auto"
                   style={{ backgroundColor: slide.bgColor }}
                 >
-                  <div className="mx-auto flex min-h-full w-full max-w-6xl items-center justify-center p-3 sm:p-8 md:p-14 lg:p-16">
+                  <div className="mx-auto flex min-h-full w-full max-w-6xl items-center justify-start p-3 sm:p-8 md:p-14 lg:p-16">
                     <div
                       className={[
                         "w-full",
                         isTitleSlide ? "text-center" : "",
-                        isDarkSlide ? "text-slate-100" : "text-slate-800",
+                        isDarkSlide ? "text-slate-100" : "text-foreground",
                         "[&_h1]:text-xl [&_h1]:sm:text-4xl [&_h1]:md:text-5xl [&_h1]:font-bold [&_h1]:tracking-tight [&_h1]:leading-tight [&_h1]:mb-2 [&_h1]:sm:mb-5",
                         "[&_h2]:text-lg [&_h2]:sm:text-3xl [&_h2]:md:text-4xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h2]:leading-tight [&_h2]:mb-2 [&_h2]:sm:mb-4",
-                        "[&_h3]:text-base [&_h3]:sm:text-xl [&_h3]:md:text-2xl [&_h3]:font-semibold [&_h3]:mb-1.5 [&_h3]:sm:mb-3",
-                        "[&_p]:text-xs [&_p]:sm:text-base [&_p]:md:text-lg [&_p]:leading-relaxed",
-                        "[&_ul]:list-disc [&_ul]:pl-4 [&_ul]:sm:pl-6 [&_ul]:my-1.5 [&_ul]:sm:my-3 [&_ul]:text-xs [&_ul]:sm:text-base [&_ul]:md:text-lg [&_ul]:leading-relaxed",
-                        "[&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:sm:pl-6 [&_ol]:my-1.5 [&_ol]:sm:my-3 [&_ol]:text-xs [&_ol]:sm:text-base [&_ol]:md:text-lg [&_ol]:leading-relaxed",
+                        "[&_h3]:text-lg [&_h3]:sm:text-xl [&_h3]:md:text-2xl [&_h3]:font-semibold [&_h3]:mb-1.5 [&_h3]:sm:mb-3",
+                        "[&_p]:text-sm [&_p]:sm:text-base [&_p]:md:text-lg [&_p]:leading-relaxed",
+                        "[&_ul]:list-disc [&_ul]:pl-4 [&_ul]:sm:pl-6 [&_ul]:my-1.5 [&_ul]:sm:my-3 [&_ul]:text-sm [&_ul]:sm:text-base [&_ul]:md:text-lg [&_ul]:leading-relaxed",
+                        "[&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:sm:pl-6 [&_ol]:my-1.5 [&_ol]:sm:my-3 [&_ol]:text-sm [&_ol]:sm:text-base [&_ol]:md:text-lg [&_ol]:leading-relaxed",
                         "[&_table]:text-xs [&_table]:sm:text-sm [&_table]:md:text-base",
+                        "[&_svg]:w-full [&_svg]:max-w-full [&_svg]:h-auto",
                         isDarkSlide
                           ? "[&_h1]:text-white [&_h2]:text-white [&_h3]:text-slate-100 [&_p]:text-slate-200 [&_li]:text-slate-200"
                           : "[&_h1]:text-slate-900 [&_h2]:text-slate-900 [&_h3]:text-slate-800 [&_p]:text-slate-700 [&_li]:text-slate-700",

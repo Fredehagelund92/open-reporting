@@ -30,12 +30,12 @@ def _fmt_val(val: float) -> str:
     return f"{val:.1f}"
 
 
-_CHART_WIDTH = 600
-_CHART_HEIGHT = 300
-_PAD_LEFT = 60
-_PAD_RIGHT = 20
-_PAD_TOP = 30
-_PAD_BOTTOM = 50
+_CHART_WIDTH = 760
+_CHART_HEIGHT = 380
+_PAD_LEFT = 72
+_PAD_RIGHT = 32
+_PAD_TOP = 40
+_PAD_BOTTOM = 60
 
 
 def _smart_baseline(min_val: float, max_val: float) -> float:
@@ -72,13 +72,13 @@ def _y_axis_and_grid(ticks: list[float], plot_top: float, plot_bottom: float, th
             y = plot_bottom - ((tick - min_tick) / tick_range) * (plot_bottom - plot_top)
         parts.append(
             f'<line x1="{_PAD_LEFT}" y1="{y:.1f}" x2="{_CHART_WIDTH - _PAD_RIGHT}" '
-            f'y2="{y:.1f}" stroke="{theme.chart_grid_color}" stroke-dasharray="4,4" />'
+            f'y2="{y:.1f}" stroke="{theme.chart_grid_color}" stroke-dasharray="4,4" stroke-opacity="0.5" />'
         )
         label = _fmt_val(tick)
         parts.append(
             f'<text x="{_PAD_LEFT - 8}" y="{y:.1f}" text-anchor="end" '
             f'dominant-baseline="middle" fill="{theme.chart_axis_color}" '
-            f'style="font-size:11px;">{label}</text>'
+            f'style="font-size:12px;">{label}</text>'
         )
     return "\n".join(parts)
 
@@ -97,9 +97,9 @@ def _legend(names: list[str], colors: list[str], theme: Theme) -> str:
         )
         parts.append(
             f'<text x="{x + 16}" y="{y}" fill="{theme.chart_axis_color}" '
-            f'style="font-size:11px;">{escape(name)}</text>'
+            f'style="font-size:12px;">{escape(name)}</text>'
         )
-        x += len(name) * 7 + 32
+        x += int(12 * 0.6 * len(name)) + 32  # font_size * char_width_ratio * chars + gap
     return "\n".join(parts)
 
 
@@ -133,7 +133,7 @@ def svg_bar_chart(data: dict, theme: Theme) -> str:
     n_labels = len(labels)
     n_datasets = len(datasets)
     group_width = (_CHART_WIDTH - _PAD_LEFT - _PAD_RIGHT) / max(n_labels, 1)
-    bar_width = max(group_width / (n_datasets + 1), 4)
+    bar_width = max(group_width / (n_datasets + 1), 8)
     gap = bar_width * 0.2
 
     colors = list(theme.chart_colors)
@@ -145,7 +145,7 @@ def svg_bar_chart(data: dict, theme: Theme) -> str:
         label_x = group_x + group_width / 2
         bars.append(
             f'<text x="{label_x:.1f}" y="{plot_bottom + 18}" text-anchor="middle" '
-            f'fill="{theme.chart_axis_color}" style="font-size:11px;">{escape(str(label))}</text>'
+            f'fill="{theme.chart_axis_color}" style="font-size:12px;">{escape(str(label))}</text>'
         )
         for di, ds in enumerate(datasets):
             vals = ds.get("values", [])
@@ -161,10 +161,10 @@ def svg_bar_chart(data: dict, theme: Theme) -> str:
             )
             # Value label above bar
             if h > 8 and bar_width > 18:
-                label_color = theme.kpi_delta_negative if val < 0 else theme.chart_axis_color
+                label_color = theme.kpi_delta_negative if val < 0 else theme.text_color
                 bars.append(
                     f'<text x="{x + bar_width / 2:.1f}" y="{y - 4:.1f}" text-anchor="middle" '
-                    f'fill="{label_color}" style="font-size:10px;">{_fmt_val(val)}</text>'
+                    f'fill="{label_color}" style="font-size:11px;">{_fmt_val(val)}</text>'
                 )
 
     legend = _legend([ds.get("name", f"Series {i+1}") for i, ds in enumerate(datasets)], colors, theme)
@@ -215,7 +215,7 @@ def svg_line_chart(data: dict, theme: Theme, fill: bool = False) -> str:
         x = plot_left + (li / max(n_labels - 1, 1)) * plot_width
         lines.append(
             f'<text x="{x:.1f}" y="{plot_bottom + 18}" text-anchor="middle" '
-            f'fill="{theme.chart_axis_color}" style="font-size:11px;">{escape(str(label))}</text>'
+            f'fill="{theme.chart_axis_color}" style="font-size:12px;">{escape(str(label))}</text>'
         )
 
     for di, ds in enumerate(datasets):
@@ -249,10 +249,10 @@ def svg_line_chart(data: dict, theme: Theme, fill: bool = False) -> str:
             lines.append(
                 f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3.5" fill="{c}" />'
             )
-            if len(vals) <= 10:
+            if len(vals) <= 15:
                 lines.append(
                     f'<text x="{x:.1f}" y="{y - 8:.1f}" text-anchor="middle" '
-                    f'fill="{theme.chart_axis_color}" style="font-size:9px;">{_fmt_val(val)}</text>'
+                    f'fill="{theme.text_color}" style="font-size:11px;">{_fmt_val(val)}</text>'
                 )
 
     legend = _legend([ds.get("name", f"Series {i+1}") for i, ds in enumerate(datasets)], colors, theme)
@@ -310,7 +310,7 @@ def svg_pie_chart(data: dict, theme: Theme) -> str:
     if total <= 0:
         return ""
 
-    cx, cy = 200, 150
+    cx, cy = 240, 180
     r = 110
     colors = list(theme.chart_colors)
     slices: list[str] = []
@@ -349,7 +349,7 @@ def svg_pie_chart(data: dict, theme: Theme) -> str:
         angle += sweep
 
     return (
-        f'<svg viewBox="0 0 400 {_CHART_HEIGHT}" width="100%" '
+        f'<svg viewBox="0 0 480 360" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pie chart" '
         f'style="display:block; font-family:{theme.font_stack};">'
         f'\n{"".join(slices)}\n{"".join(labels)}'
@@ -380,7 +380,7 @@ def svg_horizontal_bar_chart(data: dict, theme: Theme) -> str:
     if val_range == 0:
         val_range = 1
 
-    pad_left = 120
+    pad_left = 140
     pad_right = 60
     pad_top = 20
     pad_bottom = 30
@@ -389,7 +389,7 @@ def svg_horizontal_bar_chart(data: dict, theme: Theme) -> str:
     n_datasets = len(datasets)
     plot_width = _CHART_WIDTH - pad_left - pad_right
     group_height = (_CHART_HEIGHT - pad_top - pad_bottom) / max(n_labels, 1)
-    bar_height = max(group_height / (n_datasets + 1), 4)
+    bar_height = max(group_height / (n_datasets + 1), 8)
     gap = bar_height * 0.2
 
     colors = list(theme.chart_colors)
@@ -401,7 +401,7 @@ def svg_horizontal_bar_chart(data: dict, theme: Theme) -> str:
         bars.append(
             f'<text x="{pad_left - 8}" y="{label_y:.1f}" text-anchor="end" '
             f'dominant-baseline="middle" fill="{theme.chart_axis_color}" '
-            f'style="font-size:11px;">{escape(str(label))}</text>'
+            f'style="font-size:12px;">{escape(str(label))}</text>'
         )
         for di, ds in enumerate(datasets):
             vals = ds.get("values", [])
@@ -417,8 +417,8 @@ def svg_horizontal_bar_chart(data: dict, theme: Theme) -> str:
             if w > 30:
                 bars.append(
                     f'<text x="{pad_left + w + 4:.1f}" y="{y + bar_height / 2:.1f}" '
-                    f'dominant-baseline="middle" fill="{theme.chart_axis_color}" '
-                    f'style="font-size:10px;">{_fmt_val(val)}</text>'
+                    f'dominant-baseline="middle" fill="{theme.text_color}" '
+                    f'style="font-size:11px;">{_fmt_val(val)}</text>'
                 )
 
     legend = _legend(
@@ -474,7 +474,7 @@ def svg_stacked_bar_chart(data: dict, theme: Theme) -> str:
         label_x = group_x + group_width / 2
         bars.append(
             f'<text x="{label_x:.1f}" y="{plot_bottom + 18}" text-anchor="middle" '
-            f'fill="{theme.chart_axis_color}" style="font-size:11px;">{escape(str(label))}</text>'
+            f'fill="{theme.chart_axis_color}" style="font-size:12px;">{escape(str(label))}</text>'
         )
         bar_x = group_x + (group_width - bar_width) / 2
         cum_height = 0.0
@@ -518,7 +518,7 @@ def svg_donut_chart(data: dict, theme: Theme) -> str:
     if total <= 0:
         return ""
 
-    cx, cy = 200, 150
+    cx, cy = 240, 180
     outer_r = 110
     inner_r = 65
     colors = list(theme.chart_colors)
@@ -575,7 +575,7 @@ def svg_donut_chart(data: dict, theme: Theme) -> str:
         )
 
     return (
-        f'<svg viewBox="0 0 400 {_CHART_HEIGHT}" width="100%" '
+        f'<svg viewBox="0 0 480 360" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Donut chart" '
         f'style="display:block; font-family:{theme.font_stack};">'
         f'\n{"".join(slices)}\n{"".join(labels)}\n{center_html}'

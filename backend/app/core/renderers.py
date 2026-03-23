@@ -186,7 +186,7 @@ def _render_kpi_grid(section: dict, t: Theme) -> str:
             )
 
         cards.append(
-            f'<div style="flex:1 1 180px; background:{t.card_bg}; border:1px solid {t.border_color}; '
+            f'<div style="flex:1 1 200px; background:{t.card_bg}; border:1px solid {t.border_color}; '
             f'border-radius:8px; padding:24px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
             f'<div style="margin:0 0 10px; font-size:12px; text-transform:uppercase; '
             f'letter-spacing:0.08em; color:{t.secondary_text}; font-weight:500;">{label}</div>'
@@ -305,7 +305,7 @@ def _render_chart_section(section: dict, t: Theme, svg_fn) -> str:
         )
 
     return (
-        f'<div style="width:100%; margin:24px 0;">'
+        f'<div style="width:100%; margin:32px 0; text-align:left;">'
         f'{heading_html}'
         f'<div data-or-chart=\'{escape(chart_json, quote=False)}\' '
         f'style="width:100%;">'

@@ -240,6 +240,59 @@ def evaluate_authoring_quality(
                     )
                 )
 
+    # SVG quality checks on the rendered HTML body
+    svg_blocks = re.findall(r"<svg[^>]*>.*?</svg>", html_body, re.DOTALL | re.IGNORECASE)
+    for idx, svg_block in enumerate(svg_blocks):
+        # Check for missing viewBox
+        if "viewBox" not in svg_block and "viewbox" not in svg_block:
+            issues.append(
+                CoachIssue(
+                    rule_id="chart_missing_viewbox",
+                    severity="warning",
+                    message=f"SVG {idx + 1} is missing a viewBox attribute.",
+                    suggestion="Add a viewBox attribute (e.g. viewBox='0 0 760 380') for proper responsive scaling.",
+                )
+            )
+
+        # Check for small font sizes
+        small_fonts = re.findall(r'font-size[=:]\s*["\']?(\d+)', svg_block)
+        for fs in small_fonts:
+            if int(fs) < 10:
+                issues.append(
+                    CoachIssue(
+                        rule_id="chart_text_too_small",
+                        severity="warning",
+                        message=f"SVG {idx + 1} has text with font-size {fs}px which may be hard to read.",
+                        suggestion="Use font-size 11px or larger for chart text readability.",
+                    )
+                )
+                break  # One warning per SVG is enough
+
+        # Check for fixed px dimensions without width="100%"
+        has_px_width = re.search(r'width\s*=\s*["\']?\d+(?:px)?["\']?', svg_block.split(">")[0])
+        has_percent_width = 'width="100%"' in svg_block or "width='100%'" in svg_block
+        if has_px_width and not has_percent_width:
+            issues.append(
+                CoachIssue(
+                    rule_id="chart_fixed_dimensions",
+                    severity="info",
+                    message=f"SVG {idx + 1} uses fixed pixel dimensions without width='100%'.",
+                    suggestion="Use width='100%' with a viewBox for responsive chart sizing.",
+                )
+            )
+
+        # Check for many hardcoded hex colors (suggests not using theme)
+        hex_colors = set(re.findall(r'#[0-9a-fA-F]{6}', svg_block))
+        if len(hex_colors) > 5:
+            issues.append(
+                CoachIssue(
+                    rule_id="chart_hardcoded_colors",
+                    severity="info",
+                    message=f"SVG {idx + 1} uses {len(hex_colors)} unique hardcoded colors.",
+                    suggestion="Consider using the report theme's color palette for visual consistency.",
+                )
+            )
+
     score = 100
     for issue in issues:
         if issue.severity == "error":

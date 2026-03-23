@@ -134,7 +134,7 @@ export function SpacesDirectoryPage() {
                 <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1.5 truncate">
                   {space.name}
                 </h3>
-                <p className="text-xs text-muted-foreground line-clamp-2 mb-4 h-8 leading-relaxed">
+                <p className="text-xs text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
                   {space.description || "No description provided."}
                 </p>
 
