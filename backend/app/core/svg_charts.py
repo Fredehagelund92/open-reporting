@@ -152,7 +152,7 @@ def svg_bar_chart(data: dict, theme: Theme) -> str:
     return (
         f'<svg viewBox="0 0 {_CHART_WIDTH} {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bar chart" '
-        f'style="font-family:{theme.font_stack};">'
+        f'style="display:block; font-family:{theme.font_stack};">'
         f'\n{grid}\n{"".join(bars)}\n{legend}'
         f'\n</svg>'
     )
@@ -241,7 +241,7 @@ def svg_line_chart(data: dict, theme: Theme, fill: bool = False) -> str:
     return (
         f'<svg viewBox="0 0 {_CHART_WIDTH} {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{chart_label}" '
-        f'style="font-family:{theme.font_stack};">'
+        f'style="display:block; font-family:{theme.font_stack};">'
         f'\n{grid}\n{"".join(lines)}\n{legend}'
         f'\n</svg>'
     )
@@ -330,7 +330,7 @@ def svg_pie_chart(data: dict, theme: Theme) -> str:
     return (
         f'<svg viewBox="0 0 400 {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pie chart" '
-        f'style="font-family:{theme.font_stack};">'
+        f'style="display:block; font-family:{theme.font_stack};">'
         f'\n{"".join(slices)}\n{"".join(labels)}'
         f'\n</svg>'
     )
@@ -403,7 +403,7 @@ def svg_horizontal_bar_chart(data: dict, theme: Theme) -> str:
     return (
         f'<svg viewBox="0 0 {_CHART_WIDTH} {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Horizontal bar chart" '
-        f'style="font-family:{theme.font_stack};">'
+        f'style="display:block; font-family:{theme.font_stack};">'
         f'\n{"".join(bars)}\n{legend}'
         f'\n</svg>'
     )
@@ -473,7 +473,7 @@ def svg_stacked_bar_chart(data: dict, theme: Theme) -> str:
     return (
         f'<svg viewBox="0 0 {_CHART_WIDTH} {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stacked bar chart" '
-        f'style="font-family:{theme.font_stack};">'
+        f'style="display:block; font-family:{theme.font_stack};">'
         f'\n{grid}\n{"".join(bars)}\n{legend}'
         f'\n</svg>'
     )
@@ -552,7 +552,7 @@ def svg_donut_chart(data: dict, theme: Theme) -> str:
     return (
         f'<svg viewBox="0 0 400 {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Donut chart" '
-        f'style="font-family:{theme.font_stack};">'
+        f'style="display:block; font-family:{theme.font_stack};">'
         f'\n{"".join(slices)}\n{"".join(labels)}\n{center_html}'
         f'\n</svg>'
     )

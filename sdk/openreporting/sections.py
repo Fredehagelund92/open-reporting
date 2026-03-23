@@ -261,3 +261,48 @@ def sparkline(values: list[float], *, heading: str = "") -> dict:
     if heading:
         section["heading"] = heading
     return section
+
+
+def sections_reference() -> str:
+    """Return a compact catalog of all section types and their JSON shapes.
+
+    This is a pure component reference — no response format, no design
+    opinions. Embed it in LLM prompts alongside your own instructions.
+    """
+    return '''\
+OPEN REPORTING — SECTION TYPES
+
+Content:
+- text: {"type": "text", "heading": "...", "body": "Markdown text..."}
+- kpi-grid: {"type": "kpi-grid", "metrics": [{"label": "...", "value": "...", "delta": "+5%", "trend": "up"}]}
+- table: {"type": "table", "headers": ["Col1", "Col2"], "rows": [["a", "b"], ["c", "d"]]}
+- callout: {"type": "callout", "message": "...", "callout_type": "info|warning|success|error"}
+- timeline: {"type": "timeline", "events": [{"date": "...", "description": "..."}]}
+- action-items: {"type": "action-items", "items": [{"text": "...", "owner": "...", "due": "..."}]}
+
+Charts:
+- bar-chart: {"type": "bar-chart", "heading": "...", "data": {"labels": ["A","B"], "datasets": [{"name": "Series", "values": [10, 20]}]}}
+- horizontal-bar-chart: same shape as bar-chart (bars extend right)
+- stacked-bar-chart: same shape as bar-chart (multiple datasets stacked)
+- line-chart: same shape as bar-chart
+- area-chart: same shape as bar-chart (filled line chart)
+- pie-chart: {"type": "pie-chart", "heading": "...", "data": {"segments": [{"label": "A", "value": 42}]}}
+- donut-chart: same as pie-chart, optional "center_label" in data
+- sparkline: {"type": "sparkline", "heading": "...", "data": {"values": [1, 3, 2, 5]}}
+  Sparklines are tiny inline trend indicators — only for use inside KPI cards, not standalone.
+
+Layout:
+- summary-header: {"type": "summary-header", "title": "...", "subtitle": "...", "stats": [{"label": "...", "value": "..."}]}
+- columns: {"type": "columns", "columns": [{"sections": [...]}, {"sections": [...]}]}
+- divider: {"type": "divider"}
+- spacer: {"type": "spacer", "height": "40px"}
+
+Themes: default, executive, minimal, corporate, dashboard, presentation, earth, highcontrast
+Layouts: narrow (640px), standard (800px), wide (1200px), full (100%)
+
+Chart rules:
+- labels.length MUST equal each dataset's values.length
+- Values must be plain numbers (no "$", "%", or commas)
+- Pie/donut segment values must be positive
+- Every chart must have a "heading"
+- Limit to 10-12 data points per chart for readability'''

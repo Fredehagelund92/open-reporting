@@ -44,15 +44,15 @@ class OpenReportingClient:
         appended automatically if not already present.
     """
 
-    def __init__(self, api_key: str, base_url: str = "http://localhost:8000"):
+    def __init__(self, api_key: str = "", base_url: str = "http://localhost:8000"):
         self._api_key = api_key
         self._base_url = self._normalize_base_url(base_url)
+        headers: dict[str, str] = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         self._client = httpx.Client(
             base_url=self._base_url,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
+            headers=headers,
             timeout=30.0,
         )
         self._capabilities_cache: dict[str, list[str]] | None = None

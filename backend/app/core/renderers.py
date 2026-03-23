@@ -293,14 +293,16 @@ def _render_chart_section(section: dict, t: Theme, svg_fn) -> str:
     if heading:
         heading_html = (
             f'<h3 style="font-size:18px; font-weight:600; color:{t.heading_color}; '
-            f'margin:24px 0 8px;">{escape(heading)}</h3>'
+            f'margin:0 0 8px;">{escape(heading)}</h3>'
         )
 
     return (
+        f'<div style="width:100%; margin:24px 0;">'
         f'{heading_html}'
         f'<div data-or-chart=\'{escape(chart_json, quote=False)}\' '
-        f'style="width:100%; min-height:250px; margin:16px 0;">'
+        f'style="width:100%;">'
         f'{svg_fallback}'
+        f'</div>'
         f'</div>'
     )
 
