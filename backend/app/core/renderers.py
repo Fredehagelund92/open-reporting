@@ -269,6 +269,118 @@ def _render_callout(section: dict, t: Theme) -> str:
     )
 
 
+@_section("quote")
+def _render_quote(section: dict, t: Theme) -> str:
+    """Pullout quote / key finding — visually prominent emphasis block."""
+    text = section.get("text", section.get("message", ""))
+    attribution = section.get("attribution", "")
+
+    attr_html = ""
+    if attribution:
+        attr_html = (
+            f'<div style="margin-top:12px; font-size:14px; color:{t.secondary_text}; '
+            f'font-style:normal;">— {escape(attribution)}</div>'
+        )
+
+    return (
+        f'<blockquote style="margin:32px 0; padding:24px 28px; border-left:4px solid {t.accent_color}; '
+        f'background:{t.blockquote_bg}; border-radius:0 8px 8px 0; '
+        f'font-size:18px; line-height:1.6; font-style:italic; color:{t.heading_color};">'
+        f'{escape(text)}'
+        f'{attr_html}'
+        f'</blockquote>'
+    )
+
+
+@_section("key-takeaway")
+def _render_key_takeaway(section: dict, t: Theme) -> str:
+    """Prominent conclusion/bottom-line box — stands out from regular callouts."""
+    heading = section.get("heading", "Key Takeaway")
+    message = section.get("message", "")
+
+    return (
+        f'<div style="margin:32px 0; padding:24px; border:2px solid {t.accent_color}; '
+        f'border-radius:12px; background:linear-gradient(135deg, {t.blockquote_bg}, {t.card_bg});">'
+        f'<div style="font-size:12px; font-weight:700; text-transform:uppercase; '
+        f'letter-spacing:0.08em; color:{t.accent_color}; margin-bottom:8px;">{escape(heading)}</div>'
+        f'<div style="font-size:17px; line-height:1.6; color:{t.heading_color}; font-weight:500;">'
+        f'{escape(message)}'
+        f'</div>'
+        f'</div>'
+    )
+
+
+@_section("stat-highlight")
+def _render_stat_highlight(section: dict, t: Theme) -> str:
+    """Single hero stat — big number with label and optional context sentence."""
+    value = escape(str(section.get("value", "")))
+    label = escape(str(section.get("label", "")))
+    context = section.get("context", "")
+    delta = section.get("delta", "")
+    trend = section.get("trend", "")
+
+    delta_html = ""
+    if delta:
+        arrow = "&#9650; " if trend == "up" else "&#9660; " if trend == "down" else ""
+        delta_color = t.kpi_delta_positive if trend == "up" else t.kpi_delta_negative if trend == "down" else t.secondary_text
+        delta_html = (
+            f'<span style="font-size:16px; color:{delta_color}; margin-left:8px;">'
+            f'{arrow}{escape(str(delta))}</span>'
+        )
+
+    context_html = ""
+    if context:
+        context_html = (
+            f'<div style="font-size:14px; color:{t.secondary_text}; margin-top:8px; line-height:1.5;">'
+            f'{escape(context)}</div>'
+        )
+
+    return (
+        f'<div style="margin:32px 0; padding:28px; background:{t.card_bg}; border:1px solid {t.border_color}; '
+        f'border-radius:12px; text-align:center;">'
+        f'<div style="font-size:12px; font-weight:600; text-transform:uppercase; '
+        f'letter-spacing:0.08em; color:{t.secondary_text}; margin-bottom:8px;">{label}</div>'
+        f'<div style="font-size:42px; font-weight:800; color:{t.heading_color}; line-height:1.1;">'
+        f'{value}{delta_html}</div>'
+        f'{context_html}'
+        f'</div>'
+    )
+
+
+@_section("two-column")
+def _render_two_column(section: dict, t: Theme) -> str:
+    """Side-by-side columns for comparisons. Each column has heading + body (markdown)."""
+    left = section.get("left", {})
+    right = section.get("right", {})
+
+    def _render_col(col: dict) -> str:
+        parts: list[str] = []
+        heading = col.get("heading", "")
+        body = col.get("body", "")
+        if heading:
+            parts.append(
+                f'<h3 style="font-size:17px; font-weight:600; color:{t.heading_color}; '
+                f'margin:0 0 8px;">{escape(heading)}</h3>'
+            )
+        if body:
+            rendered = mistune.html(body)
+            parts.append(_apply_inline_styles(rendered, t))
+        return "\n".join(parts)
+
+    return (
+        f'<div style="display:flex; gap:32px; margin:32px 0; flex-wrap:wrap;">'
+        f'<div style="flex:1 1 280px; padding:20px; background:{t.card_bg}; '
+        f'border:1px solid {t.border_color}; border-radius:8px;">'
+        f'{_render_col(left)}'
+        f'</div>'
+        f'<div style="flex:1 1 280px; padding:20px; background:{t.card_bg}; '
+        f'border:1px solid {t.border_color}; border-radius:8px;">'
+        f'{_render_col(right)}'
+        f'</div>'
+        f'</div>'
+    )
+
+
 def _render_chart_section(section: dict, t: Theme, svg_fn) -> str:
     """Shared renderer for all chart section types.
 
