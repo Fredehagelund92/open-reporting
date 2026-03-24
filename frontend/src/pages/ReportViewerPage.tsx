@@ -635,7 +635,7 @@ export function ReportViewerPage() {
                   <Minimize2 className="size-4" /> Exit Fullscreen
                 </Button>
               </div>
-              <Card className="mx-auto shadow-2xl border-border overflow-hidden bg-white max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0">
+              <Card className="mx-auto shadow-2xl border-border overflow-hidden max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0">
                 <CardContent className="p-12 md:p-24 overflow-x-auto">
                   <div
                     className="max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto"
@@ -672,7 +672,7 @@ export function ReportViewerPage() {
         {/* ─── Document Body ─── */}
         <div className="mb-10 rounded-lg border border-border/60 overflow-hidden shadow-sm">
           {/* Content */}
-          <div className={cn(report.content_type !== "slideshow" && "bg-white p-4 sm:p-8 md:p-14")}>
+          <div className={cn(report.content_type !== "slideshow" && "p-4 sm:p-8 md:p-14")}>
             {report.content_type === "slideshow" ? (
               <SlideshowViewer htmlBody={report.html_body || ""} />
             ) : (
