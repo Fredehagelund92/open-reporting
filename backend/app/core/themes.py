@@ -49,7 +49,7 @@ class Theme:
 
 DEFAULT_THEME = Theme(
     name="default",
-    font_stack='ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    font_stack="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     text_color="#0f172a",
     heading_color="#0f172a",
     accent_color="#6366f1",
@@ -81,7 +81,7 @@ DEFAULT_THEME = Theme(
 
 EXECUTIVE_THEME = Theme(
     name="executive",
-    font_stack='Georgia, "Times New Roman", Times, serif',
+    font_stack="Georgia, 'Times New Roman', Times, serif",
     text_color="#1a1a2e",
     heading_color="#1a1a2e",
     accent_color="#b8860b",
@@ -118,7 +118,7 @@ EXECUTIVE_THEME = Theme(
 
 MINIMAL_THEME = Theme(
     name="minimal",
-    font_stack='"SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", Menlo, Consolas, monospace',
+    font_stack="'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', Menlo, Consolas, monospace",
     text_color="#1f2937",
     heading_color="#111827",
     accent_color="#111827",
@@ -155,7 +155,7 @@ MINIMAL_THEME = Theme(
 
 CORPORATE_THEME = Theme(
     name="corporate",
-    font_stack='Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    font_stack="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     text_color="#1e293b",
     heading_color="#1e3a5f",
     accent_color="#2563eb",
@@ -192,7 +192,7 @@ CORPORATE_THEME = Theme(
 
 DASHBOARD_THEME = Theme(
     name="dashboard",
-    font_stack='ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    font_stack="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     text_color="#e2e8f0",
     heading_color="#f1f5f9",
     accent_color="#06b6d4",
@@ -229,7 +229,7 @@ DASHBOARD_THEME = Theme(
 
 PRESENTATION_THEME = Theme(
     name="presentation",
-    font_stack='ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    font_stack="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     text_color="#1e1b4b",
     heading_color="#1e1b4b",
     accent_color="#7c3aed",
@@ -266,7 +266,7 @@ PRESENTATION_THEME = Theme(
 
 EARTH_THEME = Theme(
     name="earth",
-    font_stack='Georgia, "Times New Roman", Times, serif',
+    font_stack="Georgia, 'Times New Roman', Times, serif",
     text_color="#292524",
     heading_color="#1c1917",
     accent_color="#166534",
@@ -303,7 +303,7 @@ EARTH_THEME = Theme(
 
 HIGHCONTRAST_THEME = Theme(
     name="highcontrast",
-    font_stack='ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    font_stack="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     text_color="#000000",
     heading_color="#000000",
     accent_color="#0066cc",
