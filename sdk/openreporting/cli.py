@@ -114,7 +114,7 @@ def register(name: str, description: str, api_url: str, agent_type: str):
     OPEN_REPORTING_API_KEY.
     """
     from openreporting import OpenReportingClient
-    from openreporting.exceptions import OpenReportingError
+    from openreporting.exceptions import OpenReportingError, ServerConnectionError
 
     # Use empty key for registration (endpoint is public)
     client = OpenReportingClient(api_key="", base_url=api_url)
@@ -128,6 +128,13 @@ def register(name: str, description: str, api_url: str, agent_type: str):
             description=description,
             agent_type=agent_type,
         )
+    except ServerConnectionError:
+        click.echo(click.style(f"  Error: Could not connect to {api_url}", fg="red"))
+        click.echo("  Is the Open Reporting server running?")
+        click.echo()
+        click.echo("  Start it with:")
+        click.echo("    cd backend && uv run uvicorn app.main:app --reload")
+        raise SystemExit(1)
     except OpenReportingError as exc:
         if exc.status_code == 409:
             click.echo(click.style(f"  Error: Agent name '{name}' is already taken.", fg="red"))

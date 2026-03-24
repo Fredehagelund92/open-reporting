@@ -19,6 +19,7 @@ from openreporting.exceptions import (
     AuthenticationError,
     CoachBlockedError,
     OpenReportingError,
+    ServerConnectionError,
     ValidationError,
 )
 from openreporting.models import (
@@ -72,6 +73,13 @@ class OpenReportingClient:
     # ------------------------------------------------------------------
     # Error handling
     # ------------------------------------------------------------------
+
+    def _request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
+        """Send an HTTP request, converting connection errors to a friendly exception."""
+        try:
+            return self._client.request(method, url, **kwargs)
+        except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
+            raise ServerConnectionError(self._base_url, original=exc) from exc
 
     def _handle_error(self, response: httpx.Response) -> None:
         """Raise a typed exception based on the HTTP status code."""
@@ -144,12 +152,17 @@ class OpenReportingClient:
     ) -> dict[str, Any]:
         """Return the content-related keys for a report request payload."""
         payload: dict[str, Any] = {"content_format": "auto"}
-        if markdown is not None:
+        if markdown:
             payload["markdown_body"] = markdown
-        elif sections is not None:
+        elif sections:
             payload["structured_body"] = {"sections": sections}
-        elif html is not None:
+        elif html:
             payload["html_body"] = html
+        else:
+            raise ValidationError(
+                "Provide at least one of: markdown, sections, or html.",
+                status_code=None,
+            )
         return payload
 
     # ------------------------------------------------------------------
@@ -224,7 +237,7 @@ class OpenReportingClient:
                     issues=[i.model_dump() for i in coach_result.issues],
                 )
 
-        response = self._client.post("/reports/", json=payload)
+        response = self._request("POST","/reports/", json=payload)
         self._handle_error(response)
         return ReportResponse.model_validate(response.json())
 
@@ -255,7 +268,7 @@ class OpenReportingClient:
         if tags is not None:
             payload["tags"] = tags
 
-        response = self._client.post("/reports/preview", json=payload)
+        response = self._request("POST","/reports/preview", json=payload)
         self._handle_error(response)
         return PreviewResponse.model_validate(response.json())
 
@@ -286,7 +299,7 @@ class OpenReportingClient:
         if tags is not None:
             payload["tags"] = tags
 
-        response = self._client.post("/reports/coach/evaluate", json=payload)
+        response = self._request("POST","/reports/coach/evaluate", json=payload)
         self._handle_error(response)
         return CoachResult.model_validate(response.json())
 
@@ -333,19 +346,19 @@ class OpenReportingClient:
             payload["html_body"] = html
             payload["content_format"] = "html"
 
-        response = self._client.patch(f"/reports/{report_id}", json=payload)
+        response = self._request("PATCH",f"/reports/{report_id}", json=payload)
         self._handle_error(response)
         return ReportResponse.model_validate(response.json())
 
     def list_spaces(self) -> list[SpaceResponse]:
         """List all spaces visible to the authenticated agent/user."""
-        response = self._client.get("/spaces/")
+        response = self._request("GET","/spaces/")
         self._handle_error(response)
         return [SpaceResponse.model_validate(s) for s in response.json()]
 
     def get_status(self) -> AgentStatusResponse:
         """Check the claim status of the current agent."""
-        response = self._client.get("/agents/status")
+        response = self._request("GET","/agents/status")
         self._handle_error(response)
         return AgentStatusResponse.model_validate(response.json())
 
@@ -384,13 +397,13 @@ class OpenReportingClient:
         if tag is not None:
             params["tag"] = tag
 
-        response = self._client.get("/reports/", params=params)
+        response = self._request("GET","/reports/", params=params)
         self._handle_error(response)
         return [ReportListItem.model_validate(r) for r in response.json()]
 
     def get_report(self, report_id: str) -> ReportDetail:
         """Fetch full details of a single report by ID or slug."""
-        response = self._client.get(f"/reports/{report_id}")
+        response = self._request("GET",f"/reports/{report_id}")
         self._handle_error(response)
         return ReportDetail.model_validate(response.json())
 
@@ -481,7 +494,7 @@ class OpenReportingClient:
             return self._capabilities_cache
 
         try:
-            response = self._client.get("/capabilities/")
+            response = self._request("GET","/capabilities/")
             self._handle_error(response)
             data = response.json()
             self._capabilities_cache = data
@@ -532,7 +545,7 @@ class OpenReportingClient:
         if chat_stream_url is not None:
             payload["chat_stream_endpoint"] = chat_stream_url
 
-        response = self._client.post("/agents/register", json=payload)
+        response = self._request("POST","/agents/register", json=payload)
         self._handle_error(response)
         return response.json()
 
@@ -558,7 +571,7 @@ class OpenReportingClient:
         if chat_enabled is not None:
             payload["chat_enabled"] = chat_enabled
 
-        response = self._client.patch("/agents/me", json=payload)
+        response = self._request("PATCH","/agents/me", json=payload)
         self._handle_error(response)
         return response.json()
 

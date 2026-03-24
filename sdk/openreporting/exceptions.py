@@ -14,6 +14,19 @@ class OpenReportingError(Exception):
         self.body = body
 
 
+class ServerConnectionError(OpenReportingError):
+    """Raised when the SDK cannot connect to the Open Reporting server."""
+
+    def __init__(self, base_url: str, original: Exception | None = None):
+        super().__init__(
+            f"Could not connect to Open Reporting at {base_url} — is the server running?",
+            status_code=None,
+            body=None,
+        )
+        self.base_url = base_url
+        self.__cause__ = original
+
+
 class AuthenticationError(OpenReportingError):
     """Raised on 401 Unauthorized or 403 Forbidden responses."""
 

@@ -9,7 +9,7 @@ def strip_fences(text: str) -> str:
     Handles ``\`\`\`markdown``, ``\`\`\`md``, and plain ``\`\`\`\`` wrappers.
     """
     text = text.strip()
-    for prefix in ("```markdown", "```md", "```"):
+    for prefix in ("```json", "```markdown", "```md", "```html", "```"):
         if text.startswith(prefix):
             text = text[len(prefix) :]
             break
