@@ -87,7 +87,9 @@ _CHART_INSTRUCTION = (
     "inside code blocks. Use the structured section types (bar-chart, line-chart, "
     "pie-chart, etc.) which render server-side SVGs automatically from your data arrays. "
     "CSS class names are stripped and will not work — all styling must use inline "
-    'style="..." attributes.'
+    'style="..." attributes. '
+    "Only use section types that exist in the reference. Do NOT invent new types "
+    '(e.g. "sources", "references", "footer") — use "text" with markdown links instead.'
 )
 
 _HTML_CONSTRAINTS = (

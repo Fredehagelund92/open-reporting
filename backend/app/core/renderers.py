@@ -140,11 +140,7 @@ def render_structured_to_html(
         renderer = _SECTION_RENDERERS.get(sec_type)
         if renderer:
             fragments.append(renderer(section, t))
-        else:
-            fragments.append(
-                f'<p style="color:{t.text_color};">'
-                f"Unknown section type: {escape(sec_type)}</p>"
-            )
+        # Silently skip unknown section types — the coach warns about them
 
     if is_slideshow:
         return "\n".join(fragments)
@@ -802,13 +798,19 @@ def _apply_inline_styles(html: str, theme: Theme) -> str:
 
 
 def _wrap_container(inner_html: str, theme: Theme, layout: str | None = None) -> str:
-    """Wrap rendered content in a themed container div."""
+    """Wrap rendered content in a themed container div.
+
+    Uses two nested divs: an outer full-width div for background color
+    (so dark themes fill edge-to-edge), and an inner constrained div
+    for max-width + padding.
+    """
     max_width = get_layout_width(layout)
     bg = f" background:{theme.bg_color};" if theme.bg_color != "transparent" else ""
     return (
         f'<div style="font-family:{theme.font_stack}; color:{theme.text_color}; '
-        f'line-height:{theme.line_height}; max-width:{max_width}; margin:0 auto; '
-        f'padding:32px 56px;{bg}">'
+        f'line-height:{theme.line_height};{bg}">'
+        f'<div style="max-width:{max_width}; margin:0 auto; padding:32px 40px;">'
         f'{inner_html}'
+        f'</div>'
         f'</div>'
     )
