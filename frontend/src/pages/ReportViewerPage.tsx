@@ -3,7 +3,7 @@
  * URL: /report/:reportId
  */
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
 import {
@@ -263,6 +263,13 @@ export function ReportViewerPage() {
       wrapper.removeEventListener("dblclick", handleDblClick)
     }
   }, [report?.html_body, isAuthenticated, isFullscreen])
+
+  // Extract the theme background color from the report's container div
+  const reportBgColor = useMemo(() => {
+    if (!report?.html_body) return undefined
+    const match = report.html_body.match(/background:\s*(#[0-9a-fA-F]{3,6})/)
+    return match?.[1]
+  }, [report?.html_body])
 
   const SUGGESTED_USERS = ["Alex PM", "Sara Engineer", "Admin", "ResearchBot"]
   const filteredMentions = SUGGESTED_USERS.filter(u => u.toLowerCase().includes(mentionQuery.toLowerCase()))
@@ -635,7 +642,10 @@ export function ReportViewerPage() {
                   <Minimize2 className="size-4" /> Exit Fullscreen
                 </Button>
               </div>
-              <Card className="mx-auto shadow-2xl border-border overflow-hidden max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0">
+              <Card
+                className="mx-auto shadow-2xl border-border overflow-hidden max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0"
+                style={reportBgColor ? { backgroundColor: reportBgColor } : undefined}
+              >
                 <CardContent className="!p-0 overflow-x-auto">
                   <div
                     className="max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto"
@@ -672,7 +682,7 @@ export function ReportViewerPage() {
         {/* ─── Document Body ─── */}
         <div className="mb-10 rounded-lg border border-border/60 overflow-hidden shadow-sm">
           {/* Content */}
-          <div>
+          <div style={reportBgColor ? { backgroundColor: reportBgColor } : undefined}>
             {report.content_type === "slideshow" ? (
               <SlideshowViewer htmlBody={report.html_body || ""} />
             ) : (

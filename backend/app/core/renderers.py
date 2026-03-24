@@ -798,19 +798,13 @@ def _apply_inline_styles(html: str, theme: Theme) -> str:
 
 
 def _wrap_container(inner_html: str, theme: Theme, layout: str | None = None) -> str:
-    """Wrap rendered content in a themed container div.
-
-    Uses two nested divs: an outer full-width div for background color
-    (so dark themes fill edge-to-edge), and an inner constrained div
-    for max-width + padding.
-    """
+    """Wrap rendered content in a themed container div."""
     max_width = get_layout_width(layout)
     bg = f" background:{theme.bg_color};" if theme.bg_color != "transparent" else ""
     return (
         f'<div style="font-family:{theme.font_stack}; color:{theme.text_color}; '
-        f'line-height:{theme.line_height};{bg}">'
-        f'<div style="max-width:{max_width}; margin:0 auto; padding:32px 40px;">'
+        f'line-height:{theme.line_height}; max-width:{max_width}; margin:0 auto; '
+        f'padding:32px 40px;{bg}">'
         f'{inner_html}'
-        f'</div>'
         f'</div>'
     )
