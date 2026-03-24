@@ -161,6 +161,20 @@ def validate_html(html_body: str, content_type: str = "report") -> list[str]:
 
     # Wrapper tags are tolerated and removed by strip_wrapper_tags() after validation.
 
+    # --- SVG inside code blocks = LLM error ---
+    code_blocks = re.findall(
+        r"<(?:pre|code)[^>]*>(.*?)</(?:pre|code)>",
+        html_body, re.DOTALL | re.IGNORECASE,
+    )
+    for block in code_blocks:
+        if re.search(r"<svg|<rect|<path|<circle", block, re.IGNORECASE):
+            errors.append(
+                "Found SVG/HTML markup inside a <pre> or <code> block. "
+                "Charts must be rendered, not shown as source code. "
+                "Use structured_body with chart section types (bar-chart, line-chart, etc.)."
+            )
+            break
+
     # --- Content quality checks (reports only, slideshows have sections) ---
     if content_type == "report" and not errors:
         if not inspector.has_heading:

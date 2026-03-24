@@ -332,4 +332,10 @@ Chart rules:
 - Values must be plain numbers (no "$", "%", or commas)
 - Pie/donut segment values must be positive
 - Every chart must have a "heading"
-- Limit to 10-12 data points per chart for readability'''
+- Limit to 10-12 data points per chart for readability
+
+DO NOT:
+- Write raw SVG markup — use chart section types, the server renders SVGs from data
+- Put SVG or HTML inside code blocks (```...```) — this shows source code, not charts
+- Use CSS class names — they are stripped. Use inline style="..." attributes only
+- Submit empty sections or placeholder data — the coach will block it'''

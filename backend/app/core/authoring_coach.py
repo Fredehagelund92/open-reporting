@@ -41,12 +41,23 @@ class _StructureInspector(HTMLParser):
         self.links = 0
         self.class_attr_count = 0
         self.style_attr_count = 0
+        self.total_element_count = 0
         self.paragraph_lengths: list[int] = []
         self._paragraph_buffer: list[str] = []
         self._in_paragraph = False
+        # Content element tracking (p, div, section, li)
+        self.content_element_count = 0
+        self.empty_content_element_count = 0
+        self._content_buffer: list[str] = []
+        self._in_content_element: str | None = None
+        # Code block tracking
+        self._in_code_or_pre = False
+        self._code_buffer: list[str] = []
+        self.code_blocks_with_svg = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag_lower = tag.lower()
+        self.total_element_count += 1
         attr_map = {k.lower(): (v or "") for k, v in attrs}
 
         if tag_lower in {"h1", "h2", "h3"}:
@@ -65,16 +76,46 @@ class _StructureInspector(HTMLParser):
         if attr_map.get("style", "").strip():
             self.style_attr_count += 1
 
+        # Track content elements for emptiness check
+        if tag_lower in {"p", "li"} and not self._in_content_element:
+            self._in_content_element = tag_lower
+            self._content_buffer = []
+            self.content_element_count += 1
+
+        # Track code/pre blocks
+        if tag_lower in {"pre", "code"} and not self._in_code_or_pre:
+            self._in_code_or_pre = True
+            self._code_buffer = []
+
     def handle_data(self, data: str) -> None:
         if self._in_paragraph:
             self._paragraph_buffer.append(data)
+        if self._in_content_element:
+            self._content_buffer.append(data)
+        if self._in_code_or_pre:
+            self._code_buffer.append(data)
 
     def handle_endtag(self, tag: str) -> None:
-        if tag.lower() == "p" and self._in_paragraph:
+        tag_lower = tag.lower()
+        if tag_lower == "p" and self._in_paragraph:
             text = "".join(self._paragraph_buffer).strip()
             self.paragraph_lengths.append(len(text))
             self._paragraph_buffer = []
             self._in_paragraph = False
+
+        if tag_lower == self._in_content_element:
+            text = "".join(self._content_buffer).strip()
+            if not text:
+                self.empty_content_element_count += 1
+            self._content_buffer = []
+            self._in_content_element = None
+
+        if tag_lower in {"pre", "code"} and self._in_code_or_pre:
+            code_text = "".join(self._code_buffer)
+            if re.search(r"<svg|<rect|<path|<circle|<polygon", code_text, re.IGNORECASE):
+                self.code_blocks_with_svg += 1
+            self._code_buffer = []
+            self._in_code_or_pre = False
 
 
 def get_authoring_coach_mode() -> CoachMode:
@@ -177,20 +218,59 @@ def evaluate_authoring_quality(
 
     # Skip bare_css_classes rule for platform-rendered content (markdown/json)
     # since the renderer already applies inline styles.
+    if content_format == "html" and inspector.class_attr_count >= 3:
+        styled_ratio = inspector.style_attr_count / max(inspector.total_element_count, 1)
+        if inspector.class_attr_count >= 5 and styled_ratio < 0.25:
+            # Severe: report heavily relies on CSS classes — will render broken
+            issues.append(
+                CoachIssue(
+                    rule_id="bare_css_classes",
+                    severity="error",
+                    message=f"Found {inspector.class_attr_count} elements with CSS classes "
+                            f"but only {inspector.style_attr_count} with inline styles. "
+                            "CSS classes are stripped — this report will render broken.",
+                    suggestion="Replace all CSS class styling with inline style=\"...\" attributes, "
+                               "or use structured_body sections which handle styling automatically.",
+                )
+            )
+        elif inspector.class_attr_count > 2 * max(inspector.style_attr_count, 1):
+            issues.append(
+                CoachIssue(
+                    rule_id="bare_css_classes",
+                    severity="warning",
+                    message=f"Found {inspector.class_attr_count} elements with CSS classes "
+                            f"but only {inspector.style_attr_count} with inline styles. "
+                            "CSS classes have no effect — <style> blocks are stripped.",
+                    suggestion="Move all visual styling to inline style=\"...\" attributes.",
+                )
+            )
+
+    # SVGs inside code blocks — LLM tried to show code instead of rendering
+    if inspector.code_blocks_with_svg > 0:
+        issues.append(
+            CoachIssue(
+                rule_id="svg_inside_code_block",
+                severity="error",
+                message=f"Found SVG/HTML markup inside {inspector.code_blocks_with_svg} code block(s). "
+                        "Charts should be rendered, not displayed as source code.",
+                suggestion="Use structured_body with chart section types (bar-chart, line-chart, "
+                           "pie-chart, etc.) — the server renders charts automatically from data.",
+            )
+        )
+
+    # Empty content elements — indicates garbage LLM output
     if (
-        content_format == "html"
-        and inspector.class_attr_count >= 3
-        and inspector.class_attr_count > 2 * max(inspector.style_attr_count, 1)
+        inspector.content_element_count >= 4
+        and inspector.empty_content_element_count
+        > 0.3 * inspector.content_element_count
     ):
         issues.append(
             CoachIssue(
-                rule_id="bare_css_classes",
+                rule_id="empty_content_elements",
                 severity="warning",
-                message=f"Found {inspector.class_attr_count} elements with CSS classes "
-                        f"but only {inspector.style_attr_count} with inline styles. "
-                        "CSS classes have no effect — <style> blocks are stripped.",
-                suggestion="Move all visual styling to inline style=\"...\" attributes. "
-                           "See skill.md §5.3 and §5.8 for examples.",
+                message=f"{inspector.empty_content_element_count} of {inspector.content_element_count} "
+                        "content elements are empty.",
+                suggestion="Remove empty paragraphs and list items, or add meaningful content.",
             )
         )
 
@@ -243,6 +323,23 @@ def evaluate_authoring_quality(
     # SVG quality checks on the rendered HTML body
     svg_blocks = re.findall(r"<svg[^>]*>.*?</svg>", html_body, re.DOTALL | re.IGNORECASE)
     for idx, svg_block in enumerate(svg_blocks):
+        # Check for empty/fake SVGs — shapes but no data labels
+        shape_count = len(re.findall(
+            r"<(rect|path|circle|polygon|polyline|line)\b", svg_block, re.IGNORECASE
+        ))
+        text_count = len(re.findall(r"<text\b", svg_block, re.IGNORECASE))
+        if shape_count >= 3 and text_count < 2:
+            issues.append(
+                CoachIssue(
+                    rule_id="svg_no_data_labels",
+                    severity="error",
+                    message=f"SVG {idx + 1} has {shape_count} shapes but only {text_count} text labels — "
+                            "appears to be an empty or hand-drawn chart with no real data.",
+                    suggestion="Use structured_body chart sections (bar-chart, line-chart, etc.) "
+                               "which render labeled charts automatically from data arrays.",
+                )
+            )
+
         # Check for missing viewBox
         if "viewBox" not in svg_block and "viewbox" not in svg_block:
             issues.append(

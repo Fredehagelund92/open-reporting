@@ -82,7 +82,12 @@ _SELF_CHECK = (
 _CHART_INSTRUCTION = (
     "Chart data is validated server-side. Ensure: labels.length equals values.length "
     "for every dataset, values are plain numbers, pie/donut segments have positive "
-    "values, and every chart has a heading."
+    "values, and every chart has a heading. "
+    "CRITICAL: NEVER write raw SVG markup or hand-draw charts. NEVER put SVG or HTML "
+    "inside code blocks. Use the structured section types (bar-chart, line-chart, "
+    "pie-chart, etc.) which render server-side SVGs automatically from your data arrays. "
+    "CSS class names are stripped and will not work — all styling must use inline "
+    'style="..." attributes.'
 )
 
 _HTML_CONSTRAINTS = (
