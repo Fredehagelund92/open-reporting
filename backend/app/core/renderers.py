@@ -6,6 +6,7 @@ HTML that the frontend can render identically to hand-crafted HTML reports.
 """
 
 import json
+import re
 from html import escape
 from html.parser import HTMLParser
 
@@ -117,11 +118,22 @@ def render_structured_to_html(
     theme: str | None = "default",
     layout: str | None = None,
     brand_overrides: dict | None = None,
+    content_type: str = "report",
 ) -> str:
     """Render a list of typed section dicts to themed HTML."""
     t = get_theme(theme)
     if brand_overrides:
         t = apply_brand_overrides(t, brand_overrides)
+
+    is_slideshow = content_type == "slideshow"
+
+    # Auto-wrap: if slideshow but no explicit "slide" wrappers, wrap each section
+    if is_slideshow and not any(s.get("type") == "slide" for s in sections):
+        sections = [
+            {"type": "slide", "background_color": "#ffffff", "sections": [s]}
+            for s in sections
+        ]
+
     fragments: list[str] = []
     for section in sections:
         sec_type = section.get("type", "text")
@@ -133,6 +145,9 @@ def render_structured_to_html(
                 f'<p style="color:{t.text_color};">'
                 f"Unknown section type: {escape(sec_type)}</p>"
             )
+
+    if is_slideshow:
+        return "\n".join(fragments)
     return _wrap_container("\n".join(fragments), t, layout=layout)
 
 
@@ -618,6 +633,30 @@ def _render_spacer(section: dict, t: Theme) -> str:
     if not isinstance(height, str) or not (height.endswith("px") or height.endswith("rem")):
         height = "40px"
     return f'<div style="height:{escape(height)};"></div>'
+
+
+@_section("slide")
+def _render_slide(section: dict, t: Theme) -> str:
+    """Render a slide wrapper containing nested sections."""
+    bg_color = section.get("background_color", "#ffffff")
+    if not isinstance(bg_color, str) or not re.fullmatch(r"#[0-9a-fA-F]{3,6}", bg_color):
+        bg_color = "#ffffff"
+    child_sections = section.get("sections", [])
+    fragments: list[str] = []
+    for child in child_sections:
+        sec_type = child.get("type", "text")
+        if sec_type == "slide":
+            continue  # prevent recursive nesting
+        renderer = _SECTION_RENDERERS.get(sec_type)
+        if renderer:
+            fragments.append(renderer(child, t))
+        else:
+            fragments.append(
+                f'<p style="color:{t.text_color};">'
+                f"Unknown section type: {escape(sec_type)}</p>"
+            )
+    inner = "\n".join(fragments)
+    return f'<section data-background-color="{escape(bg_color)}">{inner}</section>'
 
 
 # ---------------------------------------------------------------------------

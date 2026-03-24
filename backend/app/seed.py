@@ -417,70 +417,100 @@ def seed():
                 "structured_body": {
                     "sections": [
                         {
-                            "type": "summary-header",
-                            "title": "Q1 Competitive Landscape Analysis",
-                            "subtitle": "Market Intelligence Brief -- January to March 2025",
-                            "date": "2025-03-31",
-                            "stats": [
-                                {"label": "Prepared by", "value": "ResearchBot"},
-                                {"label": "Sources", "value": "Gartner, G2, SEC filings, public earnings calls"},
+                            "type": "slide",
+                            "background_color": "#0f172a",
+                            "sections": [
+                                {
+                                    "type": "summary-header",
+                                    "title": "Q1 Competitive Landscape Analysis",
+                                    "subtitle": "Market Intelligence Brief -- January to March 2025",
+                                    "date": "2025-03-31",
+                                    "stats": [
+                                        {"label": "Prepared by", "value": "ResearchBot"},
+                                        {"label": "Sources", "value": "Gartner, G2, SEC filings, public earnings calls"},
+                                    ],
+                                },
                             ],
                         },
                         {
-                            "type": "kpi-grid",
-                            "metrics": [
-                                {"label": "TAM", "value": "$14.2B", "delta": "+18% YoY", "trend": "up"},
-                                {"label": "Top 5 Share", "value": "67%", "delta": "+6pp QoQ", "trend": "up"},
-                                {"label": "Avg Deal Size", "value": "$84K", "delta": "+12% QoQ", "trend": "up"},
+                            "type": "slide",
+                            "background_color": "#ffffff",
+                            "sections": [
+                                {
+                                    "type": "kpi-grid",
+                                    "metrics": [
+                                        {"label": "TAM", "value": "$14.2B", "delta": "+18% YoY", "trend": "up"},
+                                        {"label": "Top 5 Share", "value": "67%", "delta": "+6pp QoQ", "trend": "up"},
+                                        {"label": "Avg Deal Size", "value": "$84K", "delta": "+12% QoQ", "trend": "up"},
+                                    ],
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "info",
+                                    "message": "Buyers are consolidating vendors and prioritizing integrated AI capabilities over standalone tooling.",
+                                },
                             ],
                         },
                         {
-                            "type": "callout",
-                            "callout_type": "info",
-                            "message": "Buyers are consolidating vendors and prioritizing integrated AI capabilities over standalone tooling.",
-                        },
-                        {
-                            "type": "bar-chart",
-                            "heading": "Market Share Movement (Top 5)",
-                            "data": {
-                                "labels": ["Acme", "Us", "Globex", "NovaTech", "Zenith"],
-                                "datasets": [
-                                    {"name": "Market Share (%)", "values": [22, 18, 14, 8, 5]},
-                                ],
-                            },
-                        },
-                        {
-                            "type": "text",
-                            "heading": "Market Share Interpretation",
-                            "body": "- Acme is pulling away with enterprise AI narrative and bundled pricing.\n- Our share gain is healthy but at risk if AI roadmap slips beyond Q2.\n- Zenith remains small but is creating pricing pressure in mid-market deals.",
-                        },
-                        {
-                            "type": "text",
-                            "heading": "Threat Radar: Acme Corp (Tier-1 Threat)",
-                            "body": "- Won 3 Fortune 500 opportunities previously in our pipeline ($1.2M ACV).\n- Bundled platform pricing at ~15% below our equivalent package.\n- Weak point: user satisfaction down 0.3 points due to unreliable copilot outputs.\n\n**Threat intensity: 86/100**",
-                        },
-                        {
-                            "type": "text",
-                            "heading": "Threat Radar: Zenith AI (Emerging)",
-                            "body": "- Raised $120M Series C; offering first-year discounts up to 60%.\n- Outreach detected in 12 of our mid-market accounts; 3 active evaluations.\n- Weak point: immature implementation support and limited integrations.\n\n**Threat intensity: 59/100**",
-                        },
-                        {
-                            "type": "action-items",
-                            "heading": "Strategic Recommendations",
-                            "items": [
-                                {"action": "Pull AI launch from Q3 to Q2", "owner": "Product + Eng", "due": "30 days", "impact": "Protect enterprise pipeline conversion"},
-                                {"action": "Launch Growth tier for mid-market", "owner": "Pricing + Sales", "due": "45 days", "impact": "Reduce Zenith-led churn risk"},
-                                {"action": "Add 20 integrations focused on data/AI stack", "owner": "Platform Team", "due": "Q2", "impact": "Extend existing moat and attach rate"},
+                            "type": "slide",
+                            "background_color": "#ffffff",
+                            "sections": [
+                                {
+                                    "type": "bar-chart",
+                                    "heading": "Market Share Movement (Top 5)",
+                                    "data": {
+                                        "labels": ["Acme", "Us", "Globex", "NovaTech", "Zenith"],
+                                        "datasets": [
+                                            {"name": "Market Share (%)", "values": [22, 18, 14, 8, 5]},
+                                        ],
+                                    },
+                                },
+                                {
+                                    "type": "text",
+                                    "heading": "Market Share Interpretation",
+                                    "body": "- Acme is pulling away with enterprise AI narrative and bundled pricing.\n- Our share gain is healthy but at risk if AI roadmap slips beyond Q2.\n- Zenith remains small but is creating pricing pressure in mid-market deals.",
+                                },
                             ],
                         },
                         {
-                            "type": "callout",
-                            "callout_type": "success",
-                            "message": "Decision ask: Approve AI acceleration budget (+$320K) and authorize Growth tier pilot immediately.",
+                            "type": "slide",
+                            "background_color": "#ffffff",
+                            "sections": [
+                                {
+                                    "type": "text",
+                                    "heading": "Threat Radar: Acme Corp (Tier-1 Threat)",
+                                    "body": "- Won 3 Fortune 500 opportunities previously in our pipeline ($1.2M ACV).\n- Bundled platform pricing at ~15% below our equivalent package.\n- Weak point: user satisfaction down 0.3 points due to unreliable copilot outputs.\n\n**Threat intensity: 86/100**",
+                                },
+                                {
+                                    "type": "text",
+                                    "heading": "Threat Radar: Zenith AI (Emerging)",
+                                    "body": "- Raised $120M Series C; offering first-year discounts up to 60%.\n- Outreach detected in 12 of our mid-market accounts; 3 active evaluations.\n- Weak point: immature implementation support and limited integrations.\n\n**Threat intensity: 59/100**",
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "background_color": "#f8fafc",
+                            "sections": [
+                                {
+                                    "type": "action-items",
+                                    "heading": "Strategic Recommendations",
+                                    "items": [
+                                        {"action": "Pull AI launch from Q3 to Q2", "owner": "Product + Eng", "due": "30 days", "impact": "Protect enterprise pipeline conversion"},
+                                        {"action": "Launch Growth tier for mid-market", "owner": "Pricing + Sales", "due": "45 days", "impact": "Reduce Zenith-led churn risk"},
+                                        {"action": "Add 20 integrations focused on data/AI stack", "owner": "Platform Team", "due": "Q2", "impact": "Extend existing moat and attach rate"},
+                                    ],
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "success",
+                                    "message": "Decision ask: Approve AI acceleration budget (+$320K) and authorize Growth tier pilot immediately.",
+                                },
+                            ],
                         },
                     ],
                 },
-                "content_type": "report",
+                "content_type": "slideshow",
                 "agent": a2,
                 "space": s3,
                 "tags": ["competitive-intel", "market-research", "strategy"],
@@ -799,72 +829,102 @@ def seed():
                 "structured_body": {
                     "sections": [
                         {
-                            "type": "summary-header",
-                            "title": "Board Strategy Update",
-                            "subtitle": "H1 2025 Performance & Strategic Priorities",
-                            "date": "2025-03-15",
-                            "stats": [
-                                {"label": "Prepared by", "value": "ExecutiveSummarizer"},
-                                {"label": "Meeting", "value": "Board Meeting: March 15, 2025"},
+                            "type": "slide",
+                            "background_color": "#0f172a",
+                            "sections": [
+                                {
+                                    "type": "summary-header",
+                                    "title": "Board Strategy Update",
+                                    "subtitle": "H1 2025 Performance & Strategic Priorities",
+                                    "date": "2025-03-15",
+                                    "stats": [
+                                        {"label": "Prepared by", "value": "ExecutiveSummarizer"},
+                                        {"label": "Meeting", "value": "Board Meeting: March 15, 2025"},
+                                    ],
+                                },
                             ],
                         },
                         {
-                            "type": "kpi-grid",
-                            "metrics": [
-                                {"label": "Revenue", "value": "$34.2M", "delta": "105% of plan", "trend": "up"},
-                                {"label": "ARR", "value": "$71.8M", "delta": "+32% YoY", "trend": "up"},
-                                {"label": "NRR", "value": "118%", "delta": "Best in class", "trend": "up"},
+                            "type": "slide",
+                            "background_color": "#ffffff",
+                            "sections": [
+                                {
+                                    "type": "kpi-grid",
+                                    "metrics": [
+                                        {"label": "Revenue", "value": "$34.2M", "delta": "105% of plan", "trend": "up"},
+                                        {"label": "ARR", "value": "$71.8M", "delta": "+32% YoY", "trend": "up"},
+                                        {"label": "NRR", "value": "118%", "delta": "Best in class", "trend": "up"},
+                                    ],
+                                },
+                                {
+                                    "type": "table",
+                                    "heading": "H1 Financial Performance",
+                                    "headers": ["Metric", "H1 Actual", "H1 Plan", "YoY"],
+                                    "rows": [
+                                        ["Revenue", "$34.2M", "$32.6M", "+26%"],
+                                        ["ARR", "$71.8M", "$68.0M", "+32%"],
+                                        ["NRR", "118%", "115%", "+3pp"],
+                                        ["Gross Margin", "78.4%", "76.0%", "+4.3pp"],
+                                        ["Headcount", "214", "220", "+27%"],
+                                    ],
+                                },
                             ],
                         },
                         {
-                            "type": "table",
-                            "heading": "H1 Financial Performance",
-                            "headers": ["Metric", "H1 Actual", "H1 Plan", "YoY"],
-                            "rows": [
-                                ["Revenue", "$34.2M", "$32.6M", "+26%"],
-                                ["ARR", "$71.8M", "$68.0M", "+32%"],
-                                ["NRR", "118%", "115%", "+3pp"],
-                                ["Gross Margin", "78.4%", "76.0%", "+4.3pp"],
-                                ["Headcount", "214", "220", "+27%"],
+                            "type": "slide",
+                            "background_color": "#ffffff",
+                            "sections": [
+                                {
+                                    "type": "text",
+                                    "heading": "Growth Drivers",
+                                    "body": "- **Enterprise segment** grew 38% YoY, now 55% of total revenue.\n- **Analytics add-on** achieved 34% attach rate, adding $2.1M ARR.\n- **NRR at 118%** indicates healthy expansion behavior.",
+                                },
+                                {
+                                    "type": "text",
+                                    "heading": "Headwinds",
+                                    "body": "- **SMB churn** at 4.8% quarterly vs target <3.5%.\n- **Hiring lag:** 6 roles behind plan; fill time +15%.\n- **Competitive pressure:** Acme gained 3 enterprise deals.",
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "info",
+                                    "message": "Financial engine is strong, but growth durability now depends on AI differentiation and churn control execution.",
+                                },
                             ],
                         },
                         {
-                            "type": "text",
-                            "heading": "Growth Drivers",
-                            "body": "- **Enterprise segment** grew 38% YoY, now 55% of total revenue.\n- **Analytics add-on** achieved 34% attach rate, adding $2.1M ARR.\n- **NRR at 118%** indicates healthy expansion behavior.",
-                        },
-                        {
-                            "type": "text",
-                            "heading": "Headwinds",
-                            "body": "- **SMB churn** at 4.8% quarterly vs target <3.5%.\n- **Hiring lag:** 6 roles behind plan; fill time +15%.\n- **Competitive pressure:** Acme gained 3 enterprise deals.",
-                        },
-                        {
-                            "type": "callout",
-                            "callout_type": "info",
-                            "message": "Financial engine is strong, but growth durability now depends on AI differentiation and churn control execution.",
-                        },
-                        {
-                            "type": "text",
-                            "heading": "H2 2025 Strategic Priorities",
-                            "body": "1. **Launch AI capabilities (Q3)** -- Accelerated from Q4. Investment: $1.8M (4 senior ML engineers + infrastructure). Target: 20% Enterprise adoption by end of Q3.\n2. **Expand partner channel to 15% of pipeline** -- Early traction: 2 partner-sourced deals ($45K) in first 8 weeks. Signing 5 additional SI partners in Q2.\n3. **Reduce SMB churn to <3.5%** -- Introduce self-serve \"Growth\" tier at lower price point. Automated health scoring and proactive CSM outreach.",
-                        },
-                        {
-                            "type": "timeline",
-                            "heading": "Execution Timeline (Q2-Q4)",
-                            "events": [
-                                {"date": "Q2", "title": "Growth tier pilot", "description": "Launch self-serve Growth pricing tier targeting SMB retention"},
-                                {"date": "Q3", "title": "AI launch + adoption", "description": "Ship AI capabilities and drive 20% Enterprise adoption"},
-                                {"date": "Q4", "title": "Fundraise prep complete", "description": "Complete secondary fundraise preparation, target $450-500M valuation"},
+                            "type": "slide",
+                            "background_color": "#ffffff",
+                            "sections": [
+                                {
+                                    "type": "text",
+                                    "heading": "H2 2025 Strategic Priorities",
+                                    "body": "1. **Launch AI capabilities (Q3)** -- Accelerated from Q4. Investment: $1.8M (4 senior ML engineers + infrastructure). Target: 20% Enterprise adoption by end of Q3.\n2. **Expand partner channel to 15% of pipeline** -- Early traction: 2 partner-sourced deals ($45K) in first 8 weeks. Signing 5 additional SI partners in Q2.\n3. **Reduce SMB churn to <3.5%** -- Introduce self-serve \"Growth\" tier at lower price point. Automated health scoring and proactive CSM outreach.",
+                                },
+                                {
+                                    "type": "timeline",
+                                    "heading": "Execution Timeline (Q2-Q4)",
+                                    "events": [
+                                        {"date": "Q2", "title": "Growth tier pilot", "description": "Launch self-serve Growth pricing tier targeting SMB retention"},
+                                        {"date": "Q3", "title": "AI launch + adoption", "description": "Ship AI capabilities and drive 20% Enterprise adoption"},
+                                        {"date": "Q4", "title": "Fundraise prep complete", "description": "Complete secondary fundraise preparation, target $450-500M valuation"},
+                                    ],
+                                },
                             ],
                         },
                         {
-                            "type": "text",
-                            "heading": "Board Decisions Requested",
-                            "body": "1. **Approve $1.8M AI investment** -- Reallocate from H2 hiring budget. Delay risks losing 5-8% market share to Acme Corp by year-end. *Recommend: Approve*\n2. **Authorize $2M secondary fundraise preparation** -- Current runway: 22 months. Pre-emptive raise at current growth rates would value company at $450-500M. *Recommend: Begin prep, target Q4*\n3. **Approve \"Growth\" pricing tier** -- New tier at $2,400/yr targeting SMB retention. Expected cannibalization: 5%. Net impact: +$800K ARR from reduced churn. *Recommend: 90-day pilot*",
+                            "type": "slide",
+                            "background_color": "#f8fafc",
+                            "sections": [
+                                {
+                                    "type": "text",
+                                    "heading": "Board Decisions Requested",
+                                    "body": "1. **Approve $1.8M AI investment** -- Reallocate from H2 hiring budget. Delay risks losing 5-8% market share to Acme Corp by year-end. *Recommend: Approve*\n2. **Authorize $2M secondary fundraise preparation** -- Current runway: 22 months. Pre-emptive raise at current growth rates would value company at $450-500M. *Recommend: Begin prep, target Q4*\n3. **Approve \"Growth\" pricing tier** -- New tier at $2,400/yr targeting SMB retention. Expected cannibalization: 5%. Net impact: +$800K ARR from reduced churn. *Recommend: 90-day pilot*",
+                                },
+                            ],
                         },
                     ],
                 },
-                "content_type": "report",
+                "content_type": "slideshow",
                 "agent": a3,
                 "space": s3,
                 "tags": ["board", "strategy", "fundraise", "h1-review"],
@@ -1101,7 +1161,11 @@ Daily spend has been **consistently below budget** since March 4th.
                 content_format = "html"
             elif "structured_body" in cfg:
                 sections = cfg["structured_body"]["sections"]
-                html_body = render_structured_to_html(sections, theme=cfg.get("theme"))
+                html_body = render_structured_to_html(
+                    sections,
+                    theme=cfg.get("theme"),
+                    content_type=cfg.get("content_type", "report"),
+                )
                 content_format = "json"
             elif "markdown_body" in cfg:
                 html_body = render_markdown_to_html(cfg["markdown_body"], theme=cfg.get("theme"))

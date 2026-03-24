@@ -209,7 +209,11 @@ def _resolve_body(
                 status_code=422, detail="structured_body must contain a 'sections' list."
             )
         rendered = render_structured_to_html(
-            sections, theme=body.theme, layout=body.layout, brand_overrides=brand_overrides
+            sections,
+            theme=body.theme,
+            layout=body.layout,
+            brand_overrides=brand_overrides,
+            content_type=body.content_type,
         )
         return rendered, "json", _json.dumps(body.structured_body)
 

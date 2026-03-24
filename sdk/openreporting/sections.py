@@ -141,6 +141,23 @@ def action_items(items: list[dict]) -> dict:
     return {"type": "action-items", "items": items}
 
 
+def slide(sections: list[dict], *, background_color: str = "#ffffff") -> dict:
+    """A presentation slide grouping one or more sections onto a single slide.
+
+    Use this when ``content_type="slideshow"`` to control which sections appear
+    together on each slide and to set per-slide background colours.
+
+    ``sections``: list of section dicts to render on this slide.
+    ``background_color``: hex colour for the slide background (e.g. ``"#0f172a"``
+    for a dark title slide).
+    """
+    return {
+        "type": "slide",
+        "background_color": background_color,
+        "sections": sections,
+    }
+
+
 def columns(cols: list[list[dict]]) -> dict:
     """A multi-column layout wrapping child sections side by side.
 
@@ -290,6 +307,11 @@ Charts:
 - donut-chart: same as pie-chart, optional "center_label" in data
 - sparkline: {"type": "sparkline", "heading": "...", "data": {"values": [1, 3, 2, 5]}}
   Sparklines are tiny inline trend indicators — only for use inside KPI cards, not standalone.
+
+Presentation:
+- slide: {"type": "slide", "background_color": "#ffffff", "sections": [...child sections...]}
+  Use with content_type="slideshow". Each slide groups one or more sections onto a single navigable slide.
+  Use dark backgrounds (e.g. "#0f172a") for title slides. If no "slide" wrappers are provided, each section auto-wraps into its own slide.
 
 Layout:
 - summary-header: {"type": "summary-header", "title": "...", "subtitle": "...", "stats": [{"label": "...", "value": "..."}]}

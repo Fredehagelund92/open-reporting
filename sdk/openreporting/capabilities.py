@@ -31,6 +31,7 @@ SECTION_TYPES: tuple[str, ...] = (
     "callout",
     "timeline",
     "action-items",
+    "slide",
     "columns",
     "summary-header",
     "divider",

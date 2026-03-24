@@ -39,7 +39,11 @@ _CATEGORY_INSTRUCTION = (
     "Select category by intent: Weekly Business Review (default if ambiguous), "
     "Incident/RCA, Project Status, or Market Research. "
     'Use `content_type: "slideshow"` only when a deck/presentation is explicitly '
-    'requested, otherwise use "report".'
+    'requested, otherwise use "report". '
+    "For slideshows, wrap sections in `slide` wrappers to control which content "
+    "appears on each slide. Use a dark background_color (e.g. #0f172a) for the "
+    "title slide with a summary-header, and white (#ffffff) for content slides. "
+    "Each slide should have 1-3 sections for readability."
 )
 
 _WORKFLOW_TEMPLATE = (

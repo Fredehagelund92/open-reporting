@@ -21,16 +21,65 @@ interface Slide {
   bgColor: string
 }
 
+/** Light hex colours whose backgrounds should become translucent on dark slides. */
+const LIGHT_BG_VALUES = new Set([
+  "#ffffff", "#fff", "#f8fafc", "#f1f5f9",
+  "rgb(255, 255, 255)", "rgb(248, 250, 252)", "rgb(241, 245, 249)",
+])
+
+/**
+ * Adapt inline styles for dark-background slides so CSS overrides take effect.
+ *
+ * The backend renderer hard-codes colours designed for light backgrounds
+ * (e.g. `color:#0f172a`, `background:#ffffff`). On a dark slide these are
+ * invisible or jarring. We strip inline `color` and convert white/light
+ * backgrounds to semi-transparent so the Tailwind dark-slide classes
+ * (`!text-white`, `!text-slate-200`, …) can take over naturally.
+ */
+function adaptForDarkSlide(html: string): string {
+  const tmp = document.createElement("div")
+  tmp.innerHTML = html
+
+  tmp.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
+    // Strip inline text colour → lets CSS dark-slide overrides cascade
+    el.style.removeProperty("color")
+
+    // Convert white / near-white backgrounds to translucent
+    const bg = (el.style.backgroundColor || el.style.background || "").toLowerCase().replace(/\s/g, "")
+    if (bg && LIGHT_BG_VALUES.has(bg)) {
+      el.style.background = "rgba(255,255,255,0.08)"
+      el.style.removeProperty("background-color")
+    }
+
+    // Soften borders for dark context
+    if (el.style.borderColor) {
+      el.style.borderColor = "rgba(255,255,255,0.15)"
+    }
+    if (el.style.borderBottomColor || el.style.borderBottom) {
+      el.style.borderBottomColor = "rgba(255,255,255,0.25)"
+    }
+    if (el.style.border) {
+      el.style.borderColor = "rgba(255,255,255,0.15)"
+    }
+  })
+
+  return tmp.innerHTML
+}
+
 function parseSlides(sanitizedHtml: string): Slide[] {
   const parser = new DOMParser()
   const doc = parser.parseFromString(`<div>${sanitizedHtml}</div>`, "text/html")
   const sections = Array.from(doc.querySelectorAll("section"))
 
   if (sections.length > 0) {
-    return sections.map((section) => ({
-      html: section.innerHTML.trim(),
-      bgColor: section.getAttribute("data-background-color") || "#ffffff",
-    }))
+    return sections.map((section) => {
+      const bgColor = section.getAttribute("data-background-color") || "#ffffff"
+      let html = section.innerHTML.trim()
+      if (isDarkBackground(bgColor)) {
+        html = adaptForDarkSlide(html)
+      }
+      return { html, bgColor }
+    })
   }
 
   return [{ html: sanitizedHtml, bgColor: "#ffffff" }]
@@ -185,17 +234,17 @@ export function SlideshowViewer({
                         "w-full",
                         isTitleSlide ? "text-center" : "",
                         isDarkSlide ? "text-slate-100" : "text-foreground",
-                        "[&_h1]:text-xl [&_h1]:sm:text-4xl [&_h1]:md:text-5xl [&_h1]:font-bold [&_h1]:tracking-tight [&_h1]:leading-tight [&_h1]:mb-2 [&_h1]:sm:mb-5",
-                        "[&_h2]:text-lg [&_h2]:sm:text-3xl [&_h2]:md:text-4xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h2]:leading-tight [&_h2]:mb-2 [&_h2]:sm:mb-4",
-                        "[&_h3]:text-lg [&_h3]:sm:text-xl [&_h3]:md:text-2xl [&_h3]:font-semibold [&_h3]:mb-1.5 [&_h3]:sm:mb-3",
-                        "[&_p]:text-sm [&_p]:sm:text-base [&_p]:md:text-lg [&_p]:leading-relaxed",
-                        "[&_ul]:list-disc [&_ul]:pl-4 [&_ul]:sm:pl-6 [&_ul]:my-1.5 [&_ul]:sm:my-3 [&_ul]:text-sm [&_ul]:sm:text-base [&_ul]:md:text-lg [&_ul]:leading-relaxed",
-                        "[&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:sm:pl-6 [&_ol]:my-1.5 [&_ol]:sm:my-3 [&_ol]:text-sm [&_ol]:sm:text-base [&_ol]:md:text-lg [&_ol]:leading-relaxed",
-                        "[&_table]:text-xs [&_table]:sm:text-sm [&_table]:md:text-base",
+                        "[&_h1]:!text-xl [&_h1]:sm:!text-4xl [&_h1]:md:!text-5xl [&_h1]:!font-bold [&_h1]:!tracking-tight [&_h1]:!leading-tight [&_h1]:!mb-2 [&_h1]:sm:!mb-5",
+                        "[&_h2]:!text-lg [&_h2]:sm:!text-3xl [&_h2]:md:!text-4xl [&_h2]:!font-semibold [&_h2]:!tracking-tight [&_h2]:!leading-tight [&_h2]:!mb-2 [&_h2]:sm:!mb-4",
+                        "[&_h3]:!text-lg [&_h3]:sm:!text-xl [&_h3]:md:!text-2xl [&_h3]:!font-semibold [&_h3]:!mb-1.5 [&_h3]:sm:!mb-3",
+                        "[&_p]:!text-sm [&_p]:sm:!text-base [&_p]:md:!text-lg [&_p]:!leading-relaxed",
+                        "[&_ul]:!list-disc [&_ul]:!pl-4 [&_ul]:sm:!pl-6 [&_ul]:!my-1.5 [&_ul]:sm:!my-3 [&_ul]:!text-sm [&_ul]:sm:!text-base [&_ul]:md:!text-lg [&_ul]:!leading-relaxed",
+                        "[&_ol]:!list-decimal [&_ol]:!pl-4 [&_ol]:sm:!pl-6 [&_ol]:!my-1.5 [&_ol]:sm:!my-3 [&_ol]:!text-sm [&_ol]:sm:!text-base [&_ol]:md:!text-lg [&_ol]:!leading-relaxed",
+                        "[&_table]:!text-xs [&_table]:sm:!text-sm [&_table]:md:!text-base",
                         "[&_svg]:w-full [&_svg]:max-w-full [&_svg]:h-auto",
                         isDarkSlide
-                          ? "[&_h1]:text-white [&_h2]:text-white [&_h3]:text-slate-100 [&_p]:text-slate-200 [&_li]:text-slate-200"
-                          : "[&_h1]:text-slate-900 [&_h2]:text-slate-900 [&_h3]:text-slate-800 [&_p]:text-slate-700 [&_li]:text-slate-700",
+                          ? "[&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-slate-100 [&_p]:!text-slate-200 [&_li]:!text-slate-200 [&_span]:!text-slate-200 [&_strong]:!text-white [&_b]:!text-white [&_td]:!text-slate-200 [&_th]:!text-slate-300"
+                          : "[&_h1]:!text-slate-900 [&_h2]:!text-slate-900 [&_h3]:!text-slate-800 [&_p]:!text-slate-700 [&_li]:!text-slate-700",
                       ].join(" ")}
                       dangerouslySetInnerHTML={{ __html: slide.html }}
                     />
