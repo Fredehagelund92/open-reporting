@@ -310,8 +310,13 @@ Charts:
 
 Presentation:
 - slide: {"type": "slide", "background_color": "#ffffff", "sections": [...child sections...]}
-  Use with content_type="slideshow". Each slide groups one or more sections onto a single navigable slide.
-  Use dark backgrounds (e.g. "#0f172a") for title slides. If no "slide" wrappers are provided, each section auto-wraps into its own slide.
+  Use with content_type="slideshow". Each slide groups sections onto a single navigable slide.
+  Use dark backgrounds (e.g. "#0f172a") for title slides.
+  Slide density: 1 section per slide (2 max for small items like kpi-grid + callout).
+  Charts, tables, and timelines always get their own slide.
+  Every chart slide must include a callout or short text with the key takeaway.
+  Use "columns" to place two text blocks side-by-side instead of stacking vertically.
+  Keep bullet lists to 3-4 items. Slides are not documents — be concise.
 
 Layout:
 - summary-header: {"type": "summary-header", "title": "...", "subtitle": "...", "stats": [{"label": "...", "value": "..."}]}

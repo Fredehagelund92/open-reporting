@@ -466,9 +466,9 @@ def seed():
                                     },
                                 },
                                 {
-                                    "type": "text",
-                                    "heading": "Market Share Interpretation",
-                                    "body": "- Acme is pulling away with enterprise AI narrative and bundled pricing.\n- Our share gain is healthy but at risk if AI roadmap slips beyond Q2.\n- Zenith remains small but is creating pricing pressure in mid-market deals.",
+                                    "type": "callout",
+                                    "callout_type": "info",
+                                    "message": "Acme leads at 22%. Our 18% share is growing but at risk if AI roadmap slips. Zenith creating pricing pressure in mid-market.",
                                 },
                             ],
                         },
@@ -477,14 +477,27 @@ def seed():
                             "background_color": "#ffffff",
                             "sections": [
                                 {
-                                    "type": "text",
-                                    "heading": "Threat Radar: Acme Corp (Tier-1 Threat)",
-                                    "body": "- Won 3 Fortune 500 opportunities previously in our pipeline ($1.2M ACV).\n- Bundled platform pricing at ~15% below our equivalent package.\n- Weak point: user satisfaction down 0.3 points due to unreliable copilot outputs.\n\n**Threat intensity: 86/100**",
-                                },
-                                {
-                                    "type": "text",
-                                    "heading": "Threat Radar: Zenith AI (Emerging)",
-                                    "body": "- Raised $120M Series C; offering first-year discounts up to 60%.\n- Outreach detected in 12 of our mid-market accounts; 3 active evaluations.\n- Weak point: immature implementation support and limited integrations.\n\n**Threat intensity: 59/100**",
+                                    "type": "columns",
+                                    "columns": [
+                                        {
+                                            "sections": [
+                                                {
+                                                    "type": "text",
+                                                    "heading": "Acme Corp (Tier-1 Threat)",
+                                                    "body": "- Won 3 Fortune 500 deals in our pipeline ($1.2M ACV)\n- Bundled pricing ~15% below us\n- Weak: copilot satisfaction down 0.3pts\n\n**Threat intensity: 86/100**",
+                                                },
+                                            ],
+                                        },
+                                        {
+                                            "sections": [
+                                                {
+                                                    "type": "text",
+                                                    "heading": "Zenith AI (Emerging)",
+                                                    "body": "- Raised $120M Series C; 60% first-year discounts\n- Active in 12 mid-market accounts\n- Weak: immature support & limited integrations\n\n**Threat intensity: 59/100**",
+                                                },
+                                            ],
+                                        },
+                                    ],
                                 },
                             ],
                         },
@@ -875,14 +888,27 @@ def seed():
                             "background_color": "#ffffff",
                             "sections": [
                                 {
-                                    "type": "text",
-                                    "heading": "Growth Drivers",
-                                    "body": "- **Enterprise segment** grew 38% YoY, now 55% of total revenue.\n- **Analytics add-on** achieved 34% attach rate, adding $2.1M ARR.\n- **NRR at 118%** indicates healthy expansion behavior.",
-                                },
-                                {
-                                    "type": "text",
-                                    "heading": "Headwinds",
-                                    "body": "- **SMB churn** at 4.8% quarterly vs target <3.5%.\n- **Hiring lag:** 6 roles behind plan; fill time +15%.\n- **Competitive pressure:** Acme gained 3 enterprise deals.",
+                                    "type": "columns",
+                                    "columns": [
+                                        {
+                                            "sections": [
+                                                {
+                                                    "type": "text",
+                                                    "heading": "Growth Drivers",
+                                                    "body": "- **Enterprise segment** grew 38% YoY, now 55% of revenue\n- **Analytics add-on** at 34% attach rate (+$2.1M ARR)\n- **NRR at 118%** — healthy expansion",
+                                                },
+                                            ],
+                                        },
+                                        {
+                                            "sections": [
+                                                {
+                                                    "type": "text",
+                                                    "heading": "Headwinds",
+                                                    "body": "- **SMB churn** at 4.8% vs target <3.5%\n- **Hiring lag:** 6 roles behind plan\n- **Competitive pressure:** Acme gained 3 enterprise deals",
+                                                },
+                                            ],
+                                        },
+                                    ],
                                 },
                                 {
                                     "type": "callout",
@@ -898,8 +924,14 @@ def seed():
                                 {
                                     "type": "text",
                                     "heading": "H2 2025 Strategic Priorities",
-                                    "body": "1. **Launch AI capabilities (Q3)** -- Accelerated from Q4. Investment: $1.8M (4 senior ML engineers + infrastructure). Target: 20% Enterprise adoption by end of Q3.\n2. **Expand partner channel to 15% of pipeline** -- Early traction: 2 partner-sourced deals ($45K) in first 8 weeks. Signing 5 additional SI partners in Q2.\n3. **Reduce SMB churn to <3.5%** -- Introduce self-serve \"Growth\" tier at lower price point. Automated health scoring and proactive CSM outreach.",
+                                    "body": "1. **Launch AI capabilities (Q3)** -- $1.8M investment, target 20% Enterprise adoption\n2. **Expand partner channel to 15% of pipeline** -- 5 additional SI partners in Q2\n3. **Reduce SMB churn to <3.5%** -- Self-serve Growth tier + automated health scoring",
                                 },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "background_color": "#ffffff",
+                            "sections": [
                                 {
                                     "type": "timeline",
                                     "heading": "Execution Timeline (Q2-Q4)",

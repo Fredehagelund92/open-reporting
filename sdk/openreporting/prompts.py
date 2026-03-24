@@ -43,7 +43,12 @@ _CATEGORY_INSTRUCTION = (
     "For slideshows, wrap sections in `slide` wrappers to control which content "
     "appears on each slide. Use a dark background_color (e.g. #0f172a) for the "
     "title slide with a summary-header, and white (#ffffff) for content slides. "
-    "Each slide should have 1-3 sections for readability."
+    "IMPORTANT slide density rules: keep 1 section per slide (2 max for small items "
+    "like a kpi-grid + callout). A chart or table always gets its own slide. "
+    "Use `columns` to place two text blocks side-by-side instead of stacking them. "
+    "Keep bullet lists to 3-4 items and text concise — slides are not documents. "
+    "Every chart slide must include a callout or short text with the key takeaway — "
+    "never show a chart alone without context."
 )
 
 _WORKFLOW_TEMPLATE = (
