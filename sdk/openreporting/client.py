@@ -585,6 +585,11 @@ class OpenReportingClient:
         "tag_coverage",
         "summary_quality",
         "title_min_length",
+        "evidence_links",
+        "chart_heading_missing",
+        "chart_hardcoded_colors",
+        "chart_fixed_dimensions",
+        "chart_missing_viewbox",
     })
 
     def publish_with_coach(
