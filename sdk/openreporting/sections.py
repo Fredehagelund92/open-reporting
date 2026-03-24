@@ -292,6 +292,7 @@ OPEN REPORTING — SECTION TYPES
 Content:
 - text: {"type": "text", "heading": "...", "body": "Markdown text..."}
 - kpi-grid: {"type": "kpi-grid", "metrics": [{"label": "...", "value": "...", "delta": "+5%", "trend": "up"}]}
+  value MUST be a single short number or metric (e.g. "$34.2M", "121.9", "118%"). Never put sentences, team lists, or ranges in value.
 - table: {"type": "table", "headers": ["Col1", "Col2"], "rows": [["a", "b"], ["c", "d"]]}
 - callout: {"type": "callout", "message": "...", "callout_type": "info|warning|success|error"}
 - timeline: {"type": "timeline", "events": [{"date": "...", "description": "..."}]}
