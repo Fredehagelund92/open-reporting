@@ -105,6 +105,43 @@ function adaptForDarkSlide(html: string, isTitleSlide: boolean): string {
   return tmp.innerHTML
 }
 
+/* ── Slide HTML compaction ───────────────────────────────────────────── */
+
+/**
+ * Reduce generous report-style margins and padding for slide context.
+ * Runs on ALL slides (not just dark ones).
+ */
+function compactForSlide(html: string): string {
+  const tmp = document.createElement("div")
+  tmp.innerHTML = html
+
+  tmp.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
+    // Compact large vertical margins (32px, 24px → 8px)
+    const mt = parseInt(el.style.marginTop || "0", 10)
+    const mb = parseInt(el.style.marginBottom || "0", 10)
+    if (mt >= 20) el.style.marginTop = "8px"
+    if (mb >= 20) el.style.marginBottom = "8px"
+
+    // Handle shorthand margin like "32px 0" or "24px 0 12px"
+    const margin = el.style.margin
+    if (margin) {
+      const parts = margin.split(/\s+/)
+      const topVal = parseInt(parts[0], 10)
+      if (topVal >= 20) {
+        // Replace with compact version, preserve horizontal
+        const horiz = parts[1] || "0"
+        el.style.margin = `8px ${horiz}`
+      }
+    }
+
+    // Compact large padding (>20px → 12px)
+    const pb = parseInt(el.style.paddingBottom || "0", 10)
+    if (pb >= 16) el.style.paddingBottom = "10px"
+  })
+
+  return tmp.innerHTML
+}
+
 /* ── Slide parser ───────────────────────────────────────────────────── */
 
 function parseSlides(sanitizedHtml: string): Slide[] {
@@ -116,6 +153,9 @@ function parseSlides(sanitizedHtml: string): Slide[] {
     return sections.map((section, index) => {
       const bgColor = section.getAttribute("data-background-color") || "#ffffff"
       let html = section.innerHTML.trim()
+      // Compact margins for all slides
+      html = compactForSlide(html)
+      // Dark slide adaptations
       if (isDarkBackground(bgColor)) {
         html = adaptForDarkSlide(html, index === 0)
       }
@@ -241,9 +281,9 @@ export function SlideshowViewer({
                 <article
                   key={`slide-${index}`}
                   className="h-full w-full shrink-0 overflow-y-auto"
-                  style={{ backgroundColor: slide.bgColor }}
+                  style={{ containerType: "size", backgroundColor: slide.bgColor }}
                 >
-                  <div className="mx-auto flex min-h-full w-full max-w-5xl items-center justify-center p-4 sm:p-8 md:p-12 lg:p-16">
+                  <div className="mx-auto flex min-h-full w-full max-w-5xl items-center justify-center p-4 sm:p-6 md:p-8 lg:p-10">
                     <div
                       className={[
                         "w-full",
@@ -257,7 +297,7 @@ export function SlideshowViewer({
                         "[&_ul]:!list-disc [&_ul]:!pl-4 [&_ul]:sm:!pl-6 [&_ul]:!my-2 [&_ul]:sm:!my-3 [&_ul]:!text-sm [&_ul]:sm:!text-base [&_ul]:md:!text-lg [&_ul]:!leading-relaxed",
                         "[&_ol]:!list-decimal [&_ol]:!pl-4 [&_ol]:sm:!pl-6 [&_ol]:!my-2 [&_ol]:sm:!my-3 [&_ol]:!text-sm [&_ol]:sm:!text-base [&_ol]:md:!text-lg [&_ol]:!leading-relaxed",
                         "[&_table]:!text-xs [&_table]:sm:!text-sm [&_table]:md:!text-base",
-                        "[&_svg]:w-full [&_svg]:max-w-full [&_svg]:h-auto",
+                        "[&_svg]:w-full [&_svg]:max-w-full [&_svg]:h-auto [&_svg]:!max-h-[55cqh]",
                         isDarkSlide
                           ? "[&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-slate-100 [&_p]:!text-slate-200 [&_li]:!text-slate-200 [&_span]:!text-slate-200 [&_strong]:!text-white [&_b]:!text-white [&_td]:!text-slate-200 [&_th]:!text-slate-300"
                           : "[&_h1]:!text-slate-900 [&_h2]:!text-slate-900 [&_h3]:!text-slate-800 [&_p]:!text-slate-700 [&_li]:!text-slate-700",
