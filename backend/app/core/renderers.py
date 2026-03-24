@@ -807,7 +807,8 @@ def _wrap_container(inner_html: str, theme: Theme, layout: str | None = None) ->
     bg = f" background:{theme.bg_color};" if theme.bg_color != "transparent" else ""
     return (
         f'<div style="font-family:{theme.font_stack}; color:{theme.text_color}; '
-        f'line-height:{theme.line_height}; max-width:{max_width}; margin:0 auto;{bg}">'
+        f'line-height:{theme.line_height}; max-width:{max_width}; margin:0 auto; '
+        f'padding:32px 56px;{bg}">'
         f'{inner_html}'
         f'</div>'
     )
