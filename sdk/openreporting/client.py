@@ -643,21 +643,31 @@ class OpenReportingClient:
                 fix_fn=my_fix,
             )
         """
+        import json as _json
+
         log = logging.getLogger("openreporting.coach")
 
-        # Detect body format
-        body = markdown or html or ""
+        # Detect body format — sections need special handling for fix_fn
+        is_sections = sections is not None and len(sections) > 0
         is_html = html is not None
+        if is_sections:
+            body = _json.dumps(sections, indent=2)
+        else:
+            body = markdown or html or ""
+
+        last_coach: CoachResult | None = None
 
         for attempt in range(1, max_retries + 1):
             log.info("Coach attempt %d/%d (body_len=%d)", attempt, max_retries, len(body))
             try:
-                coach = self.evaluate(
+                # For sections, pass the original list; for text, pass as markdown/html
+                eval_sections = _json.loads(body) if is_sections else None
+                last_coach = self.evaluate(
                     title=title,
                     summary=summary,
-                    markdown=None if is_html else body,
+                    markdown=None if (is_html or is_sections) else body,
                     html=body if is_html else None,
-                    sections=sections,
+                    sections=eval_sections if is_sections else None,
                     content_type=content_type,
                     theme=theme,
                     layout=layout,
@@ -665,40 +675,64 @@ class OpenReportingClient:
                 )
             except OpenReportingError as exc:
                 log.warning("Coach request failed (%s), publishing as-is.", exc)
+                last_coach = None
                 break
 
             log.info(
                 "Coach result: score=%d, status=%s, issues=%d",
-                coach.overall_score, coach.readiness_status, len(coach.issues),
+                last_coach.overall_score, last_coach.readiness_status, len(last_coach.issues),
             )
 
-            if coach.readiness_status == "ready":
+            if last_coach.readiness_status == "ready":
                 log.info("Coach says ready — proceeding to publish.")
                 break
 
             # Filter to issues the fix_fn can actually address
             fixable = [
-                i.model_dump() for i in coach.issues
+                i.model_dump() for i in last_coach.issues
                 if i.rule_id not in self._NON_BODY_ISSUES
             ]
 
             if attempt < max_retries and fixable and fix_fn is not None:
                 log.info("Asking fix_fn to address %d issue(s)...", len(fixable))
-                body = fix_fn(body, fixable)
-                log.info("fix_fn returned revised body (len=%d)", len(body))
+                prev_body = body
+                revised = fix_fn(body, fixable)
+
+                # Validate fix_fn output — reject meta-conversations and empty fixes
+                if not revised or len(revised.strip()) < 50:
+                    log.warning("fix_fn returned too-short response (%d chars), keeping previous body.", len(revised or ""))
+                    body = prev_body
+                elif any(p in revised.lower() for p in ("i can fix", "what i need from you", "paste the full", "isn't included")):
+                    log.warning("fix_fn returned a meta-conversation instead of fixed content, keeping previous body.")
+                    body = prev_body
+                else:
+                    body = revised
+                    log.info("fix_fn returned revised body (len=%d)", len(body))
             elif not fixable:
                 log.info("No fixable issues remain — proceeding to publish.")
                 break
             else:
-                log.warning("Retries exhausted or no fix_fn — publishing best attempt.")
+                log.warning("Retries exhausted or no fix_fn.")
                 break
 
+        # If coach still says "blocked" after all retries, refuse to publish
+        if last_coach and last_coach.readiness_status == "blocked":
+            error_issues = [i for i in last_coach.issues if i.severity == "error"]
+            error_summary = "; ".join(i.message for i in error_issues[:3])
+            raise CoachBlockedError(
+                f"Report blocked by authoring coach after {max_retries} attempt(s): {error_summary}",
+                coach_result={"readiness_status": "blocked", "overall_score": last_coach.overall_score},
+                issues=[i.model_dump() for i in last_coach.issues],
+            )
+
+        # Publish — reconstruct sections from body if needed
+        pub_sections = _json.loads(body) if is_sections else None
         return self.publish(
             title=title,
             summary=summary,
-            markdown=None if is_html else body,
+            markdown=None if (is_html or is_sections) else body,
             html=body if is_html else None,
-            sections=sections,
+            sections=pub_sections if is_sections else None,
             space=space,
             space_id=space_id,
             tags=tags,
