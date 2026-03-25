@@ -43,6 +43,33 @@ Each section has a `type` and type-specific fields. The server renders them in o
 | `summary-header` | `title` | `subtitle`, `date`, `stats[]` -> `{label, value}` |
 | `divider` | -- | `label` (centered text) |
 | `spacer` | -- | `height` (e.g. `"40px"`, `"2rem"`) |
+| `slide` | `background_color`, `sections[]` (child sections) | Use with `content_type: "slideshow"`. Each slide groups child sections onto one navigable page. |
+
+### KPI Best Practices
+
+Each metric in a `kpi-grid` should cover a **different dimension** of the data. Never show redundant metrics (e.g., "Top PPG" AND "Runner-up PPG").
+
+| Field | Format | Example |
+|-------|--------|---------|
+| `label` | Short dimension name | "Scoring Leader", "Net Rating", "Fastest Pace" |
+| `value` | Single number or short metric | "121.9 PPG", "$34.2M", "118%" |
+| `delta` | Comparison or change | "+12% YoY", "CLE leads by 0.3" |
+| `trend` | Direction | "up" or "down" |
+
+**Bad KPIs:**
+- `"label": "Runner-up PPG"` — redundant with "Top PPG"
+- `"value": "121.9 → 105.1"` — ranges belong in text, not KPI cards
+- `"delta": "CLE"` — team name is not a comparison
+- `"value": "W/L, REB incomplete"` — sentences are not metrics; skip missing data
+
+**Good KPIs (3-4 max, each a different angle):**
+```json
+[
+  {"label": "Scoring Leader", "value": "121.9 PPG", "delta": "CLE leads by 0.3", "trend": "up"},
+  {"label": "Best Net Rating", "value": "+0.097", "delta": "MIL — defense-driven", "trend": "up"},
+  {"label": "Fastest Pace", "value": "15.59", "delta": "ORL, BKN close behind", "trend": "up"}
+]
+```
 
 ### Chart Sections
 
@@ -339,14 +366,8 @@ Must separate facts from interpretation and cite external sources.
 
 | Theme | Character | Best For |
 |-------|-----------|----------|
-| `default` | Clean sans-serif, indigo accent. | General purpose. |
-| `executive` | Serif typography, gold accent, generous whitespace. | Leadership audiences, board decks. |
-| `minimal` | Monospace font, grayscale, tight spacing. | Data-heavy technical reports. |
-| `corporate` | Professional sans-serif, navy blue accent. | Finance, operations, compliance. |
-| `dashboard` | Dark background, cyan accent, vibrant chart colors. | Analytics dashboards, monitoring. |
-| `presentation` | Large typography, purple accent, extra whitespace. | On-screen sharing, presentations. |
-| `earth` | Serif headings, forest green, warm beige tones. | Sustainability, natural resources. |
-| `highcontrast` | Strong borders, pure black text, bold colors. | Accessibility-focused, high readability. |
+| `default` | Clean sans-serif (Inter), electric blue accent, white background. | All reports. The recommended choice for most use cases. |
+| `dark` | Same typography, dark navy background, bright blue accent, light text. | Analytics dashboards, dark-background presentations, monitoring. |
 
 ## Layouts
 
@@ -388,6 +409,42 @@ When using `html_body` for full layout control:
 - **Rendering context**: Reports render inside a white (`#ffffff`) container (except `dashboard` theme which uses dark background). Design for appropriate contrast.
 - **Slideshow mode**: Use `content_type: "slideshow"` and wrap each slide in `<section>`. Min 2 slides, recommended 5-6. `data-background-color` on `<section>` sets slide background. Do not add vertical-centering wrappers.
 
+## Slideshow Mode
+
+Set `content_type: "slideshow"` and use `slide` sections to create navigable presentations.
+
+### Slide Structure
+
+Each slide groups 1-2 sections. The viewer provides arrow key navigation, swipe gestures, and dot indicators.
+
+```json
+{
+  "content_type": "slideshow",
+  "structured_body": {
+    "sections": [
+      {"type": "slide", "background_color": "#0f172a", "sections": [
+        {"type": "summary-header", "title": "Q1 Board Update", "subtitle": "Performance & Strategy"}
+      ]},
+      {"type": "slide", "background_color": "#ffffff", "sections": [
+        {"type": "kpi-grid", "metrics": [...]},
+        {"type": "callout", "callout_type": "info", "message": "Key takeaway here."}
+      ]}
+    ]
+  }
+}
+```
+
+### Slide Density Rules
+
+| Rule | Why |
+|------|-----|
+| 1 section per slide (2 max for small items like kpi-grid + callout) | Prevents overflow and scrolling |
+| Charts, tables, and timelines always get their own slide | These are tall components |
+| Every chart slide must include a callout with the key takeaway | Never show a chart without context |
+| Use `columns` to place two text blocks side-by-side | Better than stacking vertically |
+| Keep bullet lists to 3-4 items | Slides are not documents |
+| Use dark `background_color` (e.g. `"#0f172a"`) for title slides | Creates visual hierarchy |
+
 ## Best Practices
 
 - Include **specific numbers** in every report -- percentages, dollar amounts, counts. Vague qualitative language loses credibility.
@@ -398,3 +455,17 @@ When using `html_body` for full layout control:
 - Use `columns` with `layout: "wide"` for side-by-side comparisons (e.g. chart + table, two charts).
 - Use `summary-header` at the top of formal reports to establish context with key stats.
 - Pick the right chart type: bar for comparison, line for trends, pie/donut for composition, stacked bar for part-to-whole over time, horizontal bar for long category labels, sparkline for inline trend indicators.
+
+## Common Anti-Patterns (Rejected by Coach)
+
+These patterns are detected by the authoring coach and will block or warn on publish:
+
+| Anti-Pattern | Severity | Fix |
+|-------------|----------|-----|
+| Raw SVG markup in report body | **Blocks** | Use chart section types — server renders SVGs from data |
+| SVG/HTML inside code blocks (` ```...``` `) | **Blocks** | Charts must be rendered, not shown as source code |
+| CSS class names (no inline styles) | **Blocks** | Classes are stripped; use `style="..."` attributes |
+| Empty/fake SVG charts (shapes but no data labels) | **Blocks** | Use structured chart sections with real data |
+| Inventing section types (e.g. "sources", "footer") | Skipped | Use "text" with markdown links instead |
+| KPIs with sentences or lists as values | Warning | Value must be a single short number |
+| All chart values are zero | Warning | Replace with real data or omit the chart |

@@ -1044,7 +1044,6 @@ def seed():
                         },
                     ],
                 },
-                "theme": "default",
                 "content_type": "report",
                 "agent": a1,
                 "space": s1,
@@ -1092,7 +1091,6 @@ Daily spend has been **consistently below budget** since March 4th.
 | Negotiate storage tier pricing | Cloud Ops | Apr 15 | Not Started |
 | Review ML training job scheduling | ML Infra | Apr 7 | In Progress |
 """,
-                "theme": "minimal",
                 "content_type": "report",
                 "agent": a1,
                 "space": s2,
@@ -1177,7 +1175,6 @@ Daily spend has been **consistently below budget** since March 4th.
                         },
                     ],
                 },
-                "theme": "executive",
                 "content_type": "report",
                 "agent": a2,
                 "space": s1,

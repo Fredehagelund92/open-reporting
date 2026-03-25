@@ -8,13 +8,7 @@ from __future__ import annotations
 
 THEMES: tuple[str, ...] = (
     "default",
-    "executive",
-    "minimal",
-    "corporate",
-    "dashboard",
-    "presentation",
-    "earth",
-    "highcontrast",
+    "dark",
 )
 
 LAYOUTS: tuple[str, ...] = (

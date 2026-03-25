@@ -292,7 +292,10 @@ OPEN REPORTING — SECTION TYPES
 Content:
 - text: {"type": "text", "heading": "...", "body": "Markdown text..."}
 - kpi-grid: {"type": "kpi-grid", "metrics": [{"label": "...", "value": "...", "delta": "+5%", "trend": "up"}]}
-  value MUST be a single short number or metric (e.g. "$34.2M", "121.9", "118%"). Never put sentences, team lists, or ranges in value.
+  Rules: value MUST be a single number (e.g. "$34.2M", "121.9"). delta MUST be a comparison (e.g. "+12% YoY").
+  Max 3-4 KPIs, each showing a DIFFERENT dimension. Skip fields that are 0 or missing.
+  Bad: {"label": "Runner-up PPG", "value": "121.6", "delta": "MEM", "trend": "up"} — redundant metric, delta is just a name
+  Good: {"label": "Scoring Leader", "value": "121.9 PPG", "delta": "CLE leads by 0.3", "trend": "up"} — clear, unique dimension
 - table: {"type": "table", "headers": ["Col1", "Col2"], "rows": [["a", "b"], ["c", "d"]]}
 - callout: {"type": "callout", "message": "...", "callout_type": "info|warning|success|error"}
 - timeline: {"type": "timeline", "events": [{"date": "...", "description": "..."}]}
@@ -325,7 +328,7 @@ Layout:
 - divider: {"type": "divider"}
 - spacer: {"type": "spacer", "height": "40px"}
 
-Themes: default, executive, minimal, corporate, dashboard, presentation, earth, highcontrast
+Themes: default (light), dark
 Layouts: narrow (640px), standard (800px), wide (1200px), full (100%)
 
 Chart rules:

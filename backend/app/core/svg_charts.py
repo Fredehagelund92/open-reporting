@@ -32,7 +32,7 @@ def _fmt_val(val: float) -> str:
 
 _CHART_WIDTH = 760
 _CHART_HEIGHT = 380
-_PAD_LEFT = 72
+_PAD_LEFT = 8
 _PAD_RIGHT = 32
 _PAD_TOP = 40
 _PAD_BOTTOM = 60
@@ -60,7 +60,7 @@ def _nice_ticks(max_val: float, count: int = 5, min_val: float = 0.0) -> list[fl
 
 
 def _y_axis_and_grid(ticks: list[float], plot_top: float, plot_bottom: float, theme: Theme) -> str:
-    """Render Y-axis labels and horizontal grid lines."""
+    """Render horizontal grid lines (y-axis number labels removed for alignment)."""
     parts: list[str] = []
     min_tick = ticks[0] if ticks else 0
     max_tick = ticks[-1] if ticks else 1
@@ -73,12 +73,6 @@ def _y_axis_and_grid(ticks: list[float], plot_top: float, plot_bottom: float, th
         parts.append(
             f'<line x1="{_PAD_LEFT}" y1="{y:.1f}" x2="{_CHART_WIDTH - _PAD_RIGHT}" '
             f'y2="{y:.1f}" stroke="{theme.chart_grid_color}" stroke-dasharray="4,4" stroke-opacity="0.5" />'
-        )
-        label = _fmt_val(tick)
-        parts.append(
-            f'<text x="{_PAD_LEFT - 8}" y="{y:.1f}" text-anchor="end" '
-            f'dominant-baseline="middle" fill="{theme.chart_axis_color}" '
-            f'style="font-size:12px;">{label}</text>'
         )
     return "\n".join(parts)
 

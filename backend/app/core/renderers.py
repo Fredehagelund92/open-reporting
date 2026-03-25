@@ -406,7 +406,7 @@ def _render_chart_section(section: dict, t: Theme, svg_fn) -> str:
         heading_html = ""
         if heading:
             heading_html = (
-                f'<h3 style="font-size:18px; font-weight:600; color:{t.heading_color}; '
+                f'<h3 style="font-size:20px; font-weight:600; color:{t.heading_color}; '
                 f'margin:24px 0 8px;">{escape(heading)}</h3>'
             )
         return (
@@ -423,15 +423,15 @@ def _render_chart_section(section: dict, t: Theme, svg_fn) -> str:
     heading_html = ""
     if heading:
         heading_html = (
-            f'<h3 style="font-size:18px; font-weight:600; color:{t.heading_color}; '
+            f'<h3 style="font-size:20px; font-weight:600; color:{t.heading_color}; '
             f'margin:0 0 8px;">{escape(heading)}</h3>'
         )
 
     return (
-        f'<div style="width:100%; margin:32px 0; text-align:left;">'
+        f'<div style="width:100%; margin:16px 0; text-align:left;">'
         f'{heading_html}'
         f'<div data-or-chart=\'{escape(chart_json, quote=False)}\' '
-        f'style="width:100%;">'
+        f'style="width:100%; display:block;">'
         f'{svg_fallback}'
         f'</div>'
         f'</div>'
@@ -681,7 +681,7 @@ class _InlineStyler(HTMLParser):
                 f"margin:28px 0 12px;"
             ),
             "h3": (
-                f"font-size:18px; font-weight:600; color:{t.heading_color}; "
+                f"font-size:20px; font-weight:600; color:{t.heading_color}; "
                 f"margin:24px 0 8px;"
             ),
             "h4": (
@@ -804,7 +804,7 @@ def _wrap_container(inner_html: str, theme: Theme, layout: str | None = None) ->
     return (
         f'<div style="font-family:{theme.font_stack}; color:{theme.text_color}; '
         f'line-height:{theme.line_height}; max-width:{max_width}; margin:0 auto; '
-        f'padding:32px 40px;{bg}">'
+        f'padding:24px 0;{bg}">'
         f'{inner_html}'
         f'</div>'
     )

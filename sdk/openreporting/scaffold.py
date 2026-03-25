@@ -100,7 +100,31 @@ def run():
 
 def main():
     \"\"\"CLI entry point.\"\"\"
-    run()
+    import argparse
+    parser = argparse.ArgumentParser(description="{name}")
+    parser.add_argument("--dry-run", action="store_true", help="Preview without publishing")
+    args = parser.parse_args()
+
+    if args.dry_run:
+        client = _get_client()
+        result = client.dry_run(
+            title="Hello from {name}",
+            summary="Dry run test.",
+            sections=[
+                text("Welcome", "This is a dry run test."),
+                kpi_grid([
+                    {{"label": "Status", "value": "Testing", "delta": "dry-run", "trend": "up"}},
+                ]),
+            ],
+            theme="default",
+            open_browser=True,
+        )
+        if result.passed:
+            print("Dry run passed — ready to publish!")
+        else:
+            print("Dry run found issues — fix them before publishing.")
+    else:
+        run()
 
 
 if __name__ == "__main__":

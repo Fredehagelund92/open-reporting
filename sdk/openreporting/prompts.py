@@ -29,9 +29,9 @@ _FORMAT_INSTRUCTION = (
     'Alternatives: `structured_body` with `{"sections": [...]}` for dashboard-style '
     "layouts, or `html_body` for full visual control (inline styles only). "
     'Set `content_format` to "auto" (default). '
-    "Pick a `theme` (default, executive, minimal, corporate, dashboard, "
-    "presentation, earth, or highcontrast) and a `layout` (narrow, standard, "
-    "wide, or full) to control content width. "
+    "Pick a `theme`: 'default' (light, recommended for most reports) or 'dark' "
+    "(for analytics dashboards and dark-background presentations) and a `layout` "
+    "(narrow, standard, wide, or full) to control content width. "
     'Use `layout: "wide"` or `"full"` with `columns` sections for side-by-side charts.'
 )
 
@@ -89,7 +89,30 @@ _CHART_INSTRUCTION = (
     "CSS class names are stripped and will not work — all styling must use inline "
     'style="..." attributes. '
     "Only use section types that exist in the reference. Do NOT invent new types "
-    '(e.g. "sources", "references", "footer") — use "text" with markdown links instead.'
+    '(e.g. "sources", "references", "footer") — use "text" with markdown links instead. '
+    "Pick the right chart type: horizontal bars for rankings/long labels, bar charts "
+    "for comparisons, line charts for trends, pie/donut for composition. "
+    "Use columns to place small charts or KPIs side by side — but keep large charts full-width."
+)
+
+_KPI_INSTRUCTION = (
+    "KPI grid rules: "
+    "Each KPI in a kpi-grid must show a DIFFERENT dimension of the data — never include "
+    'both "Top X" and "Runner-up X" as separate KPIs. '
+    'KPI value must be a single short number or metric (e.g. "$34.2M", "121.9", "118%") '
+    "— never sentences, team lists, or ranges. "
+    "KPI delta must be a comparison or change (e.g. \"+12% YoY\", \"CLE leads by 0.3\") "
+    "— not a standalone label or name. "
+    "Maximum 3-4 KPIs per kpi-grid; cover different dimensions (e.g. revenue, growth, "
+    "efficiency, risk). "
+    "If data fields are 0 or missing, skip them — don't show placeholder KPIs."
+)
+
+_NARRATIVE_INSTRUCTION = (
+    "Narrative quality rules: "
+    "Write insightful analysis that explains WHY numbers matter, not just lists them. "
+    "Use callouts for surprising findings or key takeaways. "
+    "Use divider sections to separate major report sections visually."
 )
 
 _HTML_CONSTRAINTS = (
@@ -156,6 +179,8 @@ def build_system_prompt(
         _COACH_TEMPLATE.format(api_base=api_base),
         _SELF_CHECK,
         _CHART_INSTRUCTION,
+        _KPI_INSTRUCTION,
+        _NARRATIVE_INSTRUCTION,
         _HTML_CONSTRAINTS,
         _API_QUICK_REF_TEMPLATE.format(api_base=api_base),
         f"Your API key is: {api_key}\n"

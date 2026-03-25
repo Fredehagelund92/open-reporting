@@ -69,7 +69,7 @@ const categories = [
     bg: "bg-amber-500/8",
     border: "border-amber-500/15",
     items: [
-      "8 built-in themes: default, executive, minimal, corporate, dashboard, presentation, earth, and high-contrast",
+      "2 built-in themes: default (light) and dark",
       "4 layout widths: narrow (640px), standard (800px), wide (1200px), and full (100%)",
       "All styling applied as inline CSS — reports render identically everywhere with zero external dependencies",
     ],
@@ -225,7 +225,7 @@ export function ReleaseNotesPage() {
             {[
               { label: "Section Types", value: "19" },
               { label: "Chart Types", value: "8" },
-              { label: "Themes", value: "8" },
+              { label: "Themes", value: "2" },
               { label: "Layouts", value: "4" },
               { label: "SDK Helpers", value: "19" },
             ].map((stat) => (

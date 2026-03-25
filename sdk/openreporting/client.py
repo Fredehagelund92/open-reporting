@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import logging
+import tempfile
+import webbrowser
+from dataclasses import dataclass, field
 from typing import Any, Callable
 
 import httpx
@@ -31,6 +34,16 @@ from openreporting.models import (
     ReportResponse,
     SpaceResponse,
 )
+
+
+@dataclass
+class DryRunResult:
+    """Result of a :meth:`OpenReportingClient.dry_run` call."""
+
+    html: str
+    coach: CoachResult | None
+    local_issues: list = field(default_factory=list)
+    passed: bool = True  # True if no blocking errors from either local or server
 
 
 class OpenReportingClient:
@@ -684,9 +697,15 @@ class OpenReportingClient:
                 break
 
             log.info(
-                "Coach result: score=%d, status=%s, issues=%d",
-                last_coach.overall_score, last_coach.readiness_status, len(last_coach.issues),
+                "Coach: score=%d/100 status=%s | %d error(s), %d warning(s)",
+                last_coach.overall_score,
+                last_coach.readiness_status,
+                sum(1 for i in last_coach.issues if i.severity == "error"),
+                sum(1 for i in last_coach.issues if i.severity == "warning"),
             )
+            for issue in last_coach.issues:
+                severity_icon = "✗" if issue.severity == "error" else "⚠" if issue.severity == "warning" else "ℹ"
+                log.info("  %s %s: %s", severity_icon, issue.rule_id, issue.message)
 
             if last_coach.readiness_status == "ready":
                 log.info("Coach says ready — proceeding to publish.")
@@ -746,4 +765,118 @@ class OpenReportingClient:
             layout=layout,
             series_id=series_id,
             meta=meta,
+        )
+
+    # ------------------------------------------------------------------
+    # Dry run
+    # ------------------------------------------------------------------
+
+    def dry_run(
+        self,
+        title: str,
+        summary: str,
+        *,
+        markdown: str | None = None,
+        sections: list[dict] | None = None,
+        html: str | None = None,
+        content_type: str = "report",
+        theme: str | None = None,
+        layout: str | None = None,
+        tags: list[str] | None = None,
+        open_browser: bool = False,
+    ) -> DryRunResult:
+        """Preview a report locally and via the server without publishing.
+
+        Runs local structural validation on *sections* (if provided), then
+        calls the server's preview endpoint to render the report and get
+        authoring-coach feedback — all without storing anything.
+
+        Parameters
+        ----------
+        title, summary, markdown, sections, html, content_type, theme, layout, tags:
+            Same as :meth:`publish`.
+        open_browser:
+            When ``True`` and the server returns rendered HTML, write it to a
+            temporary file and open it in the default browser.
+
+        Returns
+        -------
+        DryRunResult
+            Contains the rendered HTML, coach feedback, any local validation
+            issues, and a ``passed`` flag that is ``True`` when no blocking
+            errors were found.
+        """
+        from openreporting.validation import validate_sections
+
+        log = logging.getLogger("openreporting.dryrun")
+
+        # --- Local validation -------------------------------------------
+        local_issues: list = []
+        if sections is not None:
+            local_issues = validate_sections(sections)
+
+        log.info("=== Dry Run: %s ===", title)
+        log.info("Local validation: %d issue(s)", len(local_issues))
+        for issue in local_issues:
+            severity_label = "error" if issue.severity == "error" else "warning"
+            log.info("  [%s] %s: %s", severity_label, issue.rule_id, issue.message)
+
+        # Determine whether local validation already has blocking errors
+        local_has_errors = any(i.severity == "error" for i in local_issues)
+
+        # --- Server preview ---------------------------------------------
+        preview_html = ""
+        coach: CoachResult | None = None
+
+        try:
+            preview = self.preview(
+                title,
+                summary,
+                markdown=markdown,
+                sections=sections,
+                html=html,
+                content_type=content_type,
+                theme=theme,
+                layout=layout,
+                tags=tags,
+            )
+            preview_html = preview.html_body or ""
+
+            # preview.authoring_coach may be a dict or None
+            if preview.authoring_coach is not None:
+                coach = CoachResult.model_validate(preview.authoring_coach)
+                score = coach.overall_score
+                status = coach.readiness_status
+                log.info("Server preview: score=%d/100, status=%s", score, status)
+                for issue in coach.issues:
+                    severity_icon = "⚠" if issue.severity == "warning" else "✗" if issue.severity == "error" else "ℹ"
+                    log.info("  %s %s: %s", severity_icon, issue.rule_id, issue.message)
+            else:
+                log.info("Server preview: no coach data returned.")
+
+        except ServerConnectionError as exc:
+            log.warning("Server unavailable (%s) — skipping server preview.", exc)
+
+        # --- Open browser -----------------------------------------------
+        if open_browser and preview_html:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".html", delete=False, encoding="utf-8"
+            ) as tmp:
+                tmp.write(preview_html)
+                tmp_path = tmp.name
+            webbrowser.open(f"file://{tmp_path}")
+            log.info("Opened preview in browser: %s", tmp_path)
+
+        # --- Determine pass/fail ----------------------------------------
+        server_has_errors = (
+            coach is not None
+            and coach.readiness_status == "blocked"
+        )
+        passed = not local_has_errors and not server_has_errors
+
+        return DryRunResult(
+            html=preview_html,
+            coach=coach,
+            local_issues=local_issues,
+            passed=passed,
         )
