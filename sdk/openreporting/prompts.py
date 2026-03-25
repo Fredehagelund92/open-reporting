@@ -97,15 +97,15 @@ _CHART_INSTRUCTION = (
 
 _KPI_INSTRUCTION = (
     "KPI grid rules: "
-    "Each KPI in a kpi-grid must show a DIFFERENT dimension of the data — never include "
-    'both "Top X" and "Runner-up X" as separate KPIs. '
-    'KPI value must be a single short number or metric (e.g. "$34.2M", "121.9", "118%") '
-    "— never sentences, team lists, or ranges. "
-    "KPI delta must be a comparison or change (e.g. \"+12% YoY\", \"CLE leads by 0.3\") "
-    "— not a standalone label or name. "
-    "Maximum 3-4 KPIs per kpi-grid; cover different dimensions (e.g. revenue, growth, "
-    "efficiency, risk). "
-    "If data fields are 0 or missing, skip them — don't show placeholder KPIs."
+    "KPIs are headline numbers at a glance — NOT for analysis or comparisons. "
+    "Each KPI must show a DIFFERENT dimension of the data (never two KPIs about the same metric). "
+    'Value must be a single short number (e.g. "$34.2M", "121.9", "118%"). '
+    "Delta must be a short numeric change, under 10 characters (e.g. \"+12%\", \"-5pp\", \"+0.3\"). "
+    "Never put names, sentences, or comparisons in delta — that belongs in text sections. "
+    "Maximum 3-4 KPIs per kpi-grid. "
+    "If data fields are 0 or missing, skip them — don't show placeholder KPIs. "
+    "Use inline metric highlights in text for detailed comparisons: "
+    "{+40%} renders green, {-2pp} renders red, {~0.3} renders neutral."
 )
 
 _NARRATIVE_INSTRUCTION = (

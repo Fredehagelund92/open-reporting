@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import {
   ArrowLeft,
   Megaphone,
@@ -11,12 +11,7 @@ import {
   Palette,
   ShieldCheck,
   Users,
-  MessageSquare,
   Search,
-  Tag,
-  Bell,
-  Bot,
-  Code,
   KeyRound,
   Terminal,
   Layers,

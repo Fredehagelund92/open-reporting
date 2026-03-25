@@ -138,7 +138,7 @@ def validate_sections(sections: list[dict]) -> list[ValidationIssue]:
         if section_type == "kpi-grid":
             metrics = section.get("metrics") or []
 
-            # 4. KPI value too long
+            # 4. KPI value too long + delta too long
             for m_idx, metric in enumerate(metrics):
                 if not isinstance(metric, dict):
                     continue
@@ -155,6 +155,23 @@ def validate_sections(sections: list[dict]) -> list[ValidationIssue]:
                             suggestion=(
                                 "KPI value should be a single short number like "
                                 "'$34.2M' or '121.9'"
+                            ),
+                        )
+                    )
+                delta = metric.get("delta", "")
+                if isinstance(delta, str) and len(delta) > 10:
+                    issues.append(
+                        ValidationIssue(
+                            severity="warning",
+                            rule_id="kpi_delta_too_long",
+                            message=(
+                                f"{label}: metrics[{m_idx}] delta {delta!r} "
+                                f"is {len(delta)} characters (max 10)."
+                            ),
+                            suggestion=(
+                                "KPI delta should be a short numeric change like "
+                                "'+12%', '-5pp', or '+0.3'. Put comparisons in text "
+                                "sections using inline metrics: {+40%} renders green."
                             ),
                         )
                     )

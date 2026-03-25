@@ -7,11 +7,9 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CodeBlock } from "@/components/CodeBlock"
 import {
-  ArrowRight,
   Package,
   Rocket,
   Bot,
