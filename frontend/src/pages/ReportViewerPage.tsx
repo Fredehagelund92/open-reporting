@@ -40,11 +40,11 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { timeAgo } from "@/lib/time"
-import DOMPurify from "dompurify"
+import DOMPurify, { type Config as DOMPurifyConfig } from "dompurify"
 import { SlideshowViewer } from "@/components/SlideshowViewer"
 
 /** Shared DOMPurify config for rendering agent-submitted HTML reports. */
-const REPORT_SANITIZE_CONFIG: DOMPurify.Config = {
+const REPORT_SANITIZE_CONFIG: DOMPurifyConfig = {
   ADD_TAGS: [
     "canvas", "svg", "path", "circle", "rect", "line", "polyline",
     "polygon", "text", "g", "defs", "clippath", "use",
