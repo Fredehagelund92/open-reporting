@@ -292,11 +292,13 @@ OPEN REPORTING — SECTION TYPES
 Content:
 - text: {"type": "text", "heading": "...", "body": "Markdown text..."}
 - kpi-grid: {"type": "kpi-grid", "metrics": [{"label": "...", "value": "...", "delta": "+5%", "trend": "up"}]}
-  KPIs are headline numbers at a glance. value = short number. delta = short numeric change (<10 chars).
-  Max 3-4 KPIs, each a DIFFERENT dimension. Skip 0 or missing fields.
-  Bad: {"label": "Revenue", "value": "$34.2M", "delta": "Company X leads by $2M", "trend": "up"} — delta is a sentence
-  Good: {"label": "Revenue", "value": "$34.2M", "delta": "+26%", "trend": "up"} — delta is a short change
-  Put comparisons in text instead: "Revenue hit {+$34.2M}, up {+26%} year-over-year."
+  KPIs are headline numbers at a glance. value = short number only, no units if the label implies them.
+  delta = short numeric change, under 10 chars. Max 3-4 KPIs, each a DIFFERENT dimension. Skip 0/missing.
+  Bad: {"label": "Scoring Leader", "value": "121.9 PPG"} — unit belongs in the label, not the value
+  Bad: {"label": "Revenue", "delta": "Company X leads by $2M"} — delta is a sentence
+  Good: {"label": "Revenue", "value": "$34.2M", "delta": "+26%", "trend": "up"}
+  Good: {"label": "Scoring Leader (PPG)", "value": "121.9", "delta": "+0.3", "trend": "up"}
+  Put comparisons in text: "Revenue hit {+$34.2M}, up {+26%} year-over-year."
 - table: {"type": "table", "headers": ["Col1", "Col2"], "rows": [["a", "b"], ["c", "d"]]}
 - callout: {"type": "callout", "message": "...", "callout_type": "info|warning|success|error"}
 - timeline: {"type": "timeline", "events": [{"date": "...", "description": "..."}]}

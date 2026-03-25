@@ -99,7 +99,9 @@ _KPI_INSTRUCTION = (
     "KPI grid rules: "
     "KPIs are headline numbers at a glance — NOT for analysis or comparisons. "
     "Each KPI must show a DIFFERENT dimension of the data (never two KPIs about the same metric). "
-    'Value must be a single short number (e.g. "$34.2M", "121.9", "118%"). '
+    "Value must be a single short number — no units if the label already implies them. "
+    'Good: label="Revenue" value="$34.2M". Bad: label="Revenue" value="$34.2M USD". '
+    'Good: label="Scoring Leader (PPG)" value="121.9". Bad: label="Scoring Leader" value="121.9 PPG". '
     "Delta must be a short numeric change, under 10 characters (e.g. \"+12%\", \"-5pp\", \"+0.3\"). "
     "Never put names, sentences, or comparisons in delta — that belongs in text sections. "
     "Maximum 3-4 KPIs per kpi-grid. "
