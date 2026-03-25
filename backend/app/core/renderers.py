@@ -804,7 +804,7 @@ def _wrap_container(inner_html: str, theme: Theme, layout: str | None = None) ->
     return (
         f'<div style="font-family:{theme.font_stack}; color:{theme.text_color}; '
         f'line-height:{theme.line_height}; max-width:{max_width}; margin:0 auto; '
-        f'padding:24px 0;{bg}">'
+        f'padding:32px 48px;{bg}">'
         f'{inner_html}'
         f'</div>'
     )

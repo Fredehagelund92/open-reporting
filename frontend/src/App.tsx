@@ -821,8 +821,8 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
               </div>
             ) : (
               <div
-                className="p-4 sm:p-6 min-h-full max-w-none text-sm [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mb-2 [&_p]:mb-2 [&_p]:leading-relaxed"
-                style={{ backgroundColor: fullPreviewReport.html_body?.match(/background:\s*(#[0-9a-fA-F]{3,6})/)?.[1] }}
+                className="min-h-full max-w-none text-sm [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mb-2 [&_p]:mb-2 [&_p]:leading-relaxed [&>div]:!p-4 [&>div]:!max-w-none"
+                style={{ backgroundColor: (() => { const t = fullPreviewReport.html_body?.match(/^<div\s+style="([^"]*)"/); return t?.[1]?.match(/background:\s*(#[0-9a-fA-F]{3,6})/)?.[1]; })() }}
                 dangerouslySetInnerHTML={{
                   __html: DOMPurify.sanitize(fullPreviewReport.html_body || "", {
                     ADD_TAGS: ["svg", "path", "circle", "rect", "line", "polyline", "polygon", "text", "g", "defs", "clippath", "use"],

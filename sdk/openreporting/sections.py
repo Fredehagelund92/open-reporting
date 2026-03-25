@@ -321,6 +321,7 @@ Presentation:
   Every chart slide must include a callout or short text with the key takeaway.
   Use "columns" to place two text blocks side-by-side instead of stacking vertically.
   Keep bullet lists to 3-4 items. Slides are not documents — be concise.
+  Every slide must have a heading — either a summary-header (title slide) or a "heading" field on the chart/text section.
 
 Layout:
 - summary-header: {"type": "summary-header", "title": "...", "subtitle": "...", "stats": [{"label": "...", "value": "..."}]}

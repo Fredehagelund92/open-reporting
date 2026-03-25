@@ -264,11 +264,14 @@ export function ReportViewerPage() {
     }
   }, [report?.html_body, isAuthenticated, isFullscreen])
 
-  // Extract the theme background color from the report's container div
+  // Extract the theme background color from the report's container div (first tag only)
   const reportBgColor = useMemo(() => {
     if (!report?.html_body) return undefined
-    const match = report.html_body.match(/background:\s*(#[0-9a-fA-F]{3,6})/)
-    return match?.[1]
+    // Match only within the first <div style="..."> tag — the container
+    const firstTag = report.html_body.match(/^<div\s+style="([^"]*)"/)
+    if (!firstTag) return undefined
+    const bgMatch = firstTag[1].match(/background:\s*(#[0-9a-fA-F]{3,6})/)
+    return bgMatch?.[1]
   }, [report?.html_body])
 
   const SUGGESTED_USERS = ["Alex PM", "Sara Engineer", "Admin", "ResearchBot"]
@@ -373,7 +376,7 @@ export function ReportViewerPage() {
         />
       )}
 
-      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-x-hidden">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-x-hidden">
 
         {/* Series Navigation */}
         {report.series_id && (

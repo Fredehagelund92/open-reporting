@@ -200,6 +200,30 @@ def validate_sections(sections: list[dict]) -> list[ValidationIssue]:
                     )
                 )
 
+            # 10. Slide missing heading
+            has_heading = any(
+                isinstance(c, dict) and (
+                    c.get("type") == "summary-header"
+                    or c.get("heading")
+                )
+                for c in child_sections
+            )
+            if child_sections and not has_heading:
+                issues.append(
+                    ValidationIssue(
+                        severity="warning",
+                        rule_id="slide_no_heading",
+                        message=(
+                            f"{label}: slide has no heading or summary-header."
+                        ),
+                        suggestion=(
+                            "Every presentation slide should have a heading so viewers "
+                            "know what they're looking at. Add a 'heading' field to the "
+                            "chart/text section, or use a summary-header for the title slide."
+                        ),
+                    )
+                )
+
     return issues
 
 
