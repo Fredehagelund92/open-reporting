@@ -193,6 +193,12 @@ EXECUTIVE_THEME = Theme(
     heading_scale=1.5,
     kpi_card_min_width="200px",
     table_number_align="left",
+    slide_title_bg="#0f172a",
+    slide_title_text="#f8fafc",
+    slide_content_bg="#ffffff",
+    slide_content_text="#0f172a",
+    slide_closing_bg="#f1f5f9",
+    slide_closing_text="#0f172a",
 )
 
 FINANCIAL_THEME = Theme(
@@ -236,6 +242,12 @@ FINANCIAL_THEME = Theme(
     heading_scale=1.25,
     kpi_card_min_width="140px",
     table_number_align="right",
+    slide_title_bg="#1e3a5f",
+    slide_title_text="#e2e8f0",
+    slide_content_bg="#ffffff",
+    slide_content_text="#0f172a",
+    slide_closing_bg="#f8fafc",
+    slide_closing_text="#0f172a",
 )
 
 CONSULTING_THEME = Theme(
