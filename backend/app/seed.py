@@ -2029,9 +2029,15 @@ Daily spend has been **consistently below budget** since March 4th.
                             "type": "slide",
                             "sections": [
                                 {
-                                    "type": "text",
+                                    "type": "summary-header",
                                     "heading": "Treasury & Cash Position",
-                                    "body": "March 2026 — Monthly cash flow, covenant compliance, and FX risk summary",
+                                    "subtitle": "Monthly cash flow, covenant compliance, and FX risk summary",
+                                    "date": "March 2026",
+                                    "stats": [
+                                        {"label": "Prepared by", "value": "Finance Agent"},
+                                        {"label": "Reporting Period", "value": "March 2026"},
+                                        {"label": "Covenant Review", "value": "All Clear"},
+                                    ],
                                 },
                             ],
                         },
@@ -2067,21 +2073,18 @@ Daily spend has been **consistently below budget** since March 4th.
                                         },
                                     ],
                                 },
-                            ],
-                        },
-                        {
-                            "type": "slide",
-                            "sections": [
                                 {
                                     "type": "line-chart",
                                     "heading": "Monthly Cash Balance (6-month trend)",
-                                    "labels": ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
-                                    "datasets": [
-                                        {
-                                            "label": "Cash ($M)",
-                                            "values": [28.2, 27.0, 26.4, 25.8, 25.4, 24.1],
-                                        },
-                                    ],
+                                    "data": {
+                                        "labels": ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
+                                        "datasets": [
+                                            {
+                                                "name": "Cash ($M)",
+                                                "values": [28.2, 27.0, 26.4, 25.8, 25.4, 24.1],
+                                            },
+                                        ],
+                                    },
                                 },
                             ],
                         },
@@ -2099,15 +2102,25 @@ Daily spend has been **consistently below budget** since March 4th.
                                         ["Capex Limit", "< $5M/yr", "$3.1M YTD", "Pass"],
                                     ],
                                 },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "success",
+                                    "message": "All four debt covenants comfortably met. Debt/EBITDA headroom at 1.2x below threshold.",
+                                },
                             ],
                         },
                         {
                             "type": "slide",
                             "sections": [
                                 {
+                                    "type": "text",
+                                    "heading": "FX Exposure & Outlook",
+                                    "body": "EUR receivables total $2.1M, hedged through Q3 at 1.08. Burn rate improved $80K MoM from vendor renegotiations, extending runway by one month. No refinancing needed before Q1 2027 based on current projections.",
+                                },
+                                {
                                     "type": "callout",
-                                    "callout_type": "success",
-                                    "message": "All covenants comfortably met. Burn rate improved $80K MoM from vendor renegotiations. EUR receivables ($2.1M) hedged through Q3 at 1.08.",
+                                    "callout_type": "info",
+                                    "message": "EUR hedge position covers 94% of outstanding receivables at 1.08 through September 2026.",
                                 },
                             ],
                         },
