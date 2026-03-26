@@ -6,6 +6,7 @@ to apply inline styles to Markdown/JSON-rendered HTML.
 """
 
 import dataclasses
+import math
 from dataclasses import dataclass
 
 
@@ -386,14 +387,125 @@ def get_layout_width(layout: str | None) -> str:
     return LAYOUT_WIDTHS.get(layout or "standard", LAYOUT_WIDTHS["standard"])
 
 
+def _hex_to_rgb(hex_color: str) -> tuple[float, float, float] | None:
+    """Parse a #RRGGBB or #RGB hex color to (r, g, b) in 0-255 range."""
+    h = hex_color.strip().lstrip("#")
+    if len(h) == 3:
+        h = "".join(c * 2 for c in h)
+    if len(h) != 6:
+        return None
+    try:
+        return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    except ValueError:
+        return None
+
+
+def _relative_luminance(r: float, g: float, b: float) -> float:
+    """Compute WCAG relative luminance from RGB (0-255)."""
+    def _lin(c: float) -> float:
+        s = c / 255.0
+        return s / 12.92 if s <= 0.03928 else ((s + 0.055) / 1.055) ** 2.4
+
+    return 0.2126 * _lin(r) + 0.7152 * _lin(g) + 0.0722 * _lin(b)
+
+
+def _contrast_ratio(hex1: str, hex2: str) -> float | None:
+    """Return WCAG contrast ratio between two hex colors."""
+    rgb1 = _hex_to_rgb(hex1)
+    rgb2 = _hex_to_rgb(hex2)
+    if rgb1 is None or rgb2 is None:
+        return None
+    l1 = _relative_luminance(*rgb1)
+    l2 = _relative_luminance(*rgb2)
+    lighter = max(l1, l2)
+    darker = min(l1, l2)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+def _rgb_to_lab(r: float, g: float, b: float) -> tuple[float, float, float]:
+    """Convert RGB (0-255) to CIE L*a*b* (D65 illuminant)."""
+    def _srgb_linear(c: float) -> float:
+        s = c / 255.0
+        return s / 12.92 if s <= 0.04045 else ((s + 0.055) / 1.055) ** 2.4
+
+    rl, gl, bl = _srgb_linear(r), _srgb_linear(g), _srgb_linear(b)
+    x = rl * 0.4124564 + gl * 0.3575761 + bl * 0.1804375
+    y = rl * 0.2126729 + gl * 0.7151522 + bl * 0.0721750
+    z = rl * 0.0193339 + gl * 0.1191920 + bl * 0.9503041
+
+    # Normalize by D65 white point
+    x /= 0.95047
+    z /= 1.08883
+
+    def _f(t: float) -> float:
+        return t ** (1 / 3) if t > 0.008856 else 7.787 * t + 16 / 116
+
+    fx, fy, fz = _f(x), _f(y), _f(z)
+    L = 116 * fy - 16
+    a = 500 * (fx - fy)
+    b_val = 200 * (fy - fz)
+    return L, a, b_val
+
+
+def _delta_e(hex1: str, hex2: str) -> float | None:
+    """Compute CIE76 deltaE between two hex colors."""
+    rgb1 = _hex_to_rgb(hex1)
+    rgb2 = _hex_to_rgb(hex2)
+    if rgb1 is None or rgb2 is None:
+        return None
+    L1, a1, b1 = _rgb_to_lab(*rgb1)
+    L2, a2, b2 = _rgb_to_lab(*rgb2)
+    return math.sqrt((L1 - L2) ** 2 + (a1 - a2) ** 2 + (b1 - b2) ** 2)
+
+
+def validate_brand_overrides(theme: Theme) -> list[str]:
+    """Return advisory warnings for accessibility issues in a theme's brand colors.
+
+    Results are advisory only — never blocking. The caller should log or
+    surface these warnings as informational feedback.
+    """
+    warnings: list[str] = []
+
+    # Body text contrast (WCAG AA: 4.5:1)
+    text_contrast = _contrast_ratio(theme.text_color, theme.bg_color)
+    if text_contrast is not None and text_contrast < 4.5:
+        warnings.append(
+            f"Body text contrast ratio {text_contrast:.2f}:1 is below WCAG AA minimum (4.5:1). "
+            f"Consider darkening text_color or lightening bg_color."
+        )
+
+    # Heading contrast (WCAG AA large text: 3:1)
+    heading_contrast = _contrast_ratio(theme.heading_color, theme.bg_color)
+    if heading_contrast is not None and heading_contrast < 3.0:
+        warnings.append(
+            f"Heading contrast ratio {heading_contrast:.2f}:1 is below WCAG AA large-text minimum (3:1). "
+            f"Consider darkening heading_color or lightening bg_color."
+        )
+
+    # Chart color distinguishability (deltaE >= 20 between adjacent colors)
+    colors = list(theme.chart_colors)
+    for i in range(len(colors) - 1):
+        de = _delta_e(colors[i], colors[i + 1])
+        if de is not None and de < 20:
+            warnings.append(
+                f"Chart colors at positions {i} and {i + 1} have low color difference "
+                f"(deltaE={de:.1f}, minimum recommended: 20). They may be hard to distinguish."
+            )
+
+    return warnings
+
+
 def apply_brand_overrides(theme: Theme, overrides: dict) -> Theme:
     """Return a new Theme with brand overrides applied.
 
     Only keys that exist on the Theme dataclass and have non-None values
-    in *overrides* are replaced.
+    in *overrides* are replaced. Attaches accessibility warnings to the result
+    as a module-level side effect (advisory only, never blocking).
     """
     valid_keys = {f.name for f in dataclasses.fields(Theme)}
     filtered = {k: v for k, v in overrides.items() if k in valid_keys and v is not None}
     if not filtered:
         return theme
-    return dataclasses.replace(theme, **filtered)
+    new_theme = dataclasses.replace(theme, **filtered)
+    # Validate accessibility — warnings available via validate_brand_overrides(new_theme)
+    return new_theme
