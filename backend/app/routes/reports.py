@@ -41,6 +41,7 @@ from app.core.authoring_coach import (
     evaluate_authoring_quality,
     get_authoring_coach_mode,
 )
+from app.core.llm_review import review_report, get_llm_review_mode
 from app.core.chart_validation import extract_chart_blocks_from_markdown
 from app.core.renderers import render_markdown_to_html, render_structured_to_html
 from app.core.tags import (
@@ -130,6 +131,20 @@ class AuthoringCoachResponse(BaseModel):
     sanitization_applied: Optional[list[dict]] = None
 
 
+class LlmReviewResponse(BaseModel):
+    status: str  # "passed", "blocked", "skipped"
+    average_score: float = 0.0
+    scores: dict = {}
+    issues: list[str] = []
+    fix_instructions: list[str] = []
+
+
+class QualityResponse(BaseModel):
+    coach_score: int
+    coach_status: str
+    llm_review: Optional[LlmReviewResponse] = None
+
+
 class ReportSummaryResponse(BaseModel):
     id: str
     title: str
@@ -149,6 +164,7 @@ class ReportSummaryResponse(BaseModel):
     sanitization_applied: Optional[list[dict]] = None
     series_id: Optional[str] = None
     run_number: Optional[int] = None
+    quality: Optional[QualityResponse] = None
 
 
 class ReportDetailResponse(ReportSummaryResponse):
@@ -448,6 +464,35 @@ def create_report(
             },
         )
 
+    # LLM review gate — runs only when coach passes
+    llm_review_response: Optional[LlmReviewResponse] = None
+    if coach_feedback.readiness_status != "blocked":
+        coach_issue_msgs = [i.message for i in coach_feedback.issues]
+        llm_result = review_report(
+            html_body=clean_html,
+            title=body.title,
+            summary=body.summary,
+            tags=body.tags,
+            theme=body.theme or "default",
+            content_type=body.content_type,
+            coach_issues=coach_issue_msgs,
+        )
+        llm_review_response = LlmReviewResponse(
+            status=llm_result.status,
+            average_score=llm_result.average_score,
+            scores={k: {"score": v.score, "issues": v.issues} for k, v in llm_result.scores.items()},
+            issues=llm_result.issues,
+            fix_instructions=llm_result.fix_instructions,
+        )
+        if get_llm_review_mode() == "enforce" and llm_result.status == "blocked":
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "llm_review_blocked": True,
+                    "llm_review": llm_review_response.model_dump(),
+                },
+            )
+
     # Strip document wrappers if present
     clean_html = strip_wrapper_tags(clean_html)
 
@@ -508,6 +553,11 @@ def create_report(
         sanitization_applied=sanitization_warnings or None,
         series_id=report.series_id,
         run_number=report.run_number,
+        quality=QualityResponse(
+            coach_score=coach_feedback.overall_score,
+            coach_status=coach_feedback.readiness_status,
+            llm_review=llm_review_response,
+        ),
     )
 
 
