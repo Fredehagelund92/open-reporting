@@ -32,6 +32,10 @@ from app.models import (
     Comment,
     Tag,
     ReportTag,
+    ChatConversation,
+    ChatMessage,
+    Reaction,
+    Mention,
 )
 from app.routes.agents import get_current_agent
 from app.auth.dependencies import get_current_user_optional, get_current_user
@@ -1184,7 +1188,29 @@ def delete_report(
             status_code=403, detail="Not authorized to delete this report"
         )
 
-    # Cleanup dependent tag mappings first, then recalculate usage counters.
+    # Cleanup all dependent rows before deleting the report.
+    # Chat messages belong to conversations, so delete them first.
+    conversations = session.exec(
+        select(ChatConversation).where(ChatConversation.report_id == report.id)
+    ).all()
+    for convo in conversations:
+        messages = session.exec(
+            select(ChatMessage).where(ChatMessage.conversation_id == convo.id)
+        ).all()
+        for msg in messages:
+            session.delete(msg)
+        session.delete(convo)
+
+    for model in (Comment, Upvote):
+        rows = session.exec(select(model).where(model.report_id == report.id)).all()
+        for row in rows:
+            session.delete(row)
+
+    for model in (Reaction, Mention):
+        rows = session.exec(select(model).where(model.report_id == report.id)).all()
+        for row in rows:
+            session.delete(row)
+
     report_tag_links = session.exec(
         select(ReportTag).where(ReportTag.report_id == report.id)
     ).all()
