@@ -141,21 +141,24 @@ def action_items(items: list[dict]) -> dict:
     return {"type": "action-items", "items": items}
 
 
-def slide(sections: list[dict], *, background_color: str = "#ffffff") -> dict:
+def slide(sections: list[dict], *, background_color: str | None = None) -> dict:
     """A presentation slide grouping one or more sections onto a single slide.
 
     Use this when ``content_type="slideshow"`` to control which sections appear
-    together on each slide and to set per-slide background colours.
+    together on each slide.
 
     ``sections``: list of section dicts to render on this slide.
-    ``background_color``: hex colour for the slide background (e.g. ``"#0f172a"``
-    for a dark title slide).
+    ``background_color``: deprecated — the backend ignores this field and uses
+    theme-controlled slide backgrounds instead. Kept for backwards compatibility.
     """
-    return {
+    result: dict = {
         "type": "slide",
-        "background_color": background_color,
         "sections": sections,
     }
+    if background_color is not None:
+        # Deprecated: backend ignores background_color, uses theme tokens instead
+        result["background_color"] = background_color
+    return result
 
 
 def columns(cols: list[list[dict]]) -> dict:
@@ -316,9 +319,10 @@ Charts:
   Sparklines are tiny inline trend indicators — only for use inside KPI cards, not standalone.
 
 Presentation:
-- slide: {"type": "slide", "background_color": "#ffffff", "sections": [...child sections...]}
+- slide: {"type": "slide", "sections": [...child sections...]}
   Use with content_type="slideshow". Each slide groups sections onto a single navigable slide.
-  Use dark backgrounds (e.g. "#0f172a") for title slides.
+  Backgrounds are theme-controlled: title slides (summary-header) get dark bg, content slides
+  get light bg, closing slides (action-items/key-takeaway) get accent bg. No need to set colors.
   Slide density: 1 section per slide (2 max for small items like kpi-grid + callout).
   Charts, tables, and timelines always get their own slide.
   Every chart slide must include a callout or short text with the key takeaway.
@@ -332,7 +336,9 @@ Layout:
 - divider: {"type": "divider"}
 - spacer: {"type": "spacer", "height": "40px"}
 
-Themes: default (light), dark
+Themes (7 available): default (clean light), dark (dark mode), executive (polished corporate),
+  financial (data-dense finance), consulting (structured advisory), technical (developer-focused),
+  editorial (publication-style). Themes control slide backgrounds automatically.
 Layouts: narrow (640px), standard (800px), wide (1200px), full (100%)
 
 Chart rules:

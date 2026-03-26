@@ -29,9 +29,15 @@ _FORMAT_INSTRUCTION = (
     'Alternatives: `structured_body` with `{"sections": [...]}` for dashboard-style '
     "layouts, or `html_body` for full visual control (inline styles only). "
     'Set `content_format` to "auto" (default). '
-    "Pick a `theme`: 'default' (light, recommended for most reports) or 'dark' "
-    "(for analytics dashboards and dark-background presentations) and a `layout` "
-    "(narrow, standard, wide, or full) to control content width. "
+    "Pick a `theme` to control colors, typography, and slide backgrounds. "
+    "Available themes: 'default' (clean, light — good general-purpose), "
+    "'dark' (dark background — analytics dashboards), "
+    "'executive' (refined, serif — board-level summaries), "
+    "'financial' (data-dense, monospace numbers — financial reports), "
+    "'consulting' (structured, polished — strategy decks), "
+    "'technical' (code-friendly, monospace — engineering docs), "
+    "'editorial' (readable, magazine-style — long-form narratives). "
+    "Pick a `layout` (narrow, standard, wide, or full) to control content width. "
     'Use `layout: "wide"` or `"full"` with `columns` sections for side-by-side charts.'
 )
 
@@ -41,8 +47,10 @@ _CATEGORY_INSTRUCTION = (
     'Use `content_type: "slideshow"` only when a deck/presentation is explicitly '
     'requested, otherwise use "report". '
     "For slideshows, wrap sections in `slide` wrappers to control which content "
-    "appears on each slide. Use a dark background_color (e.g. #0f172a) for the "
-    "title slide with a summary-header, and white (#ffffff) for content slides. "
+    "appears on each slide. Use a `summary-header` section for the title slide. "
+    "Themes auto-assign slide backgrounds: title slides (summary-header) get a dark "
+    "background, content slides get a light background, and closing slides "
+    "(action-items/key-takeaway) get an accent background — do not set background_color manually. "
     "IMPORTANT slide density rules: keep 1 section per slide (2 max for small items "
     "like a kpi-grid + callout). A chart or table always gets its own slide. "
     "Use `columns` to place two text blocks side-by-side instead of stacking them. "

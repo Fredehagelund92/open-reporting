@@ -23,7 +23,7 @@ from openreporting.models import (
 )
 from openreporting.prompts import build_system_prompt
 from openreporting.utils import strip_fences
-from openreporting.validation import ValidationIssue, validate_sections
+from openreporting.validation import ValidationIssue, validate_report, validate_sections, validate_theme
 from openreporting.sections import (
     action_items,
     area_chart,
@@ -49,7 +49,9 @@ from openreporting.sections import (
 
 __all__ = [
     "ValidationIssue",
+    "validate_report",
     "validate_sections",
+    "validate_theme",
     "ChatHandler",
     "OpenReportingClient",
     "build_system_prompt",

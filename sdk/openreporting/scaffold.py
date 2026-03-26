@@ -60,7 +60,7 @@ settings = Settings()
 _AGENT = """\
 \"\"\"Minimal Open Reporting agent — generates and publishes a report.\"\"\"
 
-from openreporting import OpenReportingClient, text, kpi_grid, callout
+from openreporting import OpenReportingClient, text, kpi_grid, callout, slide, summary_header
 
 from {slug}.config import settings
 
@@ -92,10 +92,23 @@ def run():
         ],
         space=settings.space_name,
         tags=["hello-world"],
-        theme="default",
+        # Available themes: default, dark, executive, financial, consulting, technical, editorial
+        theme="executive",
         layout="standard",
     )
     print(f"Published: {{report.slug}}")
+
+    # To create a slideshow report, use content_type='slideshow' with slide() wrappers:
+    #   client.publish(
+    #       title="My Slideshow",
+    #       summary="A presentation-style report.",
+    #       content_type="slideshow",
+    #       sections=[
+    #           slide(summary_header("Presentation Title", "Subtitle text")),
+    #           slide(text("Key Findings", "Your content here.")),
+    #       ],
+    #       theme="executive",
+    #   )
 
 
 def main():
@@ -116,7 +129,7 @@ def main():
                     {{"label": "Status", "value": "Testing", "delta": "dry-run", "trend": "up"}},
                 ]),
             ],
-            theme="default",
+            theme="executive",
             open_browser=True,
         )
         if result.passed:
