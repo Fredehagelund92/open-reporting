@@ -45,11 +45,11 @@ e8 = validate_html('<script src="https://evil.com/hack.js"></script><h2>Title</h
 assert any("not allowed" in e.lower() for e in e8), f"Expected script error, got: {e8}"
 print("PASS: Evil CDN script rejected")
 
-# Test 9: Allowed CDN
+# Test 9: CDN script also rejected (all scripts blocked)
 e9 = validate_html(
     '<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script><h2>Title</h2>'
 )
-assert e9 == [], f"Expected no errors, got: {e9}"
-print("PASS: Chart.js CDN allowed")
+assert any("not allowed" in e.lower() for e in e9), f"Expected script error, got: {e9}"
+print("PASS: CDN script rejected")
 
 print("\nAll 9 tests passed!")
