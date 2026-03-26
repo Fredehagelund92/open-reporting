@@ -192,21 +192,80 @@ def seed():
                         {
                             "type": "kpi-grid",
                             "metrics": [
-                                {"label": "Weekly Revenue", "value": "$2.87M", "delta": "+4.2%", "trend": "up"},
-                                {"label": "Net New ARR", "value": "$142K", "delta": "+20.3%", "trend": "up"},
-                                {"label": "Active Customers", "value": "1,247", "delta": "+9", "trend": "up"},
-                                {"label": "Customer Churn", "value": "2.1%", "delta": "+0.3pp", "trend": "down"},
-                                {"label": "Pipeline (Weighted)", "value": "$8.4M", "delta": "+3.7%", "trend": "up"},
-                                {"label": "NPS Score", "value": "62", "delta": "-2", "trend": "down"},
+                                {
+                                    "label": "Weekly Revenue",
+                                    "value": "$2.87M",
+                                    "delta": "+4.2%",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "Net New ARR",
+                                    "value": "$142K",
+                                    "delta": "+20.3%",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "Active Customers",
+                                    "value": "1,247",
+                                    "delta": "+9",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "Customer Churn",
+                                    "value": "2.1%",
+                                    "delta": "+0.3pp",
+                                    "trend": "down",
+                                },
+                                {
+                                    "label": "Pipeline (Weighted)",
+                                    "value": "$8.4M",
+                                    "delta": "+3.7%",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "NPS Score",
+                                    "value": "62",
+                                    "delta": "-2",
+                                    "trend": "down",
+                                },
                             ],
                         },
                         {
                             "type": "bar-chart",
                             "heading": "Revenue Trend (12 Weeks)",
                             "data": {
-                                "labels": ["W44", "W45", "W46", "W47", "W48", "W49", "W50", "W51", "W52", "W1", "W2", "W3"],
+                                "labels": [
+                                    "W44",
+                                    "W45",
+                                    "W46",
+                                    "W47",
+                                    "W48",
+                                    "W49",
+                                    "W50",
+                                    "W51",
+                                    "W52",
+                                    "W1",
+                                    "W2",
+                                    "W3",
+                                ],
                                 "datasets": [
-                                    {"name": "Revenue ($M)", "values": [2.31, 2.28, 2.45, 2.52, 2.48, 2.61, 2.58, 2.43, 2.55, 2.68, 2.75, 2.87]},
+                                    {
+                                        "name": "Revenue ($M)",
+                                        "values": [
+                                            2.31,
+                                            2.28,
+                                            2.45,
+                                            2.52,
+                                            2.48,
+                                            2.61,
+                                            2.58,
+                                            2.43,
+                                            2.55,
+                                            2.68,
+                                            2.75,
+                                            2.87,
+                                        ],
+                                    },
                                 ],
                             },
                         },
@@ -214,9 +273,17 @@ def seed():
                             "type": "horizontal-bar-chart",
                             "heading": "Revenue by Segment",
                             "data": {
-                                "labels": ["Enterprise", "Mid-Market", "SMB", "Self-Serve"],
+                                "labels": [
+                                    "Enterprise",
+                                    "Mid-Market",
+                                    "SMB",
+                                    "Self-Serve",
+                                ],
                                 "datasets": [
-                                    {"name": "Revenue ($M)", "values": [1.58, 0.72, 0.37, 0.20]},
+                                    {
+                                        "name": "Revenue ($M)",
+                                        "values": [1.58, 0.72, 0.37, 0.20],
+                                    },
                                 ],
                             },
                         },
@@ -252,10 +319,30 @@ def seed():
                             "type": "action-items",
                             "heading": "Action Plan",
                             "items": [
-                                {"action": "Send discount proposals to Meridian Corp and Atlas Industries", "owner": "Sarah Lin (AE)", "due": "2025-03-05", "impact": "Pull $380K into Q1 close"},
-                                {"action": "Launch win-back campaign for 3 churned SMB accounts", "owner": "Mike Torres (CSM)", "due": "2025-03-07", "impact": "Recover $12-18K ARR"},
-                                {"action": "Post support engineer job requisitions", "owner": "Jessica Morgan (VP Ops)", "due": "2025-03-04", "impact": "Reduce avg response time from 4.2h to <2h"},
-                                {"action": "Review partner channel pipeline and set Q2 targets", "owner": "David Chen (Partnerships)", "due": "2025-03-10", "impact": "Formalize $200K+ partner pipeline target"},
+                                {
+                                    "action": "Send discount proposals to Meridian Corp and Atlas Industries",
+                                    "owner": "Sarah Lin (AE)",
+                                    "due": "2025-03-05",
+                                    "impact": "Pull $380K into Q1 close",
+                                },
+                                {
+                                    "action": "Launch win-back campaign for 3 churned SMB accounts",
+                                    "owner": "Mike Torres (CSM)",
+                                    "due": "2025-03-07",
+                                    "impact": "Recover $12-18K ARR",
+                                },
+                                {
+                                    "action": "Post support engineer job requisitions",
+                                    "owner": "Jessica Morgan (VP Ops)",
+                                    "due": "2025-03-04",
+                                    "impact": "Reduce avg response time from 4.2h to <2h",
+                                },
+                                {
+                                    "action": "Review partner channel pipeline and set Q2 targets",
+                                    "owner": "David Chen (Partnerships)",
+                                    "due": "2025-03-10",
+                                    "impact": "Formalize $200K+ partner pipeline target",
+                                },
                             ],
                         },
                     ],
@@ -292,19 +379,68 @@ def seed():
                         {
                             "type": "kpi-grid",
                             "metrics": [
-                                {"label": "Weekly Revenue", "value": "$2.91M", "delta": "+1.4%", "trend": "up"},
-                                {"label": "Net New ARR", "value": "$98K", "delta": "-18.6%", "trend": "down"},
-                                {"label": "Active Customers", "value": "1,253", "delta": "+6", "trend": "up"},
-                                {"label": "Pipeline Coverage", "value": "3.2x", "delta": "+0.4x", "trend": "up"},
+                                {
+                                    "label": "Weekly Revenue",
+                                    "value": "$2.91M",
+                                    "delta": "+1.4%",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "Net New ARR",
+                                    "value": "$98K",
+                                    "delta": "-18.6%",
+                                    "trend": "down",
+                                },
+                                {
+                                    "label": "Active Customers",
+                                    "value": "1,253",
+                                    "delta": "+6",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "Pipeline Coverage",
+                                    "value": "3.2x",
+                                    "delta": "+0.4x",
+                                    "trend": "up",
+                                },
                             ],
                         },
                         {
                             "type": "bar-chart",
                             "heading": "Revenue Trend (12 Weeks)",
                             "data": {
-                                "labels": ["W45", "W46", "W47", "W48", "W49", "W50", "W51", "W52", "W1", "W2", "W3", "W4"],
+                                "labels": [
+                                    "W45",
+                                    "W46",
+                                    "W47",
+                                    "W48",
+                                    "W49",
+                                    "W50",
+                                    "W51",
+                                    "W52",
+                                    "W1",
+                                    "W2",
+                                    "W3",
+                                    "W4",
+                                ],
                                 "datasets": [
-                                    {"name": "Revenue ($M)", "values": [2.28, 2.45, 2.52, 2.48, 2.61, 2.58, 2.43, 2.55, 2.68, 2.75, 2.87, 2.91]},
+                                    {
+                                        "name": "Revenue ($M)",
+                                        "values": [
+                                            2.28,
+                                            2.45,
+                                            2.52,
+                                            2.48,
+                                            2.61,
+                                            2.58,
+                                            2.43,
+                                            2.55,
+                                            2.68,
+                                            2.75,
+                                            2.87,
+                                            2.91,
+                                        ],
+                                    },
                                 ],
                             },
                         },
@@ -312,9 +448,17 @@ def seed():
                             "type": "horizontal-bar-chart",
                             "heading": "Revenue by Segment",
                             "data": {
-                                "labels": ["Enterprise", "Mid-Market", "SMB", "Self-Serve"],
+                                "labels": [
+                                    "Enterprise",
+                                    "Mid-Market",
+                                    "SMB",
+                                    "Self-Serve",
+                                ],
                                 "datasets": [
-                                    {"name": "Revenue ($M)", "values": [1.60, 0.74, 0.36, 0.21]},
+                                    {
+                                        "name": "Revenue ($M)",
+                                        "values": [1.60, 0.74, 0.36, 0.21],
+                                    },
                                 ],
                             },
                         },
@@ -327,9 +471,24 @@ def seed():
                             "type": "action-items",
                             "heading": "Action Plan",
                             "items": [
-                                {"action": "Accelerate mid-pipeline deals to improve conversion velocity", "owner": "Sarah Lin (AE)", "due": "2025-03-14", "impact": "Close $150K+ in pipeline"},
-                                {"action": "Follow up on Enterprise Q2 slippage resolution", "owner": "David Chen (Partnerships)", "due": "2025-03-12", "impact": "Confirm $380K deal timing"},
-                                {"action": "Review SMB churn stabilization metrics", "owner": "Mike Torres (CSM)", "due": "2025-03-16", "impact": "Validate churn rate below 2.0%"},
+                                {
+                                    "action": "Accelerate mid-pipeline deals to improve conversion velocity",
+                                    "owner": "Sarah Lin (AE)",
+                                    "due": "2025-03-14",
+                                    "impact": "Close $150K+ in pipeline",
+                                },
+                                {
+                                    "action": "Follow up on Enterprise Q2 slippage resolution",
+                                    "owner": "David Chen (Partnerships)",
+                                    "due": "2025-03-12",
+                                    "impact": "Confirm $380K deal timing",
+                                },
+                                {
+                                    "action": "Review SMB churn stabilization metrics",
+                                    "owner": "Mike Torres (CSM)",
+                                    "due": "2025-03-16",
+                                    "impact": "Validate churn rate below 2.0%",
+                                },
                             ],
                         },
                     ],
@@ -367,40 +526,129 @@ def seed():
                         {
                             "type": "kpi-grid",
                             "metrics": [
-                                {"label": "Duration", "value": "47 min", "delta": "SEV-1", "trend": "down"},
-                                {"label": "Failed Txns", "value": "4,817", "delta": "100%", "trend": "down"},
-                                {"label": "Customers Hit", "value": "2,340", "delta": "Critical", "trend": "down"},
-                                {"label": "Revenue Impact", "value": "$312K", "delta": "Lost", "trend": "down"},
+                                {
+                                    "label": "Duration",
+                                    "value": "47 min",
+                                    "delta": "SEV-1",
+                                    "trend": "down",
+                                },
+                                {
+                                    "label": "Failed Txns",
+                                    "value": "4,817",
+                                    "delta": "100%",
+                                    "trend": "down",
+                                },
+                                {
+                                    "label": "Customers Hit",
+                                    "value": "2,340",
+                                    "delta": "Critical",
+                                    "trend": "down",
+                                },
+                                {
+                                    "label": "Revenue Impact",
+                                    "value": "$312K",
+                                    "delta": "Lost",
+                                    "trend": "down",
+                                },
                             ],
                         },
                         {
                             "type": "timeline",
                             "heading": "Timeline",
                             "events": [
-                                {"date": "14:02 UTC", "title": "Release v4.12.3 deployed to production (payment-service)", "description": "CI/CD Pipeline"},
-                                {"date": "14:23 UTC", "title": "First payment failures detected. Error rate jumps from 0.1% to 38%", "description": "PagerDuty Alert"},
-                                {"date": "14:26 UTC", "title": "On-call engineer (R. Patel) acknowledges alert, begins investigation", "description": "Ravi Patel"},
-                                {"date": "14:31 UTC", "title": "Error rate reaches 100%. All payments failing with DB connection timeout", "description": "Monitoring"},
-                                {"date": "14:38 UTC", "title": "Root cause identified: connection pool max_size changed from 50 to 5 in v4.12.3 config", "description": "Ravi Patel"},
-                                {"date": "14:42 UTC", "title": "Decision: rollback to v4.12.2 rather than hotfix", "description": "Incident Commander"},
-                                {"date": "15:04 UTC", "title": "Rollback complete. Error rate dropping", "description": "CI/CD Pipeline"},
-                                {"date": "15:10 UTC", "title": "Error rate returns to baseline (0.1%). Incident resolved", "description": "Monitoring"},
+                                {
+                                    "date": "14:02 UTC",
+                                    "title": "Release v4.12.3 deployed to production (payment-service)",
+                                    "description": "CI/CD Pipeline",
+                                },
+                                {
+                                    "date": "14:23 UTC",
+                                    "title": "First payment failures detected. Error rate jumps from 0.1% to 38%",
+                                    "description": "PagerDuty Alert",
+                                },
+                                {
+                                    "date": "14:26 UTC",
+                                    "title": "On-call engineer (R. Patel) acknowledges alert, begins investigation",
+                                    "description": "Ravi Patel",
+                                },
+                                {
+                                    "date": "14:31 UTC",
+                                    "title": "Error rate reaches 100%. All payments failing with DB connection timeout",
+                                    "description": "Monitoring",
+                                },
+                                {
+                                    "date": "14:38 UTC",
+                                    "title": "Root cause identified: connection pool max_size changed from 50 to 5 in v4.12.3 config",
+                                    "description": "Ravi Patel",
+                                },
+                                {
+                                    "date": "14:42 UTC",
+                                    "title": "Decision: rollback to v4.12.2 rather than hotfix",
+                                    "description": "Incident Commander",
+                                },
+                                {
+                                    "date": "15:04 UTC",
+                                    "title": "Rollback complete. Error rate dropping",
+                                    "description": "CI/CD Pipeline",
+                                },
+                                {
+                                    "date": "15:10 UTC",
+                                    "title": "Error rate returns to baseline (0.1%). Incident resolved",
+                                    "description": "Monitoring",
+                                },
                             ],
                         },
                         {
                             "type": "bar-chart",
                             "heading": "Error Rate During Incident (%)",
                             "data": {
-                                "labels": ["14:00", "14:05", "14:10", "14:15", "14:20", "14:25", "14:30", "14:35", "14:40", "14:45", "14:50", "14:55", "15:00", "15:05", "15:10", "15:15"],
+                                "labels": [
+                                    "14:00",
+                                    "14:05",
+                                    "14:10",
+                                    "14:15",
+                                    "14:20",
+                                    "14:25",
+                                    "14:30",
+                                    "14:35",
+                                    "14:40",
+                                    "14:45",
+                                    "14:50",
+                                    "14:55",
+                                    "15:00",
+                                    "15:05",
+                                    "15:10",
+                                    "15:15",
+                                ],
                                 "datasets": [
-                                    {"name": "Error Rate (%)", "values": [0.1, 0.1, 0.1, 0.1, 0.2, 38, 72, 96, 100, 100, 100, 100, 100, 68, 2.1, 0.1]},
+                                    {
+                                        "name": "Error Rate (%)",
+                                        "values": [
+                                            0.1,
+                                            0.1,
+                                            0.1,
+                                            0.1,
+                                            0.2,
+                                            38,
+                                            72,
+                                            96,
+                                            100,
+                                            100,
+                                            100,
+                                            100,
+                                            100,
+                                            68,
+                                            2.1,
+                                            0.1,
+                                        ],
+                                    },
                                 ],
                             },
                         },
                         {
                             "type": "text",
                             "heading": "Root Cause Analysis",
-                            "body": "The release v4.12.3 included a database configuration refactor that migrated connection pool settings from a YAML config file to environment variables. During the migration, the `DB_POOL_MAX_SIZE` variable was set to **5** instead of the intended **50** (a typo in the Terraform variable definition). Under normal load (~20 concurrent connections), this was sufficient during staging tests. However, production peak load requires 35-45 concurrent connections, causing immediate connection exhaustion once traffic ramped up after deployment.\n\n### Contributing Factors\n\n- **No config validation gate:** The CI pipeline does not validate that database pool sizes meet minimum production thresholds.\n- **Staging traffic too low:** Staging environment processes ~5% of production traffic, so the reduced pool size was never saturated during pre-deploy testing.\n- **Canary deployment skipped:** The change was flagged as \"config-only\" and bypassed the canary rollout process.",
+                            "body": 'The release v4.12.3 included a database configuration refactor that migrated connection pool settings from a YAML config file to environment variables. During the migration, the `DB_POOL_MAX_SIZE` variable was set to **5** instead of the intended **50** (a typo in the Terraform variable definition). Under normal load (~20 concurrent connections), this was sufficient during staging tests. However, production peak load requires 35-45 concurrent connections, causing immediate connection exhaustion once traffic ramped up after deployment.\n\n### Contributing Factors\n\n- **No config validation gate:** The CI pipeline does not validate that database pool sizes meet minimum production thresholds.\n- **Staging traffic too low:** Staging environment processes ~5% of production traffic, so the reduced pool size was never saturated during pre-deploy testing.\n- **Canary deployment skipped:** The change was flagged as "config-only" and bypassed the canary rollout process.',
                         },
                         {
                             "type": "text",
@@ -411,10 +659,30 @@ def seed():
                             "type": "action-items",
                             "heading": "Corrective Actions",
                             "items": [
-                                {"action": "Add CI gate: assert DB_POOL_MAX_SIZE >= 20 for production deploys", "owner": "Ravi Patel", "due": "2025-02-26", "impact": "In Progress"},
-                                {"action": "Enforce canary rollout for all production deploys (no config-only bypass)", "owner": "Platform Team", "due": "2025-03-05", "impact": "Planned"},
-                                {"action": "Implement load-test stage in staging that replays 30% of production traffic", "owner": "QA / SRE", "due": "2025-03-14", "impact": "Planned"},
-                                {"action": "Add connection pool saturation metric to SLO dashboard with alert at 80%", "owner": "Ravi Patel", "due": "2025-02-28", "impact": "In Progress"},
+                                {
+                                    "action": "Add CI gate: assert DB_POOL_MAX_SIZE >= 20 for production deploys",
+                                    "owner": "Ravi Patel",
+                                    "due": "2025-02-26",
+                                    "impact": "In Progress",
+                                },
+                                {
+                                    "action": "Enforce canary rollout for all production deploys (no config-only bypass)",
+                                    "owner": "Platform Team",
+                                    "due": "2025-03-05",
+                                    "impact": "Planned",
+                                },
+                                {
+                                    "action": "Implement load-test stage in staging that replays 30% of production traffic",
+                                    "owner": "QA / SRE",
+                                    "due": "2025-03-14",
+                                    "impact": "Planned",
+                                },
+                                {
+                                    "action": "Add connection pool saturation metric to SLO dashboard with alert at 80%",
+                                    "owner": "Ravi Patel",
+                                    "due": "2025-02-28",
+                                    "impact": "In Progress",
+                                },
                             ],
                         },
                     ],
@@ -439,8 +707,14 @@ def seed():
                                     "subtitle": "Market Intelligence Brief -- January to March 2025",
                                     "date": "2025-03-31",
                                     "stats": [
-                                        {"label": "Prepared by", "value": "ResearchBot"},
-                                        {"label": "Sources", "value": "Gartner, G2, SEC filings, public earnings calls"},
+                                        {
+                                            "label": "Prepared by",
+                                            "value": "ResearchBot",
+                                        },
+                                        {
+                                            "label": "Sources",
+                                            "value": "Gartner, G2, SEC filings, public earnings calls",
+                                        },
                                     ],
                                 },
                             ],
@@ -451,9 +725,24 @@ def seed():
                                 {
                                     "type": "kpi-grid",
                                     "metrics": [
-                                        {"label": "TAM", "value": "$14.2B", "delta": "+18% YoY", "trend": "up"},
-                                        {"label": "Top 5 Share", "value": "67%", "delta": "+6pp QoQ", "trend": "up"},
-                                        {"label": "Avg Deal Size", "value": "$84K", "delta": "+12% QoQ", "trend": "up"},
+                                        {
+                                            "label": "TAM",
+                                            "value": "$14.2B",
+                                            "delta": "+18% YoY",
+                                            "trend": "up",
+                                        },
+                                        {
+                                            "label": "Top 5 Share",
+                                            "value": "67%",
+                                            "delta": "+6pp QoQ",
+                                            "trend": "up",
+                                        },
+                                        {
+                                            "label": "Avg Deal Size",
+                                            "value": "$84K",
+                                            "delta": "+12% QoQ",
+                                            "trend": "up",
+                                        },
                                     ],
                                 },
                                 {
@@ -470,9 +759,18 @@ def seed():
                                     "type": "bar-chart",
                                     "heading": "Market Share Movement (Top 5)",
                                     "data": {
-                                        "labels": ["Acme", "Us", "Globex", "NovaTech", "Zenith"],
+                                        "labels": [
+                                            "Acme",
+                                            "Us",
+                                            "Globex",
+                                            "NovaTech",
+                                            "Zenith",
+                                        ],
                                         "datasets": [
-                                            {"name": "Market Share (%)", "values": [22, 18, 14, 8, 5]},
+                                            {
+                                                "name": "Market Share (%)",
+                                                "values": [22, 18, 14, 8, 5],
+                                            },
                                         ],
                                     },
                                 },
@@ -518,9 +816,24 @@ def seed():
                                     "type": "action-items",
                                     "heading": "Strategic Recommendations",
                                     "items": [
-                                        {"action": "Pull AI launch from Q3 to Q2", "owner": "Product + Eng", "due": "30 days", "impact": "Protect enterprise pipeline conversion"},
-                                        {"action": "Launch Growth tier for mid-market", "owner": "Pricing + Sales", "due": "45 days", "impact": "Reduce Zenith-led churn risk"},
-                                        {"action": "Add 20 integrations focused on data/AI stack", "owner": "Platform Team", "due": "Q2", "impact": "Extend existing moat and attach rate"},
+                                        {
+                                            "action": "Pull AI launch from Q3 to Q2",
+                                            "owner": "Product + Eng",
+                                            "due": "30 days",
+                                            "impact": "Protect enterprise pipeline conversion",
+                                        },
+                                        {
+                                            "action": "Launch Growth tier for mid-market",
+                                            "owner": "Pricing + Sales",
+                                            "due": "45 days",
+                                            "impact": "Reduce Zenith-led churn risk",
+                                        },
+                                        {
+                                            "action": "Add 20 integrations focused on data/AI stack",
+                                            "owner": "Platform Team",
+                                            "due": "Q2",
+                                            "impact": "Extend existing moat and attach rate",
+                                        },
                                     ],
                                 },
                                 {
@@ -550,49 +863,61 @@ def seed():
                             "date": "2026-03-12",
                             "stats": [
                                 {"label": "Prepared by", "value": "ResearchBot"},
-                                {"label": "Coverage", "value": "2024 -- early 2026 signals"},
+                                {
+                                    "label": "Coverage",
+                                    "value": "2024 -- early 2026 signals",
+                                },
                                 {"label": "Last updated", "value": "2026-03-12"},
                             ],
                         },
                         {
                             "type": "text",
                             "heading": "Executive Summary",
-                            "body": "SaaS payments is moving from a \"feature\" to a **platform layer**: buyers increasingly expect billing, tax, fraud, payout orchestration, reporting, and compliance to be *cohesive*, not stitched together. The most durable winners are converging on a wedge (billing or payouts) and then expanding into adjacent primitives with an emphasis on **risk management** and **cost transparency**.\n\nThe next 12 months are likely to be defined less by new payment methods and more by **operational excellence**: reconciliation accuracy, dispute automation, multi-PSP routing, and compliance workflows that reduce hidden labor. Vendors that can quantify \"hours saved\" and \"leakage reduced\" win budget even in cautious spend environments.",
+                            "body": 'SaaS payments is moving from a "feature" to a **platform layer**: buyers increasingly expect billing, tax, fraud, payout orchestration, reporting, and compliance to be *cohesive*, not stitched together. The most durable winners are converging on a wedge (billing or payouts) and then expanding into adjacent primitives with an emphasis on **risk management** and **cost transparency**.\n\nThe next 12 months are likely to be defined less by new payment methods and more by **operational excellence**: reconciliation accuracy, dispute automation, multi-PSP routing, and compliance workflows that reduce hidden labor. Vendors that can quantify "hours saved" and "leakage reduced" win budget even in cautious spend environments.',
                         },
                         {
                             "type": "text",
                             "heading": "Key Takeaways (What's Changing)",
-                            "body": "- **Pricing scrutiny is increasing:** CFOs are pushing for predictable payment costs and clearer pass-throughs; \"blended rate\" narratives are weakening.\n- **Routing + redundancy is mainstream:** multi-PSP strategies (and orchestration layers) are moving from enterprise-only to growth-stage SaaS.\n- **Risk is a product:** chargeback handling, fraud tuning, and compliance automation are now sold as outcomes, not tools.\n- **AI is showing up in the back office first:** dispute narratives, reconciliation matching, support deflection, and anomaly detection.\n- **Global expansion is gated by tax + payouts:** not checkout UX; the bottleneck is downstream finance ops.",
+                            "body": '- **Pricing scrutiny is increasing:** CFOs are pushing for predictable payment costs and clearer pass-throughs; "blended rate" narratives are weakening.\n- **Routing + redundancy is mainstream:** multi-PSP strategies (and orchestration layers) are moving from enterprise-only to growth-stage SaaS.\n- **Risk is a product:** chargeback handling, fraud tuning, and compliance automation are now sold as outcomes, not tools.\n- **AI is showing up in the back office first:** dispute narratives, reconciliation matching, support deflection, and anomaly detection.\n- **Global expansion is gated by tax + payouts:** not checkout UX; the bottleneck is downstream finance ops.',
                         },
                         {
                             "type": "text",
                             "heading": "Market Context (Why Now)",
-                            "body": "Payments for SaaS has matured into a layered stack: checkout and invoicing are table stakes; differentiation comes from the systems that finance teams live in every day (reconciliation, refunds, disputes, payout timing, tax, revenue recognition alignment). The \"shadow cost\" of payments is increasingly visible because finance leaders are instrumenting operational KPIs: exception rate, dispute aging, reconciliation latency, and payout predictability.\n\nAt the same time, macro conditions have raised the bar for ROI. Buyers still adopt new payment capabilities, but only when paired with a credible story for **lower operating cost** or **lower leakage**. Tools that cannot quantify impact are pushed to \"nice-to-have\" status.",
+                            "body": 'Payments for SaaS has matured into a layered stack: checkout and invoicing are table stakes; differentiation comes from the systems that finance teams live in every day (reconciliation, refunds, disputes, payout timing, tax, revenue recognition alignment). The "shadow cost" of payments is increasingly visible because finance leaders are instrumenting operational KPIs: exception rate, dispute aging, reconciliation latency, and payout predictability.\n\nAt the same time, macro conditions have raised the bar for ROI. Buyers still adopt new payment capabilities, but only when paired with a credible story for **lower operating cost** or **lower leakage**. Tools that cannot quantify impact are pushed to "nice-to-have" status.',
                         },
                         {
                             "type": "text",
                             "heading": "Demand Drivers (What's Pulling Spend)",
-                            "body": "The strongest spending pull is operational: reducing manual work in finance and support. A recurring pattern: teams buy payments \"platform\" tooling after their first serious scale event (international expansion, a spike in disputes, or a reconciliation gap discovered during audit).\n\n- **Scale inflection:** more SKUs, more currencies, more payment methods -- exceptions multiply.\n- **Audit readiness:** tighter controls on refunds, write-offs, and ledger integrity.\n- **Cost pressure:** renewed focus on interchange optimization, routing, and dispute win-rate.\n- **Expansion motion:** product-led growth graduating into enterprise procurement.",
+                            "body": 'The strongest spending pull is operational: reducing manual work in finance and support. A recurring pattern: teams buy payments "platform" tooling after their first serious scale event (international expansion, a spike in disputes, or a reconciliation gap discovered during audit).\n\n- **Scale inflection:** more SKUs, more currencies, more payment methods -- exceptions multiply.\n- **Audit readiness:** tighter controls on refunds, write-offs, and ledger integrity.\n- **Cost pressure:** renewed focus on interchange optimization, routing, and dispute win-rate.\n- **Expansion motion:** product-led growth graduating into enterprise procurement.',
                         },
                         {
                             "type": "text",
                             "heading": "Product & Pricing Trends (Where Differentiation Is Moving)",
-                            "body": "Differentiation is shifting from \"support more payment methods\" to \"run the money movement reliably.\" Vendors are bundling operational tools (reconciliation, dispute automation, reporting) into higher tiers and then using them as **retention levers**.",
+                            "body": 'Differentiation is shifting from "support more payment methods" to "run the money movement reliably." Vendors are bundling operational tools (reconciliation, dispute automation, reporting) into higher tiers and then using them as **retention levers**.',
                         },
                         {
                             "type": "table",
                             "heading": "Product & Pricing Trends",
                             "headers": ["Trend", "Detail"],
                             "rows": [
-                                ["Packaging", "Expect more tiered bundles where \"starter\" covers checkout + basic billing, while higher tiers include routing, advanced fraud controls, dispute automation, and accounting exports."],
-                                ["Pricing Narratives", "Buyers are increasingly sensitive to opaque take rates and \"platform fees.\" Winning narratives anchor on measurable outcomes: \"reduce disputes by X%,\" \"lower exception rate,\" or \"shorten close by Y days.\""],
-                                ["Expansion Path", "Billing-first vendors expand into tax and collections; payouts-first vendors expand into onboarding and compliance. The expansion sequence is increasingly shaped by the customer's finance workflow, not product preference."],
+                                [
+                                    "Packaging",
+                                    'Expect more tiered bundles where "starter" covers checkout + basic billing, while higher tiers include routing, advanced fraud controls, dispute automation, and accounting exports.',
+                                ],
+                                [
+                                    "Pricing Narratives",
+                                    'Buyers are increasingly sensitive to opaque take rates and "platform fees." Winning narratives anchor on measurable outcomes: "reduce disputes by X%," "lower exception rate," or "shorten close by Y days."',
+                                ],
+                                [
+                                    "Expansion Path",
+                                    "Billing-first vendors expand into tax and collections; payouts-first vendors expand into onboarding and compliance. The expansion sequence is increasingly shaped by the customer's finance workflow, not product preference.",
+                                ],
                             ],
                         },
                         {
                             "type": "text",
                             "heading": "Regulatory & Risk Factors (What Can Break the Model)",
-                            "body": "Risk has become central to buyer evaluation. Even when \"compliance\" isn't a stated requirement, it surfaces in procurement as controls, reporting, and incident response expectations. This is particularly pronounced in cross-border flows, payouts, and tax handling.\n\n- **Data handling and privacy:** increased scrutiny on storage/processing of payment identifiers and support tooling access.\n- **Dispute and fraud regimes:** pressure to show tuning controls, evidence quality, and win-rate optimization practices.\n- **Cross-border complexity:** payout failures and tax edge cases create disproportionate support load and churn risk.\n- **Concentration risk:** outages or policy changes at a single PSP materially impact gross revenue; redundancy is a board-level topic.",
+                            "body": 'Risk has become central to buyer evaluation. Even when "compliance" isn\'t a stated requirement, it surfaces in procurement as controls, reporting, and incident response expectations. This is particularly pronounced in cross-border flows, payouts, and tax handling.\n\n- **Data handling and privacy:** increased scrutiny on storage/processing of payment identifiers and support tooling access.\n- **Dispute and fraud regimes:** pressure to show tuning controls, evidence quality, and win-rate optimization practices.\n- **Cross-border complexity:** payout failures and tax edge cases create disproportionate support load and churn risk.\n- **Concentration risk:** outages or policy changes at a single PSP materially impact gross revenue; redundancy is a board-level topic.',
                         },
                         {
                             "type": "quote",
@@ -626,7 +951,7 @@ def seed():
                         {
                             "type": "text",
                             "heading": "Recommendations (Next 2 Quarters)",
-                            "body": "1. **Ship an operational KPI layer** for payments (exception rate, dispute aging, payout failure rate) with a weekly \"close readiness\" summary.\n2. **Prioritize routing and redundancy** as a first-class feature (even if initially manual/assisted), with clear controls and reporting.\n3. **Invest in reconciliation accuracy** and explainability; reduce the \"unknown bucket\" that forces manual work.\n4. **Package disputes and fraud as outcomes** (win-rate, deflection, time saved) with simple ROI calculators for procurement.\n5. **Create a migration playbook** that de-risks switching costs: parallel run steps, rollback plan, and measurable acceptance criteria.",
+                            "body": '1. **Ship an operational KPI layer** for payments (exception rate, dispute aging, payout failure rate) with a weekly "close readiness" summary.\n2. **Prioritize routing and redundancy** as a first-class feature (even if initially manual/assisted), with clear controls and reporting.\n3. **Invest in reconciliation accuracy** and explainability; reduce the "unknown bucket" that forces manual work.\n4. **Package disputes and fraud as outcomes** (win-rate, deflection, time saved) with simple ROI calculators for procurement.\n5. **Create a migration playbook** that de-risks switching costs: parallel run steps, rollback plan, and measurable acceptance criteria.',
                         },
                         {
                             "type": "key-takeaway",
@@ -669,7 +994,10 @@ def seed():
                             "subtitle": "Sprint 24 -- February 17 to March 2, 2025",
                             "date": "2025-03-02",
                             "stats": [
-                                {"label": "Prepared by", "value": "ExecutiveSummarizer"},
+                                {
+                                    "label": "Prepared by",
+                                    "value": "ExecutiveSummarizer",
+                                },
                                 {"label": "Completion", "value": "89% (34/38 pts)"},
                                 {"label": "Incidents", "value": "1 SEV-1"},
                             ],
@@ -682,30 +1010,101 @@ def seed():
                         {
                             "type": "kpi-grid",
                             "metrics": [
-                                {"label": "Deploy Frequency", "value": "4.2/day", "delta": "+5%", "trend": "up"},
-                                {"label": "Lead Time", "value": "1.8 days", "delta": "-14%", "trend": "up"},
-                                {"label": "MTTR", "value": "18 min", "delta": "-44%", "trend": "up"},
-                                {"label": "Change Failure Rate", "value": "4.8%", "delta": "+1.6pp", "trend": "down"},
+                                {
+                                    "label": "Deploy Frequency",
+                                    "value": "4.2/day",
+                                    "delta": "+5%",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "Lead Time",
+                                    "value": "1.8 days",
+                                    "delta": "-14%",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "MTTR",
+                                    "value": "18 min",
+                                    "delta": "-44%",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "Change Failure Rate",
+                                    "value": "4.8%",
+                                    "delta": "+1.6pp",
+                                    "trend": "down",
+                                },
                             ],
                         },
                         {
                             "type": "table",
                             "heading": "DORA Metrics",
-                            "headers": ["Metric", "Sprint 24", "Sprint 23", "Delta", "Elite Benchmark"],
+                            "headers": [
+                                "Metric",
+                                "Sprint 24",
+                                "Sprint 23",
+                                "Delta",
+                                "Elite Benchmark",
+                            ],
                             "rows": [
-                                ["Deployment Frequency", "4.2/day", "4.0/day", "+5%", "Multiple/day"],
-                                ["Lead Time for Changes", "1.8 days", "2.1 days", "-14%", "<1 day"],
-                                ["Mean Time to Recovery", "18 min", "32 min", "-44%", "<1 hour"],
-                                ["Change Failure Rate", "4.8%", "3.2%", "+1.6pp", "<5%"],
+                                [
+                                    "Deployment Frequency",
+                                    "4.2/day",
+                                    "4.0/day",
+                                    "+5%",
+                                    "Multiple/day",
+                                ],
+                                [
+                                    "Lead Time for Changes",
+                                    "1.8 days",
+                                    "2.1 days",
+                                    "-14%",
+                                    "<1 day",
+                                ],
+                                [
+                                    "Mean Time to Recovery",
+                                    "18 min",
+                                    "32 min",
+                                    "-44%",
+                                    "<1 hour",
+                                ],
+                                [
+                                    "Change Failure Rate",
+                                    "4.8%",
+                                    "3.2%",
+                                    "+1.6pp",
+                                    "<5%",
+                                ],
                             ],
                         },
                         {
                             "type": "bar-chart",
                             "heading": "Deployment Frequency (8-Sprint Trend)",
                             "data": {
-                                "labels": ["S17", "S18", "S19", "S20", "S21", "S22", "S23", "S24"],
+                                "labels": [
+                                    "S17",
+                                    "S18",
+                                    "S19",
+                                    "S20",
+                                    "S21",
+                                    "S22",
+                                    "S23",
+                                    "S24",
+                                ],
                                 "datasets": [
-                                    {"name": "Deploys/day", "values": [2.8, 3.1, 3.4, 3.2, 3.6, 3.9, 4.0, 4.2]},
+                                    {
+                                        "name": "Deploys/day",
+                                        "values": [
+                                            2.8,
+                                            3.1,
+                                            3.4,
+                                            3.2,
+                                            3.6,
+                                            3.9,
+                                            4.0,
+                                            4.2,
+                                        ],
+                                    },
                                 ],
                             },
                         },
@@ -713,9 +1112,21 @@ def seed():
                             "type": "bar-chart",
                             "heading": "MTTR Trend (8 Sprints, minutes)",
                             "data": {
-                                "labels": ["S17", "S18", "S19", "S20", "S21", "S22", "S23", "S24"],
+                                "labels": [
+                                    "S17",
+                                    "S18",
+                                    "S19",
+                                    "S20",
+                                    "S21",
+                                    "S22",
+                                    "S23",
+                                    "S24",
+                                ],
                                 "datasets": [
-                                    {"name": "MTTR (min)", "values": [58, 52, 45, 41, 38, 35, 32, 18]},
+                                    {
+                                        "name": "MTTR (min)",
+                                        "values": [58, 52, 45, 41, 38, 35, 32, 18],
+                                    },
                                 ],
                             },
                         },
@@ -724,11 +1135,36 @@ def seed():
                             "heading": "Sprint Delivery",
                             "headers": ["Deliverable", "Points", "Status", "Notes"],
                             "rows": [
-                                ["Analytics add-on GA release", "13", "Shipped", "On schedule. 34% Enterprise attach rate in first week"],
-                                ["API rate limiting v2", "8", "Shipped", "Reduced abuse traffic by 62%"],
-                                ["Database connection pool refactor", "5", "Rolled Back", "Caused INC-2025-0219. Rework planned for Sprint 25"],
-                                ["SSO SAML integration", "8", "Shipped", "3 Enterprise customers onboarded same week"],
-                                ["Notification service redesign", "4", "Carried Over", "Deprioritized for incident response work"],
+                                [
+                                    "Analytics add-on GA release",
+                                    "13",
+                                    "Shipped",
+                                    "On schedule. 34% Enterprise attach rate in first week",
+                                ],
+                                [
+                                    "API rate limiting v2",
+                                    "8",
+                                    "Shipped",
+                                    "Reduced abuse traffic by 62%",
+                                ],
+                                [
+                                    "Database connection pool refactor",
+                                    "5",
+                                    "Rolled Back",
+                                    "Caused INC-2025-0219. Rework planned for Sprint 25",
+                                ],
+                                [
+                                    "SSO SAML integration",
+                                    "8",
+                                    "Shipped",
+                                    "3 Enterprise customers onboarded same week",
+                                ],
+                                [
+                                    "Notification service redesign",
+                                    "4",
+                                    "Carried Over",
+                                    "Deprioritized for incident response work",
+                                ],
                             ],
                         },
                         {
@@ -736,9 +1172,24 @@ def seed():
                             "heading": "Risks & Blockers",
                             "headers": ["Risk", "Severity", "Mitigation", "Owner"],
                             "rows": [
-                                ["Change failure rate trending up (3.2% -> 4.8%)", "Medium", "Enforce canary deploys for all changes, expand integration test suite", "Platform Team"],
-                                ["AI feature acceleration pulling engineers from reliability work", "High", "Hire 2 SREs (req approved). Interim: rotate platform on-call to product teams", "VP Engineering"],
-                                ["Tech debt in payment service (incident exposed fragile config layer)", "Medium", "Allocate 20% of Sprint 25 capacity to payment service hardening", "David Chen"],
+                                [
+                                    "Change failure rate trending up (3.2% -> 4.8%)",
+                                    "Medium",
+                                    "Enforce canary deploys for all changes, expand integration test suite",
+                                    "Platform Team",
+                                ],
+                                [
+                                    "AI feature acceleration pulling engineers from reliability work",
+                                    "High",
+                                    "Hire 2 SREs (req approved). Interim: rotate platform on-call to product teams",
+                                    "VP Engineering",
+                                ],
+                                [
+                                    "Tech debt in payment service (incident exposed fragile config layer)",
+                                    "Medium",
+                                    "Allocate 20% of Sprint 25 capacity to payment service hardening",
+                                    "David Chen",
+                                ],
                             ],
                         },
                         {
@@ -767,7 +1218,10 @@ def seed():
                             "subtitle": "Sprint 25 -- March 3 to March 16, 2025",
                             "date": "2025-03-16",
                             "stats": [
-                                {"label": "Prepared by", "value": "ExecutiveSummarizer"},
+                                {
+                                    "label": "Prepared by",
+                                    "value": "ExecutiveSummarizer",
+                                },
                                 {"label": "Completion", "value": "94% (36/38 pts)"},
                                 {"label": "Incidents", "value": "0"},
                             ],
@@ -780,30 +1234,101 @@ def seed():
                         {
                             "type": "kpi-grid",
                             "metrics": [
-                                {"label": "Deploy Frequency", "value": "4.8/day", "delta": "+14%", "trend": "up"},
-                                {"label": "Lead Time", "value": "1.6 days", "delta": "-11%", "trend": "up"},
-                                {"label": "MTTR", "value": "19 min", "delta": "+1 min", "trend": "down"},
-                                {"label": "Change Failure Rate", "value": "2.1%", "delta": "-2.7pp", "trend": "up"},
+                                {
+                                    "label": "Deploy Frequency",
+                                    "value": "4.8/day",
+                                    "delta": "+14%",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "Lead Time",
+                                    "value": "1.6 days",
+                                    "delta": "-11%",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "MTTR",
+                                    "value": "19 min",
+                                    "delta": "+1 min",
+                                    "trend": "down",
+                                },
+                                {
+                                    "label": "Change Failure Rate",
+                                    "value": "2.1%",
+                                    "delta": "-2.7pp",
+                                    "trend": "up",
+                                },
                             ],
                         },
                         {
                             "type": "table",
                             "heading": "DORA Metrics",
-                            "headers": ["Metric", "Sprint 25", "Sprint 24", "Delta", "Elite Benchmark"],
+                            "headers": [
+                                "Metric",
+                                "Sprint 25",
+                                "Sprint 24",
+                                "Delta",
+                                "Elite Benchmark",
+                            ],
                             "rows": [
-                                ["Deployment Frequency", "4.8/day", "4.2/day", "+14%", "Multiple/day"],
-                                ["Lead Time for Changes", "1.6 days", "1.8 days", "-11%", "<1 day"],
-                                ["Mean Time to Recovery", "19 min", "18 min", "+1 min", "<1 hour"],
-                                ["Change Failure Rate", "2.1%", "4.8%", "-2.7pp", "<5%"],
+                                [
+                                    "Deployment Frequency",
+                                    "4.8/day",
+                                    "4.2/day",
+                                    "+14%",
+                                    "Multiple/day",
+                                ],
+                                [
+                                    "Lead Time for Changes",
+                                    "1.6 days",
+                                    "1.8 days",
+                                    "-11%",
+                                    "<1 day",
+                                ],
+                                [
+                                    "Mean Time to Recovery",
+                                    "19 min",
+                                    "18 min",
+                                    "+1 min",
+                                    "<1 hour",
+                                ],
+                                [
+                                    "Change Failure Rate",
+                                    "2.1%",
+                                    "4.8%",
+                                    "-2.7pp",
+                                    "<5%",
+                                ],
                             ],
                         },
                         {
                             "type": "bar-chart",
                             "heading": "Deployment Frequency (8-Sprint Trend)",
                             "data": {
-                                "labels": ["S18", "S19", "S20", "S21", "S22", "S23", "S24", "S25"],
+                                "labels": [
+                                    "S18",
+                                    "S19",
+                                    "S20",
+                                    "S21",
+                                    "S22",
+                                    "S23",
+                                    "S24",
+                                    "S25",
+                                ],
                                 "datasets": [
-                                    {"name": "Deploys/day", "values": [3.1, 3.4, 3.2, 3.6, 3.9, 4.0, 4.2, 4.8]},
+                                    {
+                                        "name": "Deploys/day",
+                                        "values": [
+                                            3.1,
+                                            3.4,
+                                            3.2,
+                                            3.6,
+                                            3.9,
+                                            4.0,
+                                            4.2,
+                                            4.8,
+                                        ],
+                                    },
                                 ],
                             },
                         },
@@ -811,9 +1336,21 @@ def seed():
                             "type": "bar-chart",
                             "heading": "MTTR Trend (8 Sprints, minutes)",
                             "data": {
-                                "labels": ["S18", "S19", "S20", "S21", "S22", "S23", "S24", "S25"],
+                                "labels": [
+                                    "S18",
+                                    "S19",
+                                    "S20",
+                                    "S21",
+                                    "S22",
+                                    "S23",
+                                    "S24",
+                                    "S25",
+                                ],
                                 "datasets": [
-                                    {"name": "MTTR (min)", "values": [52, 45, 41, 38, 35, 32, 18, 19]},
+                                    {
+                                        "name": "MTTR (min)",
+                                        "values": [52, 45, 41, 38, 35, 32, 18, 19],
+                                    },
                                 ],
                             },
                         },
@@ -822,11 +1359,36 @@ def seed():
                             "heading": "Sprint Delivery",
                             "headers": ["Deliverable", "Points", "Status", "Notes"],
                             "rows": [
-                                ["Payment service hardening", "8", "Shipped", "Connection pool refactor with config validation and canary rollout"],
-                                ["AI feature spike", "5", "Shipped", "Technical design doc delivered for leadership review"],
-                                ["Notification service redesign", "4", "Shipped", "Completed carry-over from Sprint 24"],
-                                ["Observability improvements", "3", "Shipped", "Connection pool saturation and P99 latency on SLO dashboard"],
-                                ["Platform on-call rotation", "2", "Carried Over", "Deferred to Sprint 26 pending SRE hiring"],
+                                [
+                                    "Payment service hardening",
+                                    "8",
+                                    "Shipped",
+                                    "Connection pool refactor with config validation and canary rollout",
+                                ],
+                                [
+                                    "AI feature spike",
+                                    "5",
+                                    "Shipped",
+                                    "Technical design doc delivered for leadership review",
+                                ],
+                                [
+                                    "Notification service redesign",
+                                    "4",
+                                    "Shipped",
+                                    "Completed carry-over from Sprint 24",
+                                ],
+                                [
+                                    "Observability improvements",
+                                    "3",
+                                    "Shipped",
+                                    "Connection pool saturation and P99 latency on SLO dashboard",
+                                ],
+                                [
+                                    "Platform on-call rotation",
+                                    "2",
+                                    "Carried Over",
+                                    "Deferred to Sprint 26 pending SRE hiring",
+                                ],
                             ],
                         },
                         {
@@ -863,8 +1425,14 @@ def seed():
                                     "subtitle": "H1 2025 Performance & Strategic Priorities",
                                     "date": "2025-03-15",
                                     "stats": [
-                                        {"label": "Prepared by", "value": "ExecutiveSummarizer"},
-                                        {"label": "Meeting", "value": "Board Meeting: March 15, 2025"},
+                                        {
+                                            "label": "Prepared by",
+                                            "value": "ExecutiveSummarizer",
+                                        },
+                                        {
+                                            "label": "Meeting",
+                                            "value": "Board Meeting: March 15, 2025",
+                                        },
                                     ],
                                 },
                             ],
@@ -875,15 +1443,35 @@ def seed():
                                 {
                                     "type": "kpi-grid",
                                     "metrics": [
-                                        {"label": "Revenue", "value": "$34.2M", "delta": "105% of plan", "trend": "up"},
-                                        {"label": "ARR", "value": "$71.8M", "delta": "+32% YoY", "trend": "up"},
-                                        {"label": "NRR", "value": "118%", "delta": "Best in class", "trend": "up"},
+                                        {
+                                            "label": "Revenue",
+                                            "value": "$34.2M",
+                                            "delta": "105% of plan",
+                                            "trend": "up",
+                                        },
+                                        {
+                                            "label": "ARR",
+                                            "value": "$71.8M",
+                                            "delta": "+32% YoY",
+                                            "trend": "up",
+                                        },
+                                        {
+                                            "label": "NRR",
+                                            "value": "118%",
+                                            "delta": "Best in class",
+                                            "trend": "up",
+                                        },
                                     ],
                                 },
                                 {
                                     "type": "table",
                                     "heading": "H1 Financial Performance",
-                                    "headers": ["Metric", "H1 Actual", "H1 Plan", "YoY"],
+                                    "headers": [
+                                        "Metric",
+                                        "H1 Actual",
+                                        "H1 Plan",
+                                        "YoY",
+                                    ],
                                     "rows": [
                                         ["Revenue", "$34.2M", "$32.6M", "+26%"],
                                         ["ARR", "$71.8M", "$68.0M", "+32%"],
@@ -944,9 +1532,21 @@ def seed():
                                     "type": "timeline",
                                     "heading": "Execution Timeline (Q2-Q4)",
                                     "events": [
-                                        {"date": "Q2", "title": "Growth tier pilot", "description": "Launch self-serve Growth pricing tier targeting SMB retention"},
-                                        {"date": "Q3", "title": "AI launch + adoption", "description": "Ship AI capabilities and drive 20% Enterprise adoption"},
-                                        {"date": "Q4", "title": "Fundraise prep complete", "description": "Complete secondary fundraise preparation, target $450-500M valuation"},
+                                        {
+                                            "date": "Q2",
+                                            "title": "Growth tier pilot",
+                                            "description": "Launch self-serve Growth pricing tier targeting SMB retention",
+                                        },
+                                        {
+                                            "date": "Q3",
+                                            "title": "AI launch + adoption",
+                                            "description": "Ship AI capabilities and drive 20% Enterprise adoption",
+                                        },
+                                        {
+                                            "date": "Q4",
+                                            "title": "Fundraise prep complete",
+                                            "description": "Complete secondary fundraise preparation, target $450-500M valuation",
+                                        },
                                     ],
                                 },
                             ],
@@ -957,7 +1557,7 @@ def seed():
                                 {
                                     "type": "text",
                                     "heading": "Board Decisions Requested",
-                                    "body": "1. **Approve $1.8M AI investment** -- Reallocate from H2 hiring budget. Delay risks losing 5-8% market share to Acme Corp by year-end. *Recommend: Approve*\n2. **Authorize $2M secondary fundraise preparation** -- Current runway: 22 months. Pre-emptive raise at current growth rates would value company at $450-500M. *Recommend: Begin prep, target Q4*\n3. **Approve \"Growth\" pricing tier** -- New tier at $2,400/yr targeting SMB retention. Expected cannibalization: 5%. Net impact: +$800K ARR from reduced churn. *Recommend: 90-day pilot*",
+                                    "body": '1. **Approve $1.8M AI investment** -- Reallocate from H2 hiring budget. Delay risks losing 5-8% market share to Acme Corp by year-end. *Recommend: Approve*\n2. **Authorize $2M secondary fundraise preparation** -- Current runway: 22 months. Pre-emptive raise at current growth rates would value company at $450-500M. *Recommend: Begin prep, target Q4*\n3. **Approve "Growth" pricing tier** -- New tier at $2,400/yr targeting SMB retention. Expected cannibalization: 5%. Net impact: +$800K ARR from reduced churn. *Recommend: 90-day pilot*',
                                 },
                             ],
                         },
@@ -983,21 +1583,56 @@ def seed():
                         {
                             "type": "kpi-grid",
                             "metrics": [
-                                {"label": "Total Revenue", "value": "$8.47M", "delta": "+12.3%", "trend": "up"},
-                                {"label": "New Customers", "value": "342", "delta": "+28", "trend": "up"},
-                                {"label": "Avg Deal Size", "value": "$24.7K", "delta": "-$1.2K", "trend": "down"},
-                                {"label": "Net Retention", "value": "118%", "delta": "+3pp", "trend": "up"},
+                                {
+                                    "label": "Total Revenue",
+                                    "value": "$8.47M",
+                                    "delta": "+12.3%",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "New Customers",
+                                    "value": "342",
+                                    "delta": "+28",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "Avg Deal Size",
+                                    "value": "$24.7K",
+                                    "delta": "-$1.2K",
+                                    "trend": "down",
+                                },
+                                {
+                                    "label": "Net Retention",
+                                    "value": "118%",
+                                    "delta": "+3pp",
+                                    "trend": "up",
+                                },
                             ],
                         },
                         {
                             "type": "bar-chart",
                             "heading": "Revenue by Quarter",
                             "data": {
-                                "labels": ["Q1 '24", "Q2 '24", "Q3 '24", "Q4 '24", "Q1 '25"],
+                                "labels": [
+                                    "Q1 '24",
+                                    "Q2 '24",
+                                    "Q3 '24",
+                                    "Q4 '24",
+                                    "Q1 '25",
+                                ],
                                 "datasets": [
-                                    {"name": "New Business", "values": [1200, 1450, 1380, 1620, 1840]},
-                                    {"name": "Expansion", "values": [800, 920, 1050, 1180, 1350]},
-                                    {"name": "Renewals", "values": [3200, 3350, 3500, 3680, 3850]},
+                                    {
+                                        "name": "New Business",
+                                        "values": [1200, 1450, 1380, 1620, 1840],
+                                    },
+                                    {
+                                        "name": "Expansion",
+                                        "values": [800, 920, 1050, 1180, 1350],
+                                    },
+                                    {
+                                        "name": "Renewals",
+                                        "values": [3200, 3350, 3500, 3680, 3850],
+                                    },
                                 ],
                             },
                         },
@@ -1007,8 +1642,14 @@ def seed():
                             "data": {
                                 "labels": ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
                                 "datasets": [
-                                    {"name": "MRR ($K)", "values": [620, 645, 658, 680, 710, 745]},
-                                    {"name": "Target", "values": [610, 630, 650, 670, 690, 710]},
+                                    {
+                                        "name": "MRR ($K)",
+                                        "values": [620, 645, 658, 680, 710, 745],
+                                    },
+                                    {
+                                        "name": "Target",
+                                        "values": [610, 630, 650, 670, 690, 710],
+                                    },
                                 ],
                             },
                         },
@@ -1018,8 +1659,14 @@ def seed():
                             "data": {
                                 "labels": ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
                                 "datasets": [
-                                    {"name": "Enterprise", "values": [48, 52, 55, 61, 68, 74]},
-                                    {"name": "Mid-Market", "values": [180, 195, 210, 228, 249, 268]},
+                                    {
+                                        "name": "Enterprise",
+                                        "values": [48, 52, 55, 61, 68, 74],
+                                    },
+                                    {
+                                        "name": "Mid-Market",
+                                        "values": [180, 195, 210, 228, 249, 268],
+                                    },
                                 ],
                             },
                         },
@@ -1128,19 +1775,48 @@ Daily spend has been **consistently below budget** since March 4th.
                         {
                             "type": "kpi-grid",
                             "metrics": [
-                                {"label": "Pipeline Value", "value": "$28.6M", "delta": "+18%", "trend": "up"},
-                                {"label": "Coverage Ratio", "value": "3.4x", "delta": "+0.6x", "trend": "up"},
-                                {"label": "Win Rate", "value": "34%", "delta": "+6pp", "trend": "up"},
-                                {"label": "Avg Sales Cycle", "value": "42 days", "delta": "-5 days", "trend": "up"},
+                                {
+                                    "label": "Pipeline Value",
+                                    "value": "$28.6M",
+                                    "delta": "+18%",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "Coverage Ratio",
+                                    "value": "3.4x",
+                                    "delta": "+0.6x",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "Win Rate",
+                                    "value": "34%",
+                                    "delta": "+6pp",
+                                    "trend": "up",
+                                },
+                                {
+                                    "label": "Avg Sales Cycle",
+                                    "value": "42 days",
+                                    "delta": "-5 days",
+                                    "trend": "up",
+                                },
                             ],
                         },
                         {
                             "type": "bar-chart",
                             "heading": "Pipeline by Stage ($M)",
                             "data": {
-                                "labels": ["Discovery", "Qualification", "Proposal", "Negotiation", "Closed Won"],
+                                "labels": [
+                                    "Discovery",
+                                    "Qualification",
+                                    "Proposal",
+                                    "Negotiation",
+                                    "Closed Won",
+                                ],
                                 "datasets": [
-                                    {"name": "Value", "values": [8.2, 6.4, 5.8, 4.1, 4.1]},
+                                    {
+                                        "name": "Value",
+                                        "values": [8.2, 6.4, 5.8, 4.1, 4.1],
+                                    },
                                 ],
                             },
                         },
@@ -1148,10 +1824,55 @@ Daily spend has been **consistently below budget** since March 4th.
                             "type": "area-chart",
                             "heading": "Weekly Pipeline Movement",
                             "data": {
-                                "labels": ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8", "W9", "W10", "W11", "W12"],
+                                "labels": [
+                                    "W1",
+                                    "W2",
+                                    "W3",
+                                    "W4",
+                                    "W5",
+                                    "W6",
+                                    "W7",
+                                    "W8",
+                                    "W9",
+                                    "W10",
+                                    "W11",
+                                    "W12",
+                                ],
                                 "datasets": [
-                                    {"name": "Created", "values": [2.1, 1.8, 2.4, 1.6, 2.8, 2.2, 1.9, 3.1, 2.6, 2.0, 2.8, 3.3]},
-                                    {"name": "Closed", "values": [0.8, 1.2, 0.6, 1.4, 0.9, 1.8, 1.1, 0.7, 1.6, 2.1, 1.4, 2.0]},
+                                    {
+                                        "name": "Created",
+                                        "values": [
+                                            2.1,
+                                            1.8,
+                                            2.4,
+                                            1.6,
+                                            2.8,
+                                            2.2,
+                                            1.9,
+                                            3.1,
+                                            2.6,
+                                            2.0,
+                                            2.8,
+                                            3.3,
+                                        ],
+                                    },
+                                    {
+                                        "name": "Closed",
+                                        "values": [
+                                            0.8,
+                                            1.2,
+                                            0.6,
+                                            1.4,
+                                            0.9,
+                                            1.8,
+                                            1.1,
+                                            0.7,
+                                            1.6,
+                                            2.1,
+                                            1.4,
+                                            2.0,
+                                        ],
+                                    },
                                 ],
                             },
                         },
@@ -1208,7 +1929,9 @@ Daily spend has been **consistently below budget** since March 4th.
                 )
                 content_format = "json"
             elif "markdown_body" in cfg:
-                html_body = render_markdown_to_html(cfg["markdown_body"], theme=cfg.get("theme"))
+                html_body = render_markdown_to_html(
+                    cfg["markdown_body"], theme=cfg.get("theme")
+                )
                 content_format = "markdown"
             else:
                 html_body = "<p>No content.</p>"

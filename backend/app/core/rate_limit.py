@@ -49,7 +49,9 @@ class RateLimiter:
                     allowed=False,
                     used=used,
                     limit=max_requests,
-                    reset_at=timestamps[0] + window_seconds if timestamps else now + window_seconds,
+                    reset_at=timestamps[0] + window_seconds
+                    if timestamps
+                    else now + window_seconds,
                 )
 
             timestamps.append(now)
@@ -70,6 +72,7 @@ class RedisRateLimiter:
 
     def __init__(self, redis_url: str) -> None:
         import redis
+
         self._redis = redis.from_url(redis_url)
 
     def check(self, key: str, max_requests: int, window_seconds: int) -> RateLimitInfo:

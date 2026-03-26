@@ -75,11 +75,13 @@ def validate_chart_section(section: dict) -> list[ChartValidationError]:
 
     data = section.get("data")
     if not isinstance(data, dict):
-        errors.append(ChartValidationError(
-            field="data",
-            message="'data' key is missing or not a dict.",
-            severity="error",
-        ))
+        errors.append(
+            ChartValidationError(
+                field="data",
+                message="'data' key is missing or not a dict.",
+                severity="error",
+            )
+        )
         return errors
 
     if chart_type in ("pie-chart", "donut-chart"):
@@ -95,51 +97,63 @@ def validate_chart_section(section: dict) -> list[ChartValidationError]:
 def _validate_pie(data: dict, errors: list[ChartValidationError]) -> None:
     segments = data.get("segments")
     if not isinstance(segments, list) or len(segments) == 0:
-        errors.append(ChartValidationError(
-            field="data.segments",
-            message="'data.segments' must be a non-empty list.",
-            severity="error",
-        ))
+        errors.append(
+            ChartValidationError(
+                field="data.segments",
+                message="'data.segments' must be a non-empty list.",
+                severity="error",
+            )
+        )
         return
 
     total = 0.0
     for i, seg in enumerate(segments):
         if not isinstance(seg, dict):
-            errors.append(ChartValidationError(
-                field=f"data.segments[{i}]",
-                message=f"Segment {i} is not a dict.",
-                severity="error",
-            ))
+            errors.append(
+                ChartValidationError(
+                    field=f"data.segments[{i}]",
+                    message=f"Segment {i} is not a dict.",
+                    severity="error",
+                )
+            )
             continue
         if not isinstance(seg.get("label"), str):
-            errors.append(ChartValidationError(
-                field=f"data.segments[{i}].label",
-                message=f"Segment {i} is missing a string 'label'.",
-                severity="error",
-            ))
+            errors.append(
+                ChartValidationError(
+                    field=f"data.segments[{i}].label",
+                    message=f"Segment {i} is missing a string 'label'.",
+                    severity="error",
+                )
+            )
         val = seg.get("value")
         if not _is_numeric(val):
-            errors.append(ChartValidationError(
-                field=f"data.segments[{i}].value",
-                message=f"Segment {i} value ({val!r}) is not a valid number. Use plain numbers (no currency symbols or commas).",
-                severity="error",
-            ))
+            errors.append(
+                ChartValidationError(
+                    field=f"data.segments[{i}].value",
+                    message=f"Segment {i} value ({val!r}) is not a valid number. Use plain numbers (no currency symbols or commas).",
+                    severity="error",
+                )
+            )
         else:
             total += float(val)
 
     if not any(e.severity == "error" for e in errors) and total <= 0:
-        errors.append(ChartValidationError(
-            field="data.segments",
-            message="Sum of segment values is zero or negative.",
-            severity="error",
-        ))
+        errors.append(
+            ChartValidationError(
+                field="data.segments",
+                message="Sum of segment values is zero or negative.",
+                severity="error",
+            )
+        )
 
     if len(segments) < 2 and not any(e.severity == "error" for e in errors):
-        errors.append(ChartValidationError(
-            field="data.segments",
-            message="Single-slice pie chart is likely an error.",
-            severity="warning",
-        ))
+        errors.append(
+            ChartValidationError(
+                field="data.segments",
+                message="Single-slice pie chart is likely an error.",
+                severity="warning",
+            )
+        )
 
 
 def _validate_bar_line_area(
@@ -147,20 +161,24 @@ def _validate_bar_line_area(
 ) -> None:
     labels = data.get("labels")
     if not isinstance(labels, list) or len(labels) == 0:
-        errors.append(ChartValidationError(
-            field="data.labels",
-            message="'data.labels' must be a non-empty list.",
-            severity="error",
-        ))
+        errors.append(
+            ChartValidationError(
+                field="data.labels",
+                message="'data.labels' must be a non-empty list.",
+                severity="error",
+            )
+        )
         return
 
     datasets = data.get("datasets")
     if not isinstance(datasets, list) or len(datasets) == 0:
-        errors.append(ChartValidationError(
-            field="data.datasets",
-            message="'data.datasets' must be a non-empty list.",
-            severity="error",
-        ))
+        errors.append(
+            ChartValidationError(
+                field="data.datasets",
+                message="'data.datasets' must be a non-empty list.",
+                severity="error",
+            )
+        )
         return
 
     all_zero = True
@@ -168,80 +186,98 @@ def _validate_bar_line_area(
 
     for i, ds in enumerate(datasets):
         if not isinstance(ds, dict):
-            errors.append(ChartValidationError(
-                field=f"data.datasets[{i}]",
-                message=f"Dataset {i} is not a dict.",
-                severity="error",
-            ))
+            errors.append(
+                ChartValidationError(
+                    field=f"data.datasets[{i}]",
+                    message=f"Dataset {i} is not a dict.",
+                    severity="error",
+                )
+            )
             continue
 
         name = ds.get("name")
         if not isinstance(name, str) or not name.strip():
-            errors.append(ChartValidationError(
-                field=f"data.datasets[{i}].name",
-                message=f"Dataset {i} is missing a non-empty string 'name'.",
-                severity="error",
-            ))
+            errors.append(
+                ChartValidationError(
+                    field=f"data.datasets[{i}].name",
+                    message=f"Dataset {i} is missing a non-empty string 'name'.",
+                    severity="error",
+                )
+            )
 
         values = ds.get("values")
         if not isinstance(values, list):
-            errors.append(ChartValidationError(
-                field=f"data.datasets[{i}].values",
-                message=f"Dataset {i} 'values' must be a list.",
-                severity="error",
-            ))
+            errors.append(
+                ChartValidationError(
+                    field=f"data.datasets[{i}].values",
+                    message=f"Dataset {i} 'values' must be a list.",
+                    severity="error",
+                )
+            )
             continue
 
         ds_name = ds.get("name", f"Dataset {i}")
         if len(values) != n_labels:
-            errors.append(ChartValidationError(
-                field=f"data.datasets[{i}].values",
-                message=f"labels has {n_labels} items but '{ds_name}' values has {len(values)} items. They must match.",
-                severity="error",
-            ))
+            errors.append(
+                ChartValidationError(
+                    field=f"data.datasets[{i}].values",
+                    message=f"labels has {n_labels} items but '{ds_name}' values has {len(values)} items. They must match.",
+                    severity="error",
+                )
+            )
 
         for vi, val in enumerate(values):
             if not _is_numeric(val):
-                errors.append(ChartValidationError(
-                    field=f"data.datasets[{i}].values[{vi}]",
-                    message=f"'{ds_name}' value at index {vi} ({val!r}) is not a valid number. Use plain numbers (no currency symbols or commas).",
-                    severity="error",
-                ))
+                errors.append(
+                    ChartValidationError(
+                        field=f"data.datasets[{i}].values[{vi}]",
+                        message=f"'{ds_name}' value at index {vi} ({val!r}) is not a valid number. Use plain numbers (no currency symbols or commas).",
+                        severity="error",
+                    )
+                )
             elif val != 0:
                 all_zero = False
 
     if len(labels) < 2 and not any(e.severity == "error" for e in errors):
-        errors.append(ChartValidationError(
-            field="data.labels",
-            message="Single-point chart — this is usually an error.",
-            severity="warning",
-        ))
+        errors.append(
+            ChartValidationError(
+                field="data.labels",
+                message="Single-point chart — this is usually an error.",
+                severity="warning",
+            )
+        )
 
     if all_zero and not any(e.severity == "error" for e in errors):
-        errors.append(ChartValidationError(
-            field="data.datasets",
-            message="All values are zero — likely placeholder data.",
-            severity="warning",
-        ))
+        errors.append(
+            ChartValidationError(
+                field="data.datasets",
+                message="All values are zero — likely placeholder data.",
+                severity="warning",
+            )
+        )
 
 
 def _validate_sparkline(data: dict, errors: list[ChartValidationError]) -> None:
     values = data.get("values")
     if not isinstance(values, list) or len(values) == 0:
-        errors.append(ChartValidationError(
-            field="data.values",
-            message="'data.values' must be a non-empty list.",
-            severity="error",
-        ))
+        errors.append(
+            ChartValidationError(
+                field="data.values",
+                message="'data.values' must be a non-empty list.",
+                severity="error",
+            )
+        )
         return
 
     for i, val in enumerate(values):
         if not _is_numeric(val):
-            errors.append(ChartValidationError(
-                field=f"data.values[{i}]",
-                message=f"Value at index {i} ({val!r}) is not a valid number.",
-                severity="error",
-            ))
+            errors.append(
+                ChartValidationError(
+                    field=f"data.values[{i}]",
+                    message=f"Value at index {i} ({val!r}) is not a valid number.",
+                    severity="error",
+                )
+            )
 
 
 def extract_chart_blocks_from_markdown(markdown: str) -> list[dict]:
@@ -254,11 +290,13 @@ def extract_chart_blocks_from_markdown(markdown: str) -> list[dict]:
         try:
             spec = json.loads(m.group(1))
             if isinstance(spec, dict) and spec.get("type", "").endswith("-chart"):
-                blocks.append({
-                    "type": spec["type"],
-                    "data": spec.get("data", {}),
-                    "heading": spec.get("heading", ""),
-                })
+                blocks.append(
+                    {
+                        "type": spec["type"],
+                        "data": spec.get("data", {}),
+                        "heading": spec.get("heading", ""),
+                    }
+                )
         except (json.JSONDecodeError, ValueError):
             pass
     return blocks

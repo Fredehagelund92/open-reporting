@@ -42,7 +42,14 @@ class Theme:
     secondary_text: str
     line_height: str
     chart_colors: tuple[str, ...] = (
-        "#4f46e5", "#818cf8", "#c7d2fe", "#0891b2", "#67e8f9", "#d4a017", "#fbbf24", "#fde68a",
+        "#4f46e5",
+        "#818cf8",
+        "#c7d2fe",
+        "#0891b2",
+        "#67e8f9",
+        "#d4a017",
+        "#fbbf24",
+        "#fde68a",
     )
     chart_grid_color: str = "#e2e8f0"
     chart_axis_color: str = "#64748b"
@@ -95,8 +102,14 @@ CORPORATE_THEME = Theme(
     secondary_text="#64748b",
     line_height="1.6",
     chart_colors=(
-        "#1d4ed8", "#06b6d4", "#8b5cf6", "#f59e0b",
-        "#60a5fa", "#22d3ee", "#a78bfa", "#fbbf24",
+        "#1d4ed8",
+        "#06b6d4",
+        "#8b5cf6",
+        "#f59e0b",
+        "#60a5fa",
+        "#22d3ee",
+        "#a78bfa",
+        "#fbbf24",
     ),
     chart_grid_color="#e2e8f0",
     chart_axis_color="#64748b",
@@ -140,8 +153,14 @@ DARK_THEME = Theme(
     secondary_text="#94a3b8",
     line_height="1.6",
     chart_colors=(
-        "#3b82f6", "#22d3ee", "#a78bfa", "#fbbf24",
-        "#60a5fa", "#67e8f9", "#c4b5fd", "#fde68a",
+        "#3b82f6",
+        "#22d3ee",
+        "#a78bfa",
+        "#fbbf24",
+        "#60a5fa",
+        "#67e8f9",
+        "#c4b5fd",
+        "#fde68a",
     ),
     chart_grid_color="#334155",
     chart_axis_color="#94a3b8",
@@ -189,8 +208,14 @@ EXECUTIVE_THEME = Theme(
     secondary_text="#6b7280",
     line_height="1.75",
     chart_colors=(
-        "#1e3a5f", "#2563eb", "#60a5fa", "#93c5fd",
-        "#0d9488", "#34d399", "#f59e0b", "#fbbf24",
+        "#1e3a5f",
+        "#2563eb",
+        "#60a5fa",
+        "#93c5fd",
+        "#0d9488",
+        "#34d399",
+        "#f59e0b",
+        "#fbbf24",
     ),
     chart_grid_color="#e5e7eb",
     chart_axis_color="#6b7280",
@@ -238,8 +263,14 @@ FINANCIAL_THEME = Theme(
     secondary_text="#6b7280",
     line_height="1.5",
     chart_colors=(
-        "#334e68", "#486581", "#627d98", "#829ab1",
-        "#9fb3c8", "#bcccdc", "#d9e2ec", "#f0f4f8",
+        "#334e68",
+        "#486581",
+        "#627d98",
+        "#829ab1",
+        "#9fb3c8",
+        "#bcccdc",
+        "#d9e2ec",
+        "#f0f4f8",
     ),
     chart_grid_color="#d1d5db",
     chart_axis_color="#6b7280",
@@ -287,8 +318,14 @@ CONSULTING_THEME = Theme(
     secondary_text="#64748b",
     line_height="1.6",
     chart_colors=(
-        "#0f4c75", "#1b6ca8", "#15919b", "#1aaf9e",
-        "#2dcec9", "#f59e0b", "#ef4444", "#8b5cf6",
+        "#0f4c75",
+        "#1b6ca8",
+        "#15919b",
+        "#1aaf9e",
+        "#2dcec9",
+        "#f59e0b",
+        "#ef4444",
+        "#8b5cf6",
     ),
     chart_grid_color="#e2e8f0",
     chart_axis_color="#64748b",
@@ -336,8 +373,14 @@ TECHNICAL_THEME = Theme(
     secondary_text="#6b7280",
     line_height="1.5",
     chart_colors=(
-        "#374151", "#6b7280", "#9ca3af", "#d1d5db",
-        "#4b5563", "#111827", "#1f2937", "#e5e7eb",
+        "#374151",
+        "#6b7280",
+        "#9ca3af",
+        "#d1d5db",
+        "#4b5563",
+        "#111827",
+        "#1f2937",
+        "#e5e7eb",
     ),
     chart_grid_color="#e5e7eb",
     chart_axis_color="#9ca3af",
@@ -385,8 +428,14 @@ EDITORIAL_THEME = Theme(
     secondary_text="#6b6560",
     line_height="1.8",
     chart_colors=(
-        "#9b2335", "#c2853a", "#4a6741", "#2d5a8e",
-        "#7b3f6e", "#b85c38", "#3d7a8a", "#8b7355",
+        "#9b2335",
+        "#c2853a",
+        "#4a6741",
+        "#2d5a8e",
+        "#7b3f6e",
+        "#b85c38",
+        "#3d7a8a",
+        "#8b7355",
     ),
     chart_grid_color="#d6cfc7",
     chart_axis_color="#8a8078",
@@ -447,6 +496,7 @@ def _hex_to_rgb(hex_color: str) -> tuple[float, float, float] | None:
 
 def _relative_luminance(r: float, g: float, b: float) -> float:
     """Compute WCAG relative luminance from RGB (0-255)."""
+
     def _lin(c: float) -> float:
         s = c / 255.0
         return s / 12.92 if s <= 0.03928 else ((s + 0.055) / 1.055) ** 2.4
@@ -469,6 +519,7 @@ def _contrast_ratio(hex1: str, hex2: str) -> float | None:
 
 def _rgb_to_lab(r: float, g: float, b: float) -> tuple[float, float, float]:
     """Convert RGB (0-255) to CIE L*a*b* (D65 illuminant)."""
+
     def _srgb_linear(c: float) -> float:
         s = c / 255.0
         return s / 12.92 if s <= 0.04045 else ((s + 0.055) / 1.055) ** 2.4

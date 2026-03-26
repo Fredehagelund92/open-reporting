@@ -12,7 +12,11 @@ from sqlmodel import select
 
 from app.database import get_session_ctx
 from app.models import User, RefreshToken
-from app.auth.security import create_access_token, create_refresh_token, REFRESH_TOKEN_EXPIRE_DAYS
+from app.auth.security import (
+    create_access_token,
+    create_refresh_token,
+    REFRESH_TOKEN_EXPIRE_DAYS,
+)
 from app.auth.providers import get_active_provider
 from app.core.config import settings
 
@@ -112,7 +116,8 @@ async def oauth_callback(provider: str, request: Request):
         rt = RefreshToken(
             user_id=user.id,
             token_hash=refresh_hash,
-            expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+            expires_at=datetime.now(timezone.utc)
+            + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
         )
         session.add(rt)
         session.commit()

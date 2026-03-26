@@ -164,7 +164,8 @@ def validate_html(html_body: str, content_type: str = "report") -> list[str]:
     # --- SVG inside code blocks = LLM error ---
     code_blocks = re.findall(
         r"<(?:pre|code)[^>]*>(.*?)</(?:pre|code)>",
-        html_body, re.DOTALL | re.IGNORECASE,
+        html_body,
+        re.DOTALL | re.IGNORECASE,
     )
     for block in code_blocks:
         if re.search(r"<svg|<rect|<path|<circle", block, re.IGNORECASE):
@@ -210,16 +211,27 @@ def sanitize_forbidden_tags(html_body: str) -> tuple[str, list[dict[str, str]]]:
     warnings: list[dict[str, str]] = []
 
     # Content-bearing forbidden tags — remove tag + content
-    _CONTENT_TAGS = ("style", "iframe", "form", "textarea", "select", "object", "embed", "applet")
+    _CONTENT_TAGS = (
+        "style",
+        "iframe",
+        "form",
+        "textarea",
+        "select",
+        "object",
+        "embed",
+        "applet",
+    )
     for tag in _CONTENT_TAGS:
         pattern = re.compile(rf"<{tag}[^>]*>.*?</{tag}>", re.DOTALL | re.IGNORECASE)
         if pattern.search(html_body):
             html_body = pattern.sub("", html_body)
             hint = " (use inline style attributes)" if tag == "style" else ""
-            warnings.append({
-                "tag": tag,
-                "message": f"Removed <{tag}> block{hint}",
-            })
+            warnings.append(
+                {
+                    "tag": tag,
+                    "message": f"Removed <{tag}> block{hint}",
+                }
+            )
 
     # Void / self-closing forbidden tags — remove just the tag
     _VOID_TAGS = ("input", "button", "link", "meta", "base")
@@ -227,10 +239,12 @@ def sanitize_forbidden_tags(html_body: str) -> tuple[str, list[dict[str, str]]]:
         pattern = re.compile(rf"</?{tag}[^>]*>", re.IGNORECASE)
         if pattern.search(html_body):
             html_body = pattern.sub("", html_body)
-            warnings.append({
-                "tag": tag,
-                "message": f"Removed <{tag}> tag(s)",
-            })
+            warnings.append(
+                {
+                    "tag": tag,
+                    "message": f"Removed <{tag}> tag(s)",
+                }
+            )
 
     return html_body, warnings
 

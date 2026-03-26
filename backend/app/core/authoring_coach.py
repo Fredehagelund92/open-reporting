@@ -165,7 +165,9 @@ class _StructureInspector(HTMLParser):
 
         if tag_lower in {"pre", "code"} and self._in_code_or_pre:
             code_text = "".join(self._code_buffer)
-            if re.search(r"<svg|<rect|<path|<circle|<polygon", code_text, re.IGNORECASE):
+            if re.search(
+                r"<svg|<rect|<path|<circle|<polygon", code_text, re.IGNORECASE
+            ):
                 self.code_blocks_with_svg += 1
             self._code_buffer = []
             self._in_code_or_pre = False
@@ -251,7 +253,7 @@ def evaluate_authoring_quality(
                 severity="error",
                 message=f"Summary contains AI filler language: {', '.join(repr(p) for p in filler_in_summary[:3])}.",
                 suggestion="Rewrite the summary as a factual one-liner with a specific number or finding. "
-                           "Remove filler phrases like 'it is worth noting' and 'in conclusion'.",
+                "Remove filler phrases like 'it is worth noting' and 'in conclusion'.",
             )
         )
 
@@ -264,7 +266,7 @@ def evaluate_authoring_quality(
                 rule_id="ai_filler_body",
                 severity="warning",
                 message=f"Body text contains {len(filler_in_body)} AI filler phrases "
-                        f"({', '.join(repr(p) for p in filler_in_body[:3])}, ...).",
+                f"({', '.join(repr(p) for p in filler_in_body[:3])}, ...).",
                 suggestion="Remove or replace filler phrases with concrete facts, numbers, or direct statements.",
             )
         )
@@ -301,15 +303,21 @@ def evaluate_authoring_quality(
         )
 
     # Writing style rules
-    _SUPERLATIVES = {"incredible", "amazing", "outstanding", "impressive", "groundbreaking"}
+    _SUPERLATIVES = {
+        "incredible",
+        "amazing",
+        "outstanding",
+        "impressive",
+        "groundbreaking",
+    }
     superlative_fields: list[str] = []
-    summary_words = set(re.sub(r'["\'].*?["\']', '', summary_trimmed.lower()).split())
+    summary_words = set(re.sub(r'["\'].*?["\']', "", summary_trimmed.lower()).split())
     if summary_words & _SUPERLATIVES:
         superlative_fields.append("summary")
     if chart_sections:
         for cs in chart_sections:
             heading = (cs.get("heading") or "").lower()
-            heading_clean = re.sub(r'["\'].*?["\']', '', heading)
+            heading_clean = re.sub(r'["\'].*?["\']', "", heading)
             if set(heading_clean.split()) & _SUPERLATIVES:
                 superlative_fields.append("chart heading")
                 break
@@ -325,7 +333,7 @@ def evaluate_authoring_quality(
         )
 
     # First-person voice
-    first_person_pattern = re.compile(r'\b(I |we |our )', re.IGNORECASE)
+    first_person_pattern = re.compile(r"\b(I |we |our )", re.IGNORECASE)
     fp_matches = first_person_pattern.findall(plain_text)
     if len(fp_matches) > 2:
         issues.append(
@@ -338,7 +346,7 @@ def evaluate_authoring_quality(
         )
 
     # Paragraph too verbose (>600 chars, <1 number per 200 chars)
-    _number_re = re.compile(r'\d')
+    _number_re = re.compile(r"\d")
     for para_len in inspector.paragraph_lengths:
         if para_len > 600:
             # Find the actual paragraph to count numbers
@@ -379,7 +387,9 @@ def evaluate_authoring_quality(
     # Skip bare_css_classes rule for platform-rendered content (markdown/json)
     # since the renderer already applies inline styles.
     if content_format == "html" and inspector.class_attr_count >= 3:
-        styled_ratio = inspector.style_attr_count / max(inspector.total_element_count, 1)
+        styled_ratio = inspector.style_attr_count / max(
+            inspector.total_element_count, 1
+        )
         if inspector.class_attr_count >= 5 and styled_ratio < 0.25:
             # Severe: report heavily relies on CSS classes — will render broken
             issues.append(
@@ -387,10 +397,10 @@ def evaluate_authoring_quality(
                     rule_id="bare_css_classes",
                     severity="error",
                     message=f"Found {inspector.class_attr_count} elements with CSS classes "
-                            f"but only {inspector.style_attr_count} with inline styles. "
-                            "CSS classes are stripped — this report will render broken.",
-                    suggestion="Replace all CSS class styling with inline style=\"...\" attributes, "
-                               "or use structured_body sections which handle styling automatically.",
+                    f"but only {inspector.style_attr_count} with inline styles. "
+                    "CSS classes are stripped — this report will render broken.",
+                    suggestion='Replace all CSS class styling with inline style="..." attributes, '
+                    "or use structured_body sections which handle styling automatically.",
                 )
             )
         elif inspector.class_attr_count > 2 * max(inspector.style_attr_count, 1):
@@ -399,9 +409,9 @@ def evaluate_authoring_quality(
                     rule_id="bare_css_classes",
                     severity="warning",
                     message=f"Found {inspector.class_attr_count} elements with CSS classes "
-                            f"but only {inspector.style_attr_count} with inline styles. "
-                            "CSS classes have no effect — <style> blocks are stripped.",
-                    suggestion="Move all visual styling to inline style=\"...\" attributes.",
+                    f"but only {inspector.style_attr_count} with inline styles. "
+                    "CSS classes have no effect — <style> blocks are stripped.",
+                    suggestion='Move all visual styling to inline style="..." attributes.',
                 )
             )
 
@@ -412,9 +422,9 @@ def evaluate_authoring_quality(
                 rule_id="svg_inside_code_block",
                 severity="error",
                 message=f"Found SVG/HTML markup inside {inspector.code_blocks_with_svg} code block(s). "
-                        "Charts should be rendered, not displayed as source code.",
+                "Charts should be rendered, not displayed as source code.",
                 suggestion="Use structured_body with chart section types (bar-chart, line-chart, "
-                           "pie-chart, etc.) — the server renders charts automatically from data.",
+                "pie-chart, etc.) — the server renders charts automatically from data.",
             )
         )
 
@@ -429,14 +439,17 @@ def evaluate_authoring_quality(
                 rule_id="empty_content_elements",
                 severity="warning",
                 message=f"{inspector.empty_content_element_count} of {inspector.content_element_count} "
-                        "content elements are empty.",
+                "content elements are empty.",
                 suggestion="Remove empty paragraphs and list items, or add meaningful content.",
             )
         )
 
     # Chart-specific validation
     if chart_sections:
-        from app.core.chart_validation import normalize_chart_values, validate_chart_section
+        from app.core.chart_validation import (
+            normalize_chart_values,
+            validate_chart_section,
+        )
 
         for i, chart_sec in enumerate(chart_sections):
             chart_sec = normalize_chart_values(chart_sec)
@@ -450,7 +463,9 @@ def evaluate_authoring_quality(
                     all_zero_warning = True
 
             if has_chart_error:
-                error_msgs = "; ".join(e.message for e in chart_errors if e.severity == "error")
+                error_msgs = "; ".join(
+                    e.message for e in chart_errors if e.severity == "error"
+                )
                 issues.append(
                     CoachIssue(
                         rule_id="chart_data_invalid",
@@ -481,12 +496,16 @@ def evaluate_authoring_quality(
                 )
 
     # SVG quality checks on the rendered HTML body
-    svg_blocks = re.findall(r"<svg[^>]*>.*?</svg>", html_body, re.DOTALL | re.IGNORECASE)
+    svg_blocks = re.findall(
+        r"<svg[^>]*>.*?</svg>", html_body, re.DOTALL | re.IGNORECASE
+    )
     for idx, svg_block in enumerate(svg_blocks):
         # Check for empty/fake SVGs — shapes but no data labels
-        shape_count = len(re.findall(
-            r"<(rect|path|circle|polygon|polyline|line)\b", svg_block, re.IGNORECASE
-        ))
+        shape_count = len(
+            re.findall(
+                r"<(rect|path|circle|polygon|polyline|line)\b", svg_block, re.IGNORECASE
+            )
+        )
         text_count = len(re.findall(r"<text\b", svg_block, re.IGNORECASE))
         if shape_count >= 3 and text_count < 2:
             issues.append(
@@ -494,9 +513,9 @@ def evaluate_authoring_quality(
                     rule_id="svg_no_data_labels",
                     severity="error",
                     message=f"SVG {idx + 1} has {shape_count} shapes but only {text_count} text labels — "
-                            "appears to be an empty or hand-drawn chart with no real data.",
+                    "appears to be an empty or hand-drawn chart with no real data.",
                     suggestion="Use structured_body chart sections (bar-chart, line-chart, etc.) "
-                               "which render labeled charts automatically from data arrays.",
+                    "which render labeled charts automatically from data arrays.",
                 )
             )
 
@@ -526,7 +545,9 @@ def evaluate_authoring_quality(
                 break  # One warning per SVG is enough
 
         # Check for fixed px dimensions without width="100%"
-        has_px_width = re.search(r'width\s*=\s*["\']?\d+(?:px)?["\']?', svg_block.split(">")[0])
+        has_px_width = re.search(
+            r'width\s*=\s*["\']?\d+(?:px)?["\']?', svg_block.split(">")[0]
+        )
         has_percent_width = 'width="100%"' in svg_block or "width='100%'" in svg_block
         if has_px_width and not has_percent_width:
             issues.append(
@@ -539,7 +560,7 @@ def evaluate_authoring_quality(
             )
 
         # Check for many hardcoded hex colors (suggests not using theme)
-        hex_colors = set(re.findall(r'#[0-9a-fA-F]{6}', svg_block))
+        hex_colors = set(re.findall(r"#[0-9a-fA-F]{6}", svg_block))
         if len(hex_colors) > 4:
             issues.append(
                 CoachIssue(
@@ -551,9 +572,11 @@ def evaluate_authoring_quality(
             )
 
     # chart_fixed_width: SVG containers in HTML body missing width:100%
-    for svg_container_match in re.finditer(r'<div[^>]*data-or-chart[^>]*>', html_body, re.IGNORECASE):
+    for svg_container_match in re.finditer(
+        r"<div[^>]*data-or-chart[^>]*>", html_body, re.IGNORECASE
+    ):
         container_tag = svg_container_match.group(0)
-        if 'width:100%' not in container_tag and "width: 100%" not in container_tag:
+        if "width:100%" not in container_tag and "width: 100%" not in container_tag:
             issues.append(
                 CoachIssue(
                     rule_id="chart_fixed_width",
@@ -649,14 +672,16 @@ def evaluate_authoring_quality(
                 consecutive = 0
 
         # heading_depth_skip: detect h1->h3 skip in HTML body
-        headings_found = [int(m) for m in re.findall(r'<h([1-4])\b', html_body, re.IGNORECASE)]
+        headings_found = [
+            int(m) for m in re.findall(r"<h([1-4])\b", html_body, re.IGNORECASE)
+        ]
         for i in range(len(headings_found) - 1):
             if headings_found[i + 1] - headings_found[i] > 1:
                 issues.append(
                     CoachIssue(
                         rule_id="heading_depth_skip",
                         severity="warning",
-                        message=f"Heading level skips from h{headings_found[i]} to h{headings_found[i+1]}.",
+                        message=f"Heading level skips from h{headings_found[i]} to h{headings_found[i + 1]}.",
                         suggestion="Use sequential heading levels (h1 → h2 → h3) without skipping.",
                     )
                 )
@@ -664,8 +689,8 @@ def evaluate_authoring_quality(
 
     # Analytics rules — KPI sections
     _TIME_SERIES_PATTERN = re.compile(
-        r'^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december|q[1-4]|w\d{1,2}|\d{4}-\d{2}|\d{2}/\d{2})',
-        re.IGNORECASE
+        r"^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december|q[1-4]|w\d{1,2}|\d{4}-\d{2}|\d{2}/\d{2})",
+        re.IGNORECASE,
     )
 
     if kpi_sections:
@@ -683,7 +708,7 @@ def evaluate_authoring_quality(
                             suggestion="Add a 'delta' (e.g. '+12% YoY') and 'trend' ('up' or 'down') to provide context.",
                         )
                     )
-                if delta and not re.search(r'[\d%+\-<>]', str(delta)):
+                if delta and not re.search(r"[\d%+\-<>]", str(delta)):
                     issues.append(
                         CoachIssue(
                             rule_id="kpi_delta_is_label",
@@ -705,7 +730,7 @@ def evaluate_authoring_quality(
                     )
 
     # Analytics rules — chart section types
-    for cs in (chart_sections or []):
+    for cs in chart_sections or []:
         chart_type = cs.get("type", "")
         data = cs.get("data", {})
         labels = data.get("labels", [])
@@ -723,7 +748,7 @@ def evaluate_authoring_quality(
                         rule_id="chart_type_mismatch_time",
                         severity="warning",
                         message=f"bar-chart used with time-series labels ({', '.join(str(lbl) for lbl in labels[:3])}...). "
-                                "Time-series data should use line-chart or area-chart.",
+                        "Time-series data should use line-chart or area-chart.",
                         suggestion="Change chart type to 'line-chart' or 'area-chart' for time-ordered data.",
                     )
                 )
@@ -776,7 +801,7 @@ def evaluate_authoring_quality(
                 # slide_text_heavy: text section >300 chars
                 if child_type == "text":
                     body = str(child.get("body", ""))
-                    plain = re.sub(r'[#*_`\[\]()]', '', body).strip()
+                    plain = re.sub(r"[#*_`\[\]()]", "", body).strip()
                     if len(plain) > 300:
                         issues.append(
                             CoachIssue(
@@ -788,7 +813,7 @@ def evaluate_authoring_quality(
                         )
 
                     # slide_bullet_count: bullet list >4 items
-                    bullet_count = len(re.findall(r'^\s*[-*+]\s', body, re.MULTILINE))
+                    bullet_count = len(re.findall(r"^\s*[-*+]\s", body, re.MULTILINE))
                     if bullet_count > 4:
                         issues.append(
                             CoachIssue(
@@ -801,8 +826,18 @@ def evaluate_authoring_quality(
 
             # slide_no_takeaway: chart slide without a callout
             chart_types = {s.get("type") for s in child_sections}
-            has_chart = bool(chart_types & {"bar-chart", "line-chart", "area-chart", "pie-chart",
-                                            "donut-chart", "horizontal-bar-chart", "stacked-bar-chart"})
+            has_chart = bool(
+                chart_types
+                & {
+                    "bar-chart",
+                    "line-chart",
+                    "area-chart",
+                    "pie-chart",
+                    "donut-chart",
+                    "horizontal-bar-chart",
+                    "stacked-bar-chart",
+                }
+            )
             has_callout = any(s.get("type") == "callout" for s in child_sections)
             if has_chart and not has_callout:
                 issues.append(

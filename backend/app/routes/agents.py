@@ -24,7 +24,17 @@ from sqlalchemy import case, desc, literal_column
 import httpx
 
 from app.database import get_session, db_url
-from app.models import Agent, ChatConversation, ChatMessage, Comment, Reaction, Report, Upvote, User, Subscription
+from app.models import (
+    Agent,
+    ChatConversation,
+    ChatMessage,
+    Comment,
+    Reaction,
+    Report,
+    Upvote,
+    User,
+    Subscription,
+)
 from app.auth.dependencies import get_current_user, get_current_user_optional
 
 router = APIRouter(prefix="/api/v1/agents", tags=["Agents"])
@@ -262,7 +272,9 @@ def update_my_profile(
                 detail=f"agent_type must be one of: {', '.join(VALID_AGENT_TYPES)}",
             )
         agent.agent_type = body.agent_type
-        if body.agent_type in ("chat_assistant", "hybrid") and (agent.chat_endpoint or body.chat_endpoint):
+        if body.agent_type in ("chat_assistant", "hybrid") and (
+            agent.chat_endpoint or body.chat_endpoint
+        ):
             agent.chat_enabled = True
     if body.description is not None:
         agent.description = body.description
@@ -279,7 +291,9 @@ def update_my_profile(
                 raise HTTPException(status_code=422, detail=ssrf_error)
         agent.chat_endpoint = body.chat_endpoint
     if body.chat_stream_endpoint is not None:
-        if body.chat_stream_endpoint and not body.chat_stream_endpoint.startswith(("http://", "https://")):
+        if body.chat_stream_endpoint and not body.chat_stream_endpoint.startswith(
+            ("http://", "https://")
+        ):
             raise HTTPException(
                 status_code=422,
                 detail="chat_stream_endpoint must be a valid HTTP(S) URL.",
@@ -607,7 +621,9 @@ def update_agent_chat_settings(
                 raise HTTPException(status_code=422, detail=ssrf_error)
         agent.chat_endpoint = body.chat_endpoint
     if body.chat_stream_endpoint is not None:
-        if body.chat_stream_endpoint and not body.chat_stream_endpoint.startswith(("http://", "https://")):
+        if body.chat_stream_endpoint and not body.chat_stream_endpoint.startswith(
+            ("http://", "https://")
+        ):
             raise HTTPException(
                 status_code=422,
                 detail="chat_stream_endpoint must be a valid HTTP(S) URL.",
@@ -784,14 +800,9 @@ def get_agent_analytics(
 
     upvote_counts = session.exec(
         select(
-            func.coalesce(
-                func.sum(case((Upvote.value == 1, 1), else_=0)), 0
-            ),
-            func.coalesce(
-                func.sum(case((Upvote.value == -1, 1), else_=0)), 0
-            ),
-        )
-        .where(col(Upvote.report_id).in_(report_ids_subq))
+            func.coalesce(func.sum(case((Upvote.value == 1, 1), else_=0)), 0),
+            func.coalesce(func.sum(case((Upvote.value == -1, 1), else_=0)), 0),
+        ).where(col(Upvote.report_id).in_(report_ids_subq))
     ).one()
     total_upvotes, total_downvotes = int(upvote_counts[0]), int(upvote_counts[1])
     net_score = total_upvotes - total_downvotes
@@ -884,12 +895,8 @@ def get_agent_analytics(
         select(
             period_expr.label("period_key"),
             func.count(Report.id).label("report_count"),
-            func.coalesce(func.sum(upvote_score_subq.c.score), 0).label(
-                "total_score"
-            ),
-            func.coalesce(func.sum(comment_count_subq.c.cnt), 0).label(
-                "comment_count"
-            ),
+            func.coalesce(func.sum(upvote_score_subq.c.score), 0).label("total_score"),
+            func.coalesce(func.sum(comment_count_subq.c.cnt), 0).label("comment_count"),
             func.coalesce(func.sum(reaction_count_subq.c.cnt), 0).label(
                 "reaction_count"
             ),
@@ -986,6 +993,7 @@ def _validate_endpoint_url(url: str) -> str | None:
     In development mode, HTTP and localhost are allowed.
     """
     import os
+
     environment = (os.getenv("ENVIRONMENT") or "development").strip().lower()
     is_dev = environment in {"development", "dev", "test", "local"}
 
@@ -996,7 +1004,11 @@ def _validate_endpoint_url(url: str) -> str | None:
 
     allowed_schemes = ("http", "https") if is_dev else ("https",)
     if parsed.scheme not in allowed_schemes:
-        return "chat_endpoint must use HTTPS." if not is_dev else "chat_endpoint must use HTTP or HTTPS."
+        return (
+            "chat_endpoint must use HTTPS."
+            if not is_dev
+            else "chat_endpoint must use HTTP or HTTPS."
+        )
 
     hostname = parsed.hostname
     if not hostname:
@@ -1009,15 +1021,26 @@ def _validate_endpoint_url(url: str) -> str | None:
     # Block private/internal IP ranges
     try:
         addr = ipaddress.ip_address(hostname)
-        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+        if (
+            addr.is_private
+            or addr.is_loopback
+            or addr.is_link_local
+            or addr.is_reserved
+        ):
             return "chat_endpoint must not point to a private or internal address."
     except ValueError:
         # hostname is a domain name, not an IP — resolve it
         import socket
+
         try:
             for _, _, _, _, sockaddr in socket.getaddrinfo(hostname, None):
                 addr = ipaddress.ip_address(sockaddr[0])
-                if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+                if (
+                    addr.is_private
+                    or addr.is_loopback
+                    or addr.is_link_local
+                    or addr.is_reserved
+                ):
                     return "chat_endpoint must not resolve to a private or internal address."
         except socket.gaierror:
             return "chat_endpoint hostname could not be resolved."
@@ -1079,7 +1102,9 @@ def _build_chat_payload(
         "user_id": user_id,
     }
 
-    payload_bytes = json_mod.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
+    payload_bytes = json_mod.dumps(
+        payload, separators=(",", ":"), sort_keys=True
+    ).encode()
     timestamp = datetime.now(timezone.utc).isoformat()
     signature = hmac.new(
         (agent.api_key or "").encode(),
@@ -1144,15 +1169,20 @@ async def proxy_agent_chat(
     """
     # Per-user chat rate limiting
     from app.core.rate_limit import get_rate_limiter
+
     limiter = get_rate_limiter()
-    minute_check = limiter.check(f"chat:minute:{current_user.id}", max_requests=20, window_seconds=60)
+    minute_check = limiter.check(
+        f"chat:minute:{current_user.id}", max_requests=20, window_seconds=60
+    )
     if not minute_check.allowed:
         raise HTTPException(
             status_code=429,
             detail="Too many chat messages. Please wait before sending another.",
             headers={"Retry-After": str(int(minute_check.reset_at - _time.time()) + 1)},
         )
-    day_check = limiter.check(f"chat:day:{current_user.id}", max_requests=200, window_seconds=86400)
+    day_check = limiter.check(
+        f"chat:day:{current_user.id}", max_requests=200, window_seconds=86400
+    )
     if not day_check.allowed:
         raise HTTPException(
             status_code=429,
@@ -1164,7 +1194,9 @@ async def proxy_agent_chat(
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found.")
     if not agent.chat_enabled or not agent.chat_endpoint:
-        raise HTTPException(status_code=400, detail="This agent does not support Q&A chat.")
+        raise HTTPException(
+            status_code=400, detail="This agent does not support Q&A chat."
+        )
 
     # SSRF prevention: validate endpoint URLs before proxying
     ssrf_error = _validate_endpoint_url(agent.chat_endpoint)
@@ -1177,13 +1209,19 @@ async def proxy_agent_chat(
 
     report = session.get(Report, body.report_id)
     if not report or report.agent_id != agent.id:
-        raise HTTPException(status_code=404, detail="Report not found or does not belong to this agent.")
+        raise HTTPException(
+            status_code=404, detail="Report not found or does not belong to this agent."
+        )
 
     # --- Server-side conversation history ---
     conversation: ChatConversation | None = None
     if body.conversation_id:
         conversation = session.get(ChatConversation, body.conversation_id)
-        if not conversation or conversation.user_id != current_user.id or conversation.agent_id != agent.id:
+        if (
+            not conversation
+            or conversation.user_id != current_user.id
+            or conversation.agent_id != agent.id
+        ):
             raise HTTPException(status_code=404, detail="Conversation not found.")
     else:
         conversation = ChatConversation(
@@ -1198,7 +1236,12 @@ async def proxy_agent_chat(
 
     _chat_logger.info(
         "chat_request user_id=%s agent_id=%s report_id=%s conversation_id=%s question_length=%d stream=%s",
-        current_user.id, agent_id, body.report_id, conversation_id, len(body.question), stream,
+        current_user.id,
+        agent_id,
+        body.report_id,
+        conversation_id,
+        len(body.question),
+        stream,
     )
 
     # Load last 20 messages from server-side history (ignore client-provided history)
@@ -1236,7 +1279,9 @@ async def proxy_agent_chat(
         # --- Existing JSON response path ---
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                resp = await client.post(agent.chat_endpoint, json=payload, headers=headers)
+                resp = await client.post(
+                    agent.chat_endpoint, json=payload, headers=headers
+                )
                 resp.raise_for_status()
                 data = resp.json()
 
@@ -1249,11 +1294,18 @@ async def proxy_agent_chat(
 
                 if data.get("needs_html_body"):
                     payload, headers = _build_chat_payload(
-                        agent, body, report, conversation_id, history, turn,
+                        agent,
+                        body,
+                        report,
+                        conversation_id,
+                        history,
+                        turn,
                         user_id=current_user.id,
                     )
                     payload["report"]["html_body"] = report.html_body
-                    resp = await client.post(agent.chat_endpoint, json=payload, headers=headers)
+                    resp = await client.post(
+                        agent.chat_endpoint, json=payload, headers=headers
+                    )
                     resp.raise_for_status()
                     data = resp.json()
 
@@ -1279,21 +1331,30 @@ async def proxy_agent_chat(
                     metadata=data.get("metadata"),
                 )
         except httpx.TimeoutException:
-            raise HTTPException(status_code=504, detail="Agent chat endpoint timed out.")
+            raise HTTPException(
+                status_code=504, detail="Agent chat endpoint timed out."
+            )
         except (httpx.HTTPStatusError, httpx.RequestError) as exc:
-            raise HTTPException(status_code=502, detail=f"Failed to reach agent chat endpoint: {exc}")
+            raise HTTPException(
+                status_code=502, detail=f"Failed to reach agent chat endpoint: {exc}"
+            )
 
     # --- SSE streaming path ---
     async def _stream_sse():
-        yield _format_sse("metadata", {
-            "conversation_id": conversation_id,
-            "format": "markdown",
-            "usage": {
-                "questions_used": day_check.used,
-                "questions_limit": 200,
-                "reset_at": datetime.fromtimestamp(day_check.reset_at, tz=timezone.utc).isoformat(),
+        yield _format_sse(
+            "metadata",
+            {
+                "conversation_id": conversation_id,
+                "format": "markdown",
+                "usage": {
+                    "questions_used": day_check.used,
+                    "questions_limit": 200,
+                    "reset_at": datetime.fromtimestamp(
+                        day_check.reset_at, tz=timezone.utc
+                    ).isoformat(),
+                },
             },
-        })
+        )
 
         accumulated_reply = ""
 
@@ -1317,7 +1378,9 @@ async def proxy_agent_chat(
                                 event_block, buffer = buffer.split("\n\n", 1)
                                 # Only forward token and error events — skip
                                 # metadata/done since the backend adds its own
-                                if event_block.startswith("event: token") or event_block.startswith("event: error"):
+                                if event_block.startswith(
+                                    "event: token"
+                                ) or event_block.startswith("event: error"):
                                     total_length += len(event_block)
                                     if total_length > _MAX_CHAT_RESPONSE_LENGTH:
                                         break
@@ -1327,34 +1390,57 @@ async def proxy_agent_chat(
                                         for line in event_block.split("\n"):
                                             if line.startswith("data: "):
                                                 try:
-                                                    token_data = json_mod.loads(line[6:])
-                                                    accumulated_reply += token_data.get("text", "")
-                                                except (json_mod.JSONDecodeError, TypeError):
+                                                    token_data = json_mod.loads(
+                                                        line[6:]
+                                                    )
+                                                    accumulated_reply += token_data.get(
+                                                        "text", ""
+                                                    )
+                                                except (
+                                                    json_mod.JSONDecodeError,
+                                                    TypeError,
+                                                ):
                                                     pass
             except httpx.TimeoutException:
                 yield _format_sse("error", {"message": "Agent timed out", "code": 504})
             except (httpx.HTTPStatusError, httpx.RequestError) as exc:
-                yield _format_sse("error", {"message": f"Failed to reach agent: {exc}", "code": 502})
+                yield _format_sse(
+                    "error", {"message": f"Failed to reach agent: {exc}", "code": 502}
+                )
         else:
             # Agent doesn't stream — call normal endpoint, wrap in synthetic SSE
             try:
                 async with httpx.AsyncClient(timeout=30.0) as client:
-                    resp = await client.post(agent.chat_endpoint, json=payload, headers=headers)
+                    resp = await client.post(
+                        agent.chat_endpoint, json=payload, headers=headers
+                    )
                     resp.raise_for_status()
                     data = resp.json()
 
                     if "error" in data:
                         err = data["error"]
-                        yield _format_sse("error", {"message": err.get("message", "Agent error"), "code": 502})
+                        yield _format_sse(
+                            "error",
+                            {"message": err.get("message", "Agent error"), "code": 502},
+                        )
                         return
 
                     if data.get("needs_html_body"):
                         retry_payload, retry_headers = _build_chat_payload(
-                            agent, body, report, conversation_id, history, turn,
+                            agent,
+                            body,
+                            report,
+                            conversation_id,
+                            history,
+                            turn,
                             user_id=current_user.id,
                         )
                         retry_payload["report"]["html_body"] = report.html_body
-                        resp = await client.post(agent.chat_endpoint, json=retry_payload, headers=retry_headers)
+                        resp = await client.post(
+                            agent.chat_endpoint,
+                            json=retry_payload,
+                            headers=retry_headers,
+                        )
                         resp.raise_for_status()
                         data = resp.json()
 
@@ -1374,13 +1460,16 @@ async def proxy_agent_chat(
             except httpx.TimeoutException:
                 yield _format_sse("error", {"message": "Agent timed out", "code": 504})
             except (httpx.HTTPStatusError, httpx.RequestError) as exc:
-                yield _format_sse("error", {"message": f"Failed to reach agent: {exc}", "code": 502})
+                yield _format_sse(
+                    "error", {"message": f"Failed to reach agent: {exc}", "code": 502}
+                )
 
         # Store agent reply in conversation history.
         # Use a fresh session since the dependency-injected session may be
         # closed by the time the streaming generator reaches this point.
         if accumulated_reply:
             from app.database import get_session as _get_session_gen
+
             for _sess in _get_session_gen():
                 try:
                     agent_msg = ChatMessage(

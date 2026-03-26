@@ -40,7 +40,11 @@ from app.models import (
 from app.routes.agents import get_current_agent
 from app.auth.dependencies import get_current_user_optional, get_current_user
 from app.core.cache import cache
-from app.core.html_validator import validate_html, strip_wrapper_tags, sanitize_forbidden_tags
+from app.core.html_validator import (
+    validate_html,
+    strip_wrapper_tags,
+    sanitize_forbidden_tags,
+)
 from app.core.authoring_coach import (
     evaluate_authoring_quality,
     get_authoring_coach_mode,
@@ -211,22 +215,28 @@ def _resolve_body(
     if fmt == "markdown":
         if not body.markdown_body:
             raise HTTPException(
-                status_code=422, detail="markdown_body is required when content_format is 'markdown'."
+                status_code=422,
+                detail="markdown_body is required when content_format is 'markdown'.",
             )
         rendered = render_markdown_to_html(
-            body.markdown_body, theme=body.theme, layout=body.layout, brand_overrides=brand_overrides
+            body.markdown_body,
+            theme=body.theme,
+            layout=body.layout,
+            brand_overrides=brand_overrides,
         )
         return rendered, "markdown", body.markdown_body
 
     if fmt == "json":
         if not body.structured_body:
             raise HTTPException(
-                status_code=422, detail="structured_body is required when content_format is 'json'."
+                status_code=422,
+                detail="structured_body is required when content_format is 'json'.",
             )
         sections = body.structured_body.get("sections", [])
         if not sections:
             raise HTTPException(
-                status_code=422, detail="structured_body must contain a 'sections' list."
+                status_code=422,
+                detail="structured_body must contain a 'sections' list.",
             )
         rendered = render_structured_to_html(
             sections,
@@ -240,7 +250,8 @@ def _resolve_body(
     if fmt == "html":
         if not body.html_body:
             raise HTTPException(
-                status_code=422, detail="html_body is required when content_format is 'html'."
+                status_code=422,
+                detail="html_body is required when content_format is 'html'.",
             )
         return body.html_body, "html", None
 
@@ -260,7 +271,8 @@ def _run_authoring_coach(
     chart_sections = None
     if resolved_format == "json" and body.structured_body:
         chart_sections = [
-            s for s in body.structured_body.get("sections", [])
+            s
+            for s in body.structured_body.get("sections", [])
             if isinstance(s, dict) and s.get("type", "").endswith("-chart")
         ]
     elif resolved_format == "markdown" and body.markdown_body:
@@ -354,7 +366,9 @@ def evaluate_authoring_coach(
             sanitization_applied=sanitization_warnings or None,
         )
 
-    coach_response = _run_authoring_coach(body, resolved_html=clean_html, resolved_format=content_format)
+    coach_response = _run_authoring_coach(
+        body, resolved_html=clean_html, resolved_format=content_format
+    )
     coach_response.sanitization_applied = sanitization_warnings or None
     return coach_response
 
@@ -455,7 +469,9 @@ def create_report(
     if html_errors:
         raise HTTPException(status_code=422, detail={"validation_errors": html_errors})
 
-    coach_feedback = _run_authoring_coach(body, resolved_html=clean_html, resolved_format=content_format)
+    coach_feedback = _run_authoring_coach(
+        body, resolved_html=clean_html, resolved_format=content_format
+    )
     if (
         coach_feedback.mode == "enforce"
         and coach_feedback.readiness_status == "blocked"
@@ -484,7 +500,10 @@ def create_report(
         llm_review_response = LlmReviewResponse(
             status=llm_result.status,
             average_score=llm_result.average_score,
-            scores={k: {"score": v.score, "issues": v.issues} for k, v in llm_result.scores.items()},
+            scores={
+                k: {"score": v.score, "issues": v.issues}
+                for k, v in llm_result.scores.items()
+            },
             issues=llm_result.issues,
             fix_instructions=llm_result.fix_instructions,
         )
@@ -658,7 +677,9 @@ def upload_report_as_user(
     if html_errors:
         raise HTTPException(status_code=422, detail={"validation_errors": html_errors})
 
-    coach_feedback = _run_authoring_coach(create_req, resolved_html=clean_html, resolved_format=content_format)
+    coach_feedback = _run_authoring_coach(
+        create_req, resolved_html=clean_html, resolved_format=content_format
+    )
     if (
         coach_feedback.mode == "enforce"
         and coach_feedback.readiness_status == "blocked"
@@ -775,9 +796,7 @@ async def list_reports(
         .join(Space, Report.space_id == Space.id)
         .outerjoin(upvotes_sq, Report.id == upvotes_sq.c.report_id)
         .outerjoin(comments_sq, Report.id == comments_sq.c.report_id)
-        .options(
-            selectinload(Report.report_tags).selectinload(ReportTag.tag)
-        )
+        .options(selectinload(Report.report_tags).selectinload(ReportTag.tag))
     )
 
     # Access control
@@ -842,7 +861,9 @@ async def list_reports(
         if db_url.startswith("postgresql"):
             age_hours = func.extract("epoch", func.now() - Report.created_at) / 3600.0
         else:
-            age_hours = (func.julianday("now") - func.julianday(Report.created_at)) * 24.0
+            age_hours = (
+                func.julianday("now") - func.julianday(Report.created_at)
+            ) * 24.0
         gravity = (age_hours + 2) * func.sqrt(age_hours + 2)
         trending_score = func.coalesce(upvotes_sq.c.score, 0) / gravity
         query = query.order_by(trending_score.desc(), col(Report.created_at).desc())
@@ -1076,7 +1097,11 @@ def update_report(
     update_format = report.content_format or "html"
 
     # Determine if a new body was submitted
-    has_new_body = body.html_body is not None or body.markdown_body is not None or body.structured_body is not None
+    has_new_body = (
+        body.html_body is not None
+        or body.markdown_body is not None
+        or body.structured_body is not None
+    )
 
     if has_new_body:
         # Build a temporary create request to use _resolve_body

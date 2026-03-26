@@ -119,7 +119,8 @@ def register(user_in: UserRegister, session: Session = Depends(get_session)):
     rt = RefreshToken(
         user_id=new_user.id,
         token_hash=refresh_hash,
-        expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+        expires_at=datetime.now(timezone.utc)
+        + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
     )
     session.add(rt)
     session.commit()
@@ -150,7 +151,8 @@ def login_for_access_token(
     rt = RefreshToken(
         user_id=user.id,
         token_hash=refresh_hash,
-        expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+        expires_at=datetime.now(timezone.utc)
+        + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
     )
     session.add(rt)
     session.commit()
@@ -221,7 +223,8 @@ def refresh_access_token(body: RefreshRequest, session: Session = Depends(get_se
     new_rt = RefreshToken(
         user_id=user.id,
         token_hash=new_hash,
-        expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+        expires_at=datetime.now(timezone.utc)
+        + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
     )
     session.add(new_rt)
     session.commit()

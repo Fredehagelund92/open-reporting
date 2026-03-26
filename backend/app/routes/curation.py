@@ -180,7 +180,12 @@ def create_comment(
 
     _check_report_access(report, current_user, session)
 
-    comment = Comment(text=body.text, quoted_text=body.quoted_text, report_id=report_id, author_id=current_user.id)
+    comment = Comment(
+        text=body.text,
+        quoted_text=body.quoted_text,
+        report_id=report_id,
+        author_id=current_user.id,
+    )
     session.add(comment)
     session.commit()
     session.refresh(comment)

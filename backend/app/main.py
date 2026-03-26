@@ -93,7 +93,7 @@ class _RateLimitMiddleware(BaseHTTPMiddleware):
         ("/api/v1/auth/refresh", "POST", 30, 60),
         # Write endpoints — moderate
         ("/api/v1/curation/", "POST", 30, 60),  # comments, votes, reactions
-        ("/api/v1/reports", "POST", 10, 60),     # report submission
+        ("/api/v1/reports", "POST", 10, 60),  # report submission
         # Search — generous
         ("/api/v1/search", "GET", 60, 60),
     ]
@@ -101,6 +101,7 @@ class _RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
         from app.core.rate_limit import get_rate_limiter
+
         self._limiter = get_rate_limiter()
 
     async def dispatch(self, request: Request, call_next):
@@ -111,12 +112,16 @@ class _RateLimitMiddleware(BaseHTTPMiddleware):
             if path.startswith(rule_path) and method == rule_method:
                 client_ip = request.client.host if request.client else "unknown"
                 info = self._limiter.check(
-                    f"ip:{client_ip}:{rule_path}", max_requests=max_req, window_seconds=window
+                    f"ip:{client_ip}:{rule_path}",
+                    max_requests=max_req,
+                    window_seconds=window,
                 )
                 if not info.allowed:
                     return JSONResponse(
                         status_code=429,
-                        content={"detail": "Too many requests. Please try again later."},
+                        content={
+                            "detail": "Too many requests. Please try again later."
+                        },
                         headers={"Retry-After": str(window)},
                     )
                 break  # Only apply the first matching rule
@@ -168,7 +173,9 @@ class _SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Permissions-Policy"] = (
+            "camera=(), microphone=(), geolocation=()"
+        )
 
         # Relax CSP for Swagger UI docs pages (they load from CDN)
         path = request.url.path

@@ -87,7 +87,7 @@ def _build_prompt(
 ## Report Metadata
 - Title: {title}
 - Summary: {summary}
-- Tags: {', '.join(tags) if tags else 'none'}
+- Tags: {", ".join(tags) if tags else "none"}
 - Theme: {theme}
 - Content type: {content_type}
 {slide_note}{coach_summary}
@@ -207,7 +207,9 @@ def review_report(
         return cached
 
     coach_issues = coach_issues or []
-    prompt = _build_prompt(html_body, title, summary, tags, theme, content_type, coach_issues)
+    prompt = _build_prompt(
+        html_body, title, summary, tags, theme, content_type, coach_issues
+    )
 
     try:
         import anthropic
@@ -223,6 +225,7 @@ def review_report(
         )
 
         from anthropic.types import TextBlock
+
         first_block = message.content[0]
         if not isinstance(first_block, TextBlock):
             return _skipped_result()

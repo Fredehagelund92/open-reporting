@@ -502,7 +502,13 @@ def update_space(
         space.is_private = body.is_private
 
     # Branding fields
-    for field in ("brand_accent_color", "brand_heading_color", "brand_logo_url", "default_theme", "default_layout"):
+    for field in (
+        "brand_accent_color",
+        "brand_heading_color",
+        "brand_logo_url",
+        "default_theme",
+        "default_layout",
+    ):
         new_val = getattr(body, field, None)
         if new_val is not None:
             old_val = getattr(space, field, None)

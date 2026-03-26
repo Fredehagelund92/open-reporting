@@ -57,7 +57,11 @@ def _try_render_chart_block(code: str, theme: Theme) -> str | None:
     if not svg_fn:
         return f'<pre style="color:#dc2626;">Unknown chart type: {escape(chart_type)}</pre>'
 
-    section = {"type": chart_type, "data": spec.get("data", {}), "heading": spec.get("heading", "")}
+    section = {
+        "type": chart_type,
+        "data": spec.get("data", {}),
+        "heading": spec.get("heading", ""),
+    }
     return _render_chart_section(section, theme, svg_fn)
 
 
@@ -109,9 +113,11 @@ class _SectionRenderer:
 
 def _section(section_type: str):
     """Decorator to register a section renderer."""
+
     def decorator(fn):
         _SECTION_RENDERERS[section_type] = fn
         return fn
+
     return decorator
 
 
@@ -124,6 +130,7 @@ def render_structured_to_html(
 ) -> str:
     """Render a list of typed section dicts to themed HTML."""
     import dataclasses
+
     t = get_theme(theme)
     if brand_overrides:
         t = apply_brand_overrides(t, brand_overrides)
@@ -134,10 +141,7 @@ def render_structured_to_html(
 
     # Auto-wrap: if slideshow but no explicit "slide" wrappers, wrap each section
     if is_slideshow and not any(s.get("type") == "slide" for s in sections):
-        sections = [
-            {"type": "slide", "sections": [s]}
-            for s in sections
-        ]
+        sections = [{"type": "slide", "sections": [s]} for s in sections]
 
     fragments: list[str] = []
     for section in sections:
@@ -163,7 +167,7 @@ def _render_text(section: dict, t: Theme) -> str:
     if heading:
         parts.append(
             f'<h2 style="font-size:22px; font-weight:700; color:{t.heading_color}; '
-            f'border-bottom:2px solid {t.border_color}; padding-bottom:8px; '
+            f"border-bottom:2px solid {t.border_color}; padding-bottom:8px; "
             f'margin:24px 0 12px;">{escape(heading)}</h2>'
         )
     # Body can contain markdown
@@ -196,27 +200,27 @@ def _render_kpi_grid(section: dict, t: Theme) -> str:
                 arrow = "\u25bc "
             delta_html = (
                 f'<div style="display:inline-block; margin-top:8px; '
-                f'padding:3px 10px; border-radius:6px; background:{delta_color}18; '
-                f'font-size:15px; color:{delta_color}; font-weight:700; '
+                f"padding:3px 10px; border-radius:6px; background:{delta_color}18; "
+                f"font-size:15px; color:{delta_color}; font-weight:700; "
                 f'letter-spacing:0.01em;">{arrow}{escape(str(delta))}</div>'
             )
 
         card_padding = {"compact": "16px", "spacious": "32px"}.get(t.density, "24px")
         cards.append(
             f'<div style="flex:1 1 {t.kpi_card_min_width}; min-width:{t.kpi_card_min_width}; '
-            f'background:{t.card_bg}; border:1px solid {t.border_color}; '
+            f"background:{t.card_bg}; border:1px solid {t.border_color}; "
             f'border-radius:8px; padding:{card_padding}; box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
             f'<div style="margin:0 0 10px; font-size:12px; text-transform:uppercase; '
             f'letter-spacing:0.08em; color:{t.secondary_text}; font-weight:500;">{label}</div>'
             f'<div style="font-size:32px; font-weight:800; color:{t.heading_color}; '
             f'line-height:1.1; font-family:{t.number_font};">{value}</div>'
-            f'{delta_html}'
-            f'</div>'
+            f"{delta_html}"
+            f"</div>"
         )
     return (
         f'<div data-or-kpi style="display:flex; gap:20px; flex-wrap:wrap; margin:20px 0;">'
-        f'{"".join(cards)}'
-        f'</div>'
+        f"{''.join(cards)}"
+        f"</div>"
     )
 
 
@@ -228,12 +232,12 @@ def _render_table(section: dict, t: Theme) -> str:
 
     header_cells = "".join(
         f'<th style="text-align:left; padding:10px 12px; font-weight:600; '
-        f'background:{t.table_header_bg}; color:{t.table_header_color}; '
+        f"background:{t.table_header_bg}; color:{t.table_header_color}; "
         f'border-bottom:2px solid {t.table_border};">{escape(str(h))}</th>'
         for h in headers
     )
 
-    _numeric_re = re.compile(r'^[-+]?[\d,]+\.?\d*%?$')
+    _numeric_re = re.compile(r"^[-+]?[\d,]+\.?\d*%?$")
 
     def _cell_align(cell: object) -> str:
         text = str(cell).strip()
@@ -260,11 +264,11 @@ def _render_table(section: dict, t: Theme) -> str:
     return (
         f'<div style="overflow-x:auto; margin:16px 0;">'
         f'<table style="width:100%; border-collapse:collapse;">'
-        f'{caption_html}'
-        f'<thead><tr>{header_cells}</tr></thead>'
-        f'<tbody>{"".join(body_rows)}</tbody>'
-        f'</table>'
-        f'</div>'
+        f"{caption_html}"
+        f"<thead><tr>{header_cells}</tr></thead>"
+        f"<tbody>{''.join(body_rows)}</tbody>"
+        f"</table>"
+        f"</div>"
     )
 
 
@@ -292,8 +296,8 @@ def _render_callout(section: dict, t: Theme) -> str:
     return (
         f'<div style="padding:16px; border-left:4px solid {border}; background:{bg}; '
         f'border-radius:8px; margin:16px 0; color:{t.text_color};">'
-        f'<strong>{label}:</strong> {escape(message)}'
-        f'</div>'
+        f"<strong>{label}:</strong> {escape(message)}"
+        f"</div>"
     )
 
 
@@ -312,11 +316,11 @@ def _render_quote(section: dict, t: Theme) -> str:
 
     return (
         f'<blockquote style="margin:32px 0; padding:24px 28px; border-left:4px solid {t.accent_color}; '
-        f'background:{t.blockquote_bg}; border-radius:0 8px 8px 0; '
+        f"background:{t.blockquote_bg}; border-radius:0 8px 8px 0; "
         f'font-size:18px; line-height:1.6; font-style:italic; color:{t.heading_color};">'
-        f'{escape(text)}'
-        f'{attr_html}'
-        f'</blockquote>'
+        f"{escape(text)}"
+        f"{attr_html}"
+        f"</blockquote>"
     )
 
 
@@ -332,9 +336,9 @@ def _render_key_takeaway(section: dict, t: Theme) -> str:
         f'<div style="font-size:12px; font-weight:700; text-transform:uppercase; '
         f'letter-spacing:0.08em; color:{t.accent_color}; margin-bottom:8px;">{escape(heading)}</div>'
         f'<div style="font-size:17px; line-height:1.6; color:{t.heading_color}; font-weight:500;">'
-        f'{escape(message)}'
-        f'</div>'
-        f'</div>'
+        f"{escape(message)}"
+        f"</div>"
+        f"</div>"
     )
 
 
@@ -350,17 +354,23 @@ def _render_stat_highlight(section: dict, t: Theme) -> str:
     delta_html = ""
     if delta:
         arrow = "&#9650; " if trend == "up" else "&#9660; " if trend == "down" else ""
-        delta_color = t.kpi_delta_positive if trend == "up" else t.kpi_delta_negative if trend == "down" else t.secondary_text
+        delta_color = (
+            t.kpi_delta_positive
+            if trend == "up"
+            else t.kpi_delta_negative
+            if trend == "down"
+            else t.secondary_text
+        )
         delta_html = (
             f'<span style="font-size:16px; color:{delta_color}; margin-left:8px;">'
-            f'{arrow}{escape(str(delta))}</span>'
+            f"{arrow}{escape(str(delta))}</span>"
         )
 
     context_html = ""
     if context:
         context_html = (
             f'<div style="font-size:14px; color:{t.secondary_text}; margin-top:8px; line-height:1.5;">'
-            f'{escape(context)}</div>'
+            f"{escape(context)}</div>"
         )
 
     return (
@@ -369,9 +379,9 @@ def _render_stat_highlight(section: dict, t: Theme) -> str:
         f'<div style="font-size:12px; font-weight:600; text-transform:uppercase; '
         f'letter-spacing:0.08em; color:{t.secondary_text}; margin-bottom:8px;">{label}</div>'
         f'<div style="font-size:42px; font-weight:800; color:{t.heading_color}; line-height:1.1;">'
-        f'{value}{delta_html}</div>'
-        f'{context_html}'
-        f'</div>'
+        f"{value}{delta_html}</div>"
+        f"{context_html}"
+        f"</div>"
     )
 
 
@@ -399,13 +409,13 @@ def _render_two_column(section: dict, t: Theme) -> str:
         f'<div style="display:flex; gap:32px; margin:32px 0; flex-wrap:wrap;">'
         f'<div style="flex:1 1 280px; padding:20px; background:{t.card_bg}; '
         f'border:1px solid {t.border_color}; border-radius:8px;">'
-        f'{_render_col(left)}'
-        f'</div>'
+        f"{_render_col(left)}"
+        f"</div>"
         f'<div style="flex:1 1 280px; padding:20px; background:{t.card_bg}; '
         f'border:1px solid {t.border_color}; border-radius:8px;">'
-        f'{_render_col(right)}'
-        f'</div>'
-        f'</div>'
+        f"{_render_col(right)}"
+        f"</div>"
+        f"</div>"
     )
 
 
@@ -415,7 +425,9 @@ def _render_chart_section(section: dict, t: Theme, svg_fn) -> str:
     Produces a ``<div data-or-chart="...">`` wrapper containing the themed SVG.
     """
     section = normalize_chart_values(section)
-    validation_errors = [e for e in validate_chart_section(section) if e.severity == "error"]
+    validation_errors = [
+        e for e in validate_chart_section(section) if e.severity == "error"
+    ]
 
     if validation_errors:
         messages = "; ".join(e.message for e in validation_errors)
@@ -427,10 +439,10 @@ def _render_chart_section(section: dict, t: Theme, svg_fn) -> str:
                 f'margin:24px 0 8px;">{escape(heading)}</h3>'
             )
         return (
-            f'{heading_html}'
+            f"{heading_html}"
             f'<div style="padding:16px; border:2px dashed {t.callout_error_border}; '
             f'border-radius:8px; margin:16px 0; color:{t.text_color}; background:{t.callout_error_bg};">'
-            f'<strong>Chart data error:</strong> {escape(messages)}</div>'
+            f"<strong>Chart data error:</strong> {escape(messages)}</div>"
         )
 
     heading = section.get("heading", "")
@@ -446,12 +458,12 @@ def _render_chart_section(section: dict, t: Theme, svg_fn) -> str:
 
     return (
         f'<div style="width:100%; margin:16px 0; text-align:left;">'
-        f'{heading_html}'
-        f'<div data-or-chart=\'{escape(chart_json, quote=False)}\' '
+        f"{heading_html}"
+        f"<div data-or-chart='{escape(chart_json, quote=False)}' "
         f'style="width:100%; display:block;">'
-        f'{svg_fallback}'
-        f'</div>'
-        f'</div>'
+        f"{svg_fallback}"
+        f"</div>"
+        f"</div>"
     )
 
 
@@ -512,20 +524,24 @@ def _render_timeline(section: dict, t: Theme) -> str:
         date = escape(str(event.get("date", "")))
         title = escape(str(event.get("title", "")))
         desc = event.get("description", "")
-        desc_html = f'<p style="margin:4px 0 0; color:{t.secondary_text}; font-size:14px;">{escape(desc)}</p>' if desc else ""
+        desc_html = (
+            f'<p style="margin:4px 0 0; color:{t.secondary_text}; font-size:14px;">{escape(desc)}</p>'
+            if desc
+            else ""
+        )
 
         items.append(
             f'<div style="display:flex; gap:16px; margin-bottom:20px;">'
             f'<div style="display:flex; flex-direction:column; align-items:center; min-width:20px;">'
             f'<div style="width:12px; height:12px; border-radius:50%; background:{t.accent_color}; flex-shrink:0;"></div>'
             f'<div style="width:2px; flex:1; background:{t.border_color};"></div>'
-            f'</div>'
+            f"</div>"
             f'<div style="padding-bottom:4px;">'
             f'<div style="font-size:12px; color:{t.secondary_text}; text-transform:uppercase; letter-spacing:0.05em;">{date}</div>'
             f'<div style="font-weight:600; color:{t.heading_color}; margin-top:2px;">{title}</div>'
-            f'{desc_html}'
-            f'</div>'
-            f'</div>'
+            f"{desc_html}"
+            f"</div>"
+            f"</div>"
         )
     return f'<div style="margin:20px 0;">{"".join(items)}</div>'
 
@@ -536,12 +552,14 @@ def _render_action_items(section: dict, t: Theme) -> str:
     headers = ["Action", "Owner", "Due", "Impact"]
     rows = []
     for item in items:
-        rows.append([
-            item.get("action", ""),
-            item.get("owner", ""),
-            item.get("due", ""),
-            item.get("impact", ""),
-        ])
+        rows.append(
+            [
+                item.get("action", ""),
+                item.get("owner", ""),
+                item.get("due", ""),
+                item.get("impact", ""),
+            ]
+        )
     return _render_table({"headers": headers, "rows": rows}, t)
 
 
@@ -569,14 +587,12 @@ def _render_columns(section: dict, t: Theme, _depth: int = 0) -> str:
                     f'<p style="color:{t.text_color};">Unknown section type: {escape(sec_type)}</p>'
                 )
         col_parts.append(
-            f'<div style="flex:1 1 0; min-width:250px;">'
-            f'{"".join(fragments)}'
-            f'</div>'
+            f'<div style="flex:1 1 0; min-width:250px;">{"".join(fragments)}</div>'
         )
     return (
         f'<div data-or-columns style="display:flex; gap:24px; flex-wrap:wrap; margin:20px 0;">'
-        f'{"".join(col_parts)}'
-        f'</div>'
+        f"{''.join(col_parts)}"
+        f"</div>"
     )
 
 
@@ -592,15 +608,15 @@ def _render_summary_header(section: dict, t: Theme) -> str:
         f'<div style="border-bottom:3px solid {t.accent_color}; padding-bottom:20px; margin-bottom:24px;">'
     )
     header_row = '<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">'
-    title_part = '<div>'
+    title_part = "<div>"
     title_part += f'<h1 style="font-size:28px; font-weight:800; color:{t.heading_color}; margin:0; line-height:1.2;">{title}</h1>'
     if subtitle:
         title_part += f'<div style="font-size:14px; color:{t.secondary_text}; margin-top:4px;">{escape(str(subtitle))}</div>'
-    title_part += '</div>'
+    title_part += "</div>"
     date_part = ""
     if date:
         date_part = f'<div style="font-size:13px; color:{t.secondary_text}; white-space:nowrap;">{escape(str(date))}</div>'
-    parts.append(f'{header_row}{title_part}{date_part}</div>')
+    parts.append(f"{header_row}{title_part}{date_part}</div>")
 
     if stats:
         stat_items: list[str] = []
@@ -609,18 +625,18 @@ def _render_summary_header(section: dict, t: Theme) -> str:
             value = escape(str(s.get("value", "")))
             stat_items.append(
                 f'<div style="display:inline-flex; align-items:baseline; gap:6px; '
-                f'padding:6px 12px; background:{t.card_bg}; border:1px solid {t.border_color}; '
+                f"padding:6px 12px; background:{t.card_bg}; border:1px solid {t.border_color}; "
                 f'border-radius:6px; font-size:13px;">'
                 f'<span style="color:{t.secondary_text};">{label}:</span>'
                 f'<span style="font-weight:700; color:{t.heading_color};">{value}</span>'
-                f'</div>'
+                f"</div>"
             )
         parts.append(
             f'<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">'
-            f'{"".join(stat_items)}'
-            f'</div>'
+            f"{''.join(stat_items)}"
+            f"</div>"
         )
-    parts.append('</div>')
+    parts.append("</div>")
     return "".join(parts)
 
 
@@ -635,7 +651,7 @@ def _render_divider(section: dict, t: Theme) -> str:
         f'<span style="font-size:12px; text-transform:uppercase; letter-spacing:0.05em; '
         f'color:{t.secondary_text}; white-space:nowrap;">{escape(str(label))}</span>'
         f'<div style="flex:1; height:1px; background:{t.hr_color};"></div>'
-        f'</div>'
+        f"</div>"
     )
 
 
@@ -643,7 +659,9 @@ def _render_divider(section: dict, t: Theme) -> str:
 def _render_spacer(section: dict, t: Theme) -> str:
     height = section.get("height", "40px")
     # Sanitize: only allow px or rem values
-    if not isinstance(height, str) or not (height.endswith("px") or height.endswith("rem")):
+    if not isinstance(height, str) or not (
+        height.endswith("px") or height.endswith("rem")
+    ):
         height = "40px"
     return f'<div style="height:{escape(height)};"></div>'
 
@@ -675,8 +693,16 @@ def _render_slide(section: dict, t: Theme) -> str:
     The background_color field in section data is ignored.
     """
     role = _classify_slide_role(section)
-    bg_map = {"title": t.slide_title_bg, "content": t.slide_content_bg, "closing": t.slide_closing_bg}
-    text_map = {"title": t.slide_title_text, "content": t.slide_content_text, "closing": t.slide_closing_text}
+    bg_map = {
+        "title": t.slide_title_bg,
+        "content": t.slide_content_bg,
+        "closing": t.slide_closing_bg,
+    }
+    text_map = {
+        "title": t.slide_title_text,
+        "content": t.slide_content_text,
+        "closing": t.slide_closing_text,
+    }
     bg_color = bg_map.get(role, t.slide_content_bg)
     text_color = text_map.get(role, t.slide_content_text)
 
@@ -725,11 +751,21 @@ class _InlineStyler(HTMLParser):
         h3_size = round(h4_size * s)
         h2_size = round(h4_size * s * s)
         h1_size = round(h4_size * s * s * s)
-        density_h1_margin = {"compact": "0 0 10px", "spacious": "0 0 24px"}.get(t.density, "0 0 16px")
-        density_h2_margin = {"compact": "18px 0 8px", "spacious": "36px 0 16px"}.get(t.density, "28px 0 12px")
-        density_h3_margin = {"compact": "14px 0 6px", "spacious": "30px 0 12px"}.get(t.density, "24px 0 8px")
-        density_h4_margin = {"compact": "10px 0 4px", "spacious": "24px 0 10px"}.get(t.density, "20px 0 8px")
-        density_p_margin = {"compact": "0 0 8px", "spacious": "0 0 20px"}.get(t.density, "0 0 12px")
+        density_h1_margin = {"compact": "0 0 10px", "spacious": "0 0 24px"}.get(
+            t.density, "0 0 16px"
+        )
+        density_h2_margin = {"compact": "18px 0 8px", "spacious": "36px 0 16px"}.get(
+            t.density, "28px 0 12px"
+        )
+        density_h3_margin = {"compact": "14px 0 6px", "spacious": "30px 0 12px"}.get(
+            t.density, "24px 0 8px"
+        )
+        density_h4_margin = {"compact": "10px 0 4px", "spacious": "24px 0 10px"}.get(
+            t.density, "20px 0 8px"
+        )
+        density_p_margin = {"compact": "0 0 8px", "spacious": "0 0 20px"}.get(
+            t.density, "0 0 12px"
+        )
         return {
             "h1": (
                 f"font-size:{h1_size}px; font-weight:800; color:{t.heading_color}; "
@@ -770,9 +806,7 @@ class _InlineStyler(HTMLParser):
                 f"border-radius:8px; overflow-x:auto; margin:16px 0; font-size:14px; "
                 f"line-height:1.5;"
             ),
-            "table": (
-                "width:100%; border-collapse:collapse; margin:16px 0;"
-            ),
+            "table": ("width:100%; border-collapse:collapse; margin:16px 0;"),
             "th": (
                 f"text-align:left; padding:10px 12px; font-weight:600; "
                 f"background:{t.table_header_bg}; color:{t.table_header_color}; "
@@ -782,9 +816,7 @@ class _InlineStyler(HTMLParser):
                 f"padding:10px 12px; border-bottom:1px solid {t.table_border}; "
                 f"color:{t.text_color};"
             ),
-            "hr": (
-                f"border:none; border-top:1px solid {t.hr_color}; margin:32px 0;"
-            ),
+            "hr": (f"border:none; border-top:1px solid {t.hr_color}; margin:32px 0;"),
             "img": "max-width:100%; height:auto; border-radius:8px; margin:12px 0;",
             "strong": f"font-weight:700; color:{t.heading_color};",
         }
@@ -867,21 +899,21 @@ def _wrap_container(inner_html: str, theme: Theme, layout: str | None = None) ->
     max_width = get_layout_width(layout)
     bg = f" background:{theme.bg_color};" if theme.bg_color != "transparent" else ""
     style_block = (
-        f'<style>'
-        f'#{cid}{{padding:48px !important;}}'
-        f'@media (min-width:600px) and (max-width:959px){{#{cid}{{padding:32px !important;}}}}'
-        f'@media (max-width:599px){{#{cid}{{padding:16px !important;}}}}'
-        f'@media (max-width:599px){{#{cid} [data-or-columns]>div{{flex:1 1 100% !important;min-width:0 !important;}}}}'
-        f'@media (max-width:599px){{#{cid} [data-or-kpi]>div{{flex:1 1 100% !important;min-width:0 !important;}}}}'
-        f'@media (min-width:600px) and (max-width:959px){{#{cid} [data-or-kpi]>div{{flex:1 1 45% !important;min-width:0 !important;}}}}'
-        f'@media (max-width:599px){{#{cid} table{{overflow-x:auto !important;display:block;}}}}'
-        f'</style>'
+        f"<style>"
+        f"#{cid}{{padding:48px !important;}}"
+        f"@media (min-width:600px) and (max-width:959px){{#{cid}{{padding:32px !important;}}}}"
+        f"@media (max-width:599px){{#{cid}{{padding:16px !important;}}}}"
+        f"@media (max-width:599px){{#{cid} [data-or-columns]>div{{flex:1 1 100% !important;min-width:0 !important;}}}}"
+        f"@media (max-width:599px){{#{cid} [data-or-kpi]>div{{flex:1 1 100% !important;min-width:0 !important;}}}}"
+        f"@media (min-width:600px) and (max-width:959px){{#{cid} [data-or-kpi]>div{{flex:1 1 45% !important;min-width:0 !important;}}}}"
+        f"@media (max-width:599px){{#{cid} table{{overflow-x:auto !important;display:block;}}}}"
+        f"</style>"
     )
     return (
-        f'{style_block}'
+        f"{style_block}"
         f'<div id="{cid}" style="font-family:{theme.font_stack}; color:{theme.text_color}; '
-        f'line-height:{theme.line_height}; max-width:{max_width}; margin:0 auto; '
+        f"line-height:{theme.line_height}; max-width:{max_width}; margin:0 auto; "
         f'padding:48px;{bg}">'
-        f'{inner_html}'
-        f'</div>'
+        f"{inner_html}"
+        f"</div>"
     )

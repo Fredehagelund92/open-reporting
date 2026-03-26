@@ -15,6 +15,7 @@ from app.core.themes import Theme
 # Shared helpers
 # ---------------------------------------------------------------------------
 
+
 def _fmt_val(val: float) -> str:
     """Format a chart value label with precision scaled to magnitude."""
     if abs(val) >= 1_000_000:
@@ -59,7 +60,9 @@ def _nice_ticks(max_val: float, count: int = 5, min_val: float = 0.0) -> list[fl
     return [min_val + i * nice_step for i in range(count + 1)]
 
 
-def _y_axis_and_grid(ticks: list[float], plot_top: float, plot_bottom: float, theme: Theme) -> str:
+def _y_axis_and_grid(
+    ticks: list[float], plot_top: float, plot_bottom: float, theme: Theme
+) -> str:
     """Render horizontal grid lines (y-axis number labels removed for alignment)."""
     parts: list[str] = []
     min_tick = ticks[0] if ticks else 0
@@ -69,7 +72,9 @@ def _y_axis_and_grid(ticks: list[float], plot_top: float, plot_bottom: float, th
         if tick_range == 0:
             y = plot_bottom
         else:
-            y = plot_bottom - ((tick - min_tick) / tick_range) * (plot_bottom - plot_top)
+            y = plot_bottom - ((tick - min_tick) / tick_range) * (
+                plot_bottom - plot_top
+            )
         parts.append(
             f'<line x1="{_PAD_LEFT}" y1="{y:.1f}" x2="{_CHART_WIDTH - _PAD_RIGHT}" '
             f'y2="{y:.1f}" stroke="{theme.chart_grid_color}" stroke-dasharray="4,4" stroke-opacity="0.5" />'
@@ -93,7 +98,9 @@ def _legend(names: list[str], colors: list[str], theme: Theme) -> str:
             f'<text x="{x + 16}" y="{y}" fill="{theme.chart_axis_color}" '
             f'style="font-size:12px;">{escape(name)}</text>'
         )
-        x += int(12 * 0.6 * len(name)) + 32  # font_size * char_width_ratio * chars + gap
+        x += (
+            int(12 * 0.6 * len(name)) + 32
+        )  # font_size * char_width_ratio * chars + gap
     return "\n".join(parts)
 
 
@@ -114,7 +121,11 @@ def svg_bar_chart(data: dict, theme: Theme) -> str:
         return ""
 
     max_val = max(abs(v) for v in all_values)
-    min_val = min(abs(v) for v in all_values if v != 0) if any(v != 0 for v in all_values) else 0
+    min_val = (
+        min(abs(v) for v in all_values if v != 0)
+        if any(v != 0 for v in all_values)
+        else 0
+    )
     baseline = _smart_baseline(min_val, max_val)
     ticks = _nice_ticks(max_val, min_val=baseline)
     max_tick = ticks[-1] if ticks else 1
@@ -148,7 +159,11 @@ def svg_bar_chart(data: dict, theme: Theme) -> str:
             h = max(h, 0)
             x = group_x + (di + 0.5) * (bar_width + gap)
             y = plot_bottom - h
-            c = colors[li % len(colors)] if n_datasets == 1 else colors[di % len(colors)]
+            c = (
+                colors[li % len(colors)]
+                if n_datasets == 1
+                else colors[di % len(colors)]
+            )
             bars.append(
                 f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_width:.1f}" '
                 f'height="{h:.1f}" rx="3" fill="{c}" />'
@@ -161,15 +176,19 @@ def svg_bar_chart(data: dict, theme: Theme) -> str:
                     f'fill="{label_color}" style="font-size:11px;">{_fmt_val(val)}</text>'
                 )
 
-    legend = _legend([ds.get("name", f"Series {i+1}") for i, ds in enumerate(datasets)], colors, theme)
+    legend = _legend(
+        [ds.get("name", f"Series {i + 1}") for i, ds in enumerate(datasets)],
+        colors,
+        theme,
+    )
     grid = _y_axis_and_grid(ticks, plot_top, plot_bottom, theme)
 
     return (
         f'<svg viewBox="0 0 {theme.chart_viewbox_width} {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bar chart" '
         f'style="display:block; font-family:{theme.font_stack};">'
-        f'\n{grid}\n{"".join(bars)}\n{legend}'
-        f'\n</svg>'
+        f"\n{grid}\n{''.join(bars)}\n{legend}"
+        f"\n</svg>"
     )
 
 
@@ -219,7 +238,11 @@ def svg_line_chart(data: dict, theme: Theme, fill: bool = False) -> str:
 
         for vi, val in enumerate(vals):
             x = plot_left + (vi / max(len(vals) - 1, 1)) * plot_width
-            y = plot_bottom - (abs(val) / max_tick * plot_height) if max_tick else plot_bottom
+            y = (
+                plot_bottom - (abs(val) / max_tick * plot_height)
+                if max_tick
+                else plot_bottom
+            )
             points.append(f"{x:.1f},{y:.1f}")
 
         points_str = " ".join(points)
@@ -239,17 +262,23 @@ def svg_line_chart(data: dict, theme: Theme, fill: bool = False) -> str:
         # Dots + value labels
         for vi, val in enumerate(vals):
             x = plot_left + (vi / max(len(vals) - 1, 1)) * plot_width
-            y = plot_bottom - (abs(val) / max_tick * plot_height) if max_tick else plot_bottom
-            lines.append(
-                f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3.5" fill="{c}" />'
+            y = (
+                plot_bottom - (abs(val) / max_tick * plot_height)
+                if max_tick
+                else plot_bottom
             )
+            lines.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3.5" fill="{c}" />')
             if len(vals) <= 15:
                 lines.append(
                     f'<text x="{x:.1f}" y="{y - 8:.1f}" text-anchor="middle" '
                     f'fill="{theme.text_color}" style="font-size:11px;">{_fmt_val(val)}</text>'
                 )
 
-    legend = _legend([ds.get("name", f"Series {i+1}") for i, ds in enumerate(datasets)], colors, theme)
+    legend = _legend(
+        [ds.get("name", f"Series {i + 1}") for i, ds in enumerate(datasets)],
+        colors,
+        theme,
+    )
     grid = _y_axis_and_grid(ticks, plot_top, plot_bottom, theme)
     chart_label = "Area chart" if fill else "Line chart"
 
@@ -257,8 +286,8 @@ def svg_line_chart(data: dict, theme: Theme, fill: bool = False) -> str:
         f'<svg viewBox="0 0 {theme.chart_viewbox_width} {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{chart_label}" '
         f'style="display:block; font-family:{theme.font_stack};">'
-        f'\n{grid}\n{"".join(lines)}\n{legend}'
-        f'\n</svg>'
+        f"\n{grid}\n{''.join(lines)}\n{legend}"
+        f"\n</svg>"
     )
 
 
@@ -346,8 +375,8 @@ def svg_pie_chart(data: dict, theme: Theme) -> str:
         f'<svg viewBox="0 0 480 360" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pie chart" '
         f'style="display:block; font-family:{theme.font_stack};">'
-        f'\n{"".join(slices)}\n{"".join(labels)}'
-        f'\n</svg>'
+        f"\n{''.join(slices)}\n{''.join(labels)}"
+        f"\n</svg>"
     )
 
 
@@ -368,7 +397,11 @@ def svg_horizontal_bar_chart(data: dict, theme: Theme) -> str:
         return ""
 
     max_val = max(abs(v) for v in all_values)
-    min_val = min(abs(v) for v in all_values if v != 0) if any(v != 0 for v in all_values) else 0
+    min_val = (
+        min(abs(v) for v in all_values if v != 0)
+        if any(v != 0 for v in all_values)
+        else 0
+    )
     baseline = _smart_baseline(min_val, max_val)
     val_range = max_val - baseline
     if val_range == 0:
@@ -403,7 +436,11 @@ def svg_horizontal_bar_chart(data: dict, theme: Theme) -> str:
             w = ((abs(val) - baseline) / val_range * plot_width) if val_range else 0
             w = max(w, 0)
             y = group_y + (di + 0.5) * (bar_height + gap)
-            c = colors[li % len(colors)] if n_datasets == 1 else colors[di % len(colors)]
+            c = (
+                colors[li % len(colors)]
+                if n_datasets == 1
+                else colors[di % len(colors)]
+            )
             bars.append(
                 f'<rect x="{pad_left}" y="{y:.1f}" width="{w:.1f}" '
                 f'height="{bar_height:.1f}" rx="3" fill="{c}" />'
@@ -416,15 +453,17 @@ def svg_horizontal_bar_chart(data: dict, theme: Theme) -> str:
                 )
 
     legend = _legend(
-        [ds.get("name", f"Series {i+1}") for i, ds in enumerate(datasets)], colors, theme
+        [ds.get("name", f"Series {i + 1}") for i, ds in enumerate(datasets)],
+        colors,
+        theme,
     )
 
     return (
         f'<svg viewBox="0 0 {theme.chart_viewbox_width} {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Horizontal bar chart" '
         f'style="display:block; font-family:{theme.font_stack};">'
-        f'\n{"".join(bars)}\n{legend}'
-        f'\n</svg>'
+        f"\n{''.join(bars)}\n{legend}"
+        f"\n</svg>"
     )
 
 
@@ -485,7 +524,9 @@ def svg_stacked_bar_chart(data: dict, theme: Theme) -> str:
             cum_height += h
 
     legend = _legend(
-        [ds.get("name", f"Series {i+1}") for i, ds in enumerate(datasets)], colors, theme
+        [ds.get("name", f"Series {i + 1}") for i, ds in enumerate(datasets)],
+        colors,
+        theme,
     )
     grid = _y_axis_and_grid(ticks, plot_top, plot_bottom, theme)
 
@@ -493,8 +534,8 @@ def svg_stacked_bar_chart(data: dict, theme: Theme) -> str:
         f'<svg viewBox="0 0 {theme.chart_viewbox_width} {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stacked bar chart" '
         f'style="display:block; font-family:{theme.font_stack};">'
-        f'\n{grid}\n{"".join(bars)}\n{legend}'
-        f'\n</svg>'
+        f"\n{grid}\n{''.join(bars)}\n{legend}"
+        f"\n</svg>"
     )
 
 
@@ -541,8 +582,8 @@ def svg_donut_chart(data: dict, theme: Theme) -> str:
 
         slices.append(
             f'<path d="M{ox1:.1f},{oy1:.1f} '
-            f'A{outer_r},{outer_r} 0 {large_arc},1 {ox2:.1f},{oy2:.1f} '
-            f'L{ix1:.1f},{iy1:.1f} '
+            f"A{outer_r},{outer_r} 0 {large_arc},1 {ox2:.1f},{oy2:.1f} "
+            f"L{ix1:.1f},{iy1:.1f} "
             f'A{inner_r},{inner_r} 0 {large_arc},0 {ix2:.1f},{iy2:.1f} Z" '
             f'fill="{c}" />'
         )
@@ -565,15 +606,15 @@ def svg_donut_chart(data: dict, theme: Theme) -> str:
         center_html = (
             f'<text x="{cx}" y="{cy}" text-anchor="middle" dominant-baseline="middle" '
             f'fill="{theme.heading_color}" style="font-size:16px; font-weight:700;">'
-            f'{escape(str(center_label))}</text>'
+            f"{escape(str(center_label))}</text>"
         )
 
     return (
         f'<svg viewBox="0 0 480 360" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Donut chart" '
         f'style="display:block; font-family:{theme.font_stack};">'
-        f'\n{"".join(slices)}\n{"".join(labels)}\n{center_html}'
-        f'\n</svg>'
+        f"\n{''.join(slices)}\n{''.join(labels)}\n{center_html}"
+        f"\n</svg>"
     )
 
 
@@ -611,5 +652,5 @@ def svg_sparkline(data: dict, theme: Theme) -> str:
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sparkline" '
         f'style="display:inline-block; vertical-align:middle;">'
         f'<polyline points="{points_str}" fill="none" stroke="{color}" stroke-width="1.5" />'
-        f'</svg>'
+        f"</svg>"
     )
