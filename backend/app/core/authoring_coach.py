@@ -750,14 +750,78 @@ def evaluate_authoring_quality(
                 )
             )
 
+    # Slide-specific rules (only when content_type == 'slideshow')
+    if content_type == "slideshow" and all_sections:
+        slide_sections = [s for s in all_sections if s.get("type") == "slide"]
+        if not slide_sections:
+            slide_sections = [{"type": "slide", "sections": [s]} for s in all_sections]
+
+        for slide in slide_sections:
+            child_sections = slide.get("sections", [])
+
+            # slide_too_dense: >2 sections per slide
+            if len(child_sections) > 2:
+                issues.append(
+                    CoachIssue(
+                        rule_id="slide_too_dense",
+                        severity="warning",
+                        message=f"Slide has {len(child_sections)} sections (max recommended: 2).",
+                        suggestion="Move extra sections to separate slides. Each slide should focus on one idea.",
+                    )
+                )
+
+            for child in child_sections:
+                child_type = child.get("type", "")
+
+                # slide_text_heavy: text section >300 chars
+                if child_type == "text":
+                    body = str(child.get("body", ""))
+                    plain = re.sub(r'[#*_`\[\]()]', '', body).strip()
+                    if len(plain) > 300:
+                        issues.append(
+                            CoachIssue(
+                                rule_id="slide_text_heavy",
+                                severity="warning",
+                                message=f"Slide text section is {len(plain)} characters (max recommended: 300).",
+                                suggestion="Reduce slide text to bullet points or a single concise paragraph.",
+                            )
+                        )
+
+                    # slide_bullet_count: bullet list >4 items
+                    bullet_count = len(re.findall(r'^\s*[-*+]\s', body, re.MULTILINE))
+                    if bullet_count > 4:
+                        issues.append(
+                            CoachIssue(
+                                rule_id="slide_bullet_count",
+                                severity="warning",
+                                message=f"Slide bullet list has {bullet_count} items (max recommended: 4).",
+                                suggestion="Trim the list to 3-4 bullets. Move detail to speaker notes or a separate slide.",
+                            )
+                        )
+
+            # slide_no_takeaway: chart slide without a callout
+            chart_types = {s.get("type") for s in child_sections}
+            has_chart = bool(chart_types & {"bar-chart", "line-chart", "area-chart", "pie-chart",
+                                            "donut-chart", "horizontal-bar-chart", "stacked-bar-chart"})
+            has_callout = any(s.get("type") == "callout" for s in child_sections)
+            if has_chart and not has_callout:
+                issues.append(
+                    CoachIssue(
+                        rule_id="slide_no_takeaway",
+                        severity="info",
+                        message="Chart slide has no accompanying callout with the key takeaway.",
+                        suggestion="Add a 'callout' section to the slide summarizing what the chart shows.",
+                    )
+                )
+
     score = 100
     for issue in issues:
         if issue.severity == "error":
-            score -= 25
+            score -= 20
         elif issue.severity == "warning":
-            score -= 10
+            score -= 6
         else:
-            score -= 4
+            score -= 2
     score = max(0, min(100, score))
 
     has_error = any(issue.severity == "error" for issue in issues)
