@@ -818,8 +818,59 @@ def evaluate_authoring_quality(
                     )
                 )
 
+            # slide_content_overflow: >2 sections per slide
+            if len(child_sections) > 2:
+                issues.append(
+                    CoachIssue(
+                        rule_id="slide_content_overflow",
+                        severity="warning",
+                        message=f"Slide has {len(child_sections)} sections which may cause overflow. Keep to 2 sections max per slide.",
+                        suggestion="Split content across multiple slides to avoid scrollbars. Each slide should fit on screen without scrolling.",
+                    )
+                )
+
             for child in child_sections:
                 child_type = child.get("type", "")
+
+                # slide_content_overflow: text section >200 chars
+                if child_type == "text":
+                    overflow_body = str(child.get("body", ""))
+                    overflow_plain = re.sub(r"[#*_`\[\]()]", "", overflow_body).strip()
+                    if len(overflow_plain) > 200:
+                        issues.append(
+                            CoachIssue(
+                                rule_id="slide_content_overflow",
+                                severity="warning",
+                                message=f"Slide text section is {len(overflow_plain)} characters (max for overflow prevention: 200). Long text may require scrolling.",
+                                suggestion="Split content across multiple slides to avoid scrollbars. Each slide should fit on screen without scrolling.",
+                            )
+                        )
+
+                # slide_content_overflow: table >6 rows
+                if child_type == "table":
+                    rows = child.get("rows", [])
+                    if len(rows) > 6:
+                        issues.append(
+                            CoachIssue(
+                                rule_id="slide_content_overflow",
+                                severity="warning",
+                                message=f"Slide table has {len(rows)} rows (max recommended: 6). Large tables may require scrolling.",
+                                suggestion="Split content across multiple slides to avoid scrollbars. Each slide should fit on screen without scrolling.",
+                            )
+                        )
+
+                # slide_content_overflow: kpi-grid >4 metrics
+                if child_type == "kpi-grid":
+                    metrics = child.get("metrics", [])
+                    if len(metrics) > 4:
+                        issues.append(
+                            CoachIssue(
+                                rule_id="slide_content_overflow",
+                                severity="warning",
+                                message=f"Slide KPI grid has {len(metrics)} metrics (max recommended: 4). Too many metrics may cause overflow.",
+                                suggestion="Split content across multiple slides to avoid scrollbars. Each slide should fit on screen without scrolling.",
+                            )
+                        )
 
                 # slide_text_heavy: text section >300 chars
                 if child_type == "text":
