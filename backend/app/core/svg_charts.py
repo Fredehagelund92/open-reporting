@@ -165,7 +165,7 @@ def svg_bar_chart(data: dict, theme: Theme) -> str:
     grid = _y_axis_and_grid(ticks, plot_top, plot_bottom, theme)
 
     return (
-        f'<svg viewBox="0 0 {_CHART_WIDTH} {_CHART_HEIGHT}" width="100%" '
+        f'<svg viewBox="0 0 {theme.chart_viewbox_width} {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bar chart" '
         f'style="display:block; font-family:{theme.font_stack};">'
         f'\n{grid}\n{"".join(bars)}\n{legend}'
@@ -254,7 +254,7 @@ def svg_line_chart(data: dict, theme: Theme, fill: bool = False) -> str:
     chart_label = "Area chart" if fill else "Line chart"
 
     return (
-        f'<svg viewBox="0 0 {_CHART_WIDTH} {_CHART_HEIGHT}" width="100%" '
+        f'<svg viewBox="0 0 {theme.chart_viewbox_width} {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{chart_label}" '
         f'style="display:block; font-family:{theme.font_stack};">'
         f'\n{grid}\n{"".join(lines)}\n{legend}'
@@ -420,7 +420,7 @@ def svg_horizontal_bar_chart(data: dict, theme: Theme) -> str:
     )
 
     return (
-        f'<svg viewBox="0 0 {_CHART_WIDTH} {_CHART_HEIGHT}" width="100%" '
+        f'<svg viewBox="0 0 {theme.chart_viewbox_width} {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Horizontal bar chart" '
         f'style="display:block; font-family:{theme.font_stack};">'
         f'\n{"".join(bars)}\n{legend}'
@@ -490,7 +490,7 @@ def svg_stacked_bar_chart(data: dict, theme: Theme) -> str:
     grid = _y_axis_and_grid(ticks, plot_top, plot_bottom, theme)
 
     return (
-        f'<svg viewBox="0 0 {_CHART_WIDTH} {_CHART_HEIGHT}" width="100%" '
+        f'<svg viewBox="0 0 {theme.chart_viewbox_width} {_CHART_HEIGHT}" width="100%" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stacked bar chart" '
         f'style="display:block; font-family:{theme.font_stack};">'
         f'\n{grid}\n{"".join(bars)}\n{legend}'

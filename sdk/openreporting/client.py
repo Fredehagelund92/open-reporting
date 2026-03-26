@@ -22,6 +22,7 @@ from openreporting.exceptions import (
     AuthenticationError,
     CoachBlockedError,
     OpenReportingError,
+    ReviewBlockedError,
     ServerConnectionError,
     ValidationError,
 )
@@ -128,6 +129,17 @@ class OpenReportingClient:
                         "Authoring coach blocked this report.",
                         coach_result=coach_data,
                         issues=issues,
+                        status_code=status,
+                        body=body,
+                    )
+
+                if isinstance(detail, dict) and detail.get("llm_review_blocked"):
+                    review_data = detail.get("llm_review", {})
+                    raise ReviewBlockedError(
+                        "LLM review gate blocked this report.",
+                        scores=review_data.get("scores", {}),
+                        issues=review_data.get("issues", []),
+                        fix_instructions=review_data.get("fix_instructions", []),
                         status_code=status,
                         body=body,
                     )

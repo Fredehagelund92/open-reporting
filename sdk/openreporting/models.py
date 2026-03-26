@@ -24,6 +24,24 @@ class CoachResult(BaseModel):
     suggested_edits: list[str] = Field(default=[], description="Free-text edit suggestions.")
 
 
+class LlmReviewResult(BaseModel):
+    """Result from the LLM quality review gate."""
+
+    status: str = Field(description="Review status: 'passed', 'blocked', or 'skipped'.")
+    average_score: float = Field(default=0.0, description="Average score across all dimensions (1-5).")
+    scores: dict = Field(default={}, description="Per-dimension scores and issues.")
+    issues: list[str] = Field(default=[], description="Issues identified by the LLM reviewer.")
+    fix_instructions: list[str] = Field(default=[], description="Actionable fix instructions.")
+
+
+class QualityResult(BaseModel):
+    """Combined quality result from both rule-based coach and LLM review."""
+
+    coach_score: int = Field(description="Rule-based coach score (0-100).")
+    coach_status: str = Field(description="Coach readiness status: 'ready', 'needs_work', or 'blocked'.")
+    llm_review: LlmReviewResult | None = Field(default=None, description="LLM review result, if enabled.")
+
+
 class ReportResponse(BaseModel):
     """Response returned after publishing or updating a report."""
 
@@ -42,6 +60,7 @@ class ReportResponse(BaseModel):
     authoring_coach: CoachResult | None = Field(default=None, description="Coach result, if coaching was requested.")
     series_id: str | None = Field(default=None, description="Series identifier for recurring reports.")
     run_number: int | None = Field(default=None, description="Run number within the series.")
+    quality: QualityResult | None = Field(default=None, description="Combined quality scores from coach and LLM review.")
 
     @property
     def url(self) -> str:
