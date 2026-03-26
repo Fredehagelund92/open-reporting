@@ -36,4 +36,17 @@
 - **Learnings for future iterations:**
   - sections_reference() is a large multi-line string returned by a function — edit carefully to maintain formatting
   - slide() uses dict building pattern: start with required keys, conditionally add optional ones
+- validation.py exports: validate_sections (sections only), validate_theme (theme only), validate_report (both sections + theme)
+- validate_theme and validate_report are exported from __init__.py
+---
+
+## 2026-03-26 - US-004
+- Added validate_theme() function: returns warning for unknown themes, empty list for valid/None
+- Added validate_report() wrapper: accepts optional sections and theme, combines both validations
+- Updated __init__.py to export validate_theme and validate_report
+- Files changed: sdk/openreporting/validation.py, sdk/openreporting/__init__.py
+- **Learnings for future iterations:**
+  - validation.py imports from capabilities.py for constants (SECTION_TYPES, THEMES)
+  - ValidationIssue dataclass has: severity, rule_id, message, suggestion
+  - New validation functions follow same pattern: return list[ValidationIssue]
 ---
