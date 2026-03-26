@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from openreporting.capabilities import SECTION_TYPES
+from openreporting.capabilities import SECTION_TYPES, THEMES
 
 ValidationSeverity = Literal["error", "warning"]
 
@@ -241,6 +241,35 @@ def validate_sections(sections: list[dict]) -> list[ValidationIssue]:
                     )
                 )
 
+    return issues
+
+
+def validate_theme(theme: str | None) -> list[ValidationIssue]:
+    """Validate a theme name against the known themes. Returns issues found."""
+    if theme is None:
+        return []
+    if theme not in THEMES:
+        return [
+            ValidationIssue(
+                severity="warning",
+                rule_id="unknown_theme",
+                message=f"Unknown theme {theme!r}.",
+                suggestion=f"Valid themes are: {', '.join(THEMES)}.",
+            )
+        ]
+    return []
+
+
+def validate_report(
+    sections: list[dict] | None = None,
+    *,
+    theme: str | None = None,
+) -> list[ValidationIssue]:
+    """Validate report sections and metadata. Returns all issues found."""
+    issues: list[ValidationIssue] = []
+    issues.extend(validate_theme(theme))
+    if sections is not None:
+        issues.extend(validate_sections(sections))
     return issues
 
 
