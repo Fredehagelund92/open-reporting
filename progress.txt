@@ -2,119 +2,99 @@
 - uv is available at /mnt/c/Users/fhagelund/.local/bin/uv.exe
 - Run tests with: /mnt/c/Users/fhagelund/.local/bin/uv.exe run pytest (from backend/ dir)
 - Run typecheck with: /mnt/c/Users/fhagelund/.local/bin/uv.exe run mypy <file>
-- Pre-existing test failures: test_validator.py (script tag test), test_main.py (3 integration tests) - not related to theming work
 - Theme dataclass uses frozen=True; use dataclasses.replace() to create modified copies
-- THEMES dict uses "default" key pointing to CORPORATE_THEME (the new corporate theme)
-- DEFAULT_THEME is an alias for CORPORATE_THEME
+- THEMES dict has 7 entries: default, dark, executive, financial, consulting, technical, editorial
+- Slide rendering is in _render_slide() in renderers.py
+- Slideshow container logic is in render_structured_to_html() — slideshows skip _wrap_container()
+- Frontend slideshow viewer is SlideshowViewer.tsx — reads data-background-color attribute for dark detection
+- Use dataclasses.replace(t, text_color=...) to create slide-scoped theme overrides for child rendering
 
----
+- Pre-existing test failures: test_validator.py (script tag detection) and test_main.py::test_reports_include_user_vote_state_for_authenticated_user — not caused by slideshow-theming work
 
-## 2026-03-26 - US-002
-- What was implemented: Defined EXECUTIVE_THEME (spacious, heading_scale=1.5, 8-color navy/teal/amber palette), FINANCIAL_THEME (compact, monospace font stack, blue-gray muted palette, table_number_align=right), CONSULTING_THEME (standard, navy+teal palette). All added to THEMES dict.
-- Files changed: backend/app/core/themes.py
-- **Learnings for future iterations:**
-  - Financial theme uses 'Tabular Mono' as primary font in font_stack (not just number_font) for full monospace treatment
-  - Executive line_height set to 1.75 for generous whitespace feel
 ---
 
 ## 2026-03-26 - US-001
-- What was implemented: Expanded Theme dataclass with 7 new fields (chart_default_width, chart_viewbox_width, number_font, density, heading_scale, kpi_card_min_width, table_number_align), defined CORPORATE_THEME, updated DARK_THEME with new tokens, mapped "default" key to CORPORATE_THEME
+- Added 8 slide token fields to Theme dataclass with defaults: slide_title_bg, slide_title_text, slide_content_bg, slide_content_text, slide_closing_bg, slide_closing_text, slide_padding ('48px'), slide_max_chart_height ('55cqh')
 - Files changed: backend/app/core/themes.py
 - **Learnings for future iterations:**
-  - All new Theme fields have defaults so existing instantiations remain valid
-  - The frozen=True dataclass means new theme instances must pass all fields or use defaults
-  - Pre-existing test failures in test_validator.py and test_main.py are unrelated to theming
+  - All new fields have defaults so no existing Theme instantiations break
+  - Typecheck passes, pre-existing test failures unrelated to this work
+---
+
+## 2026-03-26 - US-002
+- Added explicit slide token values for Executive and Financial themes
+- Corporate theme already had correct values via dataclass defaults
+- DEFAULT_THEME is an alias for CORPORATE_THEME so it inherits slide tokens automatically
+- Files changed: backend/app/core/themes.py
+- **Learnings for future iterations:**
+  - Corporate/DEFAULT_THEME slide tokens come from dataclass defaults — no explicit override needed
+  - Executive differs from Corporate only in slide_title_bg (#0f172a) and slide_closing_bg (#f1f5f9)
+  - Financial uses unique slide_title_bg (#1e3a5f) and slide_title_text (#e2e8f0)
 ---
 
 ## 2026-03-26 - US-003
-- What was implemented: Added TECHNICAL_THEME (compact, JetBrains Mono, neutral gray palette, table_number_align=right) and EDITORIAL_THEME (spacious, Georgia serif, warm parchment palette, line_height=1.8). Both added to THEMES dict. Updated LAYOUT_WIDTHS narrow from "720px" to "680px". get_theme() fallback to Corporate (default) already works via THEMES.get(name, DEFAULT_THEME).
+- Added slide token values for Consulting, Technical, Editorial, and Dark themes
 - Files changed: backend/app/core/themes.py
 - **Learnings for future iterations:**
-  - THEMES dict now has 7 entries: default, dark, executive, financial, consulting, technical, editorial
-  - Pre-existing test failures unchanged (test_validator.py script tag test, 3 integration tests in test_main.py)
+  - Consulting uses green-tinted closing bg (#f0fdf4), Technical uses neutral grays, Editorial uses warm tones (#fef3c7, #fffbf5)
+  - Dark theme slide tokens use the darkest values (#020617 title bg, #0f172a content bg, #1e293b closing bg)
+  - All 7 themes in THEMES dict now have explicit slide token values (Corporate uses defaults)
 ---
 
 ## 2026-03-26 - US-004
-- What was implemented: Updated SVG chart generators (bar, line/area, horizontal-bar, stacked-bar) to use `theme.chart_viewbox_width` in viewBox instead of `_CHART_WIDTH` constant. Chart section wrapper already had `width:100%; display:block;` and `data-or-chart` attribute. Markdown chart blocks already routed through `_render_chart_section`. Sparkline and pie/donut kept their fixed viewBox dimensions.
-- Files changed: backend/app/core/svg_charts.py
+- Added _classify_slide_role(section: dict) -> str function to renderers.py
+- Classifies slides as 'title' (summary-header), 'closing' (action-items/key-takeaway), or 'content' (default)
+- Title takes priority over closing when both are present
+- Files changed: backend/app/core/renderers.py
 - **Learnings for future iterations:**
-  - `_render_chart_section` in renderers.py is the single shared renderer for all chart types - it already had the right div wrapper
-  - Pie/donut use 480x360 viewBox for circular aspect ratio, sparkline uses 150x40 for inline display - both intentionally not changed
+  - Function placed just before _render_slide() for locality
+  - Pre-existing mypy errors in renderers.py (not caused by this work) — 12 errors across 2 files
+  - The function iterates child sections looking for type matches; early return on 'summary-header' ensures title priority
 ---
 
 ## 2026-03-26 - US-005
-- What was implemented: `_wrap_container` now generates unique container ID (or-c-{uuid hex[:8]}), adds scoped `<style>` block with media queries for container padding (48px desktop / 32px tablet 600-960px / 16px mobile <600px), columns stacking via `data-or-columns`, KPI grid 2-per-row tablet / 1-per-row mobile via `data-or-kpi`. Added overflow-x:auto wrapper around tables in `_render_table`. Added `data-or-columns` and `data-or-kpi` attributes to respective divs for CSS targeting.
+- Updated _render_slide to use theme slide tokens instead of section's background_color field
+- Slide role is classified via _classify_slide_role, then bg/text colors come from theme tokens
+- Child sections rendered with a slide-scoped theme (text_color overridden via dataclasses.replace)
+- Slide section element gets inline style with background-color and padding from theme
+- data-background-color attribute now set to theme-determined background
 - Files changed: backend/app/core/renderers.py
 - **Learnings for future iterations:**
-  - Inline styles can't be overridden by CSS classes without `!important`
-  - Used data attributes (data-or-columns, data-or-kpi) as CSS hooks since no classes are available
-  - uuid imported at top level, not inside function
+  - import dataclasses was added at top of renderers.py for dataclasses.replace()
+  - The slide_theme pattern (dataclasses.replace with text_color) ensures child sections inherit correct text color per slide role
+  - background_color from section data is now fully ignored — backwards compatible since themes provide all colors
 ---
 
 ## 2026-03-26 - US-006
-- What was implemented: KPI grid uses theme.number_font for value and theme.kpi_card_min_width for flex-basis/min-width. Card padding adapts by density. Table renderer detects numeric cells (int/float or regex `^[-+]?[\d,]+\.?\d*%?$`) and applies theme.table_number_align. _style_map headings (h1-h4) computed from theme.heading_scale using modular scale (h4=16, h3=16*s, h2=16*s², h1=16*s³). Density affects heading/paragraph margins. slideshow content_type bumps heading_scale +0.1 via dataclasses.replace before rendering.
+- Removed hardcoded `background_color: "#ffffff"` from auto-wrap logic in render_structured_to_html
+- Auto-wrapped slides now rely on theme slide_content_bg via _render_slide's role classification (defaults to 'content' role)
 - Files changed: backend/app/core/renderers.py
 - **Learnings for future iterations:**
-  - Dict literals with .get() inside f-strings cause SyntaxError - extract to variable first
-  - Import dataclasses inside the function to avoid circular issues (actually it's fine at top level too)
-  - `_InlineStyler._style_map` is where h1-h4 inline styles are set for Markdown rendering
+  - The auto-wrap no longer needs to set background_color since _render_slide ignores it and uses theme tokens
+  - Auto-wrapped sections get 'content' role by default (no summary-header or action-items children)
 ---
 
-## 2026-03-26 - US-007/US-008/US-009
-- What was implemented: All SKILL.md changes in one commit. US-007: Voice & Tone section (5 rules, Do/Don't tables, summary guide). US-008: Analytics Playbook (chart selection table, anti-rules, KPI framing, data integrity, KPI contextualization). US-009: Report Design section (layout selection, chart sizing rule, section ordering, density/theme guide), updated Themes table with all 7 themes, Writing Quality Checklist, expanded anti-patterns table. Bumped version 6.0.0 → 6.1.0. Final line count: 653.
+## 2026-03-26 - US-007
+- Updated SKILL.md slideshow documentation to reflect theme-controlled slide backgrounds
+- Removed background_color from slide section type table and all slide examples
+- Added "Theme-Controlled Slide Backgrounds" subsection explaining title/content/closing role detection
+- Added "Slide Palette" column to themes table with per-theme palette descriptions
+- Updated HTML mode slideshow note to remove data-background-color agent guidance
+- Updated slide density rules to reference summary-header instead of background_color
+- Bumped version from 6.1.0 to 6.2.0
 - Files changed: skills/open-reporting-skill/SKILL.md
 - **Learnings for future iterations:**
-  - SKILL.md is at skills/open-reporting-skill/SKILL.md (not in backend/)
-  - US-009 requires 650-700 line total - verify with `wc -l` before committing
+  - SKILL.md is at skills/open-reporting-skill/SKILL.md
+  - Documentation-only stories don't need typecheck/lint/test runs
 ---
 
-## 2026-03-26 - US-010
-- What was implemented: Added AI_FILLER_PHRASES constant (43 phrases) at module level. ai_filler_summary rule (error severity, case-insensitive match in summary). ai_filler_body rule (warning when >=3 distinct phrases in body). summary_is_meta rule (warning when summary starts with meta-description phrases). No false positive on "it is worth $2.4M" because list has "it is worth noting" not "it is worth".
-- Files changed: backend/app/core/authoring_coach.py
----
-
-## 2026-03-26 - US-011
-- What was implemented: superlative_in_structured rule (warning for incredible/amazing/outstanding/impressive/groundbreaking in summary or chart headings, skips quoted text). first_person_voice rule (warning when I/we/our appears >2 times in body). paragraph_too_verbose rule (warning when any para >600 chars and number density <1 per 200 chars). paragraph_density threshold updated from 1200 to 800 chars.
-- Files changed: backend/app/core/authoring_coach.py
+## 2026-03-26 - US-008
+- Removed all 11 background_color fields from slide sections in seed.py
+- Both slideshows (Q1 Competitive Landscape, Board Strategy Update) updated
+- Seed runs without errors, produces valid output
+- Files changed: backend/app/seed.py
 - **Learnings for future iterations:**
-  - _InlineStyler._style_map is rebuilt each call - density variables must be computed before the return dict
-  - paragraph_too_verbose uses overall text number density as proxy since HTMLParser only gives paragraph lengths, not text
----
-
-## 2026-03-26 - US-012
-- What was implemented: Added kpi_sections parameter to evaluate_authoring_quality(). kpi_missing_delta rule (warning when KPI has value but no delta or trend). kpi_delta_is_label rule (warning when delta has no number/%/comparison). chart_type_mismatch_time rule (warning when bar-chart has >=60% time-series labels). chart_type_mismatch_ranking rule (info when >5 categories with single dataset uses bar-chart). pie_too_many_segments rule (warning when pie/donut has >6 segments). KPI superlative check also added.
-- Files changed: backend/app/core/authoring_coach.py
----
-
-## 2026-03-26 - US-013
-- What was implemented: chart_fixed_width (warning when SVG container div lacks width:100%). chart_fixed_dimensions escalated from info to warning. chart_hardcoded_colors threshold reduced from >5 to >4. Added all_sections parameter to evaluate_authoring_quality(). no_summary_header (info). action_items_no_owner (warning). action_items_no_due (warning). table_single_column (warning). consecutive_text_sections (info when 3+ text sections in a row). heading_depth_skip (warning when heading levels skip). Used recursive _flatten() helper for nested sections.
-- Files changed: backend/app/core/authoring_coach.py
----
-
-## 2026-03-26 - US-014
-- What was implemented: slide_too_dense (warning >2 sections per slide). slide_text_heavy (warning text >300 chars). slide_no_takeaway (info chart slide with no callout). slide_bullet_count (warning >4 bullets). Scoring weights updated: error=-20, warning=-6, info=-2. Total rules: 41.
-- Files changed: backend/app/core/authoring_coach.py
----
-
-## 2026-03-26 - US-015/US-016
-- What was implemented: New llm_review.py module. ReviewResult dataclass with status/scores/issues/fix_instructions/average_score. DimensionScore dataclass for per-dimension data. review_report() function with LLM call, timeout, error handling (always returns skipped on failure). In-process cache with 5-min TTL keyed by content hash. get_llm_review_mode() helper. LLM_REVIEW_ENABLED/MODE/MIN_SCORE/MIN_AVG/MODEL/TIMEOUT_MS env vars. Rubric prompt covers writing/analytics/design dimensions scored 1-5. Blocking logic: min 3 per dimension, min 3.5 average. Added anthropic>=0.79.0 to pyproject.toml.
-- Files changed: backend/app/core/llm_review.py, backend/pyproject.toml
-- **Learnings for future iterations:**
-  - anthropic SDK message.content[0] needs isinstance check for TextBlock before accessing .text
-  - The uv.exe sync will install the anthropic package after adding to pyproject.toml
----
-
-## 2026-03-26 - US-017
-- What was implemented: Added LlmReviewResponse, QualityResponse models. Import review_report, get_llm_review_mode. LLM review called in create_report after coach check. Skipped when coach blocked. In enforce mode, blocks with 422 + llm_review field. In shadow mode, runs but doesn't block. quality field added to ReportSummaryResponse with coach_score, coach_status, llm_review.
-- Files changed: backend/app/routes/reports.py
----
-
-## 2026-03-26 - US-018/US-019
-- US-018: ReviewBlockedError in exceptions.py with scores/review_issues/fix_instructions. LlmReviewResult and QualityResult models in SDK models.py. client.py raises ReviewBlockedError on llm_review_blocked 422 responses. ReportResponse gains quality field.
-- US-019: validate_brand_overrides(theme) in themes.py. _hex_to_rgb, _relative_luminance, _contrast_ratio for WCAG. _rgb_to_lab, _delta_e (CIE76) for chart color distinguishability. apply_brand_overrides() calls validate internally. Advisory only.
-- Files changed: sdk/openreporting/exceptions.py, sdk/openreporting/models.py, sdk/openreporting/client.py, backend/app/core/themes.py
-
-## Codebase Patterns (updated)
-- validate_brand_overrides() returns list of str warnings, never blocking
-- DeltaE calculation uses CIE76 (not CIEDE2000) - sufficient for basic color distinguishability
+  - background_color was used in 11 places across 2 slideshow configs in seed.py
+  - After removal, slides rely entirely on theme tokens via _render_slide's role classification
+  - Pre-existing test/mypy failures remain unchanged (not caused by this work)
 ---
