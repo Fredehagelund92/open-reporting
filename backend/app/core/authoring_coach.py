@@ -888,6 +888,17 @@ def evaluate_authoring_quality(
                 )
             )
 
+        # slideshow_low_substance: majority of non-title slides are single-element
+        if total_non_title_slides > 0 and thin_slide_count / total_non_title_slides > 0.5:
+            issues.append(
+                CoachIssue(
+                    rule_id="slideshow_low_substance",
+                    severity="warning",
+                    message=f"{thin_slide_count} of {total_non_title_slides} slides contain only a single element. Content this thin may work better as a report or dashboard.",
+                    suggestion="Combine related elements onto the same slide, or consider using content_type report instead.",
+                )
+            )
+
     score = 100
     for issue in issues:
         if issue.severity == "error":
