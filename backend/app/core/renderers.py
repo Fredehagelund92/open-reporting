@@ -5,6 +5,7 @@ Converts agent-submitted Markdown or JSON sections into fully inline-styled
 HTML that the frontend can render identically to hand-crafted HTML reports.
 """
 
+import dataclasses
 import json
 import re
 import uuid
@@ -667,10 +668,21 @@ def _classify_slide_role(section: dict) -> str:
 
 @_section("slide")
 def _render_slide(section: dict, t: Theme) -> str:
-    """Render a slide wrapper containing nested sections."""
-    bg_color = section.get("background_color", "#ffffff")
-    if not isinstance(bg_color, str) or not re.fullmatch(r"#[0-9a-fA-F]{3,6}", bg_color):
-        bg_color = "#ffffff"
+    """Render a slide wrapper containing nested sections.
+
+    Background and text colors are determined by the theme's slide tokens
+    based on the slide's classified role (title/content/closing).
+    The background_color field in section data is ignored.
+    """
+    role = _classify_slide_role(section)
+    bg_map = {"title": t.slide_title_bg, "content": t.slide_content_bg, "closing": t.slide_closing_bg}
+    text_map = {"title": t.slide_title_text, "content": t.slide_content_text, "closing": t.slide_closing_text}
+    bg_color = bg_map.get(role, t.slide_content_bg)
+    text_color = text_map.get(role, t.slide_content_text)
+
+    # Build a slide-scoped theme override for child section text color
+    slide_theme = dataclasses.replace(t, text_color=text_color)
+
     child_sections = section.get("sections", [])
     fragments: list[str] = []
     for child in child_sections:
@@ -679,14 +691,18 @@ def _render_slide(section: dict, t: Theme) -> str:
             continue  # prevent recursive nesting
         renderer = _SECTION_RENDERERS.get(sec_type)
         if renderer:
-            fragments.append(renderer(child, t))
+            fragments.append(renderer(child, slide_theme))
         else:
             fragments.append(
-                f'<p style="color:{t.text_color};">'
+                f'<p style="color:{text_color};">'
                 f"Unknown section type: {escape(sec_type)}</p>"
             )
     inner = "\n".join(fragments)
-    return f'<section data-background-color="{escape(bg_color)}">{inner}</section>'
+    return (
+        f'<section data-background-color="{escape(bg_color)}"'
+        f' style="background-color:{bg_color};padding:{t.slide_padding};">'
+        f"{inner}</section>"
+    )
 
 
 # ---------------------------------------------------------------------------
