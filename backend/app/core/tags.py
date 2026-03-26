@@ -87,7 +87,7 @@ def attach_tags_to_report(session: Session, report: Report, tags: list[Tag]) -> 
 
 
 def recalculate_tag_usage_counts(session: Session) -> None:
-    from sqlalchemy import func, update
+    from sqlalchemy import func
 
     counts = dict(
         session.exec(

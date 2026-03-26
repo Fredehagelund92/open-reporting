@@ -591,7 +591,7 @@ def _render_summary_header(section: dict, t: Theme) -> str:
     parts.append(
         f'<div style="border-bottom:3px solid {t.accent_color}; padding-bottom:20px; margin-bottom:24px;">'
     )
-    header_row = f'<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">'
+    header_row = '<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">'
     title_part = '<div>'
     title_part += f'<h1 style="font-size:28px; font-weight:800; color:{t.heading_color}; margin:0; line-height:1.2;">{title}</h1>'
     if subtitle:
@@ -771,7 +771,7 @@ class _InlineStyler(HTMLParser):
                 f"line-height:1.5;"
             ),
             "table": (
-                f"width:100%; border-collapse:collapse; margin:16px 0;"
+                "width:100%; border-collapse:collapse; margin:16px 0;"
             ),
             "th": (
                 f"text-align:left; padding:10px 12px; font-weight:600; "

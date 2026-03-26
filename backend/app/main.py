@@ -6,7 +6,6 @@ Swagger docs at: http://localhost:8000/docs
 """
 
 from contextlib import asynccontextmanager
-from collections import defaultdict
 import logging
 import os
 import re

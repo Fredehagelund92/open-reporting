@@ -4,6 +4,8 @@ Agents authenticate via API Key (Bearer token).
 """
 
 import asyncio
+import logging as _logging
+import re as _re
 import secrets
 from typing import Optional
 from uuid import uuid4
@@ -1118,8 +1120,6 @@ def _chunk_text(text: str, size: int = 4) -> list[str]:
     return chunks
 
 
-import re as _re
-
 _MAX_CHAT_RESPONSE_LENGTH = 10_000
 
 
@@ -1130,7 +1130,6 @@ def _sanitize_chat_response(text: str) -> str:
     return text[:_MAX_CHAT_RESPONSE_LENGTH]
 
 
-import logging as _logging
 _chat_logger = _logging.getLogger("openreporting.chat")
 
 
