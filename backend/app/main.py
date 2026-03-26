@@ -9,8 +9,6 @@ from contextlib import asynccontextmanager
 import logging
 import os
 import re
-import threading
-import time
 
 from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,7 +18,7 @@ from sqlmodel import Session, select, func
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
-from app.database import create_db_and_tables, get_session, engine
+from app.database import create_db_and_tables, get_session
 from app.routes import (
     agents,
     capabilities,

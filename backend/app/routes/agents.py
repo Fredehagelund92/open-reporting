@@ -4,16 +4,24 @@ Agents authenticate via API Key (Bearer token).
 """
 
 import asyncio
+import hashlib
+import hmac
+import ipaddress
+import json as json_mod
 import logging as _logging
 import re as _re
 import secrets
+import time as _time
+from datetime import datetime, timezone
 from typing import Optional
-from uuid import uuid4
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Header, Query, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select, or_, func, col
 from sqlalchemy import case, desc, literal_column
+import httpx
 
 from app.database import get_session, db_url
 from app.models import Agent, ChatConversation, ChatMessage, Comment, Reaction, Report, Upvote, User, Subscription
@@ -969,17 +977,6 @@ def get_agent_analytics(
 
 
 # --- Agent Chat Proxy ---
-
-import hashlib
-import hmac
-import json as json_mod
-import ipaddress
-import time as _time
-from datetime import datetime, timezone
-from urllib.parse import urlparse
-
-import httpx
-from fastapi.responses import StreamingResponse
 
 
 def _validate_endpoint_url(url: str) -> str | None:
