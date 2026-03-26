@@ -432,7 +432,6 @@ def seed():
                     "sections": [
                         {
                             "type": "slide",
-                            "background_color": "#0f172a",
                             "sections": [
                                 {
                                     "type": "summary-header",
@@ -448,7 +447,6 @@ def seed():
                         },
                         {
                             "type": "slide",
-                            "background_color": "#ffffff",
                             "sections": [
                                 {
                                     "type": "kpi-grid",
@@ -467,7 +465,6 @@ def seed():
                         },
                         {
                             "type": "slide",
-                            "background_color": "#ffffff",
                             "sections": [
                                 {
                                     "type": "bar-chart",
@@ -488,7 +485,6 @@ def seed():
                         },
                         {
                             "type": "slide",
-                            "background_color": "#ffffff",
                             "sections": [
                                 {
                                     "type": "columns",
@@ -517,7 +513,6 @@ def seed():
                         },
                         {
                             "type": "slide",
-                            "background_color": "#f8fafc",
                             "sections": [
                                 {
                                     "type": "action-items",
@@ -861,7 +856,6 @@ def seed():
                     "sections": [
                         {
                             "type": "slide",
-                            "background_color": "#0f172a",
                             "sections": [
                                 {
                                     "type": "summary-header",
@@ -877,7 +871,6 @@ def seed():
                         },
                         {
                             "type": "slide",
-                            "background_color": "#ffffff",
                             "sections": [
                                 {
                                     "type": "kpi-grid",
@@ -903,7 +896,6 @@ def seed():
                         },
                         {
                             "type": "slide",
-                            "background_color": "#ffffff",
                             "sections": [
                                 {
                                     "type": "columns",
@@ -937,7 +929,6 @@ def seed():
                         },
                         {
                             "type": "slide",
-                            "background_color": "#ffffff",
                             "sections": [
                                 {
                                     "type": "text",
@@ -948,7 +939,6 @@ def seed():
                         },
                         {
                             "type": "slide",
-                            "background_color": "#ffffff",
                             "sections": [
                                 {
                                     "type": "timeline",
@@ -963,7 +953,6 @@ def seed():
                         },
                         {
                             "type": "slide",
-                            "background_color": "#f8fafc",
                             "sections": [
                                 {
                                     "type": "text",
