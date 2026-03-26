@@ -122,11 +122,14 @@ def render_structured_to_html(
     content_type: str = "report",
 ) -> str:
     """Render a list of typed section dicts to themed HTML."""
+    import dataclasses
     t = get_theme(theme)
     if brand_overrides:
         t = apply_brand_overrides(t, brand_overrides)
 
     is_slideshow = content_type == "slideshow"
+    if is_slideshow:
+        t = dataclasses.replace(t, heading_scale=t.heading_scale + 0.1)
 
     # Auto-wrap: if slideshow but no explicit "slide" wrappers, wrap each section
     if is_slideshow and not any(s.get("type") == "slide" for s in sections):
@@ -197,13 +200,15 @@ def _render_kpi_grid(section: dict, t: Theme) -> str:
                 f'letter-spacing:0.01em;">{arrow}{escape(str(delta))}</div>'
             )
 
+        card_padding = {"compact": "16px", "spacious": "32px"}.get(t.density, "24px")
         cards.append(
-            f'<div style="flex:1 1 200px; background:{t.card_bg}; border:1px solid {t.border_color}; '
-            f'border-radius:8px; padding:24px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+            f'<div style="flex:1 1 {t.kpi_card_min_width}; min-width:{t.kpi_card_min_width}; '
+            f'background:{t.card_bg}; border:1px solid {t.border_color}; '
+            f'border-radius:8px; padding:{card_padding}; box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
             f'<div style="margin:0 0 10px; font-size:12px; text-transform:uppercase; '
             f'letter-spacing:0.08em; color:{t.secondary_text}; font-weight:500;">{label}</div>'
             f'<div style="font-size:32px; font-weight:800; color:{t.heading_color}; '
-            f'line-height:1.1;">{value}</div>'
+            f'line-height:1.1; font-family:{t.number_font};">{value}</div>'
             f'{delta_html}'
             f'</div>'
         )
@@ -227,11 +232,19 @@ def _render_table(section: dict, t: Theme) -> str:
         for h in headers
     )
 
+    _numeric_re = re.compile(r'^[-+]?[\d,]+\.?\d*%?$')
+
+    def _cell_align(cell: object) -> str:
+        text = str(cell).strip()
+        if isinstance(cell, (int, float)) or _numeric_re.match(text):
+            return t.table_number_align
+        return "left"
+
     body_rows: list[str] = []
     for row in rows:
         cells = "".join(
             f'<td style="padding:10px 12px; border-bottom:1px solid {t.table_border}; '
-            f'color:{t.text_color};">{escape(str(cell))}</td>'
+            f'color:{t.text_color}; text-align:{_cell_align(cell)};">{escape(str(cell))}</td>'
             for cell in row
         )
         body_rows.append(f"<tr>{cells}</tr>")
@@ -673,25 +686,39 @@ class _InlineStyler(HTMLParser):
 
     def _style_map(self) -> dict[str, str]:
         t = self.t
+        s = t.heading_scale
+        h4_size = 16
+        h3_size = round(h4_size * s)
+        h2_size = round(h4_size * s * s)
+        h1_size = round(h4_size * s * s * s)
+        density_h1_margin = {"compact": "0 0 10px", "spacious": "0 0 24px"}.get(t.density, "0 0 16px")
+        density_h2_margin = {"compact": "18px 0 8px", "spacious": "36px 0 16px"}.get(t.density, "28px 0 12px")
+        density_h3_margin = {"compact": "14px 0 6px", "spacious": "30px 0 12px"}.get(t.density, "24px 0 8px")
+        density_h4_margin = {"compact": "10px 0 4px", "spacious": "24px 0 10px"}.get(t.density, "20px 0 8px")
+        density_p_margin = {"compact": "0 0 8px", "spacious": "0 0 20px"}.get(t.density, "0 0 12px")
         return {
             "h1": (
-                f"font-size:34px; font-weight:800; color:{t.heading_color}; "
-                f"margin:0 0 16px; letter-spacing:-0.025em; line-height:1.2;"
+                f"font-size:{h1_size}px; font-weight:800; color:{t.heading_color}; "
+                f"margin:{density_h1_margin}; letter-spacing:-0.025em; line-height:1.2;"
             ),
             "h2": (
-                f"font-size:22px; font-weight:700; color:{t.heading_color}; "
+                f"font-size:{h2_size}px; font-weight:700; color:{t.heading_color}; "
                 f"border-bottom:2px solid {t.border_color}; padding-bottom:8px; "
-                f"margin:28px 0 12px;"
+                f"margin:{density_h2_margin};"
             ),
             "h3": (
-                f"font-size:20px; font-weight:600; color:{t.heading_color}; "
-                f"margin:24px 0 8px;"
+                f"font-size:{h3_size}px; font-weight:600; color:{t.heading_color}; "
+                f"margin:{density_h3_margin};"
             ),
             "h4": (
-                f"font-size:16px; font-weight:600; color:{t.heading_color}; "
-                f"margin:20px 0 8px;"
+                f"font-size:{h4_size}px; font-weight:600; color:{t.heading_color}; "
+                f"margin:{density_h4_margin};"
             ),
-            "p": f"font-size:16px; color:{t.text_color}; margin:0 0 12px; line-height:{t.line_height};",
+            "p": (
+                f"font-size:16px; color:{t.text_color}; "
+                f"margin:{density_p_margin}; "
+                f"line-height:{t.line_height};"
+            ),
             "ul": f"color:{t.text_color}; margin:0 0 16px; padding-left:24px; list-style-type:disc;",
             "ol": f"color:{t.text_color}; margin:0 0 16px; padding-left:24px; list-style-type:decimal;",
             "li": f"margin-bottom:6px; line-height:{t.line_height}; display:list-item;",
