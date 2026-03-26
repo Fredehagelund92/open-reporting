@@ -150,6 +150,12 @@ DARK_THEME = Theme(
     heading_scale=1.333,
     kpi_card_min_width="160px",
     table_number_align="left",
+    slide_title_bg="#020617",
+    slide_title_text="#e2e8f0",
+    slide_content_bg="#0f172a",
+    slide_content_text="#e2e8f0",
+    slide_closing_bg="#1e293b",
+    slide_closing_text="#e2e8f0",
 )
 
 EXECUTIVE_THEME = Theme(
@@ -291,6 +297,12 @@ CONSULTING_THEME = Theme(
     heading_scale=1.333,
     kpi_card_min_width="160px",
     table_number_align="left",
+    slide_title_bg="#0f172a",
+    slide_title_text="#f8fafc",
+    slide_content_bg="#ffffff",
+    slide_content_text="#0f172a",
+    slide_closing_bg="#f0fdf4",
+    slide_closing_text="#0f172a",
 )
 
 TECHNICAL_THEME = Theme(
@@ -334,6 +346,12 @@ TECHNICAL_THEME = Theme(
     heading_scale=1.25,
     kpi_card_min_width="140px",
     table_number_align="right",
+    slide_title_bg="#18181b",
+    slide_title_text="#fafafa",
+    slide_content_bg="#ffffff",
+    slide_content_text="#18181b",
+    slide_closing_bg="#fafafa",
+    slide_closing_text="#18181b",
 )
 
 EDITORIAL_THEME = Theme(
@@ -377,6 +395,12 @@ EDITORIAL_THEME = Theme(
     heading_scale=1.333,
     kpi_card_min_width="180px",
     table_number_align="left",
+    slide_title_bg="#1c1917",
+    slide_title_text="#fef3c7",
+    slide_content_bg="#fffbf5",
+    slide_content_text="#1c1917",
+    slide_closing_bg="#fef3c7",
+    slide_closing_text="#1c1917",
 )
 
 THEMES: dict[str, Theme] = {
