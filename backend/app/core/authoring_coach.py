@@ -298,7 +298,73 @@ def evaluate_authoring_quality(
             )
         )
 
-    if inspector.paragraph_lengths and max(inspector.paragraph_lengths) > 1200:
+    # Writing style rules
+    _SUPERLATIVES = {"incredible", "amazing", "outstanding", "impressive", "groundbreaking"}
+    superlative_fields: list[str] = []
+    summary_words = set(re.sub(r'["\'].*?["\']', '', summary_trimmed.lower()).split())
+    if summary_words & _SUPERLATIVES:
+        superlative_fields.append("summary")
+    if chart_sections:
+        for cs in chart_sections:
+            heading = (cs.get("heading") or "").lower()
+            heading_clean = re.sub(r'["\'].*?["\']', '', heading)
+            if set(heading_clean.split()) & _SUPERLATIVES:
+                superlative_fields.append("chart heading")
+                break
+    # KPI labels checked below in analytics section; collect from chart_sections
+    if superlative_fields:
+        issues.append(
+            CoachIssue(
+                rule_id="superlative_in_structured",
+                severity="warning",
+                message=f"Superlative language detected in {', '.join(set(superlative_fields))}.",
+                suggestion="Replace superlatives with specific numbers or factual comparisons.",
+            )
+        )
+
+    # First-person voice
+    first_person_pattern = re.compile(r'\b(I |we |our )', re.IGNORECASE)
+    fp_matches = first_person_pattern.findall(plain_text)
+    if len(fp_matches) > 2:
+        issues.append(
+            CoachIssue(
+                rule_id="first_person_voice",
+                severity="warning",
+                message=f"Body text uses first-person language ({len(fp_matches)} instances of 'I', 'we', or 'our').",
+                suggestion="Rewrite in third person: use 'the team', 'revenue', 'the report' instead of 'we' or 'our'.",
+            )
+        )
+
+    # Paragraph too verbose (>600 chars, <1 number per 200 chars)
+    _number_re = re.compile(r'\d')
+    for para_len in inspector.paragraph_lengths:
+        if para_len > 600:
+            # Find the actual paragraph to count numbers
+            break  # length check below uses the list
+
+    verbose_paras = []
+    for para_len in inspector.paragraph_lengths:
+        if para_len > 600:
+            # Estimate number density from overall plain text ratio
+            # We don't have per-paragraph text here, so we check the ratio globally
+            # for paras that are long enough to trigger the rule
+            verbose_paras.append(para_len)
+
+    if verbose_paras:
+        # Check number density in the whole plain text as a proxy
+        num_count = len(_number_re.findall(plain_text))
+        density = num_count / max(len(plain_text), 1) * 200  # numbers per 200 chars
+        if density < 1:
+            issues.append(
+                CoachIssue(
+                    rule_id="paragraph_too_verbose",
+                    severity="warning",
+                    message=f"Found {len(verbose_paras)} paragraph(s) over 600 characters with low numeric density.",
+                    suggestion="Add specific numbers, percentages, or dates. Every 200 characters should contain at least one number.",
+                )
+            )
+
+    if inspector.paragraph_lengths and max(inspector.paragraph_lengths) > 800:
         issues.append(
             CoachIssue(
                 rule_id="paragraph_density",
