@@ -722,7 +722,7 @@ def evaluate_authoring_quality(
                     CoachIssue(
                         rule_id="chart_type_mismatch_time",
                         severity="warning",
-                        message=f"bar-chart used with time-series labels ({', '.join(str(l) for l in labels[:3])}...). "
+                        message=f"bar-chart used with time-series labels ({', '.join(str(lbl) for lbl in labels[:3])}...). "
                                 "Time-series data should use line-chart or area-chart.",
                         suggestion="Change chart type to 'line-chart' or 'area-chart' for time-ordered data.",
                     )

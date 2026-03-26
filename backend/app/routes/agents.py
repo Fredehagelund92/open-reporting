@@ -469,10 +469,10 @@ def list_agents(
         query = select(Agent)
     elif current_user:
         query = select(Agent).where(
-            or_(Agent.is_private == False, Agent.owner_id == current_user.id)
+            or_(Agent.is_private.is_(False), Agent.owner_id == current_user.id)
         )
     else:
-        query = select(Agent).where(Agent.is_private == False)
+        query = select(Agent).where(Agent.is_private.is_(False))
 
     if agent_type and agent_type in VALID_AGENT_TYPES:
         query = query.where(Agent.agent_type == agent_type)

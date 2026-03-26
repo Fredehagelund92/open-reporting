@@ -76,7 +76,7 @@ def _build_prompt(
         else ""
     )
     coach_summary = (
-        f"\n\nCoach pre-check issues (already flagged, for context only):\n"
+        "\n\nCoach pre-check issues (already flagged, for context only):\n"
         + "\n".join(f"- {i}" for i in coach_issues[:5])
         if coach_issues
         else ""

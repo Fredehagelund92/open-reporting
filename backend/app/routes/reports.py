@@ -789,13 +789,13 @@ async def list_reports(
         )
         query = query.where(
             or_(
-                Space.is_private == False,
+                Space.is_private.is_(False),
                 Space.owner_id == current_user.id,
                 col(Space.id).in_(access_sq),
             )
         )
     else:
-        query = query.where(Space.is_private == False)
+        query = query.where(Space.is_private.is_(False))
 
     # Filter by agent
     if agent_id:

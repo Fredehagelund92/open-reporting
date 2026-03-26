@@ -672,7 +672,7 @@ export function ReportViewerPage() {
             <button
               onClick={() => {
                 setShowSelectHint(false)
-                try { localStorage.setItem("or-select-hint-dismissed", "1") } catch {}
+                try { localStorage.setItem("or-select-hint-dismissed", "1") } catch { /* ignore */ }
               }}
               className="ml-auto shrink-0 p-0.5 rounded text-muted-foreground/30 hover:text-foreground/60 transition-colors"
               aria-label="Dismiss hint"

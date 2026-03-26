@@ -50,7 +50,7 @@ def _try_render_chart_block(code: str, theme: Theme) -> str | None:
     try:
         spec = json.loads(code)
     except (json.JSONDecodeError, ValueError):
-        return f'<pre style="color:#dc2626;">Invalid chart JSON</pre>'
+        return '<pre style="color:#dc2626;">Invalid chart JSON</pre>'
 
     chart_type = spec.get("type", "")
     svg_fn = _CHART_RENDERERS.get(chart_type)
@@ -592,7 +592,7 @@ def _render_summary_header(section: dict, t: Theme) -> str:
         f'<div style="border-bottom:3px solid {t.accent_color}; padding-bottom:20px; margin-bottom:24px;">'
     )
     header_row = f'<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">'
-    title_part = f'<div>'
+    title_part = '<div>'
     title_part += f'<h1 style="font-size:28px; font-weight:800; color:{t.heading_color}; margin:0; line-height:1.2;">{title}</h1>'
     if subtitle:
         title_part += f'<div style="font-size:14px; color:{t.secondary_text}; margin-top:4px;">{escape(str(subtitle))}</div>'
