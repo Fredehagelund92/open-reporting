@@ -1,0 +1,100 @@
+## Codebase Patterns
+- uv is available at /mnt/c/Users/fhagelund/.local/bin/uv.exe
+- Run tests with: /mnt/c/Users/fhagelund/.local/bin/uv.exe run pytest (from backend/ dir)
+- Run typecheck with: /mnt/c/Users/fhagelund/.local/bin/uv.exe run mypy <file>
+- Theme dataclass uses frozen=True; use dataclasses.replace() to create modified copies
+- THEMES dict has 7 entries: default, dark, executive, financial, consulting, technical, editorial
+- Slide rendering is in _render_slide() in renderers.py
+- Slideshow container logic is in render_structured_to_html() — slideshows skip _wrap_container()
+- Frontend slideshow viewer is SlideshowViewer.tsx — reads data-background-color attribute for dark detection
+- Use dataclasses.replace(t, text_color=...) to create slide-scoped theme overrides for child rendering
+
+- Pre-existing test failures: test_validator.py (script tag detection) and test_main.py::test_reports_include_user_vote_state_for_authenticated_user — not caused by slideshow-theming work
+
+---
+
+## 2026-03-26 - US-001
+- Added 8 slide token fields to Theme dataclass with defaults: slide_title_bg, slide_title_text, slide_content_bg, slide_content_text, slide_closing_bg, slide_closing_text, slide_padding ('48px'), slide_max_chart_height ('55cqh')
+- Files changed: backend/app/core/themes.py
+- **Learnings for future iterations:**
+  - All new fields have defaults so no existing Theme instantiations break
+  - Typecheck passes, pre-existing test failures unrelated to this work
+---
+
+## 2026-03-26 - US-002
+- Added explicit slide token values for Executive and Financial themes
+- Corporate theme already had correct values via dataclass defaults
+- DEFAULT_THEME is an alias for CORPORATE_THEME so it inherits slide tokens automatically
+- Files changed: backend/app/core/themes.py
+- **Learnings for future iterations:**
+  - Corporate/DEFAULT_THEME slide tokens come from dataclass defaults — no explicit override needed
+  - Executive differs from Corporate only in slide_title_bg (#0f172a) and slide_closing_bg (#f1f5f9)
+  - Financial uses unique slide_title_bg (#1e3a5f) and slide_title_text (#e2e8f0)
+---
+
+## 2026-03-26 - US-003
+- Added slide token values for Consulting, Technical, Editorial, and Dark themes
+- Files changed: backend/app/core/themes.py
+- **Learnings for future iterations:**
+  - Consulting uses green-tinted closing bg (#f0fdf4), Technical uses neutral grays, Editorial uses warm tones (#fef3c7, #fffbf5)
+  - Dark theme slide tokens use the darkest values (#020617 title bg, #0f172a content bg, #1e293b closing bg)
+  - All 7 themes in THEMES dict now have explicit slide token values (Corporate uses defaults)
+---
+
+## 2026-03-26 - US-004
+- Added _classify_slide_role(section: dict) -> str function to renderers.py
+- Classifies slides as 'title' (summary-header), 'closing' (action-items/key-takeaway), or 'content' (default)
+- Title takes priority over closing when both are present
+- Files changed: backend/app/core/renderers.py
+- **Learnings for future iterations:**
+  - Function placed just before _render_slide() for locality
+  - Pre-existing mypy errors in renderers.py (not caused by this work) — 12 errors across 2 files
+  - The function iterates child sections looking for type matches; early return on 'summary-header' ensures title priority
+---
+
+## 2026-03-26 - US-005
+- Updated _render_slide to use theme slide tokens instead of section's background_color field
+- Slide role is classified via _classify_slide_role, then bg/text colors come from theme tokens
+- Child sections rendered with a slide-scoped theme (text_color overridden via dataclasses.replace)
+- Slide section element gets inline style with background-color and padding from theme
+- data-background-color attribute now set to theme-determined background
+- Files changed: backend/app/core/renderers.py
+- **Learnings for future iterations:**
+  - import dataclasses was added at top of renderers.py for dataclasses.replace()
+  - The slide_theme pattern (dataclasses.replace with text_color) ensures child sections inherit correct text color per slide role
+  - background_color from section data is now fully ignored — backwards compatible since themes provide all colors
+---
+
+## 2026-03-26 - US-006
+- Removed hardcoded `background_color: "#ffffff"` from auto-wrap logic in render_structured_to_html
+- Auto-wrapped slides now rely on theme slide_content_bg via _render_slide's role classification (defaults to 'content' role)
+- Files changed: backend/app/core/renderers.py
+- **Learnings for future iterations:**
+  - The auto-wrap no longer needs to set background_color since _render_slide ignores it and uses theme tokens
+  - Auto-wrapped sections get 'content' role by default (no summary-header or action-items children)
+---
+
+## 2026-03-26 - US-007
+- Updated SKILL.md slideshow documentation to reflect theme-controlled slide backgrounds
+- Removed background_color from slide section type table and all slide examples
+- Added "Theme-Controlled Slide Backgrounds" subsection explaining title/content/closing role detection
+- Added "Slide Palette" column to themes table with per-theme palette descriptions
+- Updated HTML mode slideshow note to remove data-background-color agent guidance
+- Updated slide density rules to reference summary-header instead of background_color
+- Bumped version from 6.1.0 to 6.2.0
+- Files changed: skills/open-reporting-skill/SKILL.md
+- **Learnings for future iterations:**
+  - SKILL.md is at skills/open-reporting-skill/SKILL.md
+  - Documentation-only stories don't need typecheck/lint/test runs
+---
+
+## 2026-03-26 - US-008
+- Removed all 11 background_color fields from slide sections in seed.py
+- Both slideshows (Q1 Competitive Landscape, Board Strategy Update) updated
+- Seed runs without errors, produces valid output
+- Files changed: backend/app/seed.py
+- **Learnings for future iterations:**
+  - background_color was used in 11 places across 2 slideshow configs in seed.py
+  - After removal, slides rely entirely on theme tokens via _render_slide's role classification
+  - Pre-existing test/mypy failures remain unchanged (not caused by this work)
+---
