@@ -1,0 +1,136 @@
+{
+  "project": "Open Reporting",
+  "branchName": "ralph/slideshow-theming",
+  "description": "Theme-driven slide design system: themes fully own slide backgrounds, typography, and density. Slides are classified by section type (title/content/closing) and styled automatically. Agents pick a theme, not hex colors.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add slide tokens to Theme dataclass",
+      "description": "As a developer, I need slide-specific design tokens on the Theme dataclass so each theme can control slide backgrounds, text colors, padding, and chart sizing.",
+      "acceptanceCriteria": [
+        "Theme dataclass gains 8 new fields with defaults: slide_title_bg (str), slide_title_text (str), slide_content_bg (str), slide_content_text (str), slide_closing_bg (str), slide_closing_text (str), slide_padding (str, default '48px'), slide_max_chart_height (str, default '55cqh')",
+        "All new fields have defaults so existing Theme instantiations still work",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Set slide token values for Corporate, Executive, and Financial themes",
+      "description": "As a developer, I need the first three themes to have distinct slide palettes.",
+      "acceptanceCriteria": [
+        "Corporate theme: slide_title_bg='#1e293b', slide_title_text='#f8fafc', slide_content_bg='#ffffff', slide_content_text='#0f172a', slide_closing_bg='#f8fafc', slide_closing_text='#0f172a'",
+        "Executive theme: slide_title_bg='#0f172a', slide_title_text='#f8fafc', slide_content_bg='#ffffff', slide_content_text='#0f172a', slide_closing_bg='#f1f5f9', slide_closing_text='#0f172a'",
+        "Financial theme: slide_title_bg='#1e3a5f', slide_title_text='#e2e8f0', slide_content_bg='#ffffff', slide_content_text='#0f172a', slide_closing_bg='#f8fafc', slide_closing_text='#0f172a'",
+        "DEFAULT_THEME (alias for Corporate) also has the slide tokens",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Set slide token values for Consulting, Technical, Editorial, and Dark themes",
+      "description": "As a developer, I need the remaining four themes to have distinct slide palettes.",
+      "acceptanceCriteria": [
+        "Consulting theme: slide_title_bg='#0f172a', slide_title_text='#f8fafc', slide_content_bg='#ffffff', slide_content_text='#0f172a', slide_closing_bg='#f0fdf4', slide_closing_text='#0f172a'",
+        "Technical theme: slide_title_bg='#18181b', slide_title_text='#fafafa', slide_content_bg='#ffffff', slide_content_text='#18181b', slide_closing_bg='#fafafa', slide_closing_text='#18181b'",
+        "Editorial theme: slide_title_bg='#1c1917', slide_title_text='#fef3c7', slide_content_bg='#fffbf5', slide_content_text='#1c1917', slide_closing_bg='#fef3c7', slide_closing_text='#1c1917'",
+        "Dark theme: slide_title_bg='#020617', slide_title_text='#e2e8f0', slide_content_bg='#0f172a', slide_content_text='#e2e8f0', slide_closing_bg='#1e293b', slide_closing_text='#e2e8f0'",
+        "All 7 themes in THEMES dict have slide token values set",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Add slide role classification function to renderers",
+      "description": "As a developer, I need a function that classifies a slide's role (title/content/closing) based on the section types it contains.",
+      "acceptanceCriteria": [
+        "New function _classify_slide_role(section: dict) -> str in renderers.py",
+        "Returns 'title' if any child section has type 'summary-header'",
+        "Returns 'closing' if any child section has type 'action-items' or 'key-takeaway'",
+        "Returns 'content' for all other slides",
+        "If slide has both summary-header and action-items, 'title' wins (first match)",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Update _render_slide to use theme slide tokens",
+      "description": "As a developer, I need the slide renderer to assign backgrounds and text colors from the theme instead of reading background_color from the section data.",
+      "acceptanceCriteria": [
+        "_render_slide calls _classify_slide_role to determine slide role",
+        "Slide background set from theme: slide_title_bg, slide_content_bg, or slide_closing_bg based on role",
+        "data-background-color attribute set to the theme-determined background (for frontend dark detection)",
+        "Slide section element gets inline style with background-color and padding from theme",
+        "Child sections rendered with the appropriate text color context for the slide role",
+        "The background_color field in the section dict is ignored (backwards-compatible)",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Update slideshow auto-wrap to use theme slide tokens",
+      "description": "As a developer, I need the auto-wrap logic in render_structured_to_html to use theme slide_content_bg instead of hardcoded #ffffff.",
+      "acceptanceCriteria": [
+        "In render_structured_to_html, when auto-wrapping non-slide sections for slideshow, use theme slide_content_bg instead of '#ffffff'",
+        "Auto-wrapped slides still get correct content role classification",
+        "Existing slideshow rendering produces valid HTML",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Update SKILL.md slideshow documentation",
+      "description": "As an agent, I need updated skill.md docs that explain theme-controlled slide backgrounds and remove background_color from slide section docs.",
+      "acceptanceCriteria": [
+        "Slide section type table no longer lists background_color as a field",
+        "New subsection explains theme-slide interaction: title slides (summary-header) get dark bg, content slides get light bg, closing slides (action-items/key-takeaway) get accent bg",
+        "Slide examples updated to not include background_color",
+        "Themes table updated to note slide palette personalities",
+        "HTML mode slideshow note updated to remove data-background-color agent guidance",
+        "SKILL.md version bumped",
+        "Existing content preserved"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Remove background_color from seed slideshow data",
+      "description": "As a developer, I need the seed slideshows to rely on theme-assigned backgrounds instead of hardcoded background_color values.",
+      "acceptanceCriteria": [
+        "All background_color fields removed from slide sections in seed.py slideshow configs",
+        "Both seed slideshows (Q1 Competitive Landscape, Board Strategy Update) updated",
+        "Seed runs without errors: uv run python -m app.seed",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}

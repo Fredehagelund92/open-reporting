@@ -1,0 +1,87 @@
+{
+  "project": "Open Reporting",
+  "branchName": "ralph/sdk-alignment",
+  "description": "Align the Python SDK with backend theming and slideshow changes: update THEMES constant to 7 themes, fix slideshow guidance in prompts, deprecate background_color on slide() helper, add theme validation, update scaffold example.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Update THEMES tuple in capabilities.py to include all 7 themes",
+      "description": "As a developer, I need the SDK capabilities to advertise all 7 available themes so agents and validation logic know what's valid.",
+      "acceptanceCriteria": [
+        "THEMES tuple updated from ('default', 'dark') to ('default', 'dark', 'executive', 'financial', 'consulting', 'technical', 'editorial')",
+        "No other constants in capabilities.py are changed",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Update prompts.py slideshow guidance and theme references",
+      "description": "As an agent developer, I need the system prompt builder to give correct slideshow instructions (no background_color) and mention all 7 themes.",
+      "acceptanceCriteria": [
+        "Remove all references to manually setting background_color on slides (e.g. 'Use a dark background_color (e.g. #0f172a) for the title slide')",
+        "Replace with guidance that themes auto-assign slide backgrounds: title slides (summary-header) get dark bg, content slides get light bg, closing slides (action-items/key-takeaway) get accent bg",
+        "Add mention of all 7 themes with brief personality descriptions in the format/theme guidance section",
+        "Slideshow instructions still recommend content_type='slideshow' and slide wrappers with summary-header for title slides",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Deprecate background_color param on slide() helper in sections.py",
+      "description": "As a developer, I need the slide() helper to stop encouraging background_color usage since the backend now ignores it.",
+      "acceptanceCriteria": [
+        "slide() function still accepts background_color parameter for backwards compatibility but defaults to None instead of '#ffffff'",
+        "When background_color is None, the returned dict does NOT include background_color key",
+        "When background_color is explicitly passed, it is still included in the dict (backwards compat) but a comment notes it is ignored by the backend",
+        "sections_reference() output updated: slide section description mentions theme-controlled backgrounds, does not list background_color as a field",
+        "sections_reference() includes a note about the 7 available themes",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Add theme name validation to validation.py",
+      "description": "As a developer, I need local validation to catch invalid theme names before reports are sent to the server.",
+      "acceptanceCriteria": [
+        "New validation check: if theme is provided and not in THEMES (from capabilities.py), add a warning",
+        "Warning message includes the list of valid theme names",
+        "Severity is 'warning' not 'error' (server falls back to default, so it's not fatal)",
+        "If theme is None or not provided, no warning is raised",
+        "validate_report() or the main validation function accepts an optional theme parameter",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Update scaffold.py example to showcase themes and slideshow",
+      "description": "As an agent developer, I need the scaffolded example agent to demonstrate theme selection and include a comment about slideshow usage.",
+      "acceptanceCriteria": [
+        "Scaffolded agent.py example uses theme='corporate' instead of theme='default' (more explicit)",
+        "Comment added near the publish call listing available themes: corporate (default), dark, executive, financial, consulting, technical, editorial",
+        "Comment added showing how to create a slideshow: content_type='slideshow' with slide() wrappers and summary_header() for title slide",
+        "Import list in scaffolded agent.py adds slide and summary_header to the imports from openreporting.sections",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}
