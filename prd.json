@@ -1,343 +1,86 @@
 {
   "project": "Open Reporting",
-  "branchName": "ralph/theming-quality-coaching",
-  "description": "Layered quality platform: 7 curated themes, analyst writing playbook in skill.md, expanded rule-based coach (40+ rules), and blocking LLM review gate with actionable fix instructions.",
+  "branchName": "ralph/sdk-alignment",
+  "description": "Align the Python SDK with backend theming and slideshow changes: update THEMES constant to 7 themes, fix slideshow guidance in prompts, deprecate background_color on slide() helper, add theme validation, update scaffold example.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Expand Theme dataclass and define Corporate + Dark themes",
-      "description": "As a developer, I need the Theme dataclass expanded with new tokens so all 7 themes can express chart sizing, numeric typography, density, and responsive behavior.",
+      "title": "Update THEMES tuple in capabilities.py to include all 7 themes",
+      "description": "As a developer, I need the SDK capabilities to advertise all 7 available themes so agents and validation logic know what's valid.",
       "acceptanceCriteria": [
-        "Theme dataclass gains 7 new fields: chart_default_width (str, default '100%'), chart_viewbox_width (int, default 760), number_font (str), density (str: compact|standard|spacious), heading_scale (float), kpi_card_min_width (str), table_number_align (str: left|right)",
-        "All new fields have defaults so existing Theme instantiations still work",
-        "Corporate theme defined: Inter font, electric blue accent, density='standard', heading_scale=1.333, number_font=Inter, table_number_align='left'",
-        "Dark theme updated with new tokens: density='standard', heading_scale=1.333, number_font=Inter",
-        "Existing 'default' key in THEMES dict maps to Corporate theme",
+        "THEMES tuple updated from ('default', 'dark') to ('default', 'dark', 'executive', 'financial', 'consulting', 'technical', 'editorial')",
+        "No other constants in capabilities.py are changed",
         "Typecheck passes",
         "Tests pass"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Define Executive, Financial, and Consulting themes",
-      "description": "As a developer, I need three business-context themes so reports can match their audience.",
+      "title": "Update prompts.py slideshow guidance and theme references",
+      "description": "As an agent developer, I need the system prompt builder to give correct slideshow instructions (no background_color) and mention all 7 themes.",
       "acceptanceCriteria": [
-        "Executive theme: density='spacious', heading_scale=1.5, generous whitespace, number_font=Inter, unique 8-color chart palette",
-        "Financial theme: density='compact', heading_scale=1.25, number_font='Tabular Mono, ui-monospace, monospace', table_number_align='right', muted blue-gray palette",
-        "Consulting theme: density='standard', heading_scale=1.333, navy+teal chart palette, number_font=Inter",
-        "All three added to THEMES dict",
-        "get_theme('executive'), get_theme('financial'), get_theme('consulting') return correct themes",
+        "Remove all references to manually setting background_color on slides (e.g. 'Use a dark background_color (e.g. #0f172a) for the title slide')",
+        "Replace with guidance that themes auto-assign slide backgrounds: title slides (summary-header) get dark bg, content slides get light bg, closing slides (action-items/key-takeaway) get accent bg",
+        "Add mention of all 7 themes with brief personality descriptions in the format/theme guidance section",
+        "Slideshow instructions still recommend content_type='slideshow' and slide wrappers with summary-header for title slides",
         "Typecheck passes",
         "Tests pass"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Define Technical and Editorial themes, update layout widths",
-      "description": "As a developer, I need the remaining two themes and adjusted layout widths.",
+      "title": "Deprecate background_color param on slide() helper in sections.py",
+      "description": "As a developer, I need the slide() helper to stop encouraging background_color usage since the backend now ignores it.",
       "acceptanceCriteria": [
-        "Technical theme: density='compact', heading_scale=1.25, number_font='JetBrains Mono, ui-monospace, monospace', table_number_align='right', neutral gray palette",
-        "Editorial theme: density='spacious', heading_scale=1.333, font_stack uses Georgia/Charter serif, wider line_height, number_font=Georgia",
-        "Both added to THEMES dict",
-        "THEMES dict has 7 entries total: default, dark, executive, financial, consulting, technical, editorial",
-        "Narrow layout width updated from 720px to 680px in LAYOUT_WIDTHS",
-        "get_theme() falls back to Corporate (default) for unknown names",
+        "slide() function still accepts background_color parameter for backwards compatibility but defaults to None instead of '#ffffff'",
+        "When background_color is None, the returned dict does NOT include background_color key",
+        "When background_color is explicitly passed, it is still included in the dict (backwards compat) but a comment notes it is ignored by the backend",
+        "sections_reference() output updated: slide section description mentions theme-controlled backgrounds, does not list background_color as a field",
+        "sections_reference() includes a note about the 7 available themes",
         "Typecheck passes",
         "Tests pass"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Enforce full-width chart containers in renderers",
-      "description": "As a developer, I need all chart containers to render at 100% width so charts fill available space on all devices.",
+      "title": "Add theme name validation to validation.py",
+      "description": "As a developer, I need local validation to catch invalid theme names before reports are sent to the server.",
       "acceptanceCriteria": [
-        "All chart section renderers (_render_bar_chart, _render_line_chart, etc.) wrap SVG in div with style='width:100%; display:block;'",
-        "SVG elements use width='100%' and viewBox using theme.chart_viewbox_width",
-        "Markdown chart blocks (```chart```) also get full-width containers",
-        "data-or-chart attribute preserved on chart containers",
-        "Existing chart rendering still produces valid HTML",
+        "New validation check: if theme is provided and not in THEMES (from capabilities.py), add a warning",
+        "Warning message includes the list of valid theme names",
+        "Severity is 'warning' not 'error' (server falls back to default, so it's not fatal)",
+        "If theme is None or not provided, no warning is raised",
+        "validate_report() or the main validation function accepts an optional theme parameter",
         "Typecheck passes",
         "Tests pass"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Add responsive container wrapper with media queries",
-      "description": "As a developer, I need _wrap_container() to include responsive CSS so reports reflow correctly on tablet and mobile.",
+      "title": "Update scaffold.py example to showcase themes and slideshow",
+      "description": "As an agent developer, I need the scaffolded example agent to demonstrate theme selection and include a comment about slideshow usage.",
       "acceptanceCriteria": [
-        "_wrap_container() generates a unique container ID and includes a scoped <style> block",
-        "columns layout stacks vertically on mobile (<600px), side-by-side on desktop",
-        "KPI grid flex-wrap: 3-4 per row desktop, 2 tablet, 1 mobile (via min-width on flex children)",
-        "Tables wrapped with overflow-x:auto for horizontal scroll",
-        "Container padding: 48px desktop, 32px tablet (600-960px), 16px mobile (<600px)",
+        "Scaffolded agent.py example uses theme='corporate' instead of theme='default' (more explicit)",
+        "Comment added near the publish call listing available themes: corporate (default), dark, executive, financial, consulting, technical, editorial",
+        "Comment added showing how to create a slideshow: content_type='slideshow' with slide() wrappers and summary_header() for title slide",
+        "Import list in scaffolded agent.py adds slide and summary_header to the imports from openreporting.sections",
         "Typecheck passes",
         "Tests pass"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-006",
-      "title": "Apply new theme tokens in KPI, table, and heading renderers",
-      "description": "As a developer, I need section renderers to use the new theme tokens for typography and density.",
-      "acceptanceCriteria": [
-        "KPI grid renderer uses theme.number_font for metric value font-family",
-        "KPI grid renderer uses theme.kpi_card_min_width for flex item min-width",
-        "Table renderer applies theme.table_number_align to numeric-looking cells",
-        "Heading renderers (h1-h4) calculate font-size from theme.heading_scale ratio",
-        "Spacing (padding, margins) on sections adapts based on theme.density: compact=tighter, standard=current, spacious=more room",
-        "Slideshow content_type increases effective heading_scale by 0.1",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 6,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-007",
-      "title": "Add Voice & Tone section to skill.md",
-      "description": "As an agent, I need voice and tone rules in skill.md so I write in analyst briefing style on the first attempt.",
-      "acceptanceCriteria": [
-        "Voice & Tone section added after content formats table in SKILL.md",
-        "Includes 3+ 'Do' examples of analyst briefing style (third-person, factual)",
-        "Includes 4+ 'Don't' examples of AI filler language",
-        "5 numbered rules: no first person, no superlatives, no hedging in structured fields, every paragraph earns its space, lead with the headline",
-        "SKILL.md YAML frontmatter version bumped",
-        "Existing content preserved"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-008",
-      "title": "Add Analytics Playbook to skill.md",
-      "description": "As an agent, I need a chart selection decision tree and KPI framing rules so I pick the right visualization and contextualize every metric.",
-      "acceptanceCriteria": [
-        "Analytics Playbook section added after chart types section",
-        "Chart selection table maps 7 data shapes to chart types with reasoning",
-        "Anti-rules: no pie >6 segments, no bar for time series, no line for categorical",
-        "KPI framing table with bad/good examples for value, delta, trend fields",
-        "Data integrity rules: no extrapolation, state missing data, units in dataset names",
-        "Existing content preserved"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-009",
-      "title": "Add Design Guidance and update Themes section in skill.md",
-      "description": "As an agent, I need layout selection guidance, section ordering rules, and documentation of all 7 themes.",
-      "acceptanceCriteria": [
-        "Report Design section added after layouts section",
-        "Layout selection table maps 5 content types to recommended layouts",
-        "Chart sizing rule stated: all charts fill available width, no fixed pixels",
-        "Section ordering guide: summary-header -> kpi-grid -> charts/tables -> text -> callout -> action-items",
-        "Themes table updated to document all 7 themes with personality and best-for guidance",
-        "Updated SKILL.md is between 650-700 lines total",
-        "Existing content preserved"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-010",
-      "title": "Add AI filler detection rules to authoring coach",
-      "description": "As a developer, I need the coach to detect and block AI-generated filler language in summaries and body text.",
-      "acceptanceCriteria": [
-        "AI_FILLER_PHRASES constant list with >=30 known AI filler patterns defined at module level",
-        "ai_filler_summary rule: error severity when summary contains any filler phrase (case-insensitive match)",
-        "ai_filler_body rule: warning severity when body plain text contains >=3 distinct filler phrases",
-        "summary_is_meta rule: warning when summary starts with 'This report covers', 'In this report', 'The following report', 'Below you will find'",
-        "No false positives on the phrase 'it is worth $2.4M' (legitimate business language)",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-011",
-      "title": "Add writing style rules to authoring coach",
-      "description": "As a developer, I need the coach to flag superlatives in structured fields, first-person voice, and verbose paragraphs.",
-      "acceptanceCriteria": [
-        "superlative_in_structured: warning when KPI labels, chart headings, or summary contain 'incredible', 'amazing', 'outstanding', 'impressive', 'groundbreaking' (not in quoted text)",
-        "first_person_voice: warning when body text uses 'I ', 'we ', 'our ' more than twice",
-        "paragraph_too_verbose: warning when any paragraph >600 chars and <1 number per 200 chars",
-        "paragraph_density threshold updated from 1200 to 800 chars",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-012",
-      "title": "Add analytics rules to authoring coach",
-      "description": "As a developer, I need the coach to flag KPIs without context and mismatched chart types.",
-      "acceptanceCriteria": [
-        "kpi_missing_delta: warning when KPI metric has value but no delta or trend",
-        "kpi_delta_is_label: warning when delta contains only a name with no number, %, or comparison operator",
-        "chart_type_mismatch_time: warning when chart labels match time-series patterns (month names, Q1-Q4, W1-W52, date-like) but chart type is bar-chart",
-        "chart_type_mismatch_ranking: info when >5 categories with single dataset uses vertical bar-chart instead of horizontal-bar-chart",
-        "pie_too_many_segments: warning when pie/donut chart has >6 segments",
-        "chart_no_heading: warning when any chart section has no heading field",
-        "evaluate_authoring_quality() accepts structured section data for KPI and chart analysis",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 12,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-013",
-      "title": "Add design rules to authoring coach",
-      "description": "As a developer, I need the coach to flag poor structural choices like missing owners on action items and skipped heading levels.",
-      "acceptanceCriteria": [
-        "chart_fixed_width: warning when SVG container lacks width:100% in style",
-        "chart_fixed_dimensions: severity escalated from info to warning",
-        "chart_hardcoded_colors: threshold reduced from >5 to >4 unique colors",
-        "no_summary_header: info when structured body has no summary-header as first section",
-        "action_items_no_owner: warning when action items lack owner field",
-        "action_items_no_due: warning when action items lack due field",
-        "table_single_column: warning when table has only 1 column",
-        "consecutive_text_sections: info when 3+ text sections in a row with no visual break",
-        "heading_depth_skip: warning when heading levels skip (h1->h3 without h2)",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 13,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-014",
-      "title": "Add slide rules and recalibrate coach scoring",
-      "description": "As a developer, I need slide-specific quality rules and rebalanced scoring weights for the expanded rule set.",
-      "acceptanceCriteria": [
-        "slide_too_dense: warning when slide has >2 sections (only when content_type='slideshow')",
-        "slide_text_heavy: warning when slide text section >300 chars",
-        "slide_no_takeaway: info when chart slide has no accompanying callout",
-        "slide_bullet_count: warning when slide bullet list has >4 items",
-        "Scoring weights updated: error=-20, warning=-6, info=-2 (from -25/-10/-4)",
-        "Total coach rules: 40+",
-        "Coach evaluation completes in <100ms on a sample report",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 14,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-015",
-      "title": "Create LLM review module with prompt and rubric",
-      "description": "As a developer, I need an LLM review module that evaluates reports across writing, analytics, and design dimensions using Claude Haiku.",
-      "acceptanceCriteria": [
-        "New file: backend/app/core/llm_review.py",
-        "Review function accepts rendered HTML, report metadata (title, summary, tags, theme, content_type), and coach results",
-        "Review prompt includes rubric definitions for 3 dimensions (writing, analytics, design) scored 1-5",
-        "Prompt instructs LLM to output structured JSON with scores, issues, and specific fix instructions",
-        "Slide-specific rubric adjustments when content_type='slideshow'",
-        "Response parsed into a ReviewResult dataclass with scores, issues, fix_instructions, status",
-        "Blocking logic: min 3 per dimension, min 3.5 average",
-        "Uses anthropic SDK to call Claude Haiku (model from LLM_REVIEW_MODEL env var)",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 15,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-016",
-      "title": "Add timeout, caching, and configuration to LLM review",
-      "description": "As a developer, I need the LLM review to handle failures gracefully, cache results, and be fully configurable via env vars.",
-      "acceptanceCriteria": [
-        "Timeout: configurable via LLM_REVIEW_TIMEOUT_MS (default 15000). On timeout, returns status='skipped'",
-        "API errors: caught and return status='skipped' (never blocks on infra failure)",
-        "Cache: content-hash keyed, 5-minute TTL. Identical resubmissions skip LLM call if previous review passed",
-        "Configuration env vars: LLM_REVIEW_ENABLED (default true), LLM_REVIEW_MODE (enforce|shadow), LLM_REVIEW_MIN_SCORE (default 3), LLM_REVIEW_MIN_AVG (default 3.5), LLM_REVIEW_MODEL, LLM_REVIEW_TIMEOUT_MS",
-        "get_llm_review_mode() helper function similar to get_authoring_coach_mode()",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 16,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-017",
-      "title": "Integrate LLM review into publish pipeline",
-      "description": "As a developer, I need the LLM review wired into the report publish endpoint so it runs after the rule-based coach.",
-      "acceptanceCriteria": [
-        "LLM review called in routes/reports.py publish endpoint after rule-based coach passes",
-        "LLM review skipped when rule-based coach status is 'blocked'",
-        "When LLM_REVIEW_MODE='enforce' and review blocks: return 422 with llm_review field containing scores, issues, fix_instructions",
-        "When LLM_REVIEW_MODE='shadow': review runs and logs but does not block publish",
-        "When LLM_REVIEW_ENABLED=false: review skipped entirely",
-        "Successful publish response includes quality object: coach_score, coach_status, llm_review (scores + status)",
-        "Existing 422 response shape for coach blocks unchanged",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 17,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-018",
-      "title": "Update SDK with ReviewBlockedError and quality response",
-      "description": "As a developer, I need the Python SDK to handle LLM review 422 responses and expose quality scores.",
-      "acceptanceCriteria": [
-        "New ReviewBlockedError exception in sdk/openreporting/exceptions.py with scores, issues, fix_instructions attributes",
-        "client.publish() raises ReviewBlockedError on LLM review 422 (distinct from CoachBlockedError)",
-        "ReportResponse model gains optional quality field (coach_score, coach_status, llm_review)",
-        "dry_run() unchanged (runs coach only, no LLM review)",
-        "preview() unchanged",
-        "Old SDK versions treat new 422 shapes as generic errors (no breaking changes)",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 18,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-019",
-      "title": "Add brand override accessibility validation",
-      "description": "As a developer, I need brand color overrides validated for WCAG contrast and chart color distinguishability.",
-      "acceptanceCriteria": [
-        "New function validate_brand_overrides(theme) returns list of advisory warnings",
-        "Checks text_color vs bg_color contrast ratio meets WCAG AA (4.5:1 for body text)",
-        "Checks heading_color vs bg_color contrast ratio meets WCAG AA (3:1 for large text)",
-        "Checks chart_colors palette: minimum deltaE of 20 between adjacent colors",
-        "Results are advisory warnings only, never blocking",
-        "apply_brand_overrides() calls validation and attaches warnings to result",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 19,
-      "passes": true,
+      "passes": false,
       "notes": ""
     }
   ]

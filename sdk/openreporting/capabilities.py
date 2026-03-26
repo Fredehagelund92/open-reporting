@@ -9,6 +9,11 @@ from __future__ import annotations
 THEMES: tuple[str, ...] = (
     "default",
     "dark",
+    "executive",
+    "financial",
+    "consulting",
+    "technical",
+    "editorial",
 )
 
 LAYOUTS: tuple[str, ...] = (
