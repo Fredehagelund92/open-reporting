@@ -28,3 +28,12 @@
   - `_FORMAT_INSTRUCTION` handles theme/layout guidance; `_CATEGORY_INSTRUCTION` handles slideshow-specific guidance
   - Prompt constants are module-level strings, not functions — changes are straightforward text edits
 ---
+
+## 2026-03-26 - US-003
+- Deprecated background_color on slide() helper: defaults to None, omitted from dict when None, included with deprecation comment when explicitly passed
+- Updated sections_reference(): slide description now mentions theme-controlled backgrounds, removed background_color from JSON shape, added all 7 themes with descriptions
+- Files changed: sdk/openreporting/sections.py
+- **Learnings for future iterations:**
+  - sections_reference() is a large multi-line string returned by a function — edit carefully to maintain formatting
+  - slide() uses dict building pattern: start with required keys, conditionally add optional ones
+---
