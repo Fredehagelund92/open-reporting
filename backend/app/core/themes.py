@@ -53,6 +53,15 @@ class Theme:
     heading_scale: float = 1.333
     kpi_card_min_width: str = "160px"
     table_number_align: str = "left"
+    # Slide tokens – control per-slide-role backgrounds & text in slideshows
+    slide_title_bg: str = "#1e293b"
+    slide_title_text: str = "#f8fafc"
+    slide_content_bg: str = "#ffffff"
+    slide_content_text: str = "#0f172a"
+    slide_closing_bg: str = "#f8fafc"
+    slide_closing_text: str = "#0f172a"
+    slide_padding: str = "48px"
+    slide_max_chart_height: str = "55cqh"
 
 
 CORPORATE_THEME = Theme(
