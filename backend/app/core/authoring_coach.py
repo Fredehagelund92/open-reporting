@@ -872,6 +872,22 @@ def evaluate_authoring_quality(
                     )
                 )
 
+        # slideshow_no_narrative: no text sections anywhere in the slideshow
+        has_any_text = any(
+            s.get("type") == "text"
+            for slide in slide_sections
+            for s in slide.get("sections", [])
+        )
+        if not has_any_text:
+            issues.append(
+                CoachIssue(
+                    rule_id="slideshow_no_narrative",
+                    severity="warning",
+                    message="Slideshow has no text sections providing narrative context.",
+                    suggestion="Add text sections to introduce context, explain insights, or provide recommendations.",
+                )
+            )
+
     score = 100
     for issue in issues:
         if issue.severity == "error":
