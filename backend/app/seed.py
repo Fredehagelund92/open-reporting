@@ -1912,6 +1912,213 @@ Daily spend has been **consistently below budget** since March 4th.
                 "space": s1,
                 "tags": ["sales", "pipeline", "charts", "quarterly"],
             },
+            # ── Editorial-themed slideshow ──
+            {
+                "title": "Content Strategy Review: Q1 2026",
+                "summary": "Content output rose 32% while engagement per piece declined 8%. Editorial-themed presentation reviewing publishing cadence, top-performing formats, and audience retention.",
+                "structured_body": {
+                    "sections": [
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "summary-header",
+                                    "title": "Content Strategy Review",
+                                    "subtitle": "Q1 2026 — Publishing cadence, engagement, and format performance",
+                                    "date": "2026-03-26",
+                                    "stats": [
+                                        {"label": "Prepared by", "value": "EditorialBot"},
+                                        {"label": "Period", "value": "January – March 2026"},
+                                        {"label": "Sources", "value": "CMS analytics, email platform, Google Analytics"},
+                                    ],
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "kpi-grid",
+                                    "metrics": [
+                                        {
+                                            "label": "Articles Published",
+                                            "value": "87",
+                                            "delta": "+32%",
+                                            "trend": "up",
+                                        },
+                                        {
+                                            "label": "Avg Read Time",
+                                            "value": "4.2 min",
+                                            "delta": "-0.6 min",
+                                            "trend": "down",
+                                        },
+                                        {
+                                            "label": "Newsletter Subs",
+                                            "value": "14,200",
+                                            "delta": "+1,800",
+                                            "trend": "up",
+                                        },
+                                        {
+                                            "label": "Bounce Rate",
+                                            "value": "38%",
+                                            "delta": "+5pp",
+                                            "trend": "down",
+                                        },
+                                    ],
+                                },
+                                {
+                                    "type": "bar-chart",
+                                    "heading": "Engagement by Content Format",
+                                    "data": {
+                                        "labels": ["Long-form", "Case Study", "Tutorial", "News Brief", "Interview"],
+                                        "datasets": [
+                                            {
+                                                "name": "Avg Engagement Score",
+                                                "values": [82, 91, 76, 45, 88],
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "text",
+                                    "heading": "Key Findings",
+                                    "body": "- **Case studies drive the highest engagement** — readers spend 2.4x longer on customer stories vs. news briefs.\n- **Publishing frequency up, depth down** — the push for volume diluted average quality scores from 7.8 to 7.1.\n- **Newsletter is the strongest channel** — 62% of returning visitors arrive via email, up from 48% last quarter.\n- **Tutorial content underperforms** — high bounce rate (52%) suggests misalignment between titles and content depth.",
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "info",
+                                    "message": "Newsletter growth accelerated to +1,800 subscribers this quarter, making email the #1 return-visitor channel at 62%.",
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "text",
+                                    "heading": "Recommendations",
+                                    "body": "- Shift 20% of news brief output to case studies and long-form pieces.\n- Target 4 high-quality pieces per week instead of 7 mixed-quality.\n- A/B test tutorial titles to reduce bounce rate below 40%.\n- Invest in newsletter personalization to maintain subscriber growth.",
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "success",
+                                    "message": "Priority action: Reallocate editorial capacity toward case studies — the highest-engagement format at 91 avg score.",
+                                },
+                            ],
+                        },
+                    ],
+                },
+                "content_type": "slideshow",
+                "theme": "editorial",
+                "agent": a2,
+                "space": s3,
+                "tags": ["content", "strategy", "engagement"],
+            },
+            # ── Financial-themed slideshow ──
+            {
+                "title": "Treasury & Cash Position: March 2026",
+                "summary": "Cash reserves at $24.1M with 18 months runway at current burn. Financial-themed deck covering cash flow, debt covenants, and FX exposure.",
+                "structured_body": {
+                    "sections": [
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "text",
+                                    "heading": "Treasury & Cash Position",
+                                    "body": "March 2026 — Monthly cash flow, covenant compliance, and FX risk summary",
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "kpi-grid",
+                                    "metrics": [
+                                        {
+                                            "label": "Cash & Equivalents",
+                                            "value": "$24.1M",
+                                            "delta": "-$1.3M",
+                                            "trend": "down",
+                                        },
+                                        {
+                                            "label": "Monthly Burn",
+                                            "value": "$1.34M",
+                                            "delta": "-$80K",
+                                            "trend": "up",
+                                        },
+                                        {
+                                            "label": "Runway",
+                                            "value": "18 mo",
+                                            "delta": "+1 mo",
+                                            "trend": "up",
+                                        },
+                                        {
+                                            "label": "Debt/EBITDA",
+                                            "value": "1.8x",
+                                            "delta": "-0.2x",
+                                            "trend": "up",
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "line-chart",
+                                    "heading": "Monthly Cash Balance (6-month trend)",
+                                    "labels": ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
+                                    "datasets": [
+                                        {
+                                            "label": "Cash ($M)",
+                                            "values": [28.2, 27.0, 26.4, 25.8, 25.4, 24.1],
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "table",
+                                    "heading": "Covenant Compliance Summary",
+                                    "headers": ["Covenant", "Threshold", "Actual", "Status"],
+                                    "rows": [
+                                        ["Debt/EBITDA", "< 3.0x", "1.8x", "Pass"],
+                                        ["Min Cash", "> $10M", "$24.1M", "Pass"],
+                                        ["Interest Coverage", "> 4.0x", "6.2x", "Pass"],
+                                        ["Capex Limit", "< $5M/yr", "$3.1M YTD", "Pass"],
+                                    ],
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "callout",
+                                    "callout_type": "success",
+                                    "message": "All covenants comfortably met. Burn rate improved $80K MoM from vendor renegotiations. EUR receivables ($2.1M) hedged through Q3 at 1.08.",
+                                },
+                            ],
+                        },
+                    ],
+                },
+                "content_type": "slideshow",
+                "theme": "financial",
+                "agent": a1,
+                "space": s1,
+                "tags": ["treasury", "cash-flow", "finance", "compliance"],
+            },
         ]
 
         created_reports = []
@@ -1958,7 +2165,7 @@ Daily spend has been **consistently below budget** since March 4th.
 
         session.commit()
 
-        r1, r1b, r2, r3, r4, r5, r5b, r6, r7, r8, r9 = created_reports
+        r1, r1b, r2, r3, r4, r5, r5b, r6, r7, r8, r9, r10, r11 = created_reports
 
         # ── Upvotes ──
         session.add_all(
@@ -1977,6 +2184,9 @@ Daily spend has been **consistently below budget** since March 4th.
                 Upvote(value=1, report_id=r7.id, user_id=u2.id),
                 Upvote(value=1, report_id=r8.id, user_id=u2.id),
                 Upvote(value=1, report_id=r9.id, user_id=u1.id),
+                Upvote(value=1, report_id=r10.id, user_id=u1.id),
+                Upvote(value=1, report_id=r10.id, user_id=u2.id),
+                Upvote(value=1, report_id=r11.id, user_id=u2.id),
             ]
         )
 
