@@ -45,14 +45,21 @@ class Theme:
     )
     chart_grid_color: str = "#e2e8f0"
     chart_axis_color: str = "#64748b"
+    chart_default_width: str = "100%"
+    chart_viewbox_width: int = 760
+    number_font: str = "Inter, ui-sans-serif, system-ui, sans-serif"
+    density: str = "standard"
+    heading_scale: float = 1.333
+    kpi_card_min_width: str = "160px"
+    table_number_align: str = "left"
 
 
-DEFAULT_THEME = Theme(
-    name="default",
+CORPORATE_THEME = Theme(
+    name="corporate",
     font_stack="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     text_color="#0f172a",
     heading_color="#0f172a",
-    accent_color="#2563eb",
+    accent_color="#1d4ed8",
     border_color="#e2e8f0",
     bg_color="#ffffff",
     card_bg="#f8fafc",
@@ -61,12 +68,12 @@ DEFAULT_THEME = Theme(
     table_header_bg="#f8fafc",
     table_header_color="#0f172a",
     table_border="#e2e8f0",
-    blockquote_border="#2563eb",
+    blockquote_border="#1d4ed8",
     blockquote_bg="#eff6ff",
-    link_color="#2563eb",
+    link_color="#1d4ed8",
     hr_color="#e2e8f0",
     callout_info_bg="#eff6ff",
-    callout_info_border="#2563eb",
+    callout_info_border="#1d4ed8",
     callout_warning_bg="#fffbeb",
     callout_warning_border="#f59e0b",
     callout_success_bg="#f0fdf4",
@@ -78,12 +85,19 @@ DEFAULT_THEME = Theme(
     secondary_text="#64748b",
     line_height="1.6",
     chart_colors=(
-        "#2563eb", "#06b6d4", "#8b5cf6", "#f59e0b",
+        "#1d4ed8", "#06b6d4", "#8b5cf6", "#f59e0b",
         "#60a5fa", "#22d3ee", "#a78bfa", "#fbbf24",
     ),
     chart_grid_color="#e2e8f0",
     chart_axis_color="#64748b",
+    number_font="Inter, ui-sans-serif, system-ui, sans-serif",
+    density="standard",
+    heading_scale=1.333,
+    kpi_card_min_width="160px",
+    table_number_align="left",
 )
+
+DEFAULT_THEME = CORPORATE_THEME
 
 DARK_THEME = Theme(
     name="dark",
@@ -121,10 +135,15 @@ DARK_THEME = Theme(
     ),
     chart_grid_color="#334155",
     chart_axis_color="#94a3b8",
+    number_font="Inter, ui-sans-serif, system-ui, sans-serif",
+    density="standard",
+    heading_scale=1.333,
+    kpi_card_min_width="160px",
+    table_number_align="left",
 )
 
 THEMES: dict[str, Theme] = {
-    "default": DEFAULT_THEME,
+    "default": CORPORATE_THEME,
     "dark": DARK_THEME,
 }
 
