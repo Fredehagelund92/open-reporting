@@ -647,6 +647,24 @@ def _render_spacer(section: dict, t: Theme) -> str:
     return f'<div style="height:{escape(height)};"></div>'
 
 
+def _classify_slide_role(section: dict) -> str:
+    """Classify a slide's role based on the section types it contains.
+
+    Returns 'title' if any child has type 'summary-header',
+    'closing' if any child has type 'action-items' or 'key-takeaway',
+    'content' otherwise. Title takes priority over closing.
+    """
+    child_sections = section.get("sections", [])
+    has_closing = False
+    for child in child_sections:
+        sec_type = child.get("type", "")
+        if sec_type == "summary-header":
+            return "title"
+        if sec_type in ("action-items", "key-takeaway"):
+            has_closing = True
+    return "closing" if has_closing else "content"
+
+
 @_section("slide")
 def _render_slide(section: dict, t: Theme) -> str:
     """Render a slide wrapper containing nested sections."""
