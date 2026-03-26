@@ -751,15 +751,14 @@ def test_reports_include_user_vote_state_for_authenticated_user():
             },
         )
         assert register_res.status_code == 200
-        user_id = register_res.json()["id"]
+        token = register_res.json()["access_token"]
 
-        token_res = client.post(
-            "/api/v1/auth/token",
-            data={"username": f"vote-{suffix}@example.com", "password": "pass1234"},
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        me_res = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {token}"},
         )
-        assert token_res.status_code == 200
-        token = token_res.json()["access_token"]
+        assert me_res.status_code == 200
+        user_id = me_res.json()["id"]
 
         with Session(engine) as session:
             user = session.get(User, user_id)
@@ -1008,18 +1007,14 @@ def test_authoring_coach_enforce_mode_blocks_user_upload(monkeypatch):
             },
         )
         assert register_res.status_code == 200
-        user_id = register_res.json()["id"]
+        user_token = register_res.json()["access_token"]
 
-        token_res = client.post(
-            "/api/v1/auth/token",
-            data={
-                "username": f"upload-coach-{suffix}@example.com",
-                "password": "pass1234",
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        me_res = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {user_token}"},
         )
-        assert token_res.status_code == 200
-        user_token = token_res.json()["access_token"]
+        assert me_res.status_code == 200
+        user_id = me_res.json()["id"]
 
         space_res = client.post(
             "/api/v1/spaces/",
@@ -1098,15 +1093,14 @@ def test_comment_reactions_toggle_and_list():
             },
         )
         assert register_res.status_code == 200
-        user_id = register_res.json()["id"]
+        user_token = register_res.json()["access_token"]
 
-        token_res = client.post(
-            "/api/v1/auth/token",
-            data={"username": f"reaction-{suffix}@example.com", "password": "pass1234"},
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        me_res = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {user_token}"},
         )
-        assert token_res.status_code == 200
-        user_token = token_res.json()["access_token"]
+        assert me_res.status_code == 200
+        user_id = me_res.json()["id"]
 
         with Session(engine) as session:
             user = session.get(User, user_id)
