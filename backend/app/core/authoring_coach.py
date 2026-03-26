@@ -192,6 +192,7 @@ def evaluate_authoring_quality(
     tags: list[str] | None = None,
     content_format: str = "html",
     chart_sections: list[dict] | None = None,
+    kpi_sections: list[dict] | None = None,
 ) -> CoachResult:
     issues: list[CoachIssue] = []
     tags = tags or []
@@ -545,6 +546,94 @@ def evaluate_authoring_quality(
                     severity="info",
                     message=f"SVG {idx + 1} uses {len(hex_colors)} unique hardcoded colors.",
                     suggestion="Consider using the report theme's color palette for visual consistency.",
+                )
+            )
+
+    # Analytics rules — KPI sections
+    _TIME_SERIES_PATTERN = re.compile(
+        r'^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december|q[1-4]|w\d{1,2}|\d{4}-\d{2}|\d{2}/\d{2})',
+        re.IGNORECASE
+    )
+
+    if kpi_sections:
+        for kpi_sec in kpi_sections:
+            for metric in kpi_sec.get("metrics", []):
+                value = metric.get("value", "")
+                delta = metric.get("delta", "")
+                trend = metric.get("trend", "")
+                if value and not delta and not trend:
+                    issues.append(
+                        CoachIssue(
+                            rule_id="kpi_missing_delta",
+                            severity="warning",
+                            message=f"KPI '{metric.get('label', '')}' has a value but no delta or trend.",
+                            suggestion="Add a 'delta' (e.g. '+12% YoY') and 'trend' ('up' or 'down') to provide context.",
+                        )
+                    )
+                if delta and not re.search(r'[\d%+\-<>]', str(delta)):
+                    issues.append(
+                        CoachIssue(
+                            rule_id="kpi_delta_is_label",
+                            severity="warning",
+                            message=f"KPI '{metric.get('label', '')}' delta '{delta}' contains no number, %, or comparison.",
+                            suggestion="Delta must include a quantified comparison (e.g. '+3.1 pp', '2nd of 5 regions').",
+                        )
+                    )
+                # Superlative in KPI label
+                label_words = set(str(metric.get("label", "")).lower().split())
+                if label_words & _SUPERLATIVES:
+                    issues.append(
+                        CoachIssue(
+                            rule_id="superlative_in_structured",
+                            severity="warning",
+                            message=f"KPI label '{metric.get('label', '')}' contains superlative language.",
+                            suggestion="Replace superlatives with specific metrics or factual descriptors.",
+                        )
+                    )
+
+    # Analytics rules — chart section types
+    for cs in (chart_sections or []):
+        chart_type = cs.get("type", "")
+        data = cs.get("data", {})
+        labels = data.get("labels", [])
+        datasets = data.get("datasets", [])
+        segments = data.get("segments", [])
+
+        # chart_no_heading — checked in existing section; covered by chart_heading_missing
+
+        # chart_type_mismatch_time: bar-chart with time-series labels
+        if chart_type == "bar-chart" and labels:
+            time_like = sum(1 for lbl in labels if _TIME_SERIES_PATTERN.match(str(lbl)))
+            if time_like >= len(labels) * 0.6:
+                issues.append(
+                    CoachIssue(
+                        rule_id="chart_type_mismatch_time",
+                        severity="warning",
+                        message=f"bar-chart used with time-series labels ({', '.join(str(l) for l in labels[:3])}...). "
+                                "Time-series data should use line-chart or area-chart.",
+                        suggestion="Change chart type to 'line-chart' or 'area-chart' for time-ordered data.",
+                    )
+                )
+
+        # chart_type_mismatch_ranking: >5 categories, single dataset, vertical bar-chart
+        if chart_type == "bar-chart" and len(labels) > 5 and len(datasets) == 1:
+            issues.append(
+                CoachIssue(
+                    rule_id="chart_type_mismatch_ranking",
+                    severity="info",
+                    message=f"bar-chart with {len(labels)} categories and a single dataset may be clearer as a horizontal-bar-chart.",
+                    suggestion="Use 'horizontal-bar-chart' for ranking/comparison with many categories — labels stay readable.",
+                )
+            )
+
+        # pie_too_many_segments
+        if chart_type in ("pie-chart", "donut-chart") and len(segments) > 6:
+            issues.append(
+                CoachIssue(
+                    rule_id="pie_too_many_segments",
+                    severity="warning",
+                    message=f"{chart_type} has {len(segments)} segments (max recommended: 6).",
+                    suggestion="Consolidate small segments into an 'Other' category, or switch to a horizontal-bar-chart.",
                 )
             )
 
