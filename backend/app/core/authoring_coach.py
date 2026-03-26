@@ -193,6 +193,7 @@ def evaluate_authoring_quality(
     content_format: str = "html",
     chart_sections: list[dict] | None = None,
     kpi_sections: list[dict] | None = None,
+    all_sections: list[dict] | None = None,
 ) -> CoachResult:
     issues: list[CoachIssue] = []
     tags = tags or []
@@ -531,7 +532,7 @@ def evaluate_authoring_quality(
             issues.append(
                 CoachIssue(
                     rule_id="chart_fixed_dimensions",
-                    severity="info",
+                    severity="warning",
                     message=f"SVG {idx + 1} uses fixed pixel dimensions without width='100%'.",
                     suggestion="Use width='100%' with a viewBox for responsive chart sizing.",
                 )
@@ -539,7 +540,7 @@ def evaluate_authoring_quality(
 
         # Check for many hardcoded hex colors (suggests not using theme)
         hex_colors = set(re.findall(r'#[0-9a-fA-F]{6}', svg_block))
-        if len(hex_colors) > 5:
+        if len(hex_colors) > 4:
             issues.append(
                 CoachIssue(
                     rule_id="chart_hardcoded_colors",
@@ -548,6 +549,118 @@ def evaluate_authoring_quality(
                     suggestion="Consider using the report theme's color palette for visual consistency.",
                 )
             )
+
+    # chart_fixed_width: SVG containers in HTML body missing width:100%
+    for svg_container_match in re.finditer(r'<div[^>]*data-or-chart[^>]*>', html_body, re.IGNORECASE):
+        container_tag = svg_container_match.group(0)
+        if 'width:100%' not in container_tag and "width: 100%" not in container_tag:
+            issues.append(
+                CoachIssue(
+                    rule_id="chart_fixed_width",
+                    severity="warning",
+                    message="Chart container div is missing width:100% in style attribute.",
+                    suggestion="Add style='width:100%; display:block;' to chart container divs.",
+                )
+            )
+            break  # One warning is enough
+
+    # Design rules from structured sections
+    if all_sections:
+        _flat_sections: list[dict] = []
+
+        def _flatten(secs: list[dict]) -> None:
+            for sec in secs:
+                _flat_sections.append(sec)
+                if sec.get("type") == "columns":
+                    for col in sec.get("columns", []):
+                        _flatten(col.get("sections", []))
+                elif sec.get("type") == "slide":
+                    _flatten(sec.get("sections", []))
+
+        _flatten(all_sections)
+
+        # no_summary_header
+        if _flat_sections and _flat_sections[0].get("type") != "summary-header":
+            issues.append(
+                CoachIssue(
+                    rule_id="no_summary_header",
+                    severity="info",
+                    message="Report does not begin with a summary-header section.",
+                    suggestion="Add a summary-header as the first section to establish context (title, date, key stats).",
+                )
+            )
+
+        # action_items rules
+        for sec in _flat_sections:
+            if sec.get("type") == "action-items":
+                for item in sec.get("items", []):
+                    if not item.get("owner"):
+                        issues.append(
+                            CoachIssue(
+                                rule_id="action_items_no_owner",
+                                severity="warning",
+                                message="One or more action items are missing an 'owner' field.",
+                                suggestion="Assign every action item an owner (person or team responsible).",
+                            )
+                        )
+                        break
+                for item in sec.get("items", []):
+                    if not item.get("due"):
+                        issues.append(
+                            CoachIssue(
+                                rule_id="action_items_no_due",
+                                severity="warning",
+                                message="One or more action items are missing a 'due' field.",
+                                suggestion="Add a due date to every action item.",
+                            )
+                        )
+                        break
+
+        # table_single_column
+        for sec in _flat_sections:
+            if sec.get("type") == "table":
+                headers = sec.get("headers", [])
+                if len(headers) == 1:
+                    issues.append(
+                        CoachIssue(
+                            rule_id="table_single_column",
+                            severity="warning",
+                            message="Table has only 1 column — use a bullet list instead.",
+                            suggestion="Single-column tables are better expressed as bullet lists in a text section.",
+                        )
+                    )
+
+        # consecutive_text_sections
+        consecutive = 0
+        for sec in _flat_sections:
+            if sec.get("type") == "text":
+                consecutive += 1
+                if consecutive >= 3:
+                    issues.append(
+                        CoachIssue(
+                            rule_id="consecutive_text_sections",
+                            severity="info",
+                            message="3 or more consecutive text sections detected with no visual break.",
+                            suggestion="Separate long text runs with a divider, callout, chart, or kpi-grid.",
+                        )
+                    )
+                    break
+            else:
+                consecutive = 0
+
+        # heading_depth_skip: detect h1->h3 skip in HTML body
+        headings_found = [int(m) for m in re.findall(r'<h([1-4])\b', html_body, re.IGNORECASE)]
+        for i in range(len(headings_found) - 1):
+            if headings_found[i + 1] - headings_found[i] > 1:
+                issues.append(
+                    CoachIssue(
+                        rule_id="heading_depth_skip",
+                        severity="warning",
+                        message=f"Heading level skips from h{headings_found[i]} to h{headings_found[i+1]}.",
+                        suggestion="Use sequential heading levels (h1 → h2 → h3) without skipping.",
+                    )
+                )
+                break
 
     # Analytics rules — KPI sections
     _TIME_SERIES_PATTERN = re.compile(
