@@ -7,6 +7,7 @@ HTML that the frontend can render identically to hand-crafted HTML reports.
 
 import json
 import re
+import uuid
 from html import escape
 from html.parser import HTMLParser
 
@@ -207,7 +208,7 @@ def _render_kpi_grid(section: dict, t: Theme) -> str:
             f'</div>'
         )
     return (
-        f'<div style="display:flex; gap:20px; flex-wrap:wrap; margin:20px 0;">'
+        f'<div data-or-kpi style="display:flex; gap:20px; flex-wrap:wrap; margin:20px 0;">'
         f'{"".join(cards)}'
         f'</div>'
     )
@@ -243,11 +244,13 @@ def _render_table(section: dict, t: Theme) -> str:
         )
 
     return (
-        f'<table style="width:100%; border-collapse:collapse; margin:16px 0;">'
+        f'<div style="overflow-x:auto; margin:16px 0;">'
+        f'<table style="width:100%; border-collapse:collapse;">'
         f'{caption_html}'
         f'<thead><tr>{header_cells}</tr></thead>'
         f'<tbody>{"".join(body_rows)}</tbody>'
         f'</table>'
+        f'</div>'
     )
 
 
@@ -557,7 +560,7 @@ def _render_columns(section: dict, t: Theme, _depth: int = 0) -> str:
             f'</div>'
         )
     return (
-        f'<div style="display:flex; gap:24px; flex-wrap:wrap; margin:20px 0;">'
+        f'<div data-or-columns style="display:flex; gap:24px; flex-wrap:wrap; margin:20px 0;">'
         f'{"".join(col_parts)}'
         f'</div>'
     )
@@ -798,13 +801,26 @@ def _apply_inline_styles(html: str, theme: Theme) -> str:
 
 
 def _wrap_container(inner_html: str, theme: Theme, layout: str | None = None) -> str:
-    """Wrap rendered content in a themed container div."""
+    """Wrap rendered content in a themed container div with responsive CSS."""
+    cid = f"or-c-{uuid.uuid4().hex[:8]}"
     max_width = get_layout_width(layout)
     bg = f" background:{theme.bg_color};" if theme.bg_color != "transparent" else ""
+    style_block = (
+        f'<style>'
+        f'#{cid}{{padding:48px !important;}}'
+        f'@media (min-width:600px) and (max-width:959px){{#{cid}{{padding:32px !important;}}}}'
+        f'@media (max-width:599px){{#{cid}{{padding:16px !important;}}}}'
+        f'@media (max-width:599px){{#{cid} [data-or-columns]>div{{flex:1 1 100% !important;min-width:0 !important;}}}}'
+        f'@media (max-width:599px){{#{cid} [data-or-kpi]>div{{flex:1 1 100% !important;min-width:0 !important;}}}}'
+        f'@media (min-width:600px) and (max-width:959px){{#{cid} [data-or-kpi]>div{{flex:1 1 45% !important;min-width:0 !important;}}}}'
+        f'@media (max-width:599px){{#{cid} table{{overflow-x:auto !important;display:block;}}}}'
+        f'</style>'
+    )
     return (
-        f'<div style="font-family:{theme.font_stack}; color:{theme.text_color}; '
+        f'{style_block}'
+        f'<div id="{cid}" style="font-family:{theme.font_stack}; color:{theme.text_color}; '
         f'line-height:{theme.line_height}; max-width:{max_width}; margin:0 auto; '
-        f'padding:32px 48px;{bg}">'
+        f'padding:48px;{bg}">'
         f'{inner_html}'
         f'</div>'
     )
