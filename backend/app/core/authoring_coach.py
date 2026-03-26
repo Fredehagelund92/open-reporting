@@ -781,8 +781,20 @@ def evaluate_authoring_quality(
         if not slide_sections:
             slide_sections = [{"type": "slide", "sections": [s]} for s in all_sections]
 
+        thin_slide_count = 0
+        total_non_title_slides = 0
+
         for slide in slide_sections:
             child_sections = slide.get("sections", [])
+
+            # Track title vs non-title slides for composite rules
+            is_title_slide = any(
+                s.get("type") == "summary-header" for s in child_sections
+            )
+            if not is_title_slide:
+                total_non_title_slides += 1
+                if len(child_sections) == 1:
+                    thin_slide_count += 1
 
             # slide_too_dense: >2 sections per slide
             if len(child_sections) > 2:
@@ -792,6 +804,17 @@ def evaluate_authoring_quality(
                         severity="warning",
                         message=f"Slide has {len(child_sections)} sections (max recommended: 2).",
                         suggestion="Move extra sections to separate slides. Each slide should focus on one idea.",
+                    )
+                )
+
+            # slide_too_thin: single-element slide (not title)
+            if len(child_sections) == 1 and not is_title_slide:
+                issues.append(
+                    CoachIssue(
+                        rule_id="slide_too_thin",
+                        severity="warning",
+                        message="Slide has only 1 section. Combine with a supporting element (callout, text, or chart) for more impact.",
+                        suggestion="Add a callout summarizing the key insight, or pair this with a text section for context.",
                     )
                 )
 
