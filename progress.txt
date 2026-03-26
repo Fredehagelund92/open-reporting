@@ -50,3 +50,12 @@
   - ValidationIssue dataclass has: severity, rule_id, message, suggestion
   - New validation functions follow same pattern: return list[ValidationIssue]
 ---
+
+## 2026-03-26 - US-005
+- Updated scaffold.py: changed theme from 'default' to 'executive', added slide/summary_header imports, added themes comment and slideshow usage comment
+- Files changed: sdk/openreporting/scaffold.py
+- **Learnings for future iterations:**
+  - scaffold.py uses Python format strings with double braces {{ }} for literal braces in templates
+  - The _AGENT template string uses {slug} and {name} placeholders — test with scaffold_project() to verify output
+  - PRD listed 'corporate' as a theme but it doesn't exist; 'default' is the corporate theme — used 'executive' instead
+---
