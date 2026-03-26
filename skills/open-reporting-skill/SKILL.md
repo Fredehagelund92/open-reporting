@@ -1,6 +1,6 @@
 ---
 name: open-reporting-skill
-version: 6.1.0
+version: 6.2.0
 description: Content reference for Open Reporting. Covers report formats, section types, charts, layouts, categories, themes, and best practices.
 homepage: https://github.com/fhagelund/open-reporting
 metadata: {"openrep": {"emojiMode": "📊", "category": "reporting", "api_base": "http://localhost:8000/api/v1"}}
@@ -73,7 +73,7 @@ Each section has a `type` and type-specific fields. The server renders them in o
 | `summary-header` | `title` | `subtitle`, `date`, `stats[]` -> `{label, value}` |
 | `divider` | -- | `label` (centered text) |
 | `spacer` | -- | `height` (e.g. `"40px"`, `"2rem"`) |
-| `slide` | `background_color`, `sections[]` (child sections) | Use with `content_type: "slideshow"`. Each slide groups child sections onto one navigable page. |
+| `slide` | `sections[]` (child sections) | Use with `content_type: "slideshow"`. Each slide groups child sections onto one navigable page. Background and text colors are set automatically by the theme based on slide content. |
 
 ### KPI Best Practices
 
@@ -506,15 +506,15 @@ Match theme density to audience and format:
 
 ## Themes
 
-| Theme | Personality | Best For |
-|-------|-------------|----------|
-| `default` (Corporate) | Clean Inter sans-serif, electric blue accent, standard density. | General business reports, the recommended default. |
-| `dark` | Dark navy background, bright blue accent, same typography. | Analytics dashboards, dark presentations, monitoring displays. |
-| `executive` | Generous whitespace (spacious density), larger heading scale, navy/teal palette. | Board decks, C-suite briefings, investor updates. |
-| `financial` | Compact density, tabular monospace font, muted blue-gray palette, right-aligned numbers. | P&L statements, financial models, audit reports. |
-| `consulting` | Standard density, navy+teal chart palette, professional feel. | Strategy decks, client deliverables, competitive analyses. |
-| `technical` | Compact density, JetBrains Mono, neutral gray palette, right-aligned numbers. | Engineering metrics, system dashboards, technical runbooks. |
-| `editorial` | Spacious density, Georgia serif font, warm parchment background. | Long-form analysis, research papers, editorial content. |
+| Theme | Personality | Slide Palette | Best For |
+|-------|-------------|---------------|----------|
+| `default` (Corporate) | Clean Inter sans-serif, electric blue accent, standard density. | Slate title, white content, light closing | General business reports, the recommended default. |
+| `dark` | Dark navy background, bright blue accent, same typography. | Near-black title, dark navy content, dark slate closing | Analytics dashboards, dark presentations, monitoring displays. |
+| `executive` | Generous whitespace (spacious density), larger heading scale, navy/teal palette. | Deep navy title, white content, soft gray closing | Board decks, C-suite briefings, investor updates. |
+| `financial` | Compact density, tabular monospace font, muted blue-gray palette, right-aligned numbers. | Navy-blue title, white content, light closing | P&L statements, financial models, audit reports. |
+| `consulting` | Standard density, navy+teal chart palette, professional feel. | Dark navy title, white content, mint-green closing | Strategy decks, client deliverables, competitive analyses. |
+| `technical` | Compact density, JetBrains Mono, neutral gray palette, right-aligned numbers. | Near-black title, white content, neutral gray closing | Engineering metrics, system dashboards, technical runbooks. |
+| `editorial` | Spacious density, Georgia serif font, warm parchment background. | Warm brown title, cream content, golden closing | Long-form analysis, research papers, editorial content. |
 
 ## Layouts
 
@@ -554,7 +554,7 @@ When using `html_body` for full layout control:
 - **No wrapper tags**: `<html>`, `<head>`, `<body>`.
 - **Max payload**: 2 MB.
 - **Rendering context**: Reports render inside a white (`#ffffff`) container (except `dashboard` theme which uses dark background). Design for appropriate contrast.
-- **Slideshow mode**: Use `content_type: "slideshow"` and wrap each slide in `<section>`. Min 2 slides, recommended 5-6. `data-background-color` on `<section>` sets slide background. Do not add vertical-centering wrappers.
+- **Slideshow mode**: Use `content_type: "slideshow"` and wrap each slide in `<section>`. Min 2 slides, recommended 5-6. Slide backgrounds are set automatically by the theme. Do not add vertical-centering wrappers.
 
 ## Slideshow Mode
 
@@ -569,10 +569,10 @@ Each slide groups 1-2 sections. The viewer provides arrow key navigation, swipe 
   "content_type": "slideshow",
   "structured_body": {
     "sections": [
-      {"type": "slide", "background_color": "#0f172a", "sections": [
+      {"type": "slide", "sections": [
         {"type": "summary-header", "title": "Q1 Board Update", "subtitle": "Performance & Strategy"}
       ]},
-      {"type": "slide", "background_color": "#ffffff", "sections": [
+      {"type": "slide", "sections": [
         {"type": "kpi-grid", "metrics": [...]},
         {"type": "callout", "callout_type": "info", "message": "Key takeaway here."}
       ]}
@@ -580,6 +580,20 @@ Each slide groups 1-2 sections. The viewer provides arrow key navigation, swipe 
   }
 }
 ```
+
+### Theme-Controlled Slide Backgrounds
+
+Slide backgrounds and text colors are **automatically assigned by the theme** based on what each slide contains. Agents pick a theme — they do not set colors on individual slides.
+
+| Slide Role | Detected When | Styling |
+|------------|---------------|---------|
+| **Title** | Slide contains a `summary-header` section | Dark background (e.g. navy), light text — creates strong visual opening |
+| **Content** | Default for all other slides | Light background (e.g. white), dark text — optimized for readability |
+| **Closing** | Slide contains `action-items` or `key-takeaway` section | Accent background (theme-specific), dark text — signals wrap-up |
+
+Each theme has its own palette for these three roles. For example, the `executive` theme uses deep navy for title slides and soft gray for closing slides, while the `editorial` theme uses warm parchment tones throughout.
+
+**Do not set `background_color` on slides.** The field is ignored — themes fully control slide appearance.
 
 ### Slide Density Rules
 
@@ -590,7 +604,7 @@ Each slide groups 1-2 sections. The viewer provides arrow key navigation, swipe 
 | Every chart slide must include a callout with the key takeaway | Never show a chart without context |
 | Use `columns` to place two text blocks side-by-side | Better than stacking vertically |
 | Keep bullet lists to 3-4 items | Slides are not documents |
-| Use dark `background_color` (e.g. `"#0f172a"`) for title slides | Creates visual hierarchy |
+| Put `summary-header` on the first slide for a dark title slide | Theme auto-assigns dark background |
 
 ## Writing Quality Checklist
 
