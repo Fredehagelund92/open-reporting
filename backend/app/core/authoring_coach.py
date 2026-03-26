@@ -13,6 +13,59 @@ from typing import Literal
 
 
 CoachSeverity = Literal["error", "warning", "info"]
+
+AI_FILLER_PHRASES: list[str] = [
+    "it is worth noting",
+    "it is important to note",
+    "it is important to remember",
+    "it should be noted",
+    "it goes without saying",
+    "needless to say",
+    "in conclusion",
+    "in summary",
+    "to summarize",
+    "to conclude",
+    "as we can see",
+    "as mentioned above",
+    "as mentioned earlier",
+    "as discussed above",
+    "delve into",
+    "dive into",
+    "unpack",
+    "let's explore",
+    "let us explore",
+    "it's important to note",
+    "it's worth noting",
+    "i would like to",
+    "i am pleased to",
+    "we are excited to",
+    "we are thrilled to",
+    "we are pleased to",
+    "rest assured",
+    "without further ado",
+    "leverage the power",
+    "game-changer",
+    "game changer",
+    "paradigm shift",
+    "at the end of the day",
+    "cutting-edge",
+    "state-of-the-art",
+    "in today's fast-paced",
+    "in the ever-evolving",
+    "shed light on",
+    "shed some light",
+    "holistic approach",
+    "synergy",
+    "circle back",
+    "move the needle",
+]
+
+_META_SUMMARY_STARTS = (
+    "this report covers",
+    "in this report",
+    "the following report",
+    "below you will find",
+)
 CoachStatus = Literal["blocked", "needs_work", "ready"]
 CoachMode = Literal["shadow", "enforce"]
 
@@ -183,6 +236,45 @@ def evaluate_authoring_quality(
                 severity="warning",
                 message="Summary is brief and may be unclear in feed previews.",
                 suggestion="Write a one-line summary with concrete context and takeaway.",
+            )
+        )
+
+    # AI filler detection — summary
+    summary_lower = summary_trimmed.lower()
+    filler_in_summary = [p for p in AI_FILLER_PHRASES if p in summary_lower]
+    if filler_in_summary:
+        issues.append(
+            CoachIssue(
+                rule_id="ai_filler_summary",
+                severity="error",
+                message=f"Summary contains AI filler language: {', '.join(repr(p) for p in filler_in_summary[:3])}.",
+                suggestion="Rewrite the summary as a factual one-liner with a specific number or finding. "
+                           "Remove filler phrases like 'it is worth noting' and 'in conclusion'.",
+            )
+        )
+
+    # AI filler detection — body text
+    plain_lower = plain_text.lower()
+    filler_in_body = [p for p in AI_FILLER_PHRASES if p in plain_lower]
+    if len(filler_in_body) >= 3:
+        issues.append(
+            CoachIssue(
+                rule_id="ai_filler_body",
+                severity="warning",
+                message=f"Body text contains {len(filler_in_body)} AI filler phrases "
+                        f"({', '.join(repr(p) for p in filler_in_body[:3])}, ...).",
+                suggestion="Remove or replace filler phrases with concrete facts, numbers, or direct statements.",
+            )
+        )
+
+    # Summary meta-description
+    if any(summary_lower.startswith(start) for start in _META_SUMMARY_STARTS):
+        issues.append(
+            CoachIssue(
+                rule_id="summary_is_meta",
+                severity="warning",
+                message="Summary starts with a meta-description ('This report covers...', 'In this report...', etc.).",
+                suggestion="Lead the summary with the key finding or metric, not a description of the report itself.",
             )
         )
 
