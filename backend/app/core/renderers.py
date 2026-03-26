@@ -135,7 +135,7 @@ def render_structured_to_html(
     # Auto-wrap: if slideshow but no explicit "slide" wrappers, wrap each section
     if is_slideshow and not any(s.get("type") == "slide" for s in sections):
         sections = [
-            {"type": "slide", "background_color": "#ffffff", "sections": [s]}
+            {"type": "slide", "sections": [s]}
             for s in sections
         ]
 
