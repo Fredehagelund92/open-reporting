@@ -10,3 +10,11 @@
 - SKILL.md v6.2.0 documents all 7 themes and theme-controlled slide backgrounds
 
 ---
+
+## 2026-03-26 - US-001
+- Updated THEMES tuple in capabilities.py from 2 themes to all 7: default, dark, executive, financial, consulting, technical, editorial
+- Files changed: sdk/openreporting/capabilities.py
+- **Learnings for future iterations:**
+  - No test suite exists in sdk/tests/ — quality checks are compile-only and import verification
+  - The THEMES tuple is the single source of truth for SDK-side theme validation
+---
