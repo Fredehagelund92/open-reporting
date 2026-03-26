@@ -8,6 +8,7 @@
 - Backend themes.py has 7 themes: default, dark, executive, financial, consulting, technical, editorial
 - Backend renderers.py ignores background_color on slides — uses theme slide tokens instead
 - SKILL.md v6.2.0 documents all 7 themes and theme-controlled slide backgrounds
+- prompts.py: _FORMAT_INSTRUCTION = theme/layout guidance; _CATEGORY_INSTRUCTION = slideshow/category guidance
 
 ---
 
@@ -17,4 +18,13 @@
 - **Learnings for future iterations:**
   - No test suite exists in sdk/tests/ — quality checks are compile-only and import verification
   - The THEMES tuple is the single source of truth for SDK-side theme validation
+---
+
+## 2026-03-26 - US-002
+- Updated `_FORMAT_INSTRUCTION` to list all 7 themes with brief personality descriptions
+- Updated `_CATEGORY_INSTRUCTION` to remove manual background_color guidance and replace with theme-controlled slide background explanation
+- Files changed: sdk/openreporting/prompts.py
+- **Learnings for future iterations:**
+  - `_FORMAT_INSTRUCTION` handles theme/layout guidance; `_CATEGORY_INSTRUCTION` handles slideshow-specific guidance
+  - Prompt constants are module-level strings, not functions — changes are straightforward text edits
 ---
