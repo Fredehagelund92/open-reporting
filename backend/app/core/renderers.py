@@ -666,6 +666,20 @@ def _render_spacer(section: dict, t: Theme) -> str:
     return f'<div style="height:{escape(height)};"></div>'
 
 
+def _is_dark_hex(hex_color: str) -> bool:
+    """Return True if *hex_color* is a dark colour (perceived brightness < 145)."""
+    h = hex_color.strip().lstrip("#")
+    if len(h) == 3:
+        h = "".join(c * 2 for c in h)
+    if len(h) != 6:
+        return False
+    try:
+        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    except ValueError:
+        return False
+    return (r * 299 + g * 587 + b * 114) / 1000 < 145
+
+
 def _classify_slide_role(section: dict) -> str:
     """Classify a slide's role based on the section types it contains.
 
@@ -706,8 +720,22 @@ def _render_slide(section: dict, t: Theme) -> str:
     bg_color = bg_map.get(role, t.slide_content_bg)
     text_color = text_map.get(role, t.slide_content_text)
 
-    # Build a slide-scoped theme override for child section text color
-    slide_theme = dataclasses.replace(t, text_color=text_color)
+    # Build a slide-scoped theme override so child renderers use
+    # colors appropriate for the slide background (especially important
+    # for dark title/closing slides where report-style dark text is invisible).
+    _is_dark_slide = _is_dark_hex(bg_color)
+    if _is_dark_slide:
+        slide_theme = dataclasses.replace(
+            t,
+            text_color=text_color,
+            heading_color=text_color,
+            secondary_text="rgba(255,255,255,0.65)",
+            link_color=text_color,
+            card_bg="rgba(255,255,255,0.08)",
+            border_color="rgba(255,255,255,0.15)",
+        )
+    else:
+        slide_theme = dataclasses.replace(t, text_color=text_color)
 
     child_sections = section.get("sections", [])
     fragments: list[str] = []

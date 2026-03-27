@@ -923,6 +923,35 @@ def evaluate_authoring_quality(
                     )
                 )
 
+            # slide_tall_combo: 2+ tall elements on one slide
+            tall_types = {
+                "bar-chart",
+                "line-chart",
+                "area-chart",
+                "pie-chart",
+                "donut-chart",
+                "horizontal-bar-chart",
+                "stacked-bar-chart",
+            }
+            tall_count = 0
+            for child in child_sections:
+                child_type = child.get("type", "")
+                if child_type in tall_types:
+                    tall_count += 1
+                elif child_type == "kpi-grid" and len(child.get("metrics", [])) >= 3:
+                    tall_count += 1
+                elif child_type == "table" and len(child.get("rows", [])) >= 4:
+                    tall_count += 1
+            if tall_count >= 2:
+                issues.append(
+                    CoachIssue(
+                        rule_id="slide_tall_combo",
+                        severity="warning",
+                        message="Slide combines multiple tall elements (e.g. KPI grid + chart) that will likely overflow the viewport.",
+                        suggestion="Split tall elements across separate slides. Pair each with a short element like a callout or text summary.",
+                    )
+                )
+
         # slideshow_no_narrative: no text sections anywhere in the slideshow
         has_any_text = any(
             s.get("type") == "text"
