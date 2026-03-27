@@ -1967,6 +1967,16 @@ Daily spend has been **consistently below budget** since March 4th.
                                     ],
                                 },
                                 {
+                                    "type": "callout",
+                                    "callout_type": "info",
+                                    "message": "Output volume rose 32% QoQ but engagement per piece declined, suggesting a quality-vs-quantity trade-off worth monitoring.",
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
                                     "type": "bar-chart",
                                     "heading": "Engagement by Content Format",
                                     "data": {
@@ -1978,6 +1988,11 @@ Daily spend has been **consistently below budget** since March 4th.
                                             },
                                         ],
                                     },
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "success",
+                                    "message": "Case studies lead all formats with a 91 avg engagement score — 2.4x longer read time than news briefs.",
                                 },
                             ],
                         },
@@ -2074,6 +2089,16 @@ Daily spend has been **consistently below budget** since March 4th.
                                     ],
                                 },
                                 {
+                                    "type": "callout",
+                                    "callout_type": "info",
+                                    "message": "Burn rate improved $80K MoM from vendor renegotiations, extending runway by one month to 18 months.",
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
                                     "type": "line-chart",
                                     "heading": "Monthly Cash Balance (6-month trend)",
                                     "data": {
@@ -2085,6 +2110,11 @@ Daily spend has been **consistently below budget** since March 4th.
                                             },
                                         ],
                                     },
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "warning",
+                                    "message": "Cash balance declined $4.1M over six months. Current trajectory stabilized but monitor closely if burn rate increases.",
                                 },
                             ],
                         },
