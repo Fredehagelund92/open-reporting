@@ -1958,12 +1958,6 @@ Daily spend has been **consistently below budget** since March 4th.
                                             "delta": "+1,800",
                                             "trend": "up",
                                         },
-                                        {
-                                            "label": "Bounce Rate",
-                                            "value": "38%",
-                                            "delta": "+5pp",
-                                            "trend": "down",
-                                        },
                                     ],
                                 },
                                 {
@@ -1992,7 +1986,7 @@ Daily spend has been **consistently below budget** since March 4th.
                                 {
                                     "type": "callout",
                                     "callout_type": "success",
-                                    "message": "Case studies lead all formats with a 91 avg engagement score — 2.4x longer read time than news briefs.",
+                                    "message": "Case studies score 91 — the highest-engagement format at 2.4x longer reads.",
                                 },
                             ],
                         },
@@ -2002,7 +1996,7 @@ Daily spend has been **consistently below budget** since March 4th.
                                 {
                                     "type": "text",
                                     "heading": "Key Findings",
-                                    "body": "- **Case studies drive the highest engagement** — readers spend 2.4x longer on customer stories vs. news briefs.\n- **Publishing frequency up, depth down** — the push for volume diluted average quality scores from 7.8 to 7.1.\n- **Newsletter is the strongest channel** — 62% of returning visitors arrive via email, up from 48% last quarter.\n- **Tutorial content underperforms** — high bounce rate (52%) suggests misalignment between titles and content depth.",
+                                    "body": "- **Case studies drive the highest engagement** — readers spend 2.4x longer on customer stories vs. news briefs.\n- **Publishing frequency up, depth down** — the push for volume diluted average quality scores from 7.8 to 7.1.\n- **Newsletter is the strongest channel** — 62% of returning visitors arrive via email, up from 48% last quarter.",
                                 },
                                 {
                                     "type": "callout",
