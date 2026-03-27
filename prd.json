@@ -1,0 +1,186 @@
+{
+  "project": "Open Reporting",
+  "branchName": "ralph/slideshow-quality",
+  "description": "Add authoring coach rules for slideshow content quality and rewrite thin seed slideshows to match the quality bar of existing ones",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add slide_too_thin warning rule to authoring coach",
+      "description": "As an agent submitting slideshows, I want feedback when a slide has only a single element so that I can combine elements for more impactful slides.",
+      "acceptanceCriteria": [
+        "New rule 'slide_too_thin' added in the slideshow rules block of authoring_coach.py (inside the existing `for slide in slide_sections` loop, after the `slide_too_dense` check)",
+        "Rule fires as 'warning' severity when a slide has exactly 1 child section AND that section is not a 'summary-header'",
+        "Message reads: 'Slide has only 1 section. Combine with a supporting element (callout, text, or chart) for more impact.'",
+        "Suggestion reads: 'Add a callout summarizing the key insight, or pair this with a text section for context.'",
+        "Title slides (containing summary-header) do NOT trigger the warning",
+        "Track thin_slide_count and total_non_title_slides counters during the loop for use by US-003",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Add inside the existing `if content_type == 'slideshow'` block at ~line 784. Title slides are identified by having a child with type=='summary-header', matching the renderer's _classify_slide_role logic."
+    },
+    {
+      "id": "US-002",
+      "title": "Add slideshow_no_narrative warning rule to authoring coach",
+      "description": "As an agent submitting slideshows, I want feedback when my slideshow has zero text sections so that I know it lacks narrative context.",
+      "acceptanceCriteria": [
+        "New rule 'slideshow_no_narrative' added after the per-slide loop ends in authoring_coach.py",
+        "Rule fires as 'warning' severity when zero slides in the slideshow contain a 'text' type child section",
+        "Message reads: 'Slideshow has no text sections providing narrative context.'",
+        "Suggestion reads: 'Add text sections to introduce context, explain insights, or provide recommendations.'",
+        "Slideshows that have at least one text section anywhere do NOT trigger",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Place after the `for slide in slide_sections` loop ends, before the score calculation. Check across all slides' child sections for any type=='text'."
+    },
+    {
+      "id": "US-003",
+      "title": "Add slideshow_low_substance composite warning rule",
+      "description": "As an agent submitting slideshows, I want feedback when most of my slides are single-element so that I know the content might work better as a report.",
+      "acceptanceCriteria": [
+        "New rule 'slideshow_low_substance' added after slideshow_no_narrative in authoring_coach.py",
+        "Rule fires as 'warning' severity when >50% of non-title slides are single-element (using thin_slide_count and total_non_title_slides from US-001)",
+        "Message includes actual counts: 'N of M slides contain only a single element. Content this thin may work better as a report or dashboard.'",
+        "Suggestion reads: 'Combine related elements onto the same slide, or consider using content_type report instead.'",
+        "Does NOT fire when total_non_title_slides is 0 (avoids division by zero)",
+        "A slideshow where all slides have 2 sections does NOT trigger",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Uses the counters tracked during the per-slide loop in US-001. Place right after the slideshow_no_narrative rule."
+    },
+    {
+      "id": "US-004",
+      "title": "Rewrite editorial seed slideshow with richer content",
+      "description": "As a developer seeding demo data, I want the editorial-themed slideshow to have rich multi-element slides matching the quality of existing slideshows.",
+      "acceptanceCriteria": [
+        "Editorial slideshow 'Content Strategy Review: Q1 2026' rewritten from 5 thin slides to 4 rich slides",
+        "Slide 1: summary-header with title, subtitle, date, and stats (Prepared by, Period, Sources)",
+        "Slide 2: kpi-grid (4 metrics) + bar-chart (Engagement by Content Format) with correct data structure using 'data' wrapper and 'name' for datasets",
+        "Slide 3: text (Key Findings bullets, max 4) + callout (info type with newsletter growth insight)",
+        "Slide 4: text (Recommendations) + callout (success type with headline action)",
+        "Bar chart uses correct structure: {type: 'bar-chart', data: {labels: [...], datasets: [{name: '...', values: [...]}]}}",
+        "uv run python -m app.seed completes without errors",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "The current seed has labels/datasets at section root (missing data wrapper) and uses 'label' instead of 'name' for dataset identifier. Fix both. Reference existing working charts at seed.py ~line 1615 for correct structure."
+    },
+    {
+      "id": "US-005",
+      "title": "Rewrite financial seed slideshow with richer content",
+      "description": "As a developer seeding demo data, I want the financial-themed slideshow to have rich multi-element slides matching the quality of existing slideshows.",
+      "acceptanceCriteria": [
+        "Financial slideshow 'Treasury & Cash Position: March 2026' rewritten from 5 thin slides to 4 rich slides",
+        "Slide 1: summary-header with title, subtitle, date, and stats (Prepared by, Reporting Period, Covenant Review)",
+        "Slide 2: kpi-grid (4 metrics) + line-chart (6-month cash balance trend) with correct data structure",
+        "Slide 3: table (Covenant Compliance Summary) + callout (success type with covenant status)",
+        "Slide 4: text (FX exposure and outlook narrative) + callout (info type with EUR hedge position)",
+        "Line chart uses correct structure: {type: 'line-chart', data: {labels: [...], datasets: [{name: '...', values: [...]}]}}",
+        "Report unpacking line updated if count changes",
+        "uv run python -m app.seed completes without errors",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Same data structure fixes as US-004. The unpacking line (r1, r1b, r2, ... r10, r11) should remain the same since we still have 13 total reports."
+    },
+    {
+      "id": "US-006",
+      "title": "Fix title slide text colors on dark backgrounds",
+      "description": "As a viewer of slideshows, I want title slide text to be readable on dark backgrounds so that the first slide doesn't show invisible dark-on-dark text.",
+      "acceptanceCriteria": [
+        "In _render_slide() in renderers.py, when the slide background is dark, override heading_color, secondary_text, card_bg, border_color, and link_color in the slide_theme",
+        "A _is_dark_hex() helper function determines if a hex color is dark (perceived brightness < 145)",
+        "Dark slides use: heading_color=slide text color, secondary_text=rgba(255,255,255,0.65), card_bg=rgba(255,255,255,0.08), border_color=rgba(255,255,255,0.15), link_color=slide text color",
+        "Light-background slides continue using only text_color override (existing behavior)",
+        "All theme title slides (editorial #1c1917, financial #1e3a5f, dark #020617, consulting #0f172a, executive #0f172a, technical #18181b) render with readable text",
+        "uv run python -m app.seed completes without errors",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "Already implemented in renderers.py. The _is_dark_hex helper is placed before _classify_slide_role. The slide_theme override is in _render_slide after bg/text color resolution."
+    },
+    {
+      "id": "US-007",
+      "title": "Add slide_content_overflow warning rule to authoring coach",
+      "description": "As an agent submitting slideshows, I want feedback when a slide has too much content so that slides don't require scrollbars to view.",
+      "acceptanceCriteria": [
+        "New rule 'slide_content_overflow' added in the slideshow rules block of authoring_coach.py",
+        "Rule fires as 'warning' severity when a slide has more than 2 sections",
+        "Rule fires as 'warning' severity when a single text section exceeds 200 characters of plain text (stricter than the existing 300-char slide_text_heavy for overflow prevention)",
+        "Rule fires as 'warning' severity when a table section has more than 6 rows",
+        "Rule fires as 'warning' severity when a kpi-grid has more than 4 metrics",
+        "Message indicates which element is too large and recommends splitting across slides",
+        "Suggestion reads: 'Split content across multiple slides to avoid scrollbars. Each slide should fit on screen without scrolling.'",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "The existing slide_too_dense rule warns at >2 sections. This adds content-size checks within sections: table rows, KPI count, text length. These are the main sources of overflow. Place checks inside the per-slide child section loop."
+    },
+    {
+      "id": "US-008",
+      "title": "Add slide_tall_combo warning rule to authoring coach",
+      "description": "As an agent submitting slideshows, I want feedback when a slide combines multiple tall elements (KPI grid + chart, chart + large table) so that slides don't overflow the viewport.",
+      "acceptanceCriteria": [
+        "New rule 'slide_tall_combo' added in the slideshow rules block of authoring_coach.py inside the per-slide loop",
+        "A section counts as 'tall' if: it is a kpi-grid with 3+ metrics, any chart type (bar-chart, line-chart, area-chart, pie-chart, donut-chart, horizontal-bar-chart, stacked-bar-chart), or a table with 4+ rows",
+        "Rule fires as 'warning' severity when a slide contains 2 or more tall elements",
+        "Message reads: 'Slide combines multiple tall elements (e.g. KPI grid + chart) that will likely overflow the viewport.'",
+        "Suggestion reads: 'Split tall elements across separate slides. Pair each with a short element like a callout or text summary.'",
+        "A slide with 1 tall element + 1 callout does NOT trigger",
+        "A slide with kpi-grid (2 metrics) + chart does NOT trigger (kpi-grid needs 3+ to count as tall)",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "Place inside the existing `for slide in slide_sections` loop. Count tall sections per slide. Chart types set: bar-chart, line-chart, area-chart, pie-chart, donut-chart, horizontal-bar-chart, stacked-bar-chart. KPI tall threshold: len(metrics) >= 3. Table tall threshold: len(rows) >= 4."
+    },
+    {
+      "id": "US-009",
+      "title": "Split oversized seed slides to prevent overflow",
+      "description": "As a developer seeding demo data, I want the editorial and financial slideshows to not trigger slide_tall_combo warnings and to fit without scrollbars.",
+      "acceptanceCriteria": [
+        "Editorial slideshow slide 2 (KPI grid + bar chart) split into: slide 2a (KPI grid + callout) and slide 2b (bar chart + callout)",
+        "Financial slideshow slide 2 (KPI grid + line chart) split into: slide 2a (KPI grid + callout) and slide 2b (line chart + callout)",
+        "Editorial slideshow now has 5 slides total (was 4)",
+        "Financial slideshow now has 5 slides total (was 4)",
+        "No slide in either slideshow triggers the slide_tall_combo warning",
+        "uv run python -m app.seed completes without errors",
+        "Report unpacking line updated if total report count changed",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "Each split adds a callout to the newly isolated element so it's not a bare single-element slide (which would trigger slide_too_thin). Callouts provide interpretive context for the data."
+    },
+    {
+      "id": "US-010",
+      "title": "Trim editorial slideshow content to eliminate remaining overflow",
+      "description": "As a viewer of the Content Strategy Review slideshow, I want every slide to fit without scrollbars even on the spacious editorial theme.",
+      "acceptanceCriteria": [
+        "Slide 2: Reduce KPI grid from 4 to 3 metrics (drop 'Bounce Rate')",
+        "Slide 3: Shorten the callout message to under 80 characters",
+        "Slide 4: Reduce bullet points from 4 to 3 (drop 'Tutorial content underperforms')",
+        "No slide in the editorial slideshow requires scrolling at standard 16:9 viewport",
+        "uv run python -m app.seed completes without errors",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "The editorial theme uses density='spacious' (32px KPI padding) and line_height='1.8', making content taller than other themes. These reductions ensure all slides fit within the viewport."
+    }
+  ]
+}
