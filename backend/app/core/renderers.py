@@ -458,11 +458,16 @@ def _render_chart_section(section: dict, t: Theme, svg_fn) -> str:
             f'margin:0 0 8px;">{escape(heading)}</h3>'
         )
 
+    chart_type = section.get("type", "")
+    overflow_style = (
+        "max-height:800px; overflow-y:auto;" if chart_type == "heatmap-chart" else ""
+    )
+
     return (
         f'<div style="width:100%; margin:16px 0; text-align:left;">'
         f"{heading_html}"
         f"<div data-or-chart='{escape(chart_json, quote=False)}' "
-        f'style="width:100%; display:block;">'
+        f'style="width:100%; display:block; {overflow_style}">'
         f"{svg_fallback}"
         f"</div>"
         f"</div>"

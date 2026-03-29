@@ -33,58 +33,6 @@ def _fmt_val(val: float) -> str:
 
 _CHART_WIDTH = 760
 _CHART_HEIGHT = 380
-
-
-# ---------------------------------------------------------------------------
-# Color helpers (used by heatmap)
-# ---------------------------------------------------------------------------
-
-
-def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
-    """Parse '#RRGGBB' to (R, G, B) ints."""
-    h = hex_color.lstrip("#")
-    return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-
-
-def _rgb_to_hex(r: int, g: int, b: int) -> str:
-    """RGB ints back to '#rrggbb'."""
-    return f"#{r:02x}{g:02x}{b:02x}"
-
-
-def _interpolate_color(stops: list[tuple[float, str]], t: float) -> str:
-    """Linear RGB interpolation across N color stops at positions [0..1]."""
-    t = max(0.0, min(1.0, t))
-    if len(stops) == 1:
-        return stops[0][1]
-    # Find the two surrounding stops
-    for i in range(len(stops) - 1):
-        pos_a, col_a = stops[i]
-        pos_b, col_b = stops[i + 1]
-        if t <= pos_b or i == len(stops) - 2:
-            span = pos_b - pos_a
-            local_t = (t - pos_a) / span if span > 0 else 0.0
-            r1, g1, b1 = _hex_to_rgb(col_a)
-            r2, g2, b2 = _hex_to_rgb(col_b)
-            r = int(r1 + (r2 - r1) * local_t)
-            g = int(g1 + (g2 - g1) * local_t)
-            b = int(b1 + (b2 - b1) * local_t)
-            return _rgb_to_hex(r, g, b)
-    return stops[-1][1]
-
-
-def _text_color_for_bg(hex_bg: str) -> str:
-    """Return white or dark text based on WCAG relative luminance."""
-    r, g, b = _hex_to_rgb(hex_bg)
-    # sRGB luminance
-    lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-    return "#ffffff" if lum < 0.45 else "#1e293b"
-
-
-_HEATMAP_SCALES: dict[str, list[tuple[float, str]]] = {
-    "sequential": [(0.0, "#f0f4ff"), (1.0, "#1d4ed8")],
-    "diverging": [(0.0, "#1d4ed8"), (0.5, "#f8fafc"), (1.0, "#dc2626")],
-    "red-yellow-green": [(0.0, "#dc2626"), (0.5, "#f59e0b"), (1.0, "#16a34a")],
-}
 _PAD_LEFT = 8
 
 
@@ -132,9 +80,9 @@ def _text_color_for_bg(hex_bg: str) -> str:
 
 
 _HEATMAP_SCALES: dict[str, list[tuple[float, str]]] = {
-    "sequential": [(0.0, "#f0f4ff"), (1.0, "#1d4ed8")],
-    "diverging": [(0.0, "#1d4ed8"), (0.5, "#f8fafc"), (1.0, "#dc2626")],
-    "red-yellow-green": [(0.0, "#dc2626"), (0.5, "#f59e0b"), (1.0, "#16a34a")],
+    "sequential": [(0.0, "#f1f5f9"), (1.0, "#93c5fd")],
+    "diverging": [(0.0, "#bfdbfe"), (0.5, "#f8fafc"), (1.0, "#fecaca")],
+    "red-yellow-green": [(0.0, "#fecaca"), (0.5, "#fef3c7"), (1.0, "#bbf7d0")],
 }
 
 
@@ -150,6 +98,8 @@ def _heatmap_normalize(
         return (val + abs_max) / (2 * abs_max) if abs_max > 0 else 0.5
     val_range = max_val - min_val
     return (val - min_val) / val_range if val_range > 0 else 0.5
+
+
 _PAD_RIGHT = 32
 _PAD_TOP = 40
 _PAD_BOTTOM = 60
@@ -777,11 +727,15 @@ def svg_sparkline(data: dict, theme: Theme) -> str:
 # ---------------------------------------------------------------------------
 
 
+_HEATMAP_MAX_VISIBLE_ROWS = 40
+
+
 def svg_heatmap_chart(data: dict, theme: Theme) -> str:
     """Render a 2D heatmap as an SVG with colored cells and a gradient legend."""
     x_labels = data.get("x_labels", [])
     y_labels = data.get("y_labels", [])
     values = data.get("values", [])
+    display_values = data.get("display_values")  # optional: shown in cells instead of values
     scale_name = data.get("scale", "sequential")
     stops = _HEATMAP_SCALES.get(scale_name, _HEATMAP_SCALES["sequential"])
 
@@ -791,7 +745,7 @@ def svg_heatmap_chart(data: dict, theme: Theme) -> str:
     n_cols = len(x_labels)
     n_rows = len(y_labels)
 
-    # Flatten all numeric values for normalization
+    # Flatten all numeric values for normalization (use full dataset)
     flat: list[float] = []
     for row in values:
         if isinstance(row, list):
@@ -803,6 +757,17 @@ def svg_heatmap_chart(data: dict, theme: Theme) -> str:
 
     min_val = min(flat)
     max_val = max(flat)
+
+    # Cap visible rows to keep SVG height manageable
+    truncated = False
+    if n_rows > _HEATMAP_MAX_VISIBLE_ROWS:
+        truncated = True
+        total_rows = n_rows
+        y_labels = y_labels[:_HEATMAP_MAX_VISIBLE_ROWS]
+        values = values[:_HEATMAP_MAX_VISIBLE_ROWS]
+        if display_values:
+            display_values = display_values[:_HEATMAP_MAX_VISIBLE_ROWS]
+        n_rows = _HEATMAP_MAX_VISIBLE_ROWS
 
     # Layout
     pad_left = 140
@@ -829,7 +794,8 @@ def svg_heatmap_chart(data: dict, theme: Theme) -> str:
 
     grid_w = n_cols * (cell_w + gap) - gap
     grid_h = n_rows * (cell_h + gap) - gap
-    total_h = pad_top + grid_h + pad_bottom
+    extra_trunc = 16 if truncated else 0
+    total_h = pad_top + grid_h + pad_bottom + extra_trunc
 
     parts: list[str] = []
 
@@ -878,15 +844,35 @@ def svg_heatmap_chart(data: dict, theme: Theme) -> str:
             )
             # Value label only if cell is large enough
             if cell_w > 30 and cell_h > 20:
+                # Use display_values if provided, otherwise show the color value
+                if display_values and ri < len(display_values):
+                    d_row = display_values[ri]
+                    if isinstance(d_row, list) and ci < len(d_row):
+                        cell_text = str(d_row[ci])
+                    else:
+                        cell_text = _fmt_val(float(val))
+                else:
+                    cell_text = _fmt_val(float(val))
                 parts.append(
                     f'<text x="{x + cell_w / 2:.1f}" y="{y + cell_h / 2:.1f}" '
                     f'text-anchor="middle" dominant-baseline="middle" '
                     f'fill="{fg}" style="font-size:11px;">'
-                    f"{_fmt_val(float(val))}</text>"
+                    f"{escape(cell_text)}</text>"
                 )
 
+    # Truncation notice (before legend)
+    legend_offset = 20
+    if truncated:
+        trunc_y = pad_top + grid_h + 14
+        parts.append(
+            f'<text x="{pad_left}" y="{trunc_y}" fill="{theme.chart_axis_color}" '
+            f'style="font-size:11px; font-style:italic;">'
+            f"Showing {_HEATMAP_MAX_VISIBLE_ROWS} of {total_rows} rows</text>"
+        )
+        legend_offset = 36
+
     # Gradient legend bar at bottom
-    legend_y = pad_top + grid_h + 20
+    legend_y = pad_top + grid_h + legend_offset
     legend_x = pad_left
     legend_w = min(grid_w, 300)
     legend_h = 12
