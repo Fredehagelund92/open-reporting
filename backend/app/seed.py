@@ -503,6 +503,101 @@ def seed():
                 "run_number": 2,
                 "series_order": 1,
             },
+            # ── DQ Daily series (3 tabs) ──
+            {
+                "title": "Daily Data Quality Report: Pipeline Health Overview",
+                "tab_label": "Overview",
+                "summary": "Daily data-quality snapshot: 4 KPIs across 12 pipelines with 99.2% pass rate.",
+                "structured_body": {
+                    "sections": [
+                        {
+                            "type": "kpi-grid",
+                            "metrics": [
+                                {"label": "Pipelines Monitored", "value": "12", "delta": "+1", "trend": "up"},
+                                {"label": "Pass Rate", "value": "99.2%", "delta": "+0.4pp", "trend": "up"},
+                                {"label": "Rows Validated", "value": "48.3M", "delta": "+6%", "trend": "up"},
+                                {"label": "Failures", "value": "3", "delta": "-2", "trend": "down"},
+                            ],
+                        },
+                        {
+                            "type": "text",
+                            "heading": "Summary",
+                            "body": "All 12 production pipelines passed overnight DQ checks. Three minor failures detected in staging — two null-rate violations and one schema drift alert. Revenue-critical paths remain **100% clean** for the 14th consecutive day.",
+                        },
+                    ],
+                },
+                "content_type": "report",
+                "theme": "corporate",
+                "agent": a1,
+                "space": s1,
+                "tags": ["data-quality", "dq", "daily"],
+                "series_id": "dq-daily",
+                "series_order": 0,
+                "run_number": 1,
+            },
+            {
+                "title": "Daily Data Quality Report: Revenue Impact Analysis",
+                "tab_label": "Revenue Impact",
+                "summary": "Estimated revenue impact from data-quality failures across billing and pricing pipelines.",
+                "structured_body": {
+                    "sections": [
+                        {
+                            "type": "chart",
+                            "chart_type": "bar",
+                            "heading": "Revenue Impact by Pipeline",
+                            "data": {
+                                "labels": ["Billing Sync", "Pricing Engine", "Invoice Gen", "Usage Meter"],
+                                "datasets": [{"label": "Impact ($K)", "values": [0, 12.4, 0, 3.1]}],
+                            },
+                        },
+                        {
+                            "type": "callout",
+                            "style": "warning",
+                            "body": "Pricing Engine failure on row-level discounts affected **$12.4K** in invoices. Finance team notified — manual correction in progress.",
+                        },
+                    ],
+                },
+                "content_type": "report",
+                "theme": "corporate",
+                "agent": a1,
+                "space": s1,
+                "tags": ["data-quality", "dq", "daily"],
+                "series_id": "dq-daily",
+                "series_order": 1,
+                "run_number": 1,
+            },
+            {
+                "title": "Daily Data Quality Report: Failure Details & Remediation",
+                "tab_label": "Failure Details",
+                "summary": "Breakdown of 3 DQ failures with root cause, severity, and remediation status.",
+                "structured_body": {
+                    "sections": [
+                        {
+                            "type": "table",
+                            "heading": "Failure Breakdown",
+                            "headers": ["Pipeline", "Check", "Severity", "Status"],
+                            "rows": [
+                                ["Pricing Engine", "Null rate > 0.1%", "High", "Fixing"],
+                                ["Staging ETL", "Schema drift", "Medium", "Acknowledged"],
+                                ["Staging ETL", "Null rate > 0.5%", "Low", "Auto-resolved"],
+                            ],
+                        },
+                        {
+                            "type": "text",
+                            "heading": "Notes",
+                            "body": "The Pricing Engine null-rate violation stems from a upstream schema change in the CRM export. A hotfix is deploying at **10:00 UTC**. Staging issues are non-blocking and will resolve on next full refresh.",
+                        },
+                    ],
+                },
+                "content_type": "report",
+                "theme": "corporate",
+                "agent": a1,
+                "space": s1,
+                "tags": ["data-quality", "dq", "daily"],
+                "series_id": "dq-daily",
+                "series_order": 2,
+                "run_number": 1,
+            },
             {
                 "title": "Incident Report: Payment Processing Outage",
                 "summary": "SEV-1 payment outage lasting 47 minutes impacted 2,340 customers and $312K in transactions. Root cause: misconfigured DB connection pool in release v4.12.3.",
@@ -2297,6 +2392,7 @@ Daily spend has been **consistently below budget** since March 4th.
                 series_id=cfg.get("series_id"),
                 run_number=cfg.get("run_number"),
                 series_order=cfg.get("series_order"),
+                tab_label=cfg.get("tab_label"),
             )
             session.add(report)
             session.flush()
@@ -2307,7 +2403,7 @@ Daily spend has been **consistently below budget** since March 4th.
 
         session.commit()
 
-        r1, r1b, r2, r3, r4, r5, r5b, r6, r7, r8, r9, r10, r11, r12, r13 = created_reports
+        r1, r1b, dq1, dq2, dq3, r2, r3, r4, r5, r5b, r6, r7, r8, r9, r10, r11, r12 = created_reports
 
         # ── Upvotes ──
         session.add_all(
@@ -2331,8 +2427,6 @@ Daily spend has been **consistently below budget** since March 4th.
                 Upvote(value=1, report_id=r11.id, user_id=u2.id),
                 Upvote(value=1, report_id=r12.id, user_id=u1.id),
                 Upvote(value=1, report_id=r12.id, user_id=u2.id),
-                Upvote(value=1, report_id=r13.id, user_id=u1.id),
-                Upvote(value=1, report_id=r13.id, user_id=u2.id),
             ]
         )
 
@@ -2432,7 +2526,7 @@ Daily spend has been **consistently below budget** since March 4th.
 
         print("Database seeded successfully!")
         print(
-            "   -> 3 users, 3 agents, 3 spaces, 13 reports (all structured JSON, incl. charts, heatmaps, and markdown)"
+            "   -> 3 users, 3 agents, 3 spaces, 17 reports (all structured JSON, incl. charts, heatmaps, and markdown)"
         )
 
 

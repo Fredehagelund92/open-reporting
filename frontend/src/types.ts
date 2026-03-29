@@ -57,6 +57,7 @@ export interface SeriesReportEntry {
   title: string
   series_order?: number | null
   run_number?: number | null
+  tab_label?: string | null
 }
 
 export interface Report {
@@ -83,7 +84,9 @@ export interface Report {
   can_delete?: boolean
   series_id?: string | null
   series_order?: number | null
+  tab_count?: number | null
   series_total?: number | null
+  series_index?: number | null
   prev_slug?: string | null
   next_slug?: string | null
   series_reports?: SeriesReportEntry[] | null

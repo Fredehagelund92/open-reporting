@@ -18,8 +18,8 @@ from fastapi import (
     BackgroundTasks,
 )
 from pydantic import BaseModel, field_validator
-from sqlalchemy.orm import selectinload
-from sqlmodel import Session, select, func, col, or_
+from sqlalchemy.orm import selectinload, aliased
+from sqlmodel import Session, select, func, col, or_, and_
 
 from app.database import get_session, db_url
 from app.models import (
@@ -96,6 +96,39 @@ def _get_report_by_id_or_slug(session: Session, report_id: str) -> Optional[Repo
     return session.exec(select(Report).where(Report.slug == report_id)).first()
 
 
+def _resolve_run_number(
+    session: Session,
+    series_id: Optional[str],
+    agent_id: str,
+    tab_label: Optional[str],
+    series_order: Optional[int],
+    explicit_run_number: Optional[int] = None,
+) -> Optional[int]:
+    """Compute run_number for a new report in a series."""
+    if not series_id:
+        return None
+    if explicit_run_number is not None:
+        return explicit_run_number
+    if tab_label is not None and series_order is not None and series_order > 0:
+        # Secondary tab: join the latest run
+        latest = session.exec(
+            select(func.max(Report.run_number)).where(
+                Report.series_id == series_id,
+                Report.agent_id == agent_id,
+            )
+        ).one()
+        return latest if latest else 1
+    else:
+        # Primary tab (series_order=0) or standalone series entry: new run
+        max_run = session.exec(
+            select(func.max(Report.run_number)).where(
+                Report.series_id == series_id,
+                Report.agent_id == agent_id,
+            )
+        ).one()
+        return (max_run or 0) + 1
+
+
 # --- Request / Response Schemas ---
 
 
@@ -115,6 +148,8 @@ class ReportCreateRequest(BaseModel):
     meta: Optional[dict] = None
     series_id: Optional[str] = None
     series_order: Optional[int] = None
+    tab_label: Optional[str] = None
+    run_number: Optional[int] = None
 
     @field_validator("series_id")
     @classmethod
@@ -166,6 +201,7 @@ class SeriesReportEntry(BaseModel):
     title: str
     series_order: Optional[int] = None
     run_number: Optional[int] = None
+    tab_label: Optional[str] = None
 
 
 class ReportSummaryResponse(BaseModel):
@@ -188,13 +224,15 @@ class ReportSummaryResponse(BaseModel):
     series_id: Optional[str] = None
     run_number: Optional[int] = None
     series_order: Optional[int] = None
+    tab_count: Optional[int] = None
+    series_total: Optional[int] = None
+    series_index: Optional[int] = None
     quality: Optional[QualityResponse] = None
 
 
 class ReportDetailResponse(ReportSummaryResponse):
     html_body: str
     chat_enabled: bool = False
-    series_total: Optional[int] = None
     prev_slug: Optional[str] = None
     next_slug: Optional[str] = None
     series_reports: Optional[list[SeriesReportEntry]] = None
@@ -543,15 +581,14 @@ def create_report(
     if x_skill:
         report_metadata["skill_attribution"] = x_skill
 
-    run_number = None
-    if body.series_id:
-        count = session.exec(
-            select(func.count(Report.id)).where(
-                Report.series_id == body.series_id,
-                Report.agent_id == agent.id,
-            )
-        ).one()
-        run_number = int(count) + 1
+    run_number = _resolve_run_number(
+        session,
+        body.series_id,
+        agent.id,
+        body.tab_label,
+        body.series_order,
+        body.run_number,
+    )
 
     report = Report(
         title=body.title,
@@ -567,6 +604,7 @@ def create_report(
         series_id=body.series_id,
         run_number=run_number,
         series_order=body.series_order,
+        tab_label=body.tab_label,
     )
     session.add(report)
     session.commit()
@@ -619,6 +657,8 @@ class UserReportCreateRequest(BaseModel):
     meta: Optional[dict] = None
     series_id: Optional[str] = None
     series_order: Optional[int] = None
+    tab_label: Optional[str] = None
+    run_number: Optional[int] = None
 
     @field_validator("series_id")
     @classmethod
@@ -723,15 +763,14 @@ def upload_report_as_user(
 
     canonical_tags = resolve_canonical_tags(session, body.tags)
 
-    run_number = None
-    if body.series_id:
-        count = session.exec(
-            select(func.count(Report.id)).where(
-                Report.series_id == body.series_id,
-                Report.agent_id == agent.id,
-            )
-        ).one()
-        run_number = int(count) + 1
+    run_number = _resolve_run_number(
+        session,
+        body.series_id,
+        agent.id,
+        body.tab_label,
+        body.series_order,
+        body.run_number,
+    )
 
     report = Report(
         title=body.title,
@@ -746,6 +785,7 @@ def upload_report_as_user(
         series_id=body.series_id,
         run_number=run_number,
         series_order=body.series_order,
+        tab_label=body.tab_label,
     )
     session.add(report)
     session.commit()
@@ -812,6 +852,79 @@ async def list_reports(
         .subquery()
     )
 
+    ReportSibling = aliased(Report)
+    tab_sq = (
+        select(
+            ReportSibling.series_id,  # type: ignore[attr-defined]
+            ReportSibling.agent_id,  # type: ignore[attr-defined]
+            func.coalesce(ReportSibling.run_number, -1).label("run_grp"),  # type: ignore[attr-defined]
+            func.count(ReportSibling.id).label("tab_count"),  # type: ignore[attr-defined]
+        )
+        .where(
+            ReportSibling.series_id.is_not(None),  # type: ignore[attr-defined]
+            ReportSibling.tab_label.is_not(None),  # type: ignore[attr-defined]
+        )
+        .group_by(
+            ReportSibling.series_id,  # type: ignore[attr-defined]
+            ReportSibling.agent_id,  # type: ignore[attr-defined]
+            func.coalesce(ReportSibling.run_number, -1),  # type: ignore[attr-defined]
+        )
+        .subquery()
+    )
+
+    # series_sq: count visible cards per series (for progress dots)
+    VisibleSibling = aliased(Report)
+    series_sq = (
+        select(
+            VisibleSibling.series_id,  # type: ignore[attr-defined]
+            VisibleSibling.agent_id,  # type: ignore[attr-defined]
+            func.count(VisibleSibling.id).label("series_total"),  # type: ignore[attr-defined]
+        )
+        .where(
+            VisibleSibling.series_id.is_not(None),  # type: ignore[attr-defined]
+            or_(
+                VisibleSibling.tab_label.is_(None),  # type: ignore[attr-defined]
+                VisibleSibling.series_order == 0,  # type: ignore[attr-defined]
+                VisibleSibling.series_order.is_(None),  # type: ignore[attr-defined]
+            ),
+        )
+        .group_by(
+            VisibleSibling.series_id,  # type: ignore[attr-defined]
+            VisibleSibling.agent_id,  # type: ignore[attr-defined]
+        )
+        .subquery()
+    )
+
+    # series_rank_sq: 0-based position of each visible card within its series
+    RankedReport = aliased(Report)
+    series_rank_sq = (
+        select(
+            RankedReport.id.label("ranked_id"),  # type: ignore[attr-defined]
+            (
+                func.row_number().over(
+                    partition_by=[
+                        RankedReport.series_id,  # type: ignore[attr-defined]
+                        RankedReport.agent_id,  # type: ignore[attr-defined]
+                    ],
+                    order_by=[
+                        func.coalesce(RankedReport.run_number, 0),  # type: ignore[attr-defined]
+                        func.coalesce(RankedReport.series_order, 0),  # type: ignore[attr-defined]
+                    ],
+                )
+                - 1
+            ).label("series_index"),
+        )
+        .where(
+            RankedReport.series_id.is_not(None),  # type: ignore[attr-defined]
+            or_(
+                RankedReport.tab_label.is_(None),  # type: ignore[attr-defined]
+                RankedReport.series_order == 0,  # type: ignore[attr-defined]
+                RankedReport.series_order.is_(None),  # type: ignore[attr-defined]
+            ),
+        )
+        .subquery()
+    )
+
     # Base query: join Agent and Space to avoid N+1 lookups
     query = (
         select(
@@ -820,11 +933,30 @@ async def list_reports(
             Space,
             func.coalesce(upvotes_sq.c.score, 0).label("total_score"),
             func.coalesce(comments_sq.c.comment_count, 0).label("total_comments"),
+            tab_sq.c.tab_count,
+            series_sq.c.series_total,
+            series_rank_sq.c.series_index,
         )
         .join(Agent, Report.agent_id == Agent.id)
         .join(Space, Report.space_id == Space.id)
         .outerjoin(upvotes_sq, Report.id == upvotes_sq.c.report_id)
         .outerjoin(comments_sq, Report.id == comments_sq.c.report_id)
+        .outerjoin(
+            tab_sq,
+            and_(
+                Report.series_id == tab_sq.c.series_id,
+                Report.agent_id == tab_sq.c.agent_id,
+                func.coalesce(Report.run_number, -1) == tab_sq.c.run_grp,
+            ),
+        )
+        .outerjoin(
+            series_sq,
+            and_(
+                Report.series_id == series_sq.c.series_id,
+                Report.agent_id == series_sq.c.agent_id,
+            ),
+        )
+        .outerjoin(series_rank_sq, Report.id == series_rank_sq.c.ranked_id)
         .options(selectinload(Report.report_tags).selectinload(ReportTag.tag))
     )
 
@@ -844,6 +976,15 @@ async def list_reports(
         )
     else:
         query = query.where(Space.is_private.is_(False))
+
+    # Hide secondary tabs — only show standalone, primary tab, or non-tab reports
+    query = query.where(
+        or_(
+            Report.tab_label.is_(None),       # standalone or time-series
+            Report.series_order == 0,          # primary tab
+            Report.series_order.is_(None),     # safety fallback
+        )
+    )
 
     # Filter by agent
     if agent_id:
@@ -908,7 +1049,7 @@ async def list_reports(
 
     user_votes_by_report: dict[str, int] = {}
     if current_user and rows:
-        report_ids = [report.id for report, _, _, _, _ in rows]
+        report_ids = [report.id for report, _, _, _, _, _, _, _ in rows]
         user_vote_rows = session.exec(
             select(Upvote.report_id, Upvote.value).where(
                 Upvote.user_id == current_user.id,
@@ -920,7 +1061,7 @@ async def list_reports(
         }
 
     results = []
-    for report, agent_obj, space_obj, score, comment_count in rows:
+    for report, agent_obj, space_obj, score, comment_count, tab_count, series_total, series_index in rows:
         results.append(
             ReportSummaryResponse(
                 id=report.id,
@@ -944,6 +1085,9 @@ async def list_reports(
                 series_id=report.series_id,
                 run_number=report.run_number,
                 series_order=report.series_order,
+                tab_count=int(tab_count) if tab_count else None,
+                series_total=int(series_total) if series_total else None,
+                series_index=int(series_index) if series_index is not None else None,
             )
         )
 
@@ -1028,6 +1172,7 @@ async def get_report(
                 title=s.title,
                 series_order=s.series_order,
                 run_number=s.run_number,
+                tab_label=s.tab_label,
             )
             for s in siblings_sorted
         ]

@@ -114,6 +114,9 @@ class ReportListItem(BaseModel):
     series_id: str | None = Field(default=None, description="Series identifier for recurring reports.")
     run_number: int | None = Field(default=None, description="Run number within the series.")
     series_order: int | None = Field(default=None, description="Explicit tab position (0-based) within the series.")
+    tab_count: int | None = Field(default=None, description="Number of tabs in this report group, only set when > 1.")
+    series_total: int | None = Field(default=None, description="Number of visible entries in the series.")
+    series_index: int | None = Field(default=None, description="0-based position of this entry within the series.")
 
 
 class SeriesReportEntry(BaseModel):
@@ -123,13 +126,13 @@ class SeriesReportEntry(BaseModel):
     title: str = Field(description="Report title (used as tab label).")
     series_order: int | None = Field(default=None, description="Explicit tab position (0-based).")
     run_number: int | None = Field(default=None, description="Run number within the series.")
+    tab_label: str | None = Field(default=None, description="Tab label for tabbed reports.")
 
 
 class ReportDetail(ReportListItem):
     """Full detail of a single report."""
 
     html_body: str = Field(description="Rendered HTML body of the report.")
-    series_total: int | None = Field(default=None, description="Total number of reports in the series.")
     prev_slug: str | None = Field(default=None, description="Slug of the previous report in the series.")
     next_slug: str | None = Field(default=None, description="Slug of the next report in the series.")
     series_reports: list[SeriesReportEntry] | None = Field(default=None, description="All reports in the series, sorted by series_order then run_number.")

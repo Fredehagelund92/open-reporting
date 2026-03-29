@@ -144,16 +144,47 @@ export function ReportViewerPage() {
     pendingQuoteRef.current = ""
   }, [report])
 
+  // Split series_reports into series entries (distinct runs) and tab entries (within same run)
+  const { seriesEntries, tabEntries, seriesIndex } = useMemo(() => {
+    const entries = report?.series_reports
+    if (!entries || entries.length <= 1) return { seriesEntries: [], tabEntries: [], seriesIndex: 0 }
+
+    // Tab entries: entries sharing the current report's run_number that have tab_label
+    const currentRun = report?.run_number
+    const tabs = entries.filter(e => e.tab_label && e.run_number === currentRun)
+
+    // Series entries: one representative per run_number
+    const runGroups = new Map<number, typeof entries>()
+    for (const e of entries) {
+      const key = e.run_number ?? 0
+      if (!runGroups.has(key)) runGroups.set(key, [])
+      runGroups.get(key)!.push(e)
+    }
+    const series = Array.from(runGroups.values())
+      .map(group => group.find(e => e.series_order === 0 || e.series_order == null || !e.tab_label) || group[0])
+      .sort((a, b) => (a.run_number ?? 0) - (b.run_number ?? 0))
+
+    const idx = series.findIndex(e => e.run_number === currentRun)
+
+    return { seriesEntries: series, tabEntries: tabs, seriesIndex: idx >= 0 ? idx : 0 }
+  }, [report?.series_reports, report?.run_number])
+
   useEffect(() => {
     if (!report?.series_id) return
-    const siblings = report?.series_reports
+    // Determine prev/next from series entries (cross-run navigation)
     let prev: string | null = null
     let next: string | null = null
-    if (siblings && siblings.length > 1) {
-      const idx = siblings.findIndex(e => e.slug === report.slug)
-      if (idx > 0) prev = siblings[idx - 1].slug
-      if (idx >= 0 && idx < siblings.length - 1) next = siblings[idx + 1].slug
-    } else {
+    if (seriesEntries.length > 1) {
+      if (seriesIndex > 0) prev = seriesEntries[seriesIndex - 1].slug
+      if (seriesIndex < seriesEntries.length - 1) next = seriesEntries[seriesIndex + 1].slug
+    }
+    // Also allow tab-level arrow navigation
+    if (tabEntries.length > 1) {
+      const tabIdx = tabEntries.findIndex(e => e.slug === report.slug)
+      if (tabIdx > 0 && !prev) prev = tabEntries[tabIdx - 1].slug
+      if (tabIdx >= 0 && tabIdx < tabEntries.length - 1 && !next) next = tabEntries[tabIdx + 1].slug
+    }
+    if (!prev && !next) {
       prev = report.prev_slug ?? null
       next = report.next_slug ?? null
     }
@@ -165,7 +196,24 @@ export function ReportViewerPage() {
     }
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
-  }, [report?.series_id, report?.series_reports, report?.slug, report?.prev_slug, report?.next_slug, navigate])
+  }, [report?.series_id, seriesEntries, tabEntries, seriesIndex, report?.slug, report?.prev_slug, report?.next_slug, navigate])
+
+  // Prefetch sibling reports so tab switches are instant
+  useEffect(() => {
+    if (!report?.series_reports) return
+    for (const entry of report.series_reports) {
+      if (entry.slug !== report.slug) {
+        queryClient.prefetchQuery({
+          queryKey: ["report", entry.slug],
+          queryFn: async () => {
+            const res = await api.get(`/reports/${entry.slug}`)
+            return res.data
+          },
+          staleTime: 60_000,
+        })
+      }
+    }
+  }, [report?.series_reports, report?.slug, queryClient])
 
   // Text selection → highlight overlays + floating "Comment" tooltip.
   // Reads getClientRects() from the selection Range and renders React-owned
@@ -389,41 +437,6 @@ export function ReportViewerPage() {
       )}
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-x-hidden">
-
-        {/* Series Tab Navigation */}
-        {report.series_reports && report.series_reports.length > 1 && (
-          <nav className="mb-6 -mt-1" aria-label="Report series">
-            <div className="relative">
-              <div className="overflow-x-auto scrollbar-none">
-                <div className="flex items-end gap-0 min-w-max border-b border-border/40">
-                  {report.series_reports.map((entry) => {
-                    const isActive = entry.slug === report.slug
-                    return (
-                      <Link
-                        key={entry.slug}
-                        to={`/report/${entry.slug}`}
-                        className={cn(
-                          "relative px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap max-w-[200px] truncate",
-                          isActive
-                            ? "text-foreground"
-                            : "text-muted-foreground hover:text-foreground/80"
-                        )}
-                      >
-                        {entry.title}
-                        {isActive && (
-                          <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary rounded-full" />
-                        )}
-                      </Link>
-                    )
-                  })}
-                </div>
-              </div>
-              <span className="hidden sm:block absolute right-0 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/30 font-mono select-none">
-                ← →
-              </span>
-            </div>
-          </nav>
-        )}
 
         {/* ─── Editorial Header ─── */}
         <header className="mb-5 pb-5 border-b border-border/60">
@@ -664,8 +677,111 @@ export function ReportViewerPage() {
           </div>
         )}
 
+        {/* ─── Series Slider (cross-run navigation) ─── */}
+        {seriesEntries.length > 1 && (
+          <nav aria-label="Series navigation" className="flex items-center gap-3 px-4 py-2.5 bg-muted/30 border border-border/40 rounded-lg mb-2">
+            <button
+              onClick={() => seriesIndex > 0 && navigate(`/report/${seriesEntries[seriesIndex - 1].slug}`)}
+              disabled={seriesIndex <= 0}
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              aria-label="Previous in series"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <div className="flex items-center gap-3 flex-1 justify-center min-w-0">
+              <span className="text-sm font-medium text-foreground truncate">
+                {seriesEntries[seriesIndex]?.title ?? report.title}
+              </span>
+              <span className="text-xs text-muted-foreground shrink-0">
+                {seriesIndex + 1} of {seriesEntries.length}
+              </span>
+              <div className="flex items-center gap-0.5 shrink-0">
+                {seriesEntries.map((entry, i) => (
+                  <button
+                    key={entry.slug}
+                    onClick={() => navigate(`/report/${entry.slug}`)}
+                    className={cn(
+                      "h-1.5 rounded-full transition-all cursor-pointer",
+                      i === seriesIndex
+                        ? "w-5 bg-primary"
+                        : "w-2 bg-border hover:bg-muted-foreground/40"
+                    )}
+                    aria-label={`Go to ${entry.title}`}
+                  />
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={() => seriesIndex < seriesEntries.length - 1 && navigate(`/report/${seriesEntries[seriesIndex + 1].slug}`)}
+              disabled={seriesIndex >= seriesEntries.length - 1}
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              aria-label="Next in series"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </nav>
+        )}
+
+        {/* ─── Tab Navigation (within same run) ─── */}
+        {tabEntries.length > 1 && (
+          <nav aria-label="Report tabs">
+            {/* Desktop: equal-width tabs that truncate to fit */}
+            <div className="hidden sm:flex items-end">
+              {tabEntries.map((entry) => {
+                const isActive = entry.slug === report.slug
+                return (
+                  <button
+                    key={entry.slug}
+                    onClick={() => navigate(`/report/${entry.slug}`)}
+                    className={cn(
+                      "relative flex-1 min-w-0 px-4 py-2 text-[13px] font-medium transition-all border border-b-0 rounded-t-lg cursor-pointer truncate",
+                      isActive
+                        ? "text-foreground bg-background border-border/60 z-10 shadow-sm"
+                        : "text-muted-foreground hover:text-foreground/80 border-transparent hover:bg-muted/40"
+                    )}
+                    style={isActive ? { marginBottom: "-1px" } : undefined}
+                    title={entry.tab_label || entry.title}
+                  >
+                    {entry.tab_label || entry.title}
+                  </button>
+                )
+              })}
+            </div>
+            {/* Mobile: horizontally scrollable tab strip */}
+            <div className="sm:hidden overflow-x-auto scrollbar-none -mx-4 px-4">
+              <div className="flex items-center gap-1 border-b border-border/40 min-w-max">
+                {tabEntries.map((entry) => {
+                  const isActive = entry.slug === report.slug
+                  return (
+                    <button
+                      key={entry.slug}
+                      onClick={() => navigate(`/report/${entry.slug}`)}
+                      className={cn(
+                        "relative px-3 py-2 text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer",
+                        isActive
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {entry.tab_label || entry.title}
+                      {isActive && (
+                        <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary rounded-full" />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </nav>
+        )}
+
         {/* ─── Document Body ─── */}
-        <div className="mb-10 rounded-lg border border-border/60 overflow-hidden shadow-sm">
+        <div className={cn(
+          "mb-10 border border-border/60 overflow-hidden shadow-sm",
+          tabEntries.length > 1
+            ? "rounded-lg sm:rounded-t-none sm:rounded-b-lg"
+            : "rounded-lg"
+        )}>
           {/* Content */}
           <div style={reportBgColor ? { backgroundColor: reportBgColor } : undefined}>
             {report.content_type === "slideshow" ? (

@@ -60,6 +60,7 @@ import {
 } from "lucide-react"
 import { LoginButton } from "@/components/LoginButton"
 import { getAvatarColor, getInitials } from "@/lib/user"
+import { cn } from "@/lib/utils"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -462,6 +463,12 @@ function ReportCard({ report, isFavorite, isSubscribed, onPreview }: { report: R
           <span aria-hidden className="text-muted-foreground/40">·</span>
           <span className="shrink-0 font-mono text-[11px]">{timeAgo(report.created_at)}</span>
           <div className="ml-auto flex items-center gap-1.5 shrink-0">
+            {report.tab_count != null && report.tab_count > 1 && (
+              <Badge variant="secondary" className="h-5 px-1.5 py-0 bg-primary/10 text-primary border-primary/20 font-mono text-[10px] font-medium flex items-center gap-0.5">
+                <Layers className="size-3" />
+                {report.tab_count} tabs
+              </Badge>
+            )}
             {report.run_number != null && (
               <Badge variant="secondary" className="h-5 px-1.5 py-0 font-mono text-[10px]">
                 #{report.run_number}
@@ -486,6 +493,29 @@ function ReportCard({ report, isFavorite, isSubscribed, onPreview }: { report: R
             {report.title}
           </h3>
         </Link>
+
+        {/* Series progress dots */}
+        {report.series_total != null && report.series_total > 1 && (
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Layers className="size-3.5 text-primary/60" />
+              <span className="font-medium">{report.series_total}-part series</span>
+            </div>
+            <div className="flex items-center gap-0.5">
+              {Array.from({ length: report.series_total }).map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "h-1 rounded-full transition-colors",
+                    i === (report.series_index ?? 0)
+                      ? "w-4 bg-primary"
+                      : "w-2 bg-border"
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Summary */}
         <p className="text-sm text-muted-foreground mb-3 line-clamp-1 sm:line-clamp-2">

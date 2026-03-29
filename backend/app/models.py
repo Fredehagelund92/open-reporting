@@ -173,6 +173,7 @@ class Report(SQLModel, table=True):
     series_id: Optional[str] = Field(default=None, index=True)
     run_number: Optional[int] = Field(default=None)
     series_order: Optional[int] = Field(default=None)
+    tab_label: Optional[str] = Field(default=None)
 
     embedding: Optional[List[float]] = Field(default=None, sa_column=Column(VectorType))
 

@@ -210,6 +210,8 @@ class OpenReportingClient:
         layout: str | None = None,
         series_id: str | None = None,
         series_order: int | None = None,
+        tab_label: str | None = None,
+        run_number: int | None = None,
         meta: dict | None = None,
         auto_coach: bool = False,
     ) -> ReportResponse:
@@ -244,6 +246,10 @@ class OpenReportingClient:
             payload["series_id"] = series_id
         if series_order is not None:
             payload["series_order"] = series_order
+        if tab_label is not None:
+            payload["tab_label"] = tab_label
+        if run_number is not None:
+            payload["run_number"] = run_number
         if meta is not None:
             payload["meta"] = meta
 
@@ -636,6 +642,8 @@ class OpenReportingClient:
         layout: str | None = None,
         series_id: str | None = None,
         series_order: int | None = None,
+        tab_label: str | None = None,
+        run_number: int | None = None,
         meta: dict | None = None,
         max_retries: int = 3,
         fix_fn: Callable[[str, list[dict]], str] | None = None,
@@ -781,12 +789,37 @@ class OpenReportingClient:
             layout=layout,
             series_id=series_id,
             series_order=series_order,
+            tab_label=tab_label,
+            run_number=run_number,
             meta=meta,
         )
 
     # ------------------------------------------------------------------
     # Dry run
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _wrap_with_tab_bar(html: str, title: str, tabs: list[str]) -> str:
+        """Wrap preview HTML in a minimal page with a static series tab bar."""
+        tab_items = []
+        for label in tabs:
+            active = label == title
+            cls = "or-tab active" if active else "or-tab"
+            tab_items.append(f'<span class="{cls}">{label}</span>')
+        tabs_html = "\n".join(tab_items)
+        return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>{title}</title>
+<style>
+body {{ margin:0; background:#fafaf8; }}
+.or-tab-bar {{ display:flex; gap:0; border-bottom:1px solid rgba(0,0,0,0.1); padding:0 24px; background:#fff; position:sticky; top:0; z-index:10; }}
+.or-tab {{ padding:10px 16px; font-size:14px; font-family:-apple-system,system-ui,sans-serif; color:#888; cursor:default; position:relative; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
+.or-tab.active {{ color:#1a1a1a; font-weight:600; }}
+.or-tab.active::after {{ content:''; position:absolute; bottom:-1px; left:0; right:0; height:2px; background:#d97706; border-radius:1px; }}
+</style>
+</head><body>
+<nav class="or-tab-bar">{tabs_html}</nav>
+{html}
+</body></html>"""
 
     def dry_run(
         self,
@@ -800,6 +833,7 @@ class OpenReportingClient:
         theme: str | None = None,
         layout: str | None = None,
         tags: list[str] | None = None,
+        series_tabs: list[str] | None = None,
         open_browser: bool = False,
     ) -> DryRunResult:
         """Preview a report locally and via the server without publishing.
@@ -876,10 +910,13 @@ class OpenReportingClient:
 
         # --- Open browser -----------------------------------------------
         if open_browser and preview_html:
+            browser_html = preview_html
+            if series_tabs and len(series_tabs) > 1:
+                browser_html = self._wrap_with_tab_bar(preview_html, title, series_tabs)
             with tempfile.NamedTemporaryFile(
                 mode="w", suffix=".html", delete=False, encoding="utf-8"
             ) as tmp:
-                tmp.write(preview_html)
+                tmp.write(browser_html)
                 tmp_path = tmp.name
             webbrowser.open(f"file://{tmp_path}")
             log.info("Opened preview in browser: %s", tmp_path)
