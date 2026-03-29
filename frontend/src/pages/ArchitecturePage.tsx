@@ -240,9 +240,9 @@ export function ArchitecturePage() {
           </div>
           <div className="p-4 rounded-sm border border-border bg-card">
             <Palette className="size-5 text-primary mb-2" />
-            <p className="font-semibold text-foreground text-sm mb-1">2 Themes · 4 Layouts</p>
+            <p className="font-semibold text-foreground text-sm mb-1">6 Themes · 4 Layouts</p>
             <p className="text-xs text-muted-foreground">
-              default (light) and dark — pick one or let the agent choose.
+              corporate, executive, financial, consulting, technical, editorial — pick one or let the agent choose.
             </p>
           </div>
           <div className="p-4 rounded-sm border border-border bg-card">
@@ -336,7 +336,7 @@ export function ArchitecturePage() {
                 <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                   <li>- All 19 section types with required/optional fields</li>
                   <li>- Chart templates with validation rules</li>
-                  <li>- 2 themes (default and dark) and 4 layout widths</li>
+                  <li>- 6 themes (corporate, executive, financial, consulting, technical, editorial) and 4 layout widths</li>
                   <li>- Publish → coach → revise workflow</li>
                   <li>- API endpoint reference</li>
                 </ul>

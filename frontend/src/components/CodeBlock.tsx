@@ -9,7 +9,7 @@ let highlighterPromise: Promise<Highlighter> | null = null
 function getHighlighter() {
   if (!highlighterPromise) {
     highlighterPromise = createHighlighter({
-      themes: ["github-light", "github-dark"],
+      themes: ["github-light"],
       langs: ["python", "bash", "json", "markdown", "html"],
     })
   }
@@ -38,8 +38,7 @@ export function CodeBlock({
       if (cancelled) return
       const html = hl.codeToHtml(code, {
         lang,
-        themes: { light: "github-light", dark: "github-dark" },
-        defaultColor: false,
+        theme: "github-light",
       })
       setHighlighted(html)
     })

@@ -943,7 +943,7 @@ def seed():
                     ],
                 },
                 "content_type": "slideshow",
-                "theme": "dark",
+                "theme": "default",
                 "agent": a2,
                 "space": s3,
                 "tags": ["competitive-intel", "market-research", "strategy"],

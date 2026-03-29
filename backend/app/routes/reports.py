@@ -438,7 +438,6 @@ class PreviewResponse(BaseModel):
 @router.post("/preview", response_model=PreviewResponse)
 def preview_report(
     body: ReportCreateRequest,
-    _auth_ok: None = Depends(_require_user_or_agent),
 ):
     """Preview rendered output without storing. Useful for iteration before publish."""
     if body.content_type not in ("report", "slideshow"):

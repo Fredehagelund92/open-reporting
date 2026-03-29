@@ -3,8 +3,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
-
 /* ─── LIGHT MODE ─── */
 :root {
     /* Core surfaces */
@@ -67,67 +65,6 @@
     --sidebar-accent-foreground: oklch(0.30 0.02 260);
     --sidebar-border: oklch(0.88 0.01 80);
     --sidebar-ring: oklch(0.75 0.16 70);
-}
-
-/* ─── DARK MODE ─── */
-.dark {
-    /* Core surfaces: deep charcoal-navy, NOT flat gray */
-    --background: oklch(0.16 0.02 260);
-    --foreground: oklch(0.93 0.01 80);
-    --card: oklch(0.20 0.02 260);
-    --card-foreground: oklch(0.93 0.01 80);
-    --popover: oklch(0.20 0.02 260);
-    --popover-foreground: oklch(0.93 0.01 80);
-
-    /* Brand accent: brighter amber for dark bg */
-    --primary: oklch(0.80 0.16 70);
-    --primary-foreground: oklch(0.15 0.02 70);
-
-    /* Secondary */
-    --secondary: oklch(0.24 0.02 260);
-    --secondary-foreground: oklch(0.90 0.01 80);
-
-    /* Muted */
-    --muted: oklch(0.24 0.02 260);
-    --muted-foreground: oklch(0.65 0.02 260);
-
-    /* Interactive accent */
-    --accent: oklch(0.80 0.16 70);
-    --accent-foreground: oklch(0.15 0.02 70);
-
-    /* Signal: glowing cyan */
-    --signal: oklch(0.78 0.14 195);
-    --signal-foreground: oklch(0.15 0.04 195);
-
-    /* Destructive */
-    --destructive: oklch(0.70 0.19 22);
-    --destructive-foreground: oklch(0.98 0.005 80);
-
-    /* Borders & inputs */
-    --border: oklch(1 0 0 / 8%);
-    --input: oklch(1 0 0 / 12%);
-    --ring: oklch(0.80 0.16 70);
-
-    /* Charts */
-    --chart-1: oklch(0.80 0.16 70);
-    --chart-2: oklch(0.78 0.14 195);
-    --chart-3: oklch(0.65 0.16 145);
-    --chart-4: oklch(0.60 0.12 260);
-    --chart-5: oklch(0.55 0.18 30);
-
-    /* Elevated/sunken */
-    --surface-elevated: oklch(0.22 0.02 260);
-    --surface-sunken: oklch(0.14 0.02 260);
-
-    /* Sidebar */
-    --sidebar: oklch(0.14 0.025 260);
-    --sidebar-foreground: oklch(0.93 0.01 80);
-    --sidebar-primary: oklch(0.80 0.16 70);
-    --sidebar-primary-foreground: oklch(0.15 0.02 70);
-    --sidebar-accent: oklch(0.24 0.025 260);
-    --sidebar-accent-foreground: oklch(0.93 0.01 80);
-    --sidebar-border: oklch(1 0 0 / 8%);
-    --sidebar-ring: oklch(0.80 0.16 70);
 }
 
 @theme inline {
@@ -276,25 +213,11 @@
 .code-surface .code-label { color: oklch(0.50 0.02 260); }   /* muted ink */
 .code-surface .code-accent { color: oklch(0.65 0.14 70); }   /* warm amber */
 
-.dark .code-surface {
-  background: oklch(0.14 0.02 260); /* deep charcoal-navy */
-  color: oklch(0.93 0.01 80);      /* off-white text */
-  border-color: oklch(1 0 0 / 8%);
-}
-
-.dark .code-surface .code-keyword { color: oklch(0.75 0.12 200); } /* glowing cyan */
-.dark .code-surface .code-label { color: oklch(0.65 0.02 260); }    /* muted sky */
-.dark .code-surface .code-accent { color: oklch(0.80 0.16 75); }    /* vibrant amber */
-
 /* Shiki-powered code blocks */
 .code-block-surface {
   @apply rounded-sm transition-colors duration-200;
   background: oklch(0.97 0.005 80);
   border: 1px solid oklch(0.88 0.01 80);
-}
-.dark .code-block-surface {
-  background: oklch(0.14 0.02 260);
-  border-color: oklch(1 0 0 / 8%);
 }
 .code-block-surface .shiki-wrapper pre {
   @apply px-4 py-3 font-mono text-sm overflow-x-auto;
@@ -308,10 +231,6 @@
 .code-block-surface .shiki-wrapper .shiki {
   background: transparent !important;
 }
-/* Shiki dual-theme: light mode shows --shiki-light, dark mode shows --shiki-dark */
 .code-block-surface .shiki-wrapper span {
   color: var(--shiki-light) !important;
-}
-.dark .code-block-surface .shiki-wrapper span {
-  color: var(--shiki-dark) !important;
 }

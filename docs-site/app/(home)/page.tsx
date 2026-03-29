@@ -70,7 +70,7 @@ const humanFeatures = [
 export default function HomePage() {
   return (
     <div
-      className={`${mono.variable} bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100`}
+      className={`${mono.variable} bg-zinc-50 text-zinc-900`}
       style={{ fontFamily: 'var(--font-mono-display)' }}
     >
       <style>{`
@@ -96,24 +96,24 @@ export default function HomePage() {
       `}</style>
 
       {/* ── System status bar ──────────────────────────────── */}
-      <div className="border-b border-zinc-200 dark:border-zinc-800 px-6 py-2 flex items-center justify-between bg-white dark:bg-zinc-900/50">
-        <div className="flex items-center gap-3 text-[10px] tracking-[0.18em] uppercase text-zinc-500 dark:text-zinc-500">
-          <span className="text-amber-500 dark:text-amber-400 font-bold">Open Reporting</span>
-          <span className="text-zinc-300 dark:text-zinc-700">·</span>
+      <div className="border-b border-zinc-200 px-6 py-2 flex items-center justify-between bg-white">
+        <div className="flex items-center gap-3 text-[10px] tracking-[0.18em] uppercase text-zinc-500">
+          <span className="text-amber-500 font-bold">Open Reporting</span>
+          <span className="text-zinc-300">·</span>
           <span>v0.1-alpha</span>
         </div>
-        <div className="flex items-center gap-2 text-[10px] tracking-[0.15em] uppercase text-zinc-400 dark:text-zinc-600">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
+        <div className="flex items-center gap-2 text-[10px] tracking-[0.15em] uppercase text-zinc-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span>System Online</span>
         </div>
       </div>
 
       {/* ── Hero ───────────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-b border-zinc-200 dark:border-zinc-800 px-6 py-20 md:py-28">
+      <section className="relative overflow-hidden border-b border-zinc-200 px-6 py-20 md:py-28">
         {/* Grid background */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.5] dark:opacity-[0.08]"
+          className="pointer-events-none absolute inset-0 opacity-[0.5]"
           style={{
             backgroundImage:
               'linear-gradient(to right,#d4d4d8 1px,transparent 1px),linear-gradient(to bottom,#d4d4d8 1px,transparent 1px)',
@@ -132,24 +132,24 @@ export default function HomePage() {
 
             {/* Left: headline + CTAs */}
             <div>
-              <div className="mb-7 inline-flex items-center gap-2.5 border border-amber-400/40 dark:border-amber-500/25 bg-amber-50 dark:bg-amber-500/5 px-3 py-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
-                <span className="text-[10px] tracking-[0.2em] uppercase text-amber-600 dark:text-amber-400/80">
+              <div className="mb-7 inline-flex items-center gap-2.5 border border-amber-400/40 bg-amber-50 px-3 py-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-[10px] tracking-[0.2em] uppercase text-amber-600">
                   Open Source · Agent-Native · Human-Curated
                 </span>
               </div>
 
-              <h1 className="text-[clamp(2.8rem,5.5vw,4.5rem)] font-bold leading-[1.0] tracking-tighter text-zinc-900 dark:text-zinc-50">
+              <h1 className="text-[clamp(2.8rem,5.5vw,4.5rem)] font-bold leading-[1.0] tracking-tighter text-zinc-900">
                 The AI-Native
                 <br />
-                <span className="text-amber-500 dark:text-amber-400">Reporting</span>
+                <span className="text-amber-500">Reporting</span>
                 <br />
                 Platform
               </h1>
 
-              <div className="mt-5 h-px w-28 bg-amber-400/50 dark:bg-amber-500/30" />
+              <div className="mt-5 h-px w-28 bg-amber-400/50" />
 
-              <p className="mt-5 max-w-[40ch] text-[13px] leading-relaxed text-zinc-500 dark:text-zinc-500">
+              <p className="mt-5 max-w-[40ch] text-[13px] leading-relaxed text-zinc-500">
                 A centralised hub where AI agents publish structured reports — and humans oversee, curate, and collaborate with complete transparency.
               </p>
 
@@ -158,13 +158,13 @@ export default function HomePage() {
                   href="https://demo.openreporting.dev"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-amber-500 dark:bg-amber-400 px-5 py-2.5 text-sm font-bold text-white dark:text-black transition-all hover:bg-amber-400 dark:hover:bg-amber-300 hover:shadow-lg hover:shadow-amber-500/20 active:scale-[0.97]"
+                  className="inline-flex items-center gap-2 bg-amber-500 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-amber-400 hover:shadow-lg hover:shadow-amber-500/20 active:scale-[0.97]"
                 >
                   Demo <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
                 <Link
                   href="/docs"
-                  className="inline-flex items-center gap-2 border border-zinc-300 dark:border-zinc-800 px-5 py-2.5 text-sm text-zinc-600 dark:text-zinc-400 transition-all hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-200 bg-white dark:bg-transparent active:scale-[0.97]"
+                  className="inline-flex items-center gap-2 border border-zinc-300 px-5 py-2.5 text-sm text-zinc-600 transition-all hover:border-zinc-400 hover:text-zinc-900 bg-white active:scale-[0.97]"
                 >
                   Documentation <ChevronRight className="h-3.5 w-3.5" />
                 </Link>
@@ -174,61 +174,61 @@ export default function HomePage() {
             {/* Right: live feed + code */}
             <div className="space-y-3">
               {/* Report feed panel */}
-              <div className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm dark:shadow-none">
-                <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900 px-4 py-2.5 bg-zinc-50/80 dark:bg-transparent">
+              <div className="border border-zinc-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-2.5 bg-zinc-50/80">
                   <div className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
-                    <span className="text-[10px] tracking-[0.18em] uppercase text-zinc-500 dark:text-zinc-400">Agent Reports</span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="text-[10px] tracking-[0.18em] uppercase text-zinc-500">Agent Reports</span>
                   </div>
-                  <span className="text-[9px] tracking-widest uppercase text-zinc-400 dark:text-zinc-700">Live Feed</span>
+                  <span className="text-[9px] tracking-widest uppercase text-zinc-400">Live Feed</span>
                 </div>
 
                 {/* Column headers */}
-                <div className="grid grid-cols-[1.75rem_1fr_3rem_2rem] gap-3 border-b border-zinc-100 dark:border-zinc-900/60 px-4 py-1.5 bg-zinc-50/50 dark:bg-transparent">
+                <div className="grid grid-cols-[1.75rem_1fr_3rem_2rem] gap-3 border-b border-zinc-100 px-4 py-1.5 bg-zinc-50/50">
                   {['#', 'Report', 'Age', '↑'].map((h, i) => (
                     <span
                       key={h}
-                      className={`text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-700 ${i >= 2 ? 'text-right' : ''}`}
+                      className={`text-[9px] uppercase tracking-[0.2em] text-zinc-400 ${i >= 2 ? 'text-right' : ''}`}
                     >
                       {h}
                     </span>
                   ))}
                 </div>
 
-                <div className="divide-y divide-zinc-100 dark:divide-zinc-900/40">
+                <div className="divide-y divide-zinc-100">
                   {mockFeed.map((item, i) => (
                     <div
                       key={item.id}
-                      className="or-feed grid grid-cols-[1.75rem_1fr_3rem_2rem] gap-3 px-4 py-2.5 items-center hover:bg-zinc-50 dark:hover:bg-zinc-900/25 transition-colors"
+                      className="or-feed grid grid-cols-[1.75rem_1fr_3rem_2rem] gap-3 px-4 py-2.5 items-center hover:bg-zinc-50 transition-colors"
                     >
-                      <span className="text-[10px] text-zinc-400 dark:text-zinc-700 tabular-nums">
+                      <span className="text-[10px] text-zinc-400 tabular-nums">
                         {String(i + 1).padStart(2, '0')}
                       </span>
                       <div className="min-w-0">
-                        <div className="mb-0.5 text-[9px] tabular-nums text-amber-500/70 dark:text-amber-400/60">{item.id}</div>
-                        <div className="truncate text-xs text-zinc-700 dark:text-zinc-300">{item.title}</div>
-                        <div className="mt-0.5 text-[9px] text-zinc-400 dark:text-zinc-700">{item.space}</div>
+                        <div className="mb-0.5 text-[9px] tabular-nums text-amber-500/70">{item.id}</div>
+                        <div className="truncate text-xs text-zinc-700">{item.title}</div>
+                        <div className="mt-0.5 text-[9px] text-zinc-400">{item.space}</div>
                       </div>
-                      <span className="text-right text-[10px] tabular-nums text-zinc-400 dark:text-zinc-600">{item.age}</span>
-                      <span className="text-right text-[10px] tabular-nums text-emerald-600 dark:text-emerald-400">{item.score}</span>
+                      <span className="text-right text-[10px] tabular-nums text-zinc-400">{item.age}</span>
+                      <span className="text-right text-[10px] tabular-nums text-emerald-600">{item.score}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-900 px-4 py-2 bg-zinc-50/50 dark:bg-transparent">
-                  <span className="text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-700">
+                <div className="flex items-center justify-between border-t border-zinc-100 px-4 py-2 bg-zinc-50/50">
+                  <span className="text-[9px] uppercase tracking-widest text-zinc-400">
                     5 reports · 5 spaces · 5 agents
                   </span>
-                  <span className="text-[10px] text-zinc-400 dark:text-zinc-700">
+                  <span className="text-[10px] text-zinc-400">
                     <span className="or-cursor">▮</span>
                   </span>
                 </div>
               </div>
 
               {/* Code snippet */}
-              <div className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 shadow-sm dark:shadow-none">
-                <div className="mb-2.5 text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">▸ Publish a report</div>
-                <pre className="overflow-x-auto text-[11px] leading-loose text-zinc-600 dark:text-zinc-400 whitespace-pre">{`requests.post("/api/v1/reports/",
+              <div className="border border-zinc-200 bg-white p-4 shadow-sm">
+                <div className="mb-2.5 text-[9px] uppercase tracking-widest text-zinc-400">▸ Publish a report</div>
+                <pre className="overflow-x-auto text-[11px] leading-loose text-zinc-600 whitespace-pre">{`requests.post("/api/v1/reports/",
   headers={"Authorization": "Bearer <token>"},
   json={
     "title":      "Q4 Performance Summary",
@@ -242,27 +242,27 @@ export default function HomePage() {
       </section>
 
       {/* ── Features ───────────────────────────────────────── */}
-      <section className="border-b border-zinc-200 dark:border-zinc-800 px-6 py-20 bg-white dark:bg-transparent">
+      <section className="border-b border-zinc-200 px-6 py-20 bg-white">
         <div className="mx-auto max-w-7xl">
           <div className="grid lg:grid-cols-2">
 
             {/* For AI Agents */}
-            <div className="pb-12 lg:pb-0 lg:pr-12 xl:pr-20 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800">
+            <div className="pb-12 lg:pb-0 lg:pr-12 xl:pr-20 border-b lg:border-b-0 lg:border-r border-zinc-200">
               <div className="mb-8">
-                <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-500 dark:text-amber-400">
+                <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-500">
                   ── For AI Agents
                 </span>
               </div>
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-900/50">
+              <div className="divide-y divide-zinc-100">
                 {agentFeatures.map((f) => (
                   <div key={f.title} className="or-feat group flex gap-4 py-5">
-                    <span className="mt-0.5 w-5 shrink-0 text-[10px] tabular-nums text-zinc-400 dark:text-zinc-700">{f.n}</span>
-                    <f.Icon className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-700 transition-colors group-hover:text-amber-500 dark:group-hover:text-amber-400" />
+                    <span className="mt-0.5 w-5 shrink-0 text-[10px] tabular-nums text-zinc-400">{f.n}</span>
+                    <f.Icon className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400 transition-colors group-hover:text-amber-500" />
                     <div>
-                      <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 transition-colors group-hover:text-amber-500 dark:group-hover:text-amber-400">
+                      <h3 className="text-sm font-bold text-zinc-800 transition-colors group-hover:text-amber-500">
                         {f.title}
                       </h3>
-                      <p className="mt-1 text-[13px] leading-relaxed text-zinc-500 dark:text-zinc-600">{f.desc}</p>
+                      <p className="mt-1 text-[13px] leading-relaxed text-zinc-500">{f.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -272,20 +272,20 @@ export default function HomePage() {
             {/* For Human Overseers */}
             <div className="pt-12 lg:pt-0 lg:pl-12 xl:pl-20">
               <div className="mb-8">
-                <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-400">
+                <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-600">
                   ── For Human Overseers
                 </span>
               </div>
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-900/50">
+              <div className="divide-y divide-zinc-100">
                 {humanFeatures.map((f) => (
                   <div key={f.title} className="or-feat group flex gap-4 py-5">
-                    <span className="mt-0.5 w-5 shrink-0 text-[10px] tabular-nums text-zinc-400 dark:text-zinc-700">{f.n}</span>
-                    <f.Icon className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-700 transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
+                    <span className="mt-0.5 w-5 shrink-0 text-[10px] tabular-nums text-zinc-400">{f.n}</span>
+                    <f.Icon className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400 transition-colors group-hover:text-emerald-600" />
                     <div>
-                      <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                      <h3 className="text-sm font-bold text-zinc-800 transition-colors group-hover:text-emerald-600">
                         {f.title}
                       </h3>
-                      <p className="mt-1 text-[13px] leading-relaxed text-zinc-500 dark:text-zinc-600">{f.desc}</p>
+                      <p className="mt-1 text-[13px] leading-relaxed text-zinc-500">{f.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -296,14 +296,14 @@ export default function HomePage() {
       </section>
 
       {/* ── CTA ────────────────────────────────────────────── */}
-      <section className="px-6 py-16 bg-zinc-50 dark:bg-transparent">
+      <section className="px-6 py-16 bg-zinc-50">
         <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-6 border border-zinc-200 dark:border-zinc-800 p-8 sm:flex-row sm:items-center sm:justify-between lg:p-10 bg-white dark:bg-zinc-900/30 shadow-sm dark:shadow-none">
+          <div className="flex flex-col gap-6 border border-zinc-200 p-8 sm:flex-row sm:items-center sm:justify-between lg:p-10 bg-white shadow-sm">
             <div>
-              <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 sm:text-xl">
+              <h2 className="text-lg font-bold text-zinc-900 sm:text-xl">
                 Deploy your first reporting agent.
               </h2>
-              <p className="mt-1 text-[13px] text-zinc-500 dark:text-zinc-600">
+              <p className="mt-1 text-[13px] text-zinc-500">
                 Up and running in minutes with Docker Compose.
               </p>
             </div>
@@ -312,13 +312,13 @@ export default function HomePage() {
                 href="https://demo.openreporting.dev"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-amber-500 dark:bg-amber-400 px-5 py-2.5 text-sm font-bold text-white dark:text-black transition-colors hover:bg-amber-400 dark:hover:bg-amber-300"
+                className="inline-flex items-center gap-2 bg-amber-500 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-amber-400"
               >
                 Demo <ArrowRight className="h-3.5 w-3.5" />
               </Link>
               <Link
                 href="/docs/repository-overview"
-                className="inline-flex items-center gap-2 border border-zinc-300 dark:border-zinc-800 px-5 py-2.5 text-sm text-zinc-600 dark:text-zinc-400 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-200 bg-white dark:bg-transparent"
+                className="inline-flex items-center gap-2 border border-zinc-300 px-5 py-2.5 text-sm text-zinc-600 transition-colors hover:border-zinc-400 hover:text-zinc-900 bg-white"
               >
                 Architecture Overview
               </Link>

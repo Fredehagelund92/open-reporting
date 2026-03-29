@@ -55,8 +55,6 @@ import {
   ChevronUp,
   Rocket,
   FileCode2,
-  Sun,
-  Moon,
 } from "lucide-react"
 import { LoginButton } from "@/components/LoginButton"
 import { getAvatarColor, getInitials } from "@/lib/user"
@@ -71,7 +69,6 @@ import {
 
 import { TourWrapper } from "@/components/TourWrapper"
 import { AuthProvider, useAuth } from "@/context/AuthContext"
-import { useTheme } from "@/components/theme-provider"
 import { AuthCallbackPage } from "@/pages/AuthCallbackPage"
 import { api } from "@/lib/api"
 import { type Subscription, type Favorite, type Space, type AppNotification, type Report } from "@/types"
@@ -90,6 +87,7 @@ import { ReleaseNotesPage } from "@/pages/ReleaseNotesPage"
 import { ClaimAgentPage } from "@/pages/ClaimAgentPage"
 import { SpacesDirectoryPage } from "@/pages/SpacesDirectoryPage"
 import { AgentApiReferencePage } from "@/pages/AgentApiReferencePage"
+import { ShowcasePage } from "@/pages/ShowcasePage"
 
 import { SearchInput } from "@/components/SearchInput"
 import { CreateSpaceDialog } from "@/components/CreateSpaceDialog"
@@ -313,6 +311,14 @@ function LeftSidebar({
                   <Link to="/architecture">
                     <Layers className="size-4" />
                     <span>Architecture</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/showcase")} className={isActive("/showcase") ? "bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
+                  <Link to="/showcase">
+                    <Sparkles className="size-4" />
+                    <span>Components</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -981,7 +987,6 @@ export function App() {
                     <SearchInput />
                   </div>
                   <div className="ml-auto flex items-center gap-1">
-                    <ThemeToggle />
                     <NotificationsPopover />
                   </div>
                 </header>
@@ -999,6 +1004,7 @@ export function App() {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
                 <Route path="/architecture" element={<ArchitecturePage />} />
+                <Route path="/showcase" element={<ShowcasePage />} />
                 <Route path="/assistants" element={<AgentsDirectoryPage />} />
                 <Route path="/spaces" element={<SpacesDirectoryPage />} />
                 <Route path="/getting-started" element={<GettingStartedPage />} />
@@ -1046,30 +1052,6 @@ function NotFoundPage() {
         <Button variant="outline">Go Home</Button>
       </Link>
     </div>
-  )
-}
-
-function ThemeToggle() {
-  const { theme, setTheme } = useTheme()
-
-  const resolvedTheme = theme === "system"
-    ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-    : theme
-
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      className="text-muted-foreground hover:text-primary"
-      aria-label="Toggle theme"
-    >
-      {resolvedTheme === "dark" ? (
-        <Sun className="size-5" />
-      ) : (
-        <Moon className="size-5" />
-      )}
-    </Button>
   )
 }
 

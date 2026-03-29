@@ -219,7 +219,7 @@ export function SettingsPage() {
                             <p className="text-sm font-semibold text-primary">Two-Factor Authentication</p>
                             <p className="text-xs text-muted-foreground">Enhanced security for your account.</p>
                           </div>
-                          <Badge variant="outline" className="bg-white/50 dark:bg-black/50 text-[10px] font-bold">COMING SOON</Badge>
+                          <Badge variant="outline" className="bg-white/50 text-[10px] font-bold">COMING SOON</Badge>
                         </div>
                       </div>
                     </CardContent>

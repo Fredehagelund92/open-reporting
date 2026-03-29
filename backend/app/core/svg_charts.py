@@ -79,11 +79,29 @@ def _text_color_for_bg(hex_bg: str) -> str:
     return "#ffffff" if lum < 0.45 else "#1e293b"
 
 
-_HEATMAP_SCALES: dict[str, list[tuple[float, str]]] = {
-    "sequential": [(0.0, "#f1f5f9"), (1.0, "#93c5fd")],
-    "diverging": [(0.0, "#bfdbfe"), (0.5, "#f8fafc"), (1.0, "#fecaca")],
-    "red-yellow-green": [(0.0, "#fecaca"), (0.5, "#fef3c7"), (1.0, "#bbf7d0")],
-}
+def _get_heatmap_scales(theme: Theme) -> dict[str, list[tuple[float, str]]]:
+    """Return heatmap color scales, deriving sequential/diverging from theme."""
+    accent = theme.accent_color
+    ar, ag, ab = _hex_to_rgb(accent)
+    # Blend toward white at ~85% to get the light end
+    light_r = int(ar + (255 - ar) * 0.85)
+    light_g = int(ag + (255 - ag) * 0.85)
+    light_b = int(ab + (255 - ab) * 0.85)
+    light_accent = _rgb_to_hex(light_r, light_g, light_b)
+
+    return {
+        "sequential": [(0.0, light_accent), (1.0, accent)],
+        "diverging": [
+            (0.0, theme.kpi_delta_negative),  # negative = red-ish
+            (0.5, "#f8fafc"),                  # neutral white
+            (1.0, theme.kpi_delta_positive),   # positive = green-ish
+        ],
+        "red-yellow-green": [
+            (0.0, "#fecaca"),
+            (0.5, "#fef3c7"),
+            (1.0, "#bbf7d0"),
+        ],
+    }
 
 
 def _heatmap_normalize(
@@ -737,7 +755,8 @@ def svg_heatmap_chart(data: dict, theme: Theme) -> str:
     values = data.get("values", [])
     display_values = data.get("display_values")  # optional: shown in cells instead of values
     scale_name = data.get("scale", "sequential")
-    stops = _HEATMAP_SCALES.get(scale_name, _HEATMAP_SCALES["sequential"])
+    scales = _get_heatmap_scales(theme)
+    stops = scales.get(scale_name, scales["sequential"])
 
     if not x_labels or not y_labels or not values:
         return ""
