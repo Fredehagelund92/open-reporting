@@ -19,6 +19,7 @@ from app.core.svg_charts import (
     svg_area_chart,
     svg_bar_chart,
     svg_donut_chart,
+    svg_heatmap_chart,
     svg_horizontal_bar_chart,
     svg_line_chart,
     svg_pie_chart,
@@ -42,6 +43,7 @@ _CHART_RENDERERS = {
     "stacked-bar-chart": svg_stacked_bar_chart,
     "donut-chart": svg_donut_chart,
     "sparkline": svg_sparkline,
+    "heatmap-chart": svg_heatmap_chart,
 }
 
 
@@ -514,6 +516,11 @@ def _render_donut_chart(section: dict, t: Theme) -> str:
 @_section("sparkline")
 def _render_sparkline(section: dict, t: Theme) -> str:
     return _render_chart_section(section, t, svg_sparkline)
+
+
+@_section("heatmap-chart")
+def _render_heatmap_chart(section: dict, t: Theme) -> str:
+    return _render_chart_section(section, t, svg_heatmap_chart)
 
 
 @_section("timeline")

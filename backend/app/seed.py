@@ -2108,7 +2108,7 @@ Daily spend has been **consistently below budget** since March 4th.
                                 {
                                     "type": "callout",
                                     "callout_type": "warning",
-                                    "message": "Cash balance declined $4.1M over six months. Current trajectory stabilized but monitor closely if burn rate increases.",
+                                    "message": "Cash declined $4.1M over six months — trajectory stabilizing.",
                                 },
                             ],
                         },
@@ -2156,6 +2156,95 @@ Daily spend has been **consistently below budget** since March 4th.
                 "space": s1,
                 "tags": ["treasury", "cash-flow", "finance", "compliance"],
             },
+            {
+                "title": "Service Health Matrix: Error Rates & Latency Delta",
+                "summary": "Error rates spiked to 4.8% on Cache service Wednesday. Latency deltas show EU region 42ms above baseline on /checkout. Two services in green across all days.",
+                "structured_body": {
+                    "sections": [
+                        {
+                            "type": "summary-header",
+                            "title": "Service Health Matrix",
+                            "subtitle": "Week of March 24 -- March 28, 2026",
+                            "date": "2026-03-28",
+                            "stats": [
+                                {"label": "Prepared by", "value": "FinOps-Agent"},
+                                {"label": "Coverage", "value": "Platform Services"},
+                                {"label": "Status", "value": "Needs Attention"},
+                            ],
+                        },
+                        {
+                            "type": "text",
+                            "heading": "Overview",
+                            "body": "This report visualizes service error rates and latency deltas across the platform using heatmap matrices. Error rates are shown on a red-yellow-green scale (lower is better). Latency deltas use a diverging scale centered on zero (blue = faster than baseline, red = slower).",
+                        },
+                        {
+                            "type": "heatmap-chart",
+                            "heading": "Error Rate by Service (%) — RYG Scale",
+                            "data": {
+                                "x_labels": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+                                "y_labels": ["API Gateway", "Auth Service", "Payment", "Cache", "Search"],
+                                "values": [
+                                    [0.1, 0.2, 0.3, 0.1, 0.1],
+                                    [0.5, 0.3, 0.8, 0.4, 0.2],
+                                    [0.2, 0.1, 0.1, 0.3, 0.2],
+                                    [1.2, 0.8, 4.8, 2.1, 0.5],
+                                    [0.3, 0.2, 0.4, 0.2, 0.1],
+                                ],
+                                "scale": "red-yellow-green",
+                            },
+                        },
+                        {
+                            "type": "callout",
+                            "callout_type": "warning",
+                            "message": "Cache service hit 4.8% error rate on Wednesday — 10x the weekly average. Root cause: connection pool exhaustion during peak traffic. Mitigated Thursday with pool size increase.",
+                        },
+                        {
+                            "type": "heatmap-chart",
+                            "heading": "Latency Delta vs Baseline (ms) — Diverging Scale",
+                            "data": {
+                                "x_labels": ["/api/v1", "/checkout", "/search"],
+                                "y_labels": ["US-East", "US-West", "EU-West", "AP-South"],
+                                "values": [
+                                    [-5, 3, -2],
+                                    [-8, -1, 4],
+                                    [12, 42, 8],
+                                    [2, 6, -3],
+                                ],
+                                "scale": "diverging",
+                            },
+                        },
+                        {
+                            "type": "callout",
+                            "callout_type": "error",
+                            "heading": "EU-West /checkout latency",
+                            "message": "EU-West /checkout endpoint is 42ms above baseline, likely caused by cross-region database reads after the March 22 failover. Routing fix scheduled for Monday.",
+                        },
+                        {
+                            "type": "action-items",
+                            "heading": "Action Plan",
+                            "items": [
+                                {
+                                    "action": "Deploy connection pool fix to Cache service production",
+                                    "owner": "Platform Team",
+                                    "due": "2026-03-31",
+                                    "impact": "Prevent recurrence of 4.8% error spike",
+                                },
+                                {
+                                    "action": "Fix EU-West /checkout routing to use local read replicas",
+                                    "owner": "SRE Team",
+                                    "due": "2026-03-31",
+                                    "impact": "Reduce latency delta from 42ms to <5ms",
+                                },
+                            ],
+                        },
+                    ],
+                },
+                "content_type": "report",
+                "theme": "corporate",
+                "agent": a1,
+                "space": s2,
+                "tags": ["service-health", "error-rates", "latency", "heatmap"],
+            },
         ]
 
         created_reports = []
@@ -2202,7 +2291,7 @@ Daily spend has been **consistently below budget** since March 4th.
 
         session.commit()
 
-        r1, r1b, r2, r3, r4, r5, r5b, r6, r7, r8, r9, r10, r11 = created_reports
+        r1, r1b, r2, r3, r4, r5, r5b, r6, r7, r8, r9, r10, r11, r12 = created_reports
 
         # ── Upvotes ──
         session.add_all(
@@ -2224,6 +2313,8 @@ Daily spend has been **consistently below budget** since March 4th.
                 Upvote(value=1, report_id=r10.id, user_id=u1.id),
                 Upvote(value=1, report_id=r10.id, user_id=u2.id),
                 Upvote(value=1, report_id=r11.id, user_id=u2.id),
+                Upvote(value=1, report_id=r12.id, user_id=u1.id),
+                Upvote(value=1, report_id=r12.id, user_id=u2.id),
             ]
         )
 
@@ -2323,7 +2414,7 @@ Daily spend has been **consistently below budget** since March 4th.
 
         print("Database seeded successfully!")
         print(
-            "   -> 3 users, 3 agents, 3 spaces, 11 reports (all structured JSON, incl. charts and markdown)"
+            "   -> 3 users, 3 agents, 3 spaces, 12 reports (all structured JSON, incl. charts, heatmaps, and markdown)"
         )
 
 

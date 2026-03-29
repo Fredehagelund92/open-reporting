@@ -775,6 +775,29 @@ def evaluate_authoring_quality(
                 )
             )
 
+        # chart_heatmap_too_large
+        if chart_type == "heatmap-chart":
+            x_labels = data.get("x_labels", [])
+            y_labels = data.get("y_labels", [])
+            if len(x_labels) > 20:
+                issues.append(
+                    CoachIssue(
+                        rule_id="chart_heatmap_too_large",
+                        severity="warning",
+                        message=f"Heatmap has {len(x_labels)} columns (max recommended: 20). Cells will be very narrow.",
+                        suggestion="Reduce columns by aggregating data or splitting into multiple heatmaps.",
+                    )
+                )
+            if len(y_labels) > 15:
+                issues.append(
+                    CoachIssue(
+                        rule_id="chart_heatmap_too_large",
+                        severity="warning",
+                        message=f"Heatmap has {len(y_labels)} rows (max recommended: 15). Chart will be very tall.",
+                        suggestion="Reduce rows by aggregating data or splitting into multiple heatmaps.",
+                    )
+                )
+
     # Slide-specific rules (only when content_type == 'slideshow')
     if content_type == "slideshow" and all_sections:
         slide_sections = [s for s in all_sections if s.get("type") == "slide"]
@@ -818,14 +841,19 @@ def evaluate_authoring_quality(
                     )
                 )
 
-            # slide_content_overflow: >2 sections per slide
-            if len(child_sections) > 2:
+            # slide_no_heading: slide without heading or summary-header
+            has_heading = any(
+                isinstance(c, dict)
+                and (c.get("type") == "summary-header" or c.get("heading"))
+                for c in child_sections
+            )
+            if child_sections and not has_heading:
                 issues.append(
                     CoachIssue(
-                        rule_id="slide_content_overflow",
+                        rule_id="slide_no_heading",
                         severity="warning",
-                        message=f"Slide has {len(child_sections)} sections which may cause overflow. Keep to 2 sections max per slide.",
-                        suggestion="Split content across multiple slides to avoid scrollbars. Each slide should fit on screen without scrolling.",
+                        message="Slide has no heading or summary-header. Viewers won't know what this slide is about.",
+                        suggestion="Add a 'heading' field to the chart or text section, or use a summary-header for the title slide.",
                     )
                 )
 
@@ -842,7 +870,7 @@ def evaluate_authoring_quality(
                                 rule_id="slide_content_overflow",
                                 severity="warning",
                                 message=f"Slide text section is {len(overflow_plain)} characters (max for overflow prevention: 200). Long text may require scrolling.",
-                                suggestion="Split content across multiple slides to avoid scrollbars. Each slide should fit on screen without scrolling.",
+                                suggestion="Shorten to 3-4 bullet points or split the narrative across two slides.",
                             )
                         )
 
@@ -855,7 +883,7 @@ def evaluate_authoring_quality(
                                 rule_id="slide_content_overflow",
                                 severity="warning",
                                 message=f"Slide table has {len(rows)} rows (max recommended: 6). Large tables may require scrolling.",
-                                suggestion="Split content across multiple slides to avoid scrollbars. Each slide should fit on screen without scrolling.",
+                                suggestion="Show the top 5-6 rows and add a callout noting the full dataset, or split into two slides.",
                             )
                         )
 
@@ -868,7 +896,7 @@ def evaluate_authoring_quality(
                                 rule_id="slide_content_overflow",
                                 severity="warning",
                                 message=f"Slide KPI grid has {len(metrics)} metrics (max recommended: 4). Too many metrics may cause overflow.",
-                                suggestion="Split content across multiple slides to avoid scrollbars. Each slide should fit on screen without scrolling.",
+                                suggestion="Keep 3-4 top metrics on this slide and move the rest to a second KPI slide or table.",
                             )
                         )
 
@@ -910,6 +938,7 @@ def evaluate_authoring_quality(
                     "donut-chart",
                     "horizontal-bar-chart",
                     "stacked-bar-chart",
+                    "heatmap-chart",
                 }
             )
             has_callout = any(s.get("type") == "callout" for s in child_sections)
@@ -932,6 +961,7 @@ def evaluate_authoring_quality(
                 "donut-chart",
                 "horizontal-bar-chart",
                 "stacked-bar-chart",
+                "heatmap-chart",
             }
             tall_count = 0
             for child in child_sections:

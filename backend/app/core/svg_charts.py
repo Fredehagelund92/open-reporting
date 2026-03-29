@@ -33,6 +33,58 @@ def _fmt_val(val: float) -> str:
 
 _CHART_WIDTH = 760
 _CHART_HEIGHT = 380
+
+
+# ---------------------------------------------------------------------------
+# Color helpers (used by heatmap)
+# ---------------------------------------------------------------------------
+
+
+def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
+    """Parse '#RRGGBB' to (R, G, B) ints."""
+    h = hex_color.lstrip("#")
+    return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+
+
+def _rgb_to_hex(r: int, g: int, b: int) -> str:
+    """RGB ints back to '#rrggbb'."""
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def _interpolate_color(stops: list[tuple[float, str]], t: float) -> str:
+    """Linear RGB interpolation across N color stops at positions [0..1]."""
+    t = max(0.0, min(1.0, t))
+    if len(stops) == 1:
+        return stops[0][1]
+    # Find the two surrounding stops
+    for i in range(len(stops) - 1):
+        pos_a, col_a = stops[i]
+        pos_b, col_b = stops[i + 1]
+        if t <= pos_b or i == len(stops) - 2:
+            span = pos_b - pos_a
+            local_t = (t - pos_a) / span if span > 0 else 0.0
+            r1, g1, b1 = _hex_to_rgb(col_a)
+            r2, g2, b2 = _hex_to_rgb(col_b)
+            r = int(r1 + (r2 - r1) * local_t)
+            g = int(g1 + (g2 - g1) * local_t)
+            b = int(b1 + (b2 - b1) * local_t)
+            return _rgb_to_hex(r, g, b)
+    return stops[-1][1]
+
+
+def _text_color_for_bg(hex_bg: str) -> str:
+    """Return white or dark text based on WCAG relative luminance."""
+    r, g, b = _hex_to_rgb(hex_bg)
+    # sRGB luminance
+    lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+    return "#ffffff" if lum < 0.45 else "#1e293b"
+
+
+_HEATMAP_SCALES: dict[str, list[tuple[float, str]]] = {
+    "sequential": [(0.0, "#f0f4ff"), (1.0, "#1d4ed8")],
+    "diverging": [(0.0, "#1d4ed8"), (0.5, "#f8fafc"), (1.0, "#dc2626")],
+    "red-yellow-green": [(0.0, "#dc2626"), (0.5, "#f59e0b"), (1.0, "#16a34a")],
+}
 _PAD_LEFT = 8
 _PAD_RIGHT = 32
 _PAD_TOP = 40
@@ -653,4 +705,157 @@ def svg_sparkline(data: dict, theme: Theme) -> str:
         f'style="display:inline-block; vertical-align:middle;">'
         f'<polyline points="{points_str}" fill="none" stroke="{color}" stroke-width="1.5" />'
         f"</svg>"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Heatmap chart
+# ---------------------------------------------------------------------------
+
+
+def svg_heatmap_chart(data: dict, theme: Theme) -> str:
+    x_labels = data.get("x_labels", [])
+    y_labels = data.get("y_labels", [])
+    values = data.get("values", [])
+    scale_name = data.get("scale", "sequential")
+    stops = _HEATMAP_SCALES.get(scale_name, _HEATMAP_SCALES["sequential"])
+
+    if not x_labels or not y_labels or not values:
+        return ""
+
+    n_cols = len(x_labels)
+    n_rows = len(y_labels)
+
+    # Flatten all numeric values for normalization
+    flat: list[float] = []
+    for row in values:
+        if isinstance(row, list):
+            for v in row:
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    flat.append(float(v))
+    if not flat:
+        return ""
+
+    min_val = min(flat)
+    max_val = max(flat)
+
+    # Normalization: for diverging scale with values spanning neg/pos, center at 0
+    if scale_name == "diverging" and min_val < 0 and max_val > 0:
+        abs_max = max(abs(min_val), abs(max_val))
+        def _normalize(v: float) -> float:
+            return (v + abs_max) / (2 * abs_max) if abs_max > 0 else 0.5
+    else:
+        val_range = max_val - min_val
+        def _normalize(v: float) -> float:
+            return (v - min_val) / val_range if val_range > 0 else 0.5
+
+    # Layout
+    pad_left = 140
+    pad_top = 40
+    pad_bottom = 60  # space for legend
+    gap = 1
+
+    # Cell sizing: clamp height 24-50px, width based on available space
+    cell_h = max(24, min(50, int(300 / max(n_rows, 1))))
+    cell_w = max(24, min(int((_CHART_WIDTH - pad_left - _PAD_RIGHT) / max(n_cols, 1)) - gap, 80))
+
+    grid_w = n_cols * (cell_w + gap) - gap
+    grid_h = n_rows * (cell_h + gap) - gap
+    total_h = pad_top + grid_h + pad_bottom
+
+    # Rotate x-labels if many columns or long labels
+    max_label_len = max((len(str(l)) for l in x_labels), default=0)
+    rotate_x = n_cols > 10 or max_label_len > 5
+
+    parts: list[str] = []
+
+    # Y-axis labels
+    for ri, label in enumerate(y_labels):
+        y = pad_top + ri * (cell_h + gap) + cell_h / 2
+        parts.append(
+            f'<text x="{pad_left - 8}" y="{y:.1f}" text-anchor="end" '
+            f'dominant-baseline="middle" fill="{theme.chart_axis_color}" '
+            f'style="font-size:12px;">{escape(str(label))}</text>'
+        )
+
+    # X-axis labels
+    for ci, label in enumerate(x_labels):
+        x = pad_left + ci * (cell_w + gap) + cell_w / 2
+        y = pad_top - 8
+        if rotate_x:
+            parts.append(
+                f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="start" '
+                f'fill="{theme.chart_axis_color}" style="font-size:11px;" '
+                f'transform="rotate(-45 {x:.1f} {y:.1f})">{escape(str(label))}</text>'
+            )
+        else:
+            parts.append(
+                f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="middle" '
+                f'fill="{theme.chart_axis_color}" style="font-size:12px;">'
+                f'{escape(str(label))}</text>'
+            )
+
+    # Colored cells
+    for ri, row in enumerate(values):
+        if not isinstance(row, list):
+            continue
+        for ci, val in enumerate(row):
+            if not isinstance(val, (int, float)) or isinstance(val, bool):
+                continue
+            t_val = _normalize(float(val))
+            bg = _interpolate_color(stops, t_val)
+            fg = _text_color_for_bg(bg)
+            x = pad_left + ci * (cell_w + gap)
+            y = pad_top + ri * (cell_h + gap)
+            parts.append(
+                f'<rect x="{x}" y="{y}" width="{cell_w}" height="{cell_h}" '
+                f'rx="2" fill="{bg}" />'
+            )
+            # Value label only if cell is large enough
+            if cell_w > 30 and cell_h > 20:
+                parts.append(
+                    f'<text x="{x + cell_w / 2:.1f}" y="{y + cell_h / 2:.1f}" '
+                    f'text-anchor="middle" dominant-baseline="middle" '
+                    f'fill="{fg}" style="font-size:11px;">{_fmt_val(float(val))}</text>'
+                )
+
+    # Gradient legend bar at bottom
+    legend_y = pad_top + grid_h + 20
+    legend_x = pad_left
+    legend_w = min(grid_w, 300)
+    legend_h = 12
+    n_steps = 40
+    step_w = legend_w / n_steps
+    for i in range(n_steps):
+        t_val = i / max(n_steps - 1, 1)
+        c = _interpolate_color(stops, t_val)
+        sx = legend_x + i * step_w
+        parts.append(
+            f'<rect x="{sx:.1f}" y="{legend_y}" width="{step_w + 0.5:.1f}" '
+            f'height="{legend_h}" fill="{c}" />'
+        )
+
+    # Legend labels: min / mid / max
+    mid_val = (min_val + max_val) / 2
+    parts.append(
+        f'<text x="{legend_x}" y="{legend_y + legend_h + 14}" '
+        f'fill="{theme.chart_axis_color}" style="font-size:11px;">{_fmt_val(min_val)}</text>'
+    )
+    parts.append(
+        f'<text x="{legend_x + legend_w / 2:.1f}" y="{legend_y + legend_h + 14}" '
+        f'text-anchor="middle" fill="{theme.chart_axis_color}" style="font-size:11px;">'
+        f'{_fmt_val(mid_val)}</text>'
+    )
+    parts.append(
+        f'<text x="{legend_x + legend_w:.1f}" y="{legend_y + legend_h + 14}" '
+        f'text-anchor="end" fill="{theme.chart_axis_color}" style="font-size:11px;">'
+        f'{_fmt_val(max_val)}</text>'
+    )
+
+    return (
+        f'<svg viewBox="0 0 {theme.chart_viewbox_width} {total_h}" width="100%" '
+        f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Heatmap chart" '
+        f'style="display:block; font-family:{theme.font_stack};">'
+        f"\n{''.join(parts)}"
+        f"\n</svg>"
     )
