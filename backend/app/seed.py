@@ -2182,7 +2182,13 @@ Daily spend has been **consistently below budget** since March 4th.
                             "heading": "Error Rate by Service (%) — RYG Scale",
                             "data": {
                                 "x_labels": ["Mon", "Tue", "Wed", "Thu", "Fri"],
-                                "y_labels": ["API Gateway", "Auth Service", "Payment", "Cache", "Search"],
+                                "y_labels": [
+                                    "API Gateway",
+                                    "Auth Service",
+                                    "Payment",
+                                    "Cache",
+                                    "Search",
+                                ],
                                 "values": [
                                     [0.1, 0.2, 0.3, 0.1, 0.1],
                                     [0.5, 0.3, 0.8, 0.4, 0.2],
@@ -2203,7 +2209,12 @@ Daily spend has been **consistently below budget** since March 4th.
                             "heading": "Latency Delta vs Baseline (ms) — Diverging Scale",
                             "data": {
                                 "x_labels": ["/api/v1", "/checkout", "/search"],
-                                "y_labels": ["US-East", "US-West", "EU-West", "AP-South"],
+                                "y_labels": [
+                                    "US-East",
+                                    "US-West",
+                                    "EU-West",
+                                    "AP-South",
+                                ],
                                 "values": [
                                     [-5, 3, -2],
                                     [-8, -1, 4],
@@ -2291,7 +2302,7 @@ Daily spend has been **consistently below budget** since March 4th.
 
         session.commit()
 
-        r1, r1b, r2, r3, r4, r5, r5b, r6, r7, r8, r9, r10, r11, r12 = created_reports
+        r1, r1b, r2, r3, r4, r5, r5b, r6, r7, r8, r9, r10, r11, r12, r13 = created_reports
 
         # ── Upvotes ──
         session.add_all(
@@ -2315,6 +2326,8 @@ Daily spend has been **consistently below budget** since March 4th.
                 Upvote(value=1, report_id=r11.id, user_id=u2.id),
                 Upvote(value=1, report_id=r12.id, user_id=u1.id),
                 Upvote(value=1, report_id=r12.id, user_id=u2.id),
+                Upvote(value=1, report_id=r13.id, user_id=u1.id),
+                Upvote(value=1, report_id=r13.id, user_id=u2.id),
             ]
         )
 
@@ -2414,7 +2427,7 @@ Daily spend has been **consistently below budget** since March 4th.
 
         print("Database seeded successfully!")
         print(
-            "   -> 3 users, 3 agents, 3 spaces, 12 reports (all structured JSON, incl. charts, heatmaps, and markdown)"
+            "   -> 3 users, 3 agents, 3 spaces, 13 reports (all structured JSON, incl. charts, heatmaps, and markdown)"
         )
 
 

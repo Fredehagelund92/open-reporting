@@ -86,6 +86,70 @@ _HEATMAP_SCALES: dict[str, list[tuple[float, str]]] = {
     "red-yellow-green": [(0.0, "#dc2626"), (0.5, "#f59e0b"), (1.0, "#16a34a")],
 }
 _PAD_LEFT = 8
+
+
+# ---------------------------------------------------------------------------
+# Color helpers (used by heatmap)
+# ---------------------------------------------------------------------------
+
+
+def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
+    """Parse '#RRGGBB' to (R, G, B) ints."""
+    h = hex_color.lstrip("#")
+    return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+
+
+def _rgb_to_hex(r: int, g: int, b: int) -> str:
+    """RGB ints back to '#rrggbb'."""
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def _interpolate_color(stops: list[tuple[float, str]], t: float) -> str:
+    """Linear RGB interpolation across N color stops at positions [0..1]."""
+    t = max(0.0, min(1.0, t))
+    if len(stops) == 1:
+        return stops[0][1]
+    for i in range(len(stops) - 1):
+        pos_a, col_a = stops[i]
+        pos_b, col_b = stops[i + 1]
+        if t <= pos_b or i == len(stops) - 2:
+            span = pos_b - pos_a
+            local_t = (t - pos_a) / span if span > 0 else 0.0
+            r1, g1, b1 = _hex_to_rgb(col_a)
+            r2, g2, b2 = _hex_to_rgb(col_b)
+            r = int(r1 + (r2 - r1) * local_t)
+            g = int(g1 + (g2 - g1) * local_t)
+            b = int(b1 + (b2 - b1) * local_t)
+            return _rgb_to_hex(r, g, b)
+    return stops[-1][1]
+
+
+def _text_color_for_bg(hex_bg: str) -> str:
+    """Return white or dark text based on WCAG relative luminance."""
+    r, g, b = _hex_to_rgb(hex_bg)
+    lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+    return "#ffffff" if lum < 0.45 else "#1e293b"
+
+
+_HEATMAP_SCALES: dict[str, list[tuple[float, str]]] = {
+    "sequential": [(0.0, "#f0f4ff"), (1.0, "#1d4ed8")],
+    "diverging": [(0.0, "#1d4ed8"), (0.5, "#f8fafc"), (1.0, "#dc2626")],
+    "red-yellow-green": [(0.0, "#dc2626"), (0.5, "#f59e0b"), (1.0, "#16a34a")],
+}
+
+
+def _heatmap_normalize(
+    val: float,
+    min_val: float,
+    max_val: float,
+    scale_name: str,
+) -> float:
+    """Normalize a heatmap value to [0, 1] for color interpolation."""
+    if scale_name == "diverging" and min_val < 0 and max_val > 0:
+        abs_max = max(abs(min_val), abs(max_val))
+        return (val + abs_max) / (2 * abs_max) if abs_max > 0 else 0.5
+    val_range = max_val - min_val
+    return (val - min_val) / val_range if val_range > 0 else 0.5
 _PAD_RIGHT = 32
 _PAD_TOP = 40
 _PAD_BOTTOM = 60
@@ -714,6 +778,7 @@ def svg_sparkline(data: dict, theme: Theme) -> str:
 
 
 def svg_heatmap_chart(data: dict, theme: Theme) -> str:
+    """Render a 2D heatmap as an SVG with colored cells and a gradient legend."""
     x_labels = data.get("x_labels", [])
     y_labels = data.get("y_labels", [])
     values = data.get("values", [])
@@ -739,33 +804,32 @@ def svg_heatmap_chart(data: dict, theme: Theme) -> str:
     min_val = min(flat)
     max_val = max(flat)
 
-    # Normalization: for diverging scale with values spanning neg/pos, center at 0
-    if scale_name == "diverging" and min_val < 0 and max_val > 0:
-        abs_max = max(abs(min_val), abs(max_val))
-        def _normalize(v: float) -> float:
-            return (v + abs_max) / (2 * abs_max) if abs_max > 0 else 0.5
-    else:
-        val_range = max_val - min_val
-        def _normalize(v: float) -> float:
-            return (v - min_val) / val_range if val_range > 0 else 0.5
-
     # Layout
     pad_left = 140
-    pad_top = 40
     pad_bottom = 60  # space for legend
     gap = 1
 
+    # Rotate x-labels if many columns or long labels
+    max_label_len = max((len(str(lbl)) for lbl in x_labels), default=0)
+    rotate_x = n_cols > 10 or max_label_len > 5
+
+    # Extra top padding when labels are rotated to prevent clipping
+    if rotate_x:
+        # Rotated text at -45deg: height ~ len * char_width * sin(45)
+        pad_top = 40 + int(max_label_len * 4.5)
+    else:
+        pad_top = 40
+
     # Cell sizing: clamp height 24-50px, width based on available space
     cell_h = max(24, min(50, int(300 / max(n_rows, 1))))
-    cell_w = max(24, min(int((_CHART_WIDTH - pad_left - _PAD_RIGHT) / max(n_cols, 1)) - gap, 80))
+    cell_w = max(
+        24,
+        min(int((_CHART_WIDTH - pad_left - _PAD_RIGHT) / max(n_cols, 1)) - gap, 80),
+    )
 
     grid_w = n_cols * (cell_w + gap) - gap
     grid_h = n_rows * (cell_h + gap) - gap
     total_h = pad_top + grid_h + pad_bottom
-
-    # Rotate x-labels if many columns or long labels
-    max_label_len = max((len(str(l)) for l in x_labels), default=0)
-    rotate_x = n_cols > 10 or max_label_len > 5
 
     parts: list[str] = []
 
@@ -786,13 +850,14 @@ def svg_heatmap_chart(data: dict, theme: Theme) -> str:
             parts.append(
                 f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="start" '
                 f'fill="{theme.chart_axis_color}" style="font-size:11px;" '
-                f'transform="rotate(-45 {x:.1f} {y:.1f})">{escape(str(label))}</text>'
+                f'transform="rotate(-45 {x:.1f} {y:.1f})">'
+                f"{escape(str(label))}</text>"
             )
         else:
             parts.append(
                 f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="middle" '
                 f'fill="{theme.chart_axis_color}" style="font-size:12px;">'
-                f'{escape(str(label))}</text>'
+                f"{escape(str(label))}</text>"
             )
 
     # Colored cells
@@ -802,7 +867,7 @@ def svg_heatmap_chart(data: dict, theme: Theme) -> str:
         for ci, val in enumerate(row):
             if not isinstance(val, (int, float)) or isinstance(val, bool):
                 continue
-            t_val = _normalize(float(val))
+            t_val = _heatmap_normalize(float(val), min_val, max_val, scale_name)
             bg = _interpolate_color(stops, t_val)
             fg = _text_color_for_bg(bg)
             x = pad_left + ci * (cell_w + gap)
@@ -816,7 +881,8 @@ def svg_heatmap_chart(data: dict, theme: Theme) -> str:
                 parts.append(
                     f'<text x="{x + cell_w / 2:.1f}" y="{y + cell_h / 2:.1f}" '
                     f'text-anchor="middle" dominant-baseline="middle" '
-                    f'fill="{fg}" style="font-size:11px;">{_fmt_val(float(val))}</text>'
+                    f'fill="{fg}" style="font-size:11px;">'
+                    f"{_fmt_val(float(val))}</text>"
                 )
 
     # Gradient legend bar at bottom
@@ -839,17 +905,18 @@ def svg_heatmap_chart(data: dict, theme: Theme) -> str:
     mid_val = (min_val + max_val) / 2
     parts.append(
         f'<text x="{legend_x}" y="{legend_y + legend_h + 14}" '
-        f'fill="{theme.chart_axis_color}" style="font-size:11px;">{_fmt_val(min_val)}</text>'
+        f'fill="{theme.chart_axis_color}" style="font-size:11px;">'
+        f"{_fmt_val(min_val)}</text>"
     )
     parts.append(
         f'<text x="{legend_x + legend_w / 2:.1f}" y="{legend_y + legend_h + 14}" '
         f'text-anchor="middle" fill="{theme.chart_axis_color}" style="font-size:11px;">'
-        f'{_fmt_val(mid_val)}</text>'
+        f"{_fmt_val(mid_val)}</text>"
     )
     parts.append(
         f'<text x="{legend_x + legend_w:.1f}" y="{legend_y + legend_h + 14}" '
         f'text-anchor="end" fill="{theme.chart_axis_color}" style="font-size:11px;">'
-        f'{_fmt_val(max_val)}</text>'
+        f"{_fmt_val(max_val)}</text>"
     )
 
     return (

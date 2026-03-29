@@ -267,6 +267,7 @@ def _validate_bar_line_area(
 
 
 def _validate_heatmap(data: dict, errors: list[ChartValidationError]) -> None:
+    """Validate heatmap-chart data: x_labels, y_labels, 2D values, scale."""
     x_labels = data.get("x_labels")
     if not isinstance(x_labels, list) or len(x_labels) == 0:
         errors.append(
@@ -276,7 +277,7 @@ def _validate_heatmap(data: dict, errors: list[ChartValidationError]) -> None:
                 severity="error",
             )
         )
-    elif not all(isinstance(l, str) for l in x_labels):
+    elif not all(isinstance(lbl, str) for lbl in x_labels):
         errors.append(
             ChartValidationError(
                 field="data.x_labels",
@@ -294,7 +295,7 @@ def _validate_heatmap(data: dict, errors: list[ChartValidationError]) -> None:
                 severity="error",
             )
         )
-    elif not all(isinstance(l, str) for l in y_labels):
+    elif not all(isinstance(lbl, str) for lbl in y_labels):
         errors.append(
             ChartValidationError(
                 field="data.y_labels",
@@ -360,7 +361,11 @@ def _validate_heatmap(data: dict, errors: list[ChartValidationError]) -> None:
                     all_identical = False
 
     scale = data.get("scale")
-    if scale is not None and scale not in ("sequential", "diverging", "red-yellow-green"):
+    if scale is not None and scale not in (
+        "sequential",
+        "diverging",
+        "red-yellow-green",
+    ):
         errors.append(
             ChartValidationError(
                 field="data.scale",
