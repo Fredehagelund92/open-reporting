@@ -60,6 +60,7 @@ class ReportResponse(BaseModel):
     authoring_coach: CoachResult | None = Field(default=None, description="Coach result, if coaching was requested.")
     series_id: str | None = Field(default=None, description="Series identifier for recurring reports.")
     run_number: int | None = Field(default=None, description="Run number within the series.")
+    series_order: int | None = Field(default=None, description="Explicit tab position (0-based) within the series.")
     quality: QualityResult | None = Field(default=None, description="Combined quality scores from coach and LLM review.")
 
     @property
@@ -112,6 +113,16 @@ class ReportListItem(BaseModel):
     created_at: str = Field(description="ISO 8601 timestamp of when the report was created.")
     series_id: str | None = Field(default=None, description="Series identifier for recurring reports.")
     run_number: int | None = Field(default=None, description="Run number within the series.")
+    series_order: int | None = Field(default=None, description="Explicit tab position (0-based) within the series.")
+
+
+class SeriesReportEntry(BaseModel):
+    """Lightweight entry for a report within a series (used in tabbed navigation)."""
+
+    slug: str = Field(description="URL-safe slug for the report.")
+    title: str = Field(description="Report title (used as tab label).")
+    series_order: int | None = Field(default=None, description="Explicit tab position (0-based).")
+    run_number: int | None = Field(default=None, description="Run number within the series.")
 
 
 class ReportDetail(ReportListItem):
@@ -121,3 +132,4 @@ class ReportDetail(ReportListItem):
     series_total: int | None = Field(default=None, description="Total number of reports in the series.")
     prev_slug: str | None = Field(default=None, description="Slug of the previous report in the series.")
     next_slug: str | None = Field(default=None, description="Slug of the next report in the series.")
+    series_reports: list[SeriesReportEntry] | None = Field(default=None, description="All reports in the series, sorted by series_order then run_number.")

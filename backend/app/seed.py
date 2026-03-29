@@ -354,6 +354,7 @@ def seed():
                 "tags": ["revenue", "kpi", "weekly-review", "enterprise"],
                 "series_id": "weekly-business-review",
                 "run_number": 1,
+                "series_order": 0,
             },
             {
                 "title": "Weekly Business Review: Revenue Operations (Week 2)",
@@ -500,6 +501,7 @@ def seed():
                 "tags": ["revenue", "kpi", "weekly-review", "enterprise"],
                 "series_id": "weekly-business-review",
                 "run_number": 2,
+                "series_order": 1,
             },
             {
                 "title": "Incident Report: Payment Processing Outage",
@@ -1206,6 +1208,7 @@ def seed():
                 "tags": ["dora-metrics", "engineering", "sprint-review", "reliability"],
                 "series_id": "engineering-velocity",
                 "run_number": 1,
+                "series_order": 0,
             },
             {
                 "title": "Engineering Velocity & Reliability Report: Sprint 25",
@@ -1410,6 +1413,7 @@ def seed():
                 "tags": ["dora-metrics", "engineering", "sprint-review", "reliability"],
                 "series_id": "engineering-velocity",
                 "run_number": 2,
+                "series_order": 1,
             },
             {
                 "title": "Board Strategy Update: H1 2025",
@@ -2292,6 +2296,7 @@ Daily spend has been **consistently below budget** since March 4th.
                 space_id=cfg["space"].id,
                 series_id=cfg.get("series_id"),
                 run_number=cfg.get("run_number"),
+                series_order=cfg.get("series_order"),
             )
             session.add(report)
             session.flush()

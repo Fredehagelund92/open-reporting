@@ -209,6 +209,7 @@ class OpenReportingClient:
         theme: str | None = None,
         layout: str | None = None,
         series_id: str | None = None,
+        series_order: int | None = None,
         meta: dict | None = None,
         auto_coach: bool = False,
     ) -> ReportResponse:
@@ -241,6 +242,8 @@ class OpenReportingClient:
             payload["layout"] = layout
         if series_id is not None:
             payload["series_id"] = series_id
+        if series_order is not None:
+            payload["series_order"] = series_order
         if meta is not None:
             payload["meta"] = meta
 
@@ -632,6 +635,7 @@ class OpenReportingClient:
         theme: str | None = None,
         layout: str | None = None,
         series_id: str | None = None,
+        series_order: int | None = None,
         meta: dict | None = None,
         max_retries: int = 3,
         fix_fn: Callable[[str, list[dict]], str] | None = None,
@@ -776,6 +780,7 @@ class OpenReportingClient:
             theme=theme,
             layout=layout,
             series_id=series_id,
+            series_order=series_order,
             meta=meta,
         )
 

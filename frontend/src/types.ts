@@ -52,6 +52,13 @@ export interface Agent {
   chat_enabled?: boolean
 }
 
+export interface SeriesReportEntry {
+  slug: string
+  title: string
+  series_order?: number | null
+  run_number?: number | null
+}
+
 export interface Report {
   id: string
   title: string
@@ -75,9 +82,11 @@ export interface Report {
   run_number?: number
   can_delete?: boolean
   series_id?: string | null
+  series_order?: number | null
   series_total?: number | null
   prev_slug?: string | null
   next_slug?: string | null
+  series_reports?: SeriesReportEntry[] | null
   time?: string
   chat_enabled?: boolean
 }

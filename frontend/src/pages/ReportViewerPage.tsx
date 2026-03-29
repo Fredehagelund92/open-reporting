@@ -146,14 +146,26 @@ export function ReportViewerPage() {
 
   useEffect(() => {
     if (!report?.series_id) return
+    const siblings = report?.series_reports
+    let prev: string | null = null
+    let next: string | null = null
+    if (siblings && siblings.length > 1) {
+      const idx = siblings.findIndex(e => e.slug === report.slug)
+      if (idx > 0) prev = siblings[idx - 1].slug
+      if (idx >= 0 && idx < siblings.length - 1) next = siblings[idx + 1].slug
+    } else {
+      prev = report.prev_slug ?? null
+      next = report.next_slug ?? null
+    }
+    if (!prev && !next) return
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return
-      if (e.key === "ArrowLeft" && report.prev_slug) navigate(`/report/${report.prev_slug}`)
-      if (e.key === "ArrowRight" && report.next_slug) navigate(`/report/${report.next_slug}`)
+      if (e.key === "ArrowLeft" && prev) navigate(`/report/${prev}`)
+      if (e.key === "ArrowRight" && next) navigate(`/report/${next}`)
     }
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
-  }, [report?.series_id, report?.prev_slug, report?.next_slug, navigate])
+  }, [report?.series_id, report?.series_reports, report?.slug, report?.prev_slug, report?.next_slug, navigate])
 
   // Text selection → highlight overlays + floating "Comment" tooltip.
   // Reads getClientRects() from the selection Range and renders React-owned
@@ -378,69 +390,39 @@ export function ReportViewerPage() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-x-hidden">
 
-        {/* Series Navigation */}
-        {report.series_id && (
-          <div className="mb-6 flex items-center gap-3 rounded-sm border border-border/60 bg-muted/20 px-3 py-2">
-            <span className="text-sm font-medium text-muted-foreground shrink-0">Series</span>
-            <code className="font-mono text-xs font-semibold text-foreground bg-card border border-border/60 rounded px-1.5 py-0.5 shrink-0">
-              {report.series_id}
-            </code>
-            <div className="w-px h-3.5 bg-border/50 shrink-0" />
-
-            {report.prev_slug ? (
-              <Link to={`/report/${report.prev_slug}`}>
-                <Button variant="ghost" size="sm" className="h-6 px-1.5 gap-0.5 text-xs text-muted-foreground hover:text-foreground">
-                  <ChevronLeft className="size-3" />
-                  <span className="tabular-nums font-mono">#{(report.run_number ?? 1) - 1}</span>
-                </Button>
-              </Link>
-            ) : (
-              <Button variant="ghost" size="sm" className="h-6 px-1.5 opacity-25" disabled>
-                <ChevronLeft className="size-3" />
-              </Button>
-            )}
-
-            <div className="flex items-center gap-1 flex-1 justify-center">
-              {report.series_total && report.series_total <= 12 ? (
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: report.series_total }, (_, i) => {
-                    const runIdx = i + 1
-                    const isCurrent = runIdx === report.run_number
-                    const isPast = runIdx < (report.run_number ?? 0)
+        {/* Series Tab Navigation */}
+        {report.series_reports && report.series_reports.length > 1 && (
+          <nav className="mb-6 -mt-1" aria-label="Report series">
+            <div className="relative">
+              <div className="overflow-x-auto scrollbar-none">
+                <div className="flex items-end gap-0 min-w-max border-b border-border/40">
+                  {report.series_reports.map((entry) => {
+                    const isActive = entry.slug === report.slug
                     return (
-                      <div
-                        key={i}
+                      <Link
+                        key={entry.slug}
+                        to={`/report/${entry.slug}`}
                         className={cn(
-                          "rounded-full transition-all duration-300",
-                          isCurrent ? "w-4 h-1.5 bg-primary" :
-                          isPast    ? "w-1.5 h-1.5 bg-primary/50" :
-                                      "w-1.5 h-1.5 bg-border"
+                          "relative px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap max-w-[200px] truncate",
+                          isActive
+                            ? "text-foreground"
+                            : "text-muted-foreground hover:text-foreground/80"
                         )}
-                      />
+                      >
+                        {entry.title}
+                        {isActive && (
+                          <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary rounded-full" />
+                        )}
+                      </Link>
                     )
                   })}
                 </div>
-              ) : (
-                <span className="font-mono text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">{report.run_number ?? "?"}</span>
-                  {" / "}{report.series_total ?? "?"}
-                </span>
-              )}
+              </div>
+              <span className="hidden sm:block absolute right-0 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/30 font-mono select-none">
+                ← →
+              </span>
             </div>
-
-            {report.next_slug ? (
-              <Link to={`/report/${report.next_slug}`}>
-                <Button variant="ghost" size="sm" className="h-6 px-1.5 gap-0.5 text-xs text-muted-foreground hover:text-foreground">
-                  <span className="tabular-nums font-mono">#{(report.run_number ?? 0) + 1}</span>
-                  <ChevronRight className="size-3" />
-                </Button>
-              </Link>
-            ) : (
-              <Button variant="ghost" size="sm" className="h-6 px-1.5 opacity-25" disabled>
-                <ChevronRight className="size-3" />
-              </Button>
-            )}
-          </div>
+          </nav>
         )}
 
         {/* ─── Editorial Header ─── */}

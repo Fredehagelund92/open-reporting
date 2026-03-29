@@ -114,12 +114,20 @@ class ReportCreateRequest(BaseModel):
     content_type: str = "report"  # "report" or "slideshow"
     meta: Optional[dict] = None
     series_id: Optional[str] = None
+    series_order: Optional[int] = None
 
     @field_validator("series_id")
     @classmethod
     def _validate_series_id(cls, v: Optional[str]) -> Optional[str]:
         if v and (not re.match(r"^[a-z0-9]+(?:-[a-z0-9]+)*$", v) or len(v) > 100):
             raise ValueError("series_id must be a lowercase slug, max 100 chars")
+        return v
+
+    @field_validator("series_order")
+    @classmethod
+    def _validate_series_order(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 0:
+            raise ValueError("series_order must be >= 0")
         return v
 
 
@@ -153,6 +161,13 @@ class QualityResponse(BaseModel):
     llm_review: Optional[LlmReviewResponse] = None
 
 
+class SeriesReportEntry(BaseModel):
+    slug: str
+    title: str
+    series_order: Optional[int] = None
+    run_number: Optional[int] = None
+
+
 class ReportSummaryResponse(BaseModel):
     id: str
     title: str
@@ -172,6 +187,7 @@ class ReportSummaryResponse(BaseModel):
     sanitization_applied: Optional[list[dict]] = None
     series_id: Optional[str] = None
     run_number: Optional[int] = None
+    series_order: Optional[int] = None
     quality: Optional[QualityResponse] = None
 
 
@@ -181,6 +197,7 @@ class ReportDetailResponse(ReportSummaryResponse):
     series_total: Optional[int] = None
     prev_slug: Optional[str] = None
     next_slug: Optional[str] = None
+    series_reports: Optional[list[SeriesReportEntry]] = None
 
 
 # --- Routes ---
@@ -549,6 +566,7 @@ def create_report(
         meta=report_metadata or None,
         series_id=body.series_id,
         run_number=run_number,
+        series_order=body.series_order,
     )
     session.add(report)
     session.commit()
@@ -576,6 +594,7 @@ def create_report(
         sanitization_applied=sanitization_warnings or None,
         series_id=report.series_id,
         run_number=report.run_number,
+        series_order=report.series_order,
         quality=QualityResponse(
             coach_score=coach_feedback.overall_score,
             coach_status=coach_feedback.readiness_status,
@@ -599,12 +618,20 @@ class UserReportCreateRequest(BaseModel):
     content_type: str = "report"
     meta: Optional[dict] = None
     series_id: Optional[str] = None
+    series_order: Optional[int] = None
 
     @field_validator("series_id")
     @classmethod
     def _validate_series_id(cls, v: Optional[str]) -> Optional[str]:
         if v and (not re.match(r"^[a-z0-9]+(?:-[a-z0-9]+)*$", v) or len(v) > 100):
             raise ValueError("series_id must be a lowercase slug, max 100 chars")
+        return v
+
+    @field_validator("series_order")
+    @classmethod
+    def _validate_series_order(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 0:
+            raise ValueError("series_order must be >= 0")
         return v
 
 
@@ -718,6 +745,7 @@ def upload_report_as_user(
         space_id=space.id,
         series_id=body.series_id,
         run_number=run_number,
+        series_order=body.series_order,
     )
     session.add(report)
     session.commit()
@@ -744,6 +772,7 @@ def upload_report_as_user(
         sanitization_applied=sanitization_warnings or None,
         series_id=report.series_id,
         run_number=report.run_number,
+        series_order=report.series_order,
     )
 
 
@@ -914,6 +943,7 @@ async def list_reports(
                 created_at=report.created_at.isoformat(),
                 series_id=report.series_id,
                 run_number=report.run_number,
+                series_order=report.series_order,
             )
         )
 
@@ -980,33 +1010,39 @@ async def get_report(
     ).one()
 
     series_total = prev_slug = next_slug = None
+    series_reports = None
     if report.series_id:
-        series_total = int(
-            session.exec(
-                select(func.count(Report.id)).where(
-                    Report.series_id == report.series_id,
-                    Report.agent_id == report.agent_id,
-                )
-            ).one()
-        )
-        if report.run_number and report.run_number > 1:
-            prev = session.exec(
-                select(Report).where(
-                    Report.series_id == report.series_id,
-                    Report.agent_id == report.agent_id,
-                    Report.run_number == report.run_number - 1,
-                )
-            ).first()
-            prev_slug = prev.slug if prev else None
-        if report.run_number and series_total and report.run_number < series_total:
-            nxt = session.exec(
-                select(Report).where(
-                    Report.series_id == report.series_id,
-                    Report.agent_id == report.agent_id,
-                    Report.run_number == report.run_number + 1,
-                )
-            ).first()
-            next_slug = nxt.slug if nxt else None
+        siblings = session.exec(
+            select(Report).where(
+                Report.series_id == report.series_id,
+                Report.agent_id == report.agent_id,
+            )
+        ).all()
+        siblings_sorted = sorted(siblings, key=lambda r: (
+            r.series_order if r.series_order is not None else float('inf'),
+            r.run_number if r.run_number is not None else float('inf'),
+        ))
+        series_reports = [
+            SeriesReportEntry(
+                slug=s.slug,
+                title=s.title,
+                series_order=s.series_order,
+                run_number=s.run_number,
+            )
+            for s in siblings_sorted
+        ]
+        series_total = len(siblings_sorted)
+
+        # Derive prev/next from sorted list for backward compat
+        slugs = [s.slug for s in siblings_sorted]
+        try:
+            idx = slugs.index(report.slug)
+            if idx > 0:
+                prev_slug = slugs[idx - 1]
+            if idx < len(slugs) - 1:
+                next_slug = slugs[idx + 1]
+        except ValueError:
+            pass
 
     response_data = ReportDetailResponse(
         id=report.id,
@@ -1031,9 +1067,11 @@ async def get_report(
         chat_enabled=agent_obj.chat_enabled if agent_obj else False,
         series_id=report.series_id,
         run_number=report.run_number,
+        series_order=report.series_order,
         series_total=series_total,
         prev_slug=prev_slug,
         next_slug=next_slug,
+        series_reports=series_reports,
     )
 
     # Save to cache for 60 seconds
@@ -1190,6 +1228,7 @@ def update_report(
         sanitization_applied=sanitization_warnings or None,
         series_id=report.series_id,
         run_number=report.run_number,
+        series_order=report.series_order,
     )
 
 

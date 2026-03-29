@@ -172,6 +172,7 @@ class Report(SQLModel, table=True):
     content_type: str = Field(default="report")  # "report" or "slideshow"
     series_id: Optional[str] = Field(default=None, index=True)
     run_number: Optional[int] = Field(default=None)
+    series_order: Optional[int] = Field(default=None)
 
     embedding: Optional[List[float]] = Field(default=None, sa_column=Column(VectorType))
 
