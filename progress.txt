@@ -1,0 +1,111 @@
+## Codebase Patterns
+- Use `UV_PROJECT_ENVIRONMENT=/tmp/backend-venv` when running uv on WSL to avoid .venv/Scripts IO errors
+- The main authoring coach function is `evaluate_authoring_quality()` with keyword-only args including `all_sections`
+- Title slides are identified by having a child with `type=='summary-header'`
+- Slide sections structure: `{'type': 'slide', 'sections': [child1, child2, ...]}`
+- Chart data structure: `{type: 'bar-chart'/'line-chart', data: {labels: [...], datasets: [{name: '...', values: [...]}]}}` — use `data` wrapper and `name` (not `label`)
+
+---
+
+## 2026-03-26 - US-001
+- Added `slide_too_thin` warning rule in authoring_coach.py inside the slideshow rules block
+- Rule fires when a non-title slide has exactly 1 child section
+- Added `thin_slide_count` and `total_non_title_slides` counters for use by US-003
+- Files changed: backend/app/core/authoring_coach.py
+- **Learnings for future iterations:**
+  - The `for slide in slide_sections` loop is at ~line 784; new per-slide rules go after `slide_too_dense`
+  - Title slides contain `summary-header` type children
+  - Counters for composite rules should be initialized before the loop and tracked inside it
+---
+
+## 2026-03-26 - US-003
+- Added `slideshow_low_substance` composite warning rule after `slideshow_no_narrative` in authoring_coach.py
+- Rule fires when >50% of non-title slides have only 1 child section, with actual counts in message
+- Safely skips when total_non_title_slides is 0
+- Files changed: backend/app/core/authoring_coach.py
+- **Learnings for future iterations:**
+  - The counters from US-001 (`thin_slide_count`, `total_non_title_slides`) are at lines ~784-797
+  - Post-loop composite rules go after `slideshow_no_narrative` (~line 889), before score calculation
+  - `evaluate_authoring_quality()` requires `title` and `summary` kwargs in addition to `content_type`, `all_sections`, and `html_body`
+---
+
+## 2026-03-26 - US-002
+- Added `slideshow_no_narrative` warning rule after the per-slide loop in authoring_coach.py
+- Rule checks all slides' child sections for any `type=='text'`; fires warning if none found
+- Files changed: backend/app/core/authoring_coach.py
+- **Learnings for future iterations:**
+  - Post-loop slideshow rules go after line ~873 (after `slide_no_takeaway`), before score calculation
+  - `evaluate_authoring_quality()` requires `html_body` kwarg in addition to other params
+---
+
+## 2026-03-26 - US-004
+- Rewrote editorial seed slideshow from 5 thin slides to 4 rich slides
+- Slide 1: summary-header (title, subtitle, date, stats), Slide 2: kpi-grid + bar-chart, Slide 3: text + callout (info), Slide 4: text + callout (success)
+- Fixed bar-chart to use `data` wrapper and `name` instead of `label` for datasets
+- Files changed: backend/app/seed.py
+- **Learnings for future iterations:**
+  - Chart data structure requires `data: {labels: [...], datasets: [{name: '...', values: [...]}]}` — labels/datasets must NOT be at section root
+  - Use `name` (not `label`) for dataset identifier in charts
+  - Reference existing working charts at seed.py ~line 1615 for correct structure
+  - Pre-existing mypy errors in tags.py and other files are unrelated to seed work
+---
+
+## 2026-03-26 - US-005
+- Rewrote financial seed slideshow from 5 thin slides to 4 rich slides
+- Slide 1: summary-header (title, subtitle, date, stats with Prepared by/Reporting Period/Covenant Review)
+- Slide 2: kpi-grid (4 metrics) + line-chart (6-month cash balance trend) with correct `data` wrapper and `name`
+- Slide 3: table (Covenant Compliance Summary) + callout (success type with covenant status)
+- Slide 4: text (FX exposure and outlook narrative) + callout (info type with EUR hedge position)
+- Fixed line-chart to use `data` wrapper and `name` instead of `label` for datasets
+- Files changed: backend/app/seed.py
+- **Learnings for future iterations:**
+  - Same chart data structure fix pattern as US-004 applies to all chart types
+  - Seed runs fine after DB reset (deletes old database first)
+  - 13 total reports unchanged — no unpacking line update needed
+---
+
+## 2026-03-26 - US-007
+- Added `slide_content_overflow` warning rule in authoring_coach.py
+- Four overflow checks: >2 sections per slide, text >200 chars, table >6 rows, kpi-grid >4 metrics
+- All use same suggestion about splitting across slides to avoid scrollbars
+- Files changed: backend/app/core/authoring_coach.py
+- **Learnings for future iterations:**
+  - Overflow checks go inside the `for child in child_sections` loop (for per-element checks) and before it (for section count)
+  - The `slide_too_dense` rule already checks >2 sections; `slide_content_overflow` adds a parallel warning focused on overflow prevention
+  - Table rows accessed via `child.get("rows", [])`, KPI metrics via `child.get("metrics", [])`
+---
+
+## 2026-03-27 - US-008
+- Added `slide_tall_combo` warning rule in authoring_coach.py inside the per-slide loop
+- Counts "tall" elements: any chart type, kpi-grid with 3+ metrics, table with 4+ rows
+- Fires warning when a slide has 2+ tall elements
+- Placed after `slide_no_takeaway` check, reuses same chart type set pattern
+- Files changed: backend/app/core/authoring_coach.py
+- **Learnings for future iterations:**
+  - The `slide_no_takeaway` block already defines a `tall_types` chart set; `slide_tall_combo` defines its own identical set for clarity
+  - Tall thresholds: charts always tall, kpi-grid >= 3 metrics, table >= 4 rows
+  - Rule placement: after `slide_no_takeaway`, before the loop closes
+---
+
+## 2026-03-27 - US-010
+- Trimmed editorial slideshow to eliminate overflow on the spacious editorial theme
+- Slide 2: removed 'Bounce Rate' metric, KPI grid reduced from 4 to 3 metrics
+- Slide 3: shortened callout message from 92 chars to 76 chars (under 80 target)
+- Slide 4: removed 'Tutorial content underperforms' bullet, Key Findings now has 3 bullets
+- Files changed: backend/app/seed.py
+- **Learnings for future iterations:**
+  - The editorial theme uses density='spacious' which makes content taller — stricter limits apply
+  - 3 KPI metrics + callout, 3 bullets + callout, and short callouts (<80 chars) are safe for editorial
+---
+
+## 2026-03-27 - US-009
+- Split editorial slideshow slide 2 (KPI grid + bar chart) into two slides: KPI grid + callout, bar chart + callout
+- Split financial slideshow slide 2 (KPI grid + line chart) into two slides: KPI grid + callout, line chart + callout
+- Both slideshows now have 5 slides (was 4). No tall combo warnings triggered.
+- Report count unchanged (13 total), no unpacking line update needed
+- Files changed: backend/app/seed.py
+- **Learnings for future iterations:**
+  - When splitting a tall combo slide, pair each element with a callout to avoid triggering `slide_too_thin`
+  - Callouts should provide interpretive context for the data element they accompany
+  - Seed still produces 11 reports (some configs share reports); total count didn't change from the split
+---

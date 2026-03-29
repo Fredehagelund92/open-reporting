@@ -58,6 +58,13 @@ def normalize_chart_values(section: dict) -> dict:
         values = data.get("values")
         if isinstance(values, list):
             data["values"] = [_try_coerce_number(v) for v in values]
+    elif chart_type == "heatmap-chart":
+        values = data.get("values")
+        if isinstance(values, list):
+            data["values"] = [
+                [_try_coerce_number(v) for v in row] if isinstance(row, list) else row
+                for row in values
+            ]
     else:
         datasets = data.get("datasets")
         if isinstance(datasets, list):
@@ -88,6 +95,8 @@ def validate_chart_section(section: dict) -> list[ChartValidationError]:
         _validate_pie(data, errors)
     elif chart_type == "sparkline":
         _validate_sparkline(data, errors)
+    elif chart_type == "heatmap-chart":
+        _validate_heatmap(data, errors)
     else:
         _validate_bar_line_area(data, errors, chart_type)
 
@@ -255,6 +264,136 @@ def _validate_bar_line_area(
                 severity="warning",
             )
         )
+
+
+def _validate_heatmap(data: dict, errors: list[ChartValidationError]) -> None:
+    x_labels = data.get("x_labels")
+    if not isinstance(x_labels, list) or len(x_labels) == 0:
+        errors.append(
+            ChartValidationError(
+                field="data.x_labels",
+                message="'data.x_labels' must be a non-empty list of strings.",
+                severity="error",
+            )
+        )
+    elif not all(isinstance(l, str) for l in x_labels):
+        errors.append(
+            ChartValidationError(
+                field="data.x_labels",
+                message="All x_labels must be strings.",
+                severity="error",
+            )
+        )
+
+    y_labels = data.get("y_labels")
+    if not isinstance(y_labels, list) or len(y_labels) == 0:
+        errors.append(
+            ChartValidationError(
+                field="data.y_labels",
+                message="'data.y_labels' must be a non-empty list of strings.",
+                severity="error",
+            )
+        )
+    elif not all(isinstance(l, str) for l in y_labels):
+        errors.append(
+            ChartValidationError(
+                field="data.y_labels",
+                message="All y_labels must be strings.",
+                severity="error",
+            )
+        )
+
+    values = data.get("values")
+    if not isinstance(values, list) or len(values) == 0:
+        errors.append(
+            ChartValidationError(
+                field="data.values",
+                message="'data.values' must be a non-empty 2D list.",
+                severity="error",
+            )
+        )
+        return
+
+    if isinstance(y_labels, list) and len(values) != len(y_labels):
+        errors.append(
+            ChartValidationError(
+                field="data.values",
+                message=f"values has {len(values)} rows but y_labels has {len(y_labels)} items. They must match.",
+                severity="error",
+            )
+        )
+
+    n_cols = len(x_labels) if isinstance(x_labels, list) else 0
+    all_identical = True
+    first_val = None
+    for ri, row in enumerate(values):
+        if not isinstance(row, list):
+            errors.append(
+                ChartValidationError(
+                    field=f"data.values[{ri}]",
+                    message=f"Row {ri} is not a list.",
+                    severity="error",
+                )
+            )
+            continue
+        if n_cols and len(row) != n_cols:
+            errors.append(
+                ChartValidationError(
+                    field=f"data.values[{ri}]",
+                    message=f"Row {ri} has {len(row)} values but x_labels has {n_cols} items. They must match.",
+                    severity="error",
+                )
+            )
+        for ci, val in enumerate(row):
+            if not _is_numeric(val):
+                errors.append(
+                    ChartValidationError(
+                        field=f"data.values[{ri}][{ci}]",
+                        message=f"Value at row {ri}, col {ci} ({val!r}) is not a valid number.",
+                        severity="error",
+                    )
+                )
+            else:
+                if first_val is None:
+                    first_val = val
+                elif val != first_val:
+                    all_identical = False
+
+    scale = data.get("scale")
+    if scale is not None and scale not in ("sequential", "diverging", "red-yellow-green"):
+        errors.append(
+            ChartValidationError(
+                field="data.scale",
+                message=f"Unknown scale '{scale}'. Must be 'sequential', 'diverging', or 'red-yellow-green'.",
+                severity="error",
+            )
+        )
+
+    if not any(e.severity == "error" for e in errors):
+        if all_identical and first_val is not None:
+            errors.append(
+                ChartValidationError(
+                    field="data.values",
+                    message="All values are identical — heatmap will show a single color.",
+                    severity="warning",
+                )
+            )
+        if isinstance(y_labels, list) and len(y_labels) == 1:
+            errors.append(
+                ChartValidationError(
+                    field="data.y_labels",
+                    message="Single-row heatmap — consider using a bar chart instead.",
+                    severity="warning",
+                )
+            )
+        if isinstance(x_labels, list) and len(x_labels) == 1:
+            errors.append(
+                ChartValidationError(
+                    field="data.x_labels",
+                    message="Single-column heatmap — consider using a horizontal bar chart instead.",
+                    severity="warning",
+                )
+            )
 
 
 def _validate_sparkline(data: dict, errors: list[ChartValidationError]) -> None:

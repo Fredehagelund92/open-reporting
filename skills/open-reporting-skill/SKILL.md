@@ -112,6 +112,7 @@ Each metric in a `kpi-grid` should cover a **different dimension** of the data. 
 | `horizontal-bar-chart` | `data.labels[]`, `data.datasets[]` -> `{name, values}` | `heading` |
 | `stacked-bar-chart` | `data.labels[]`, `data.datasets[]` -> `{name, values}` | `heading` |
 | `donut-chart` | `data.segments[]` -> `{label, value}` | `heading`, `data.center_label` |
+| `heatmap-chart` | `data.x_labels[]`, `data.y_labels[]`, `data.values[][]` (2D numeric) | `heading`, `data.scale` (`"sequential"`, `"diverging"`, `"red-yellow-green"`) |
 | `sparkline` | `data.values[]` (plain numbers) | `heading` |
 
 **Example -- multi-section report with layout:**
@@ -308,6 +309,32 @@ Charts are rendered server-side as deterministic, themed SVG with value labels. 
 }
 ```
 
+**Heatmap chart** — 2D matrix with color-coded cells (error rates, correlation matrices, time-of-day patterns):
+
+```json
+{
+  "type": "heatmap-chart",
+  "heading": "Error Rates by Service",
+  "data": {
+    "x_labels": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    "y_labels": ["API", "DB", "Cache"],
+    "values": [
+      [0.1, 0.3, 0.8, 0.2, 0.1],
+      [0.5, 0.2, 0.1, 0.6, 0.3],
+      [0.0, 0.1, 0.0, 0.0, 0.2]
+    ],
+    "scale": "red-yellow-green"
+  }
+}
+```
+
+Scale options:
+- `"sequential"` (default) — light to dark blue, for magnitude
+- `"diverging"` — blue → white → red, for above/below baseline (auto-centers at 0 for negative-to-positive data)
+- `"red-yellow-green"` — red=bad, yellow=warning, green=good (error rates, data quality)
+
+`values[row][col]` maps to `y_labels[row]` x `x_labels[col]`. Keep grids ≤20 columns and ≤15 rows for readability.
+
 **Sparkline** — tiny inline chart with no axes (good inside columns next to KPIs):
 
 ```json
@@ -337,6 +364,9 @@ Chart data is validated server-side. Invalid charts return a 422 with specific e
 | All values must be plain numbers (`120`, `3.5`) — not strings | error |
 | Pie/donut segment values must be positive numbers | error |
 | Sparkline values must all be valid numbers | error |
+| Heatmap `values` rows must match `y_labels` length; each row must match `x_labels` length | error |
+| Heatmap `scale` must be `sequential`, `diverging`, or `red-yellow-green` | error |
+| Heatmap with >20 columns or >15 rows | warning |
 | At least 2 labels / 2 pie segments | warning |
 | `heading` present on every chart | warning |
 
@@ -376,6 +406,7 @@ Put units in the dataset `name` (e.g. "Revenue ($K)") or the chart `heading`, no
 | Part-to-whole composition (<=6 segments) | `pie-chart` or `donut-chart` | Circle makes proportions intuitive |
 | Part-to-whole over time | `stacked-bar-chart` | Shows how composition changes across periods |
 | Rankings with single dataset (>5 items) | `horizontal-bar-chart` | Sorted horizontally scales to long label names |
+| Two-dimensional matrix (error rates, correlations, time-of-day) | `heatmap-chart` | Color-coded cells show magnitude or divergence across two axes |
 | Inline trend indicator | `sparkline` | Tiny inline chart; no axes needed |
 
 ### Chart Anti-Rules
@@ -605,6 +636,21 @@ Each theme has its own palette for these three roles. For example, the `executiv
 | Use `columns` to place two text blocks side-by-side | Better than stacking vertically |
 | Keep bullet lists to 3-4 items | Slides are not documents |
 | Put `summary-header` on the first slide for a dark title slide | Theme auto-assigns dark background |
+| Every slide needs a heading | Either `summary-header` (title slide) or a `heading` field on the chart/text section |
+
+### Slide Pattern Examples
+
+For detailed DO/DON'T patterns for each slide type, see the reference files in `examples/`:
+
+| Slide Type | Reference |
+|-----------|-----------|
+| Title slide | `examples/slide-title.md` |
+| KPI snapshot | `examples/slide-kpi.md` |
+| Chart slide | `examples/slide-chart.md` |
+| Narrative / text | `examples/slide-narrative.md` |
+| Closing slide | `examples/slide-closing.md` |
+| Two-column comparison | `examples/slide-comparison.md` |
+| Theme selection | `examples/theme-guide.md` |
 
 ## Writing Quality Checklist
 
@@ -627,6 +673,7 @@ Before publishing, verify your report passes these checks. The authoring coach e
 - [ ] Heading levels do not skip (h1 → h2, not h1 → h3)
 - [ ] No more than 2 consecutive `text` sections without a visual break
 - [ ] Slideshow slides have ≤2 sections each
+- [ ] Every slideshow slide has a heading or summary-header
 
 ### Data
 - [ ] Dataset names include units
@@ -665,3 +712,4 @@ These patterns are detected by the authoring coach and will block or warn on pub
 | No `summary-header` as first section | Info | Add a summary-header to establish report context |
 | Table with only 1 column | Warning | Single-column tables are better expressed as bullet lists |
 | Heading levels skip (h1 → h3) | Warning | Use sequential heading levels; do not skip |
+| Slide without heading or summary-header | Warning | Add a `heading` field to the section, or use `summary-header` for the title slide |

@@ -38,7 +38,10 @@ _FORMAT_INSTRUCTION = (
     "'technical' (code-friendly, monospace — engineering docs), "
     "'editorial' (readable, magazine-style — long-form narratives). "
     "Pick a `layout` (narrow, standard, wide, or full) to control content width. "
-    'Use `layout: "wide"` or `"full"` with `columns` sections for side-by-side charts.'
+    'Use `layout: "wide"` or `"full"` with `columns` sections for side-by-side charts. '
+    "For slideshows, prefer 'executive' (board decks), 'consulting' (client decks), "
+    "or 'default' (general presentations). Compact-density themes ('financial', "
+    "'technical') can crowd slides — use them only when the audience expects dense data."
 )
 
 _CATEGORY_INSTRUCTION = (
@@ -56,7 +59,9 @@ _CATEGORY_INSTRUCTION = (
     "Use `columns` to place two text blocks side-by-side instead of stacking them. "
     "Keep bullet lists to 3-4 items and text concise — slides are not documents. "
     "Every chart slide must include a callout or short text with the key takeaway — "
-    "never show a chart alone without context."
+    "never show a chart alone without context. "
+    "Every slide must have a heading — either a summary-header on the title slide or a "
+    "'heading' field on the chart/text section. Headless slides confuse viewers."
 )
 
 _WORKFLOW_TEMPLATE = (

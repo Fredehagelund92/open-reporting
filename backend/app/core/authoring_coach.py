@@ -775,14 +775,49 @@ def evaluate_authoring_quality(
                 )
             )
 
+        # chart_heatmap_too_large
+        if chart_type == "heatmap-chart":
+            x_labels = data.get("x_labels", [])
+            y_labels = data.get("y_labels", [])
+            if len(x_labels) > 20:
+                issues.append(
+                    CoachIssue(
+                        rule_id="chart_heatmap_too_large",
+                        severity="warning",
+                        message=f"Heatmap has {len(x_labels)} columns (max recommended: 20). Cells will be very narrow.",
+                        suggestion="Reduce columns by aggregating data or splitting into multiple heatmaps.",
+                    )
+                )
+            if len(y_labels) > 15:
+                issues.append(
+                    CoachIssue(
+                        rule_id="chart_heatmap_too_large",
+                        severity="warning",
+                        message=f"Heatmap has {len(y_labels)} rows (max recommended: 15). Chart will be very tall.",
+                        suggestion="Reduce rows by aggregating data or splitting into multiple heatmaps.",
+                    )
+                )
+
     # Slide-specific rules (only when content_type == 'slideshow')
     if content_type == "slideshow" and all_sections:
         slide_sections = [s for s in all_sections if s.get("type") == "slide"]
         if not slide_sections:
             slide_sections = [{"type": "slide", "sections": [s]} for s in all_sections]
 
+        thin_slide_count = 0
+        total_non_title_slides = 0
+
         for slide in slide_sections:
             child_sections = slide.get("sections", [])
+
+            # Track title vs non-title slides for composite rules
+            is_title_slide = any(
+                s.get("type") == "summary-header" for s in child_sections
+            )
+            if not is_title_slide:
+                total_non_title_slides += 1
+                if len(child_sections) == 1:
+                    thin_slide_count += 1
 
             # slide_too_dense: >2 sections per slide
             if len(child_sections) > 2:
@@ -795,8 +830,75 @@ def evaluate_authoring_quality(
                     )
                 )
 
+            # slide_too_thin: single-element slide (not title)
+            if len(child_sections) == 1 and not is_title_slide:
+                issues.append(
+                    CoachIssue(
+                        rule_id="slide_too_thin",
+                        severity="warning",
+                        message="Slide has only 1 section. Combine with a supporting element (callout, text, or chart) for more impact.",
+                        suggestion="Add a callout summarizing the key insight, or pair this with a text section for context.",
+                    )
+                )
+
+            # slide_no_heading: slide without heading or summary-header
+            has_heading = any(
+                isinstance(c, dict)
+                and (c.get("type") == "summary-header" or c.get("heading"))
+                for c in child_sections
+            )
+            if child_sections and not has_heading:
+                issues.append(
+                    CoachIssue(
+                        rule_id="slide_no_heading",
+                        severity="warning",
+                        message="Slide has no heading or summary-header. Viewers won't know what this slide is about.",
+                        suggestion="Add a 'heading' field to the chart or text section, or use a summary-header for the title slide.",
+                    )
+                )
+
             for child in child_sections:
                 child_type = child.get("type", "")
+
+                # slide_content_overflow: text section >200 chars
+                if child_type == "text":
+                    overflow_body = str(child.get("body", ""))
+                    overflow_plain = re.sub(r"[#*_`\[\]()]", "", overflow_body).strip()
+                    if len(overflow_plain) > 200:
+                        issues.append(
+                            CoachIssue(
+                                rule_id="slide_content_overflow",
+                                severity="warning",
+                                message=f"Slide text section is {len(overflow_plain)} characters (max for overflow prevention: 200). Long text may require scrolling.",
+                                suggestion="Shorten to 3-4 bullet points or split the narrative across two slides.",
+                            )
+                        )
+
+                # slide_content_overflow: table >6 rows
+                if child_type == "table":
+                    rows = child.get("rows", [])
+                    if len(rows) > 6:
+                        issues.append(
+                            CoachIssue(
+                                rule_id="slide_content_overflow",
+                                severity="warning",
+                                message=f"Slide table has {len(rows)} rows (max recommended: 6). Large tables may require scrolling.",
+                                suggestion="Show the top 5-6 rows and add a callout noting the full dataset, or split into two slides.",
+                            )
+                        )
+
+                # slide_content_overflow: kpi-grid >4 metrics
+                if child_type == "kpi-grid":
+                    metrics = child.get("metrics", [])
+                    if len(metrics) > 4:
+                        issues.append(
+                            CoachIssue(
+                                rule_id="slide_content_overflow",
+                                severity="warning",
+                                message=f"Slide KPI grid has {len(metrics)} metrics (max recommended: 4). Too many metrics may cause overflow.",
+                                suggestion="Keep 3-4 top metrics on this slide and move the rest to a second KPI slide or table.",
+                            )
+                        )
 
                 # slide_text_heavy: text section >300 chars
                 if child_type == "text":
@@ -836,6 +938,7 @@ def evaluate_authoring_quality(
                     "donut-chart",
                     "horizontal-bar-chart",
                     "stacked-bar-chart",
+                    "heatmap-chart",
                 }
             )
             has_callout = any(s.get("type") == "callout" for s in child_sections)
@@ -848,6 +951,63 @@ def evaluate_authoring_quality(
                         suggestion="Add a 'callout' section to the slide summarizing what the chart shows.",
                     )
                 )
+
+            # slide_tall_combo: 2+ tall elements on one slide
+            tall_types = {
+                "bar-chart",
+                "line-chart",
+                "area-chart",
+                "pie-chart",
+                "donut-chart",
+                "horizontal-bar-chart",
+                "stacked-bar-chart",
+                "heatmap-chart",
+            }
+            tall_count = 0
+            for child in child_sections:
+                child_type = child.get("type", "")
+                if child_type in tall_types:
+                    tall_count += 1
+                elif child_type == "kpi-grid" and len(child.get("metrics", [])) >= 3:
+                    tall_count += 1
+                elif child_type == "table" and len(child.get("rows", [])) >= 4:
+                    tall_count += 1
+            if tall_count >= 2:
+                issues.append(
+                    CoachIssue(
+                        rule_id="slide_tall_combo",
+                        severity="warning",
+                        message="Slide combines multiple tall elements (e.g. KPI grid + chart) that will likely overflow the viewport.",
+                        suggestion="Split tall elements across separate slides. Pair each with a short element like a callout or text summary.",
+                    )
+                )
+
+        # slideshow_no_narrative: no text sections anywhere in the slideshow
+        has_any_text = any(
+            s.get("type") == "text"
+            for slide in slide_sections
+            for s in slide.get("sections", [])
+        )
+        if not has_any_text:
+            issues.append(
+                CoachIssue(
+                    rule_id="slideshow_no_narrative",
+                    severity="warning",
+                    message="Slideshow has no text sections providing narrative context.",
+                    suggestion="Add text sections to introduce context, explain insights, or provide recommendations.",
+                )
+            )
+
+        # slideshow_low_substance: majority of non-title slides are single-element
+        if total_non_title_slides > 0 and thin_slide_count / total_non_title_slides > 0.5:
+            issues.append(
+                CoachIssue(
+                    rule_id="slideshow_low_substance",
+                    severity="warning",
+                    message=f"{thin_slide_count} of {total_non_title_slides} slides contain only a single element. Content this thin may work better as a report or dashboard.",
+                    suggestion="Combine related elements onto the same slide, or consider using content_type report instead.",
+                )
+            )
 
     score = 100
     for issue in issues:

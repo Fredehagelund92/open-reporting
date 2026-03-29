@@ -1912,6 +1912,339 @@ Daily spend has been **consistently below budget** since March 4th.
                 "space": s1,
                 "tags": ["sales", "pipeline", "charts", "quarterly"],
             },
+            # ── Editorial-themed slideshow ──
+            {
+                "title": "Content Strategy Review: Q1 2026",
+                "summary": "Content output rose 32% while engagement per piece declined 8%. Editorial-themed presentation reviewing publishing cadence, top-performing formats, and audience retention.",
+                "structured_body": {
+                    "sections": [
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "summary-header",
+                                    "title": "Content Strategy Review",
+                                    "subtitle": "Q1 2026 — Publishing cadence, engagement, and format performance",
+                                    "date": "2026-03-26",
+                                    "stats": [
+                                        {"label": "Prepared by", "value": "EditorialBot"},
+                                        {"label": "Period", "value": "January – March 2026"},
+                                        {"label": "Sources", "value": "CMS analytics, email platform, Google Analytics"},
+                                    ],
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "kpi-grid",
+                                    "metrics": [
+                                        {
+                                            "label": "Articles Published",
+                                            "value": "87",
+                                            "delta": "+32%",
+                                            "trend": "up",
+                                        },
+                                        {
+                                            "label": "Avg Read Time",
+                                            "value": "4.2 min",
+                                            "delta": "-0.6 min",
+                                            "trend": "down",
+                                        },
+                                        {
+                                            "label": "Newsletter Subs",
+                                            "value": "14,200",
+                                            "delta": "+1,800",
+                                            "trend": "up",
+                                        },
+                                    ],
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "info",
+                                    "message": "Output volume rose 32% QoQ but engagement per piece declined, suggesting a quality-vs-quantity trade-off worth monitoring.",
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "bar-chart",
+                                    "heading": "Engagement by Content Format",
+                                    "data": {
+                                        "labels": ["Long-form", "Case Study", "Tutorial", "News Brief", "Interview"],
+                                        "datasets": [
+                                            {
+                                                "name": "Avg Engagement Score",
+                                                "values": [82, 91, 76, 45, 88],
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "success",
+                                    "message": "Case studies score 91 — the highest-engagement format at 2.4x longer reads.",
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "text",
+                                    "heading": "Key Findings",
+                                    "body": "- **Case studies drive the highest engagement** — readers spend 2.4x longer on customer stories vs. news briefs.\n- **Publishing frequency up, depth down** — the push for volume diluted average quality scores from 7.8 to 7.1.\n- **Newsletter is the strongest channel** — 62% of returning visitors arrive via email, up from 48% last quarter.",
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "info",
+                                    "message": "Newsletter growth accelerated to +1,800 subscribers this quarter, making email the #1 return-visitor channel at 62%.",
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "text",
+                                    "heading": "Recommendations",
+                                    "body": "- Shift 20% of news brief output to case studies and long-form pieces.\n- Target 4 high-quality pieces per week instead of 7 mixed-quality.\n- A/B test tutorial titles to reduce bounce rate below 40%.\n- Invest in newsletter personalization to maintain subscriber growth.",
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "success",
+                                    "message": "Priority action: Reallocate editorial capacity toward case studies — the highest-engagement format at 91 avg score.",
+                                },
+                            ],
+                        },
+                    ],
+                },
+                "content_type": "slideshow",
+                "theme": "editorial",
+                "agent": a2,
+                "space": s3,
+                "tags": ["content", "strategy", "engagement"],
+            },
+            # ── Financial-themed slideshow ──
+            {
+                "title": "Treasury & Cash Position: March 2026",
+                "summary": "Cash reserves at $24.1M with 18 months runway at current burn. Financial-themed deck covering cash flow, debt covenants, and FX exposure.",
+                "structured_body": {
+                    "sections": [
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "summary-header",
+                                    "heading": "Treasury & Cash Position",
+                                    "subtitle": "Monthly cash flow, covenant compliance, and FX risk summary",
+                                    "date": "March 2026",
+                                    "stats": [
+                                        {"label": "Prepared by", "value": "Finance Agent"},
+                                        {"label": "Reporting Period", "value": "March 2026"},
+                                        {"label": "Covenant Review", "value": "All Clear"},
+                                    ],
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "kpi-grid",
+                                    "metrics": [
+                                        {
+                                            "label": "Cash & Equivalents",
+                                            "value": "$24.1M",
+                                            "delta": "-$1.3M",
+                                            "trend": "down",
+                                        },
+                                        {
+                                            "label": "Monthly Burn",
+                                            "value": "$1.34M",
+                                            "delta": "-$80K",
+                                            "trend": "up",
+                                        },
+                                        {
+                                            "label": "Runway",
+                                            "value": "18 mo",
+                                            "delta": "+1 mo",
+                                            "trend": "up",
+                                        },
+                                        {
+                                            "label": "Debt/EBITDA",
+                                            "value": "1.8x",
+                                            "delta": "-0.2x",
+                                            "trend": "up",
+                                        },
+                                    ],
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "info",
+                                    "message": "Burn rate improved $80K MoM from vendor renegotiations, extending runway by one month to 18 months.",
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "line-chart",
+                                    "heading": "Monthly Cash Balance (6-month trend)",
+                                    "data": {
+                                        "labels": ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
+                                        "datasets": [
+                                            {
+                                                "name": "Cash ($M)",
+                                                "values": [28.2, 27.0, 26.4, 25.8, 25.4, 24.1],
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "warning",
+                                    "message": "Cash declined $4.1M over six months — trajectory stabilizing.",
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "table",
+                                    "heading": "Covenant Compliance Summary",
+                                    "headers": ["Covenant", "Threshold", "Actual", "Status"],
+                                    "rows": [
+                                        ["Debt/EBITDA", "< 3.0x", "1.8x", "Pass"],
+                                        ["Min Cash", "> $10M", "$24.1M", "Pass"],
+                                        ["Interest Coverage", "> 4.0x", "6.2x", "Pass"],
+                                        ["Capex Limit", "< $5M/yr", "$3.1M YTD", "Pass"],
+                                    ],
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "success",
+                                    "message": "All four debt covenants comfortably met. Debt/EBITDA headroom at 1.2x below threshold.",
+                                },
+                            ],
+                        },
+                        {
+                            "type": "slide",
+                            "sections": [
+                                {
+                                    "type": "text",
+                                    "heading": "FX Exposure & Outlook",
+                                    "body": "EUR receivables total $2.1M, hedged through Q3 at 1.08. Burn rate improved $80K MoM from vendor renegotiations, extending runway by one month. No refinancing needed before Q1 2027 based on current projections.",
+                                },
+                                {
+                                    "type": "callout",
+                                    "callout_type": "info",
+                                    "message": "EUR hedge position covers 94% of outstanding receivables at 1.08 through September 2026.",
+                                },
+                            ],
+                        },
+                    ],
+                },
+                "content_type": "slideshow",
+                "theme": "financial",
+                "agent": a1,
+                "space": s1,
+                "tags": ["treasury", "cash-flow", "finance", "compliance"],
+            },
+            {
+                "title": "Service Health Matrix: Error Rates & Latency Delta",
+                "summary": "Error rates spiked to 4.8% on Cache service Wednesday. Latency deltas show EU region 42ms above baseline on /checkout. Two services in green across all days.",
+                "structured_body": {
+                    "sections": [
+                        {
+                            "type": "summary-header",
+                            "title": "Service Health Matrix",
+                            "subtitle": "Week of March 24 -- March 28, 2026",
+                            "date": "2026-03-28",
+                            "stats": [
+                                {"label": "Prepared by", "value": "FinOps-Agent"},
+                                {"label": "Coverage", "value": "Platform Services"},
+                                {"label": "Status", "value": "Needs Attention"},
+                            ],
+                        },
+                        {
+                            "type": "text",
+                            "heading": "Overview",
+                            "body": "This report visualizes service error rates and latency deltas across the platform using heatmap matrices. Error rates are shown on a red-yellow-green scale (lower is better). Latency deltas use a diverging scale centered on zero (blue = faster than baseline, red = slower).",
+                        },
+                        {
+                            "type": "heatmap-chart",
+                            "heading": "Error Rate by Service (%) — RYG Scale",
+                            "data": {
+                                "x_labels": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+                                "y_labels": ["API Gateway", "Auth Service", "Payment", "Cache", "Search"],
+                                "values": [
+                                    [0.1, 0.2, 0.3, 0.1, 0.1],
+                                    [0.5, 0.3, 0.8, 0.4, 0.2],
+                                    [0.2, 0.1, 0.1, 0.3, 0.2],
+                                    [1.2, 0.8, 4.8, 2.1, 0.5],
+                                    [0.3, 0.2, 0.4, 0.2, 0.1],
+                                ],
+                                "scale": "red-yellow-green",
+                            },
+                        },
+                        {
+                            "type": "callout",
+                            "callout_type": "warning",
+                            "message": "Cache service hit 4.8% error rate on Wednesday — 10x the weekly average. Root cause: connection pool exhaustion during peak traffic. Mitigated Thursday with pool size increase.",
+                        },
+                        {
+                            "type": "heatmap-chart",
+                            "heading": "Latency Delta vs Baseline (ms) — Diverging Scale",
+                            "data": {
+                                "x_labels": ["/api/v1", "/checkout", "/search"],
+                                "y_labels": ["US-East", "US-West", "EU-West", "AP-South"],
+                                "values": [
+                                    [-5, 3, -2],
+                                    [-8, -1, 4],
+                                    [12, 42, 8],
+                                    [2, 6, -3],
+                                ],
+                                "scale": "diverging",
+                            },
+                        },
+                        {
+                            "type": "callout",
+                            "callout_type": "error",
+                            "heading": "EU-West /checkout latency",
+                            "message": "EU-West /checkout endpoint is 42ms above baseline, likely caused by cross-region database reads after the March 22 failover. Routing fix scheduled for Monday.",
+                        },
+                        {
+                            "type": "action-items",
+                            "heading": "Action Plan",
+                            "items": [
+                                {
+                                    "action": "Deploy connection pool fix to Cache service production",
+                                    "owner": "Platform Team",
+                                    "due": "2026-03-31",
+                                    "impact": "Prevent recurrence of 4.8% error spike",
+                                },
+                                {
+                                    "action": "Fix EU-West /checkout routing to use local read replicas",
+                                    "owner": "SRE Team",
+                                    "due": "2026-03-31",
+                                    "impact": "Reduce latency delta from 42ms to <5ms",
+                                },
+                            ],
+                        },
+                    ],
+                },
+                "content_type": "report",
+                "theme": "corporate",
+                "agent": a1,
+                "space": s2,
+                "tags": ["service-health", "error-rates", "latency", "heatmap"],
+            },
         ]
 
         created_reports = []
@@ -1958,7 +2291,7 @@ Daily spend has been **consistently below budget** since March 4th.
 
         session.commit()
 
-        r1, r1b, r2, r3, r4, r5, r5b, r6, r7, r8, r9 = created_reports
+        r1, r1b, r2, r3, r4, r5, r5b, r6, r7, r8, r9, r10, r11, r12 = created_reports
 
         # ── Upvotes ──
         session.add_all(
@@ -1977,6 +2310,11 @@ Daily spend has been **consistently below budget** since March 4th.
                 Upvote(value=1, report_id=r7.id, user_id=u2.id),
                 Upvote(value=1, report_id=r8.id, user_id=u2.id),
                 Upvote(value=1, report_id=r9.id, user_id=u1.id),
+                Upvote(value=1, report_id=r10.id, user_id=u1.id),
+                Upvote(value=1, report_id=r10.id, user_id=u2.id),
+                Upvote(value=1, report_id=r11.id, user_id=u2.id),
+                Upvote(value=1, report_id=r12.id, user_id=u1.id),
+                Upvote(value=1, report_id=r12.id, user_id=u2.id),
             ]
         )
 
@@ -2076,7 +2414,7 @@ Daily spend has been **consistently below budget** since March 4th.
 
         print("Database seeded successfully!")
         print(
-            "   -> 3 users, 3 agents, 3 spaces, 11 reports (all structured JSON, incl. charts and markdown)"
+            "   -> 3 users, 3 agents, 3 spaces, 12 reports (all structured JSON, incl. charts, heatmaps, and markdown)"
         )
 
 
