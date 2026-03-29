@@ -771,7 +771,7 @@ def svg_heatmap_chart(data: dict, theme: Theme) -> str:
 
     # Layout
     pad_left = 140
-    pad_bottom = 60  # space for legend
+    pad_bottom = 20
     gap = 1
 
     # Rotate x-labels if many columns or long labels
@@ -860,8 +860,7 @@ def svg_heatmap_chart(data: dict, theme: Theme) -> str:
                     f"{escape(cell_text)}</text>"
                 )
 
-    # Truncation notice (before legend)
-    legend_offset = 20
+    # Truncation notice at bottom
     if truncated:
         trunc_y = pad_top + grid_h + 14
         parts.append(
@@ -869,41 +868,6 @@ def svg_heatmap_chart(data: dict, theme: Theme) -> str:
             f'style="font-size:11px; font-style:italic;">'
             f"Showing {_HEATMAP_MAX_VISIBLE_ROWS} of {total_rows} rows</text>"
         )
-        legend_offset = 36
-
-    # Gradient legend bar at bottom
-    legend_y = pad_top + grid_h + legend_offset
-    legend_x = pad_left
-    legend_w = min(grid_w, 300)
-    legend_h = 12
-    n_steps = 40
-    step_w = legend_w / n_steps
-    for i in range(n_steps):
-        t_val = i / max(n_steps - 1, 1)
-        c = _interpolate_color(stops, t_val)
-        sx = legend_x + i * step_w
-        parts.append(
-            f'<rect x="{sx:.1f}" y="{legend_y}" width="{step_w + 0.5:.1f}" '
-            f'height="{legend_h}" fill="{c}" />'
-        )
-
-    # Legend labels: min / mid / max
-    mid_val = (min_val + max_val) / 2
-    parts.append(
-        f'<text x="{legend_x}" y="{legend_y + legend_h + 14}" '
-        f'fill="{theme.chart_axis_color}" style="font-size:11px;">'
-        f"{_fmt_val(min_val)}</text>"
-    )
-    parts.append(
-        f'<text x="{legend_x + legend_w / 2:.1f}" y="{legend_y + legend_h + 14}" '
-        f'text-anchor="middle" fill="{theme.chart_axis_color}" style="font-size:11px;">'
-        f"{_fmt_val(mid_val)}</text>"
-    )
-    parts.append(
-        f'<text x="{legend_x + legend_w:.1f}" y="{legend_y + legend_h + 14}" '
-        f'text-anchor="end" fill="{theme.chart_axis_color}" style="font-size:11px;">'
-        f"{_fmt_val(max_val)}</text>"
-    )
 
     return (
         f'<svg viewBox="0 0 {theme.chart_viewbox_width} {total_h}" width="100%" '
