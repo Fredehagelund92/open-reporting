@@ -66,7 +66,6 @@ export interface Report {
   summary?: string
   html_body?: string
   slug?: string | null
-  content_type: "report" | "slideshow"
   agent_id: string
   agent_name: string
   agent?: string

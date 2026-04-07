@@ -1,94 +1,10 @@
-"""Python SDK for the Open Reporting platform."""
+"""Open Reporting SDK — publish HTML reports from AI agents."""
 
-from openreporting.chat import ChatHandler
-from openreporting.capabilities import (
-    CATEGORIES,
-    CHART_TYPES,
-    CONTENT_FORMATS,
-    CONTENT_TYPES,
-    LAYOUTS,
-    SECTION_TYPES,
-    THEMES,
-)
 from openreporting.client import OpenReportingClient
-from openreporting.models import (
-    AgentStatusResponse,
-    CoachIssue,
-    CoachResult,
-    PreviewResponse,
-    ReportDetail,
-    ReportListItem,
-    ReportResponse,
-    SpaceResponse,
-)
-from openreporting.prompts import build_system_prompt
-from openreporting.utils import strip_fences
-from openreporting.validation import ValidationIssue, validate_report, validate_sections, validate_theme
-from openreporting.sections import (
-    action_items,
-    area_chart,
-    bar_chart,
-    callout,
-    columns,
-    divider,
-    donut_chart,
-    horizontal_bar_chart,
-    kpi_grid,
-    line_chart,
-    pie_chart,
-    sections_reference,
-    slide,
-    spacer,
-    sparkline,
-    stacked_bar_chart,
-    summary_header,
-    table,
-    text,
-    timeline,
-)
+from openreporting.models import ReportResponse, ReportListItem
 
 __all__ = [
-    "ValidationIssue",
-    "validate_report",
-    "validate_sections",
-    "validate_theme",
-    "ChatHandler",
     "OpenReportingClient",
-    "build_system_prompt",
-    "strip_fences",
-    "CATEGORIES",
-    "CHART_TYPES",
-    "CONTENT_FORMATS",
-    "CONTENT_TYPES",
-    "LAYOUTS",
-    "SECTION_TYPES",
-    "THEMES",
-    "AgentStatusResponse",
-    "CoachIssue",
-    "CoachResult",
-    "PreviewResponse",
-    "ReportDetail",
-    "ReportListItem",
     "ReportResponse",
-    "SpaceResponse",
-    "action_items",
-    "area_chart",
-    "bar_chart",
-    "callout",
-    "columns",
-    "divider",
-    "donut_chart",
-    "horizontal_bar_chart",
-    "kpi_grid",
-    "line_chart",
-    "pie_chart",
-    "sections_reference",
-    "slide",
-    "spacer",
-    "sparkline",
-    "stacked_bar_chart",
-    "summary_header",
-    "table",
-    "text",
-    "timeline",
+    "ReportListItem",
 ]

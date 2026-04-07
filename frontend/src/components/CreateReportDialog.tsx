@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -10,9 +10,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Select,
   SelectContent,
@@ -25,17 +23,14 @@ import {
   Upload,
   FileText,
   Loader2,
-  Code2,
   X,
   AlertCircle,
-  CheckCircle2,
   Bot,
-  ArrowRight,
-  ArrowLeft,
+  Eye,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { api } from "@/lib/api"
-import { HelpTip } from "@/components/HelpTip"
+import SandboxedReport from "@/components/SandboxedReport"
 
 interface CreateReportDialogProps {
   spaceName: string
@@ -52,21 +47,6 @@ interface TagItem {
   usage_count: number
 }
 
-interface AuthoringCoachIssue {
-  rule_id: string
-  severity: "error" | "warning" | "info"
-  message: string
-  suggestion: string
-}
-
-interface AuthoringCoachResult {
-  readiness_status: "blocked" | "needs_work" | "ready"
-  overall_score: number
-  mode: "shadow" | "enforce" | string
-  issues: AuthoringCoachIssue[]
-  suggested_edits: string[]
-}
-
 interface MyAgent {
   id: string
   name: string
@@ -75,6 +55,7 @@ interface MyAgent {
 }
 
 const MAX_TAGS = 8
+const MAX_HTML_SIZE = 2 * 1024 * 1024 // 2 MB
 const RECENT_TAGS_KEY = "open-reporting:recent-tags"
 
 function normalizeTagKey(raw: string) {
@@ -87,6 +68,21 @@ function normalizeTagKey(raw: string) {
     .replace(/^-+|-+$/g, "")
 }
 
+function validateHtml(html: string): string | null {
+  if (!html.trim()) return "HTML content is required."
+  if (new Blob([html]).size > MAX_HTML_SIZE) return "HTML content exceeds the 2 MB limit."
+  // Basic well-formedness check: look for an unclosed tag pattern
+  const openTags = html.match(/<[a-z][a-z0-9]*(?:\s[^>]*)?(?<!\/)\s*>/gi) ?? []
+  const selfClosing = html.match(/<[a-z][a-z0-9]*(?:\s[^>]*)?\s*\/>/gi) ?? []
+  // Only flag truly broken markup — e.g. unmatched angle brackets
+  const unmatchedOpen = (html.match(/</g) ?? []).length
+  const unmatchedClose = (html.match(/>/g) ?? []).length
+  if (Math.abs(unmatchedOpen - unmatchedClose) > openTags.length + selfClosing.length) {
+    return "HTML appears malformed (mismatched angle brackets)."
+  }
+  return null
+}
+
 export function CreateReportDialog({
   spaceName,
   onCreated,
@@ -94,36 +90,51 @@ export function CreateReportDialog({
   onOpenChange,
   hideTrigger = false,
 }: CreateReportDialogProps) {
+  // Dialog state
   const [internalOpen, setInternalOpen] = useState(false)
-  const [title, setTitle] = useState("")
-  const [summary, setSummary] = useState("")
-  const [htmlBody, setHtmlBody] = useState("")
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [tagInput, setTagInput] = useState("")
-  const [popularTags, setPopularTags] = useState<TagItem[]>([])
-  const [suggestedTags, setSuggestedTags] = useState<TagItem[]>([])
-  const [recentTags, setRecentTags] = useState<string[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isCheckingCoach, setIsCheckingCoach] = useState(false)
-  const [error, setError] = useState("")
-  const [coachError, setCoachError] = useState("")
-  const [coachResult, setCoachResult] = useState<AuthoringCoachResult | null>(null)
-  const [contentType, setContentType] = useState<"report" | "slideshow">("report")
-  const [myAgents, setMyAgents] = useState<MyAgent[]>([])
-  const [selectedAgentId, setSelectedAgentId] = useState("")
-  const [agentsLoading, setAgentsLoading] = useState(false)
-  const [step, setStep] = useState<1 | 2>(1)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const dialogOpen = open ?? internalOpen
-
   const setDialogOpen = (nextOpen: boolean) => {
-    if (open === undefined) {
-      setInternalOpen(nextOpen)
-    }
+    if (open === undefined) setInternalOpen(nextOpen)
     onOpenChange?.(nextOpen)
   }
 
-  const reset = () => {
+  // Form fields
+  const [title, setTitle] = useState("")
+  const [summary, setSummary] = useState("")
+  const [htmlBody, setHtmlBody] = useState("")
+  const [selectedAgentId, setSelectedAgentId] = useState("")
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [tagInput, setTagInput] = useState("")
+
+  // Data
+  const [myAgents, setMyAgents] = useState<MyAgent[]>([])
+  const [agentsLoading, setAgentsLoading] = useState(false)
+  const [popularTags, setPopularTags] = useState<TagItem[]>([])
+  const [suggestedTags, setSuggestedTags] = useState<TagItem[]>([])
+  const [recentTags, setRecentTags] = useState<string[]>([])
+
+  // UI state
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState("")
+  const [isDragOver, setIsDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Live preview (debounced)
+  const [previewHtml, setPreviewHtml] = useState("")
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPreviewHtml(htmlBody)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [htmlBody])
+
+  // Inline validation
+  const validationError = useMemo(() => validateHtml(htmlBody), [htmlBody])
+  // Only show validation errors once the user has typed something
+  const showValidation = htmlBody.length > 0 && validationError !== null
+
+  // Reset
+  const reset = useCallback(() => {
     setTitle("")
     setSummary("")
     setHtmlBody("")
@@ -131,20 +142,18 @@ export function CreateReportDialog({
     setTagInput("")
     setSuggestedTags([])
     setError("")
-    setCoachError("")
-    setCoachResult(null)
-    setContentType("report")
     setSelectedAgentId("")
-    setStep(1)
-  }
+    setPreviewHtml("")
+    setIsDragOver(false)
+  }, [])
 
-  const canProceedToStep2 = !!title.trim() && !!selectedAgentId
-
+  // Fetch agents, popular tags, recent tags on open
   useEffect(() => {
     if (!dialogOpen) return
 
     setAgentsLoading(true)
-    api.get("/agents/my-agents")
+    api
+      .get("/agents/my-agents")
       .then((res) => {
         const agents: MyAgent[] = Array.isArray(res.data) ? res.data : []
         setMyAgents(agents)
@@ -153,7 +162,8 @@ export function CreateReportDialog({
       .catch(() => setMyAgents([]))
       .finally(() => setAgentsLoading(false))
 
-    api.get("/tags/?limit=12")
+    api
+      .get("/tags/?limit=12")
       .then((res) => setPopularTags(Array.isArray(res.data) ? res.data : []))
       .catch(() => setPopularTags([]))
 
@@ -170,6 +180,7 @@ export function CreateReportDialog({
     }
   }, [dialogOpen])
 
+  // Tag suggestions (debounced)
   useEffect(() => {
     const query = normalizeTagKey(tagInput)
     if (!query) {
@@ -177,13 +188,15 @@ export function CreateReportDialog({
       return
     }
     const timer = setTimeout(() => {
-      api.get(`/tags/suggest?q=${encodeURIComponent(query)}&limit=8`)
+      api
+        .get(`/tags/suggest?q=${encodeURIComponent(query)}&limit=8`)
         .then((res) => setSuggestedTags(Array.isArray(res.data) ? res.data : []))
         .catch(() => setSuggestedTags([]))
     }, 150)
     return () => clearTimeout(timer)
   }, [tagInput])
 
+  // Tag helpers
   const addTag = (rawTag: string) => {
     if (selectedTags.length >= MAX_TAGS) return
     const normalized = normalizeTagKey(rawTag)
@@ -198,23 +211,57 @@ export function CreateReportDialog({
     setSelectedTags((prev) => prev.filter((t) => t !== tag))
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  // File reading helper
+  const readFile = (file: File) => {
+    if (!file.name.match(/\.html?$/i)) {
+      setError("Only .html or .htm files are accepted.")
+      return
+    }
+    if (file.size > MAX_HTML_SIZE) {
+      setError("File exceeds the 2 MB limit.")
+      return
+    }
     const reader = new FileReader()
     reader.onload = (ev) => {
       const content = ev.target?.result as string
       setHtmlBody(content)
+      setError("")
     }
     reader.readAsText(file)
   }
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) readFile(file)
+  }
+
+  // Drag-and-drop handlers for the left panel
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (file) readFile(file)
+  }
+
+  // Submit
+  const canSubmit =
+    !!title.trim() && !!htmlBody.trim() && !!selectedAgentId && !validationError && !isSubmitting
+
   const handleSubmit = async () => {
-    if (!title.trim() || !htmlBody.trim()) return
-    if (coachResult?.readiness_status === "blocked") {
-      setError("Authoring coach marked this draft as blocked. Resolve the listed issues before publishing.")
-      return
-    }
+    if (!canSubmit) return
     setIsSubmitting(true)
     setError("")
 
@@ -228,22 +275,25 @@ export function CreateReportDialog({
         space_name: spaceName,
         agent_id: selectedAgentId,
         tags,
-        content_type: contentType,
       })
       reset()
       setDialogOpen(false)
-      const mergedRecent = [...tags, ...recentTags.filter((tag) => !tags.includes(tag))].slice(0, 16)
+      const mergedRecent = [
+        ...tags,
+        ...recentTags.filter((tag) => !tags.includes(tag)),
+      ].slice(0, 16)
       setRecentTags(mergedRecent)
       localStorage.setItem(RECENT_TAGS_KEY, JSON.stringify(mergedRecent))
       onCreated?.()
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { detail?: string | { authoring_coach?: AuthoringCoachResult, validation_errors?: string[] } } } }
+      const axiosError = err as {
+        response?: {
+          data?: { detail?: string | { validation_errors?: string[] } }
+        }
+      }
       const detail = axiosError.response?.data?.detail
       if (typeof detail === "string") {
         setError(detail)
-      } else if (detail?.authoring_coach) {
-        setCoachResult(detail.authoring_coach as AuthoringCoachResult)
-        setError("Publishing blocked by authoring coach. Review and resolve the highlighted issues.")
       } else if (detail?.validation_errors) {
         setError(detail.validation_errors.join("\n"))
       } else {
@@ -253,56 +303,6 @@ export function CreateReportDialog({
       setIsSubmitting(false)
     }
   }
-
-  useEffect(() => {
-    if (!dialogOpen || !htmlBody.trim()) {
-      setCoachResult(null)
-      setCoachError("")
-      return
-    }
-    const timer = setTimeout(async () => {
-      setIsCheckingCoach(true)
-      setCoachError("")
-      try {
-        const res = await api.post("/reports/coach/evaluate", {
-          title: title.trim() || "Untitled draft",
-          summary: summary.trim() || title.trim() || "Draft summary",
-          html_body: htmlBody,
-          space_name: spaceName,
-          tags: selectedTags,
-          content_type: contentType,
-        })
-        setCoachResult(res.data as AuthoringCoachResult)
-      } catch (err: unknown) {
-        const axiosError = err as { response?: { data?: { detail?: string } } }
-        console.error(axiosError.response?.data?.detail || "Failed to fetch space")
-        const detail = axiosError.response?.data?.detail
-        if (typeof detail === "string") {
-          setCoachError(detail)
-        } else {
-          setCoachError("Could not run authoring coach right now.")
-        }
-      } finally {
-        setIsCheckingCoach(false)
-      }
-    }, 350)
-    return () => clearTimeout(timer)
-  }, [dialogOpen, title, summary, htmlBody, selectedTags, contentType, spaceName])
-
-  const preflightHints = (() => {
-    const hints: string[] = []
-    if (!htmlBody.trim()) return hints
-    if (/<iframe[\s>]/i.test(htmlBody)) hints.push("`<iframe>` tags are blocked.")
-    if (/<form[\s>]/i.test(htmlBody)) hints.push("`<form>` tags are blocked.")
-    if (/<style[\s>]/i.test(htmlBody)) hints.push("`<style>` tags are blocked.")
-    if (/<link[\s>]/i.test(htmlBody)) hints.push("`<link>` tags are blocked.")
-    if (/position\s*:\s*fixed/i.test(htmlBody)) hints.push("`position: fixed` is blocked.")
-    if (/position\s*:\s*absolute/i.test(htmlBody)) hints.push("`position: absolute` is blocked.")
-    if (contentType === "slideshow" && !/<section[\s>]/i.test(htmlBody)) {
-      hints.push("Slideshow mode requires `<section>` tags for slides.")
-    }
-    return hints
-  })()
 
   return (
     <Dialog
@@ -314,44 +314,37 @@ export function CreateReportDialog({
     >
       {!hideTrigger && (
         <DialogTrigger asChild>
-          <Button
-            size="sm"
-            variant="default"
-            className="gap-2 h-9 px-4"
-          >
+          <Button size="sm" variant="default" className="gap-2 h-9 px-4">
             <Plus className="size-4" />
             New Report
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-2xl p-6">
-        <DialogHeader className="shrink-0">
+
+      <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="shrink-0 px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="size-5" />
             Publish a Report
           </DialogTitle>
           <DialogDescription>
-            Upload HTML content directly to <strong>{spaceName}</strong>,
-            published under one of your AI assistants.
+            Upload HTML content to <strong>{spaceName}</strong>, published under
+            one of your AI assistants.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step indicator */}
-        <div className="flex items-center gap-2 pt-1">
-          <div className={`flex items-center gap-1.5 text-xs font-medium ${step === 1 ? "text-primary" : "text-muted-foreground"}`}>
-            <span className={`size-5 rounded-full flex items-center justify-center text-[10px] font-bold ${step === 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>1</span>
-            Details
-          </div>
-          <div className="h-px flex-1 bg-border" />
-          <div className={`flex items-center gap-1.5 text-xs font-medium ${step === 2 ? "text-primary" : "text-muted-foreground"}`}>
-            <span className={`size-5 rounded-full flex items-center justify-center text-[10px] font-bold ${step === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>2</span>
-            Content
-          </div>
-        </div>
-
-        {/* ── Step 1: Details ── */}
-        {step === 1 && (
-          <div className="space-y-4 pt-2">
+        {/* Main body: side-by-side on md+, stacked on mobile */}
+        <div className="flex-1 overflow-hidden flex flex-col md:flex-row gap-0 min-h-0">
+          {/* ── Left panel: form + HTML input ── */}
+          <div
+            className={`md:w-1/2 w-full overflow-y-auto border-r border-border px-6 pb-6 pt-2 space-y-4 transition-colors ${
+              isDragOver ? "bg-primary/5 ring-2 ring-inset ring-primary/30" : ""
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {/* Agent selection */}
             <div className="space-y-2">
               <Label>Publish as</Label>
               {agentsLoading ? (
@@ -364,10 +357,12 @@ export function CreateReportDialog({
                   <div className="flex items-start gap-3">
                     <Bot className="size-5 text-primary shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium text-primary mb-1">No AI assistants yet</p>
+                      <p className="font-medium text-primary mb-1">
+                        No AI assistants yet
+                      </p>
                       <p className="text-primary mb-3">
-                        You need at least one AI assistant to publish reports. Create one
-                        in a few seconds.
+                        You need at least one AI assistant to publish reports.
+                        Create one in a few seconds.
                       </p>
                       <Link
                         to="/settings?tab=assistants"
@@ -392,7 +387,8 @@ export function CreateReportDialog({
                           <Bot className="size-3.5 text-muted-foreground" />
                           {agent.name}
                           <span className="text-muted-foreground text-xs">
-                            ({agent.report_count} {agent.report_count === 1 ? "report" : "reports"})
+                            ({agent.report_count}{" "}
+                            {agent.report_count === 1 ? "report" : "reports"})
                           </span>
                         </span>
                       </SelectItem>
@@ -402,6 +398,7 @@ export function CreateReportDialog({
               )}
             </div>
 
+            {/* Title */}
             <div className="space-y-2">
               <Label htmlFor="report-title">Title</Label>
               <Input
@@ -412,10 +409,13 @@ export function CreateReportDialog({
               />
             </div>
 
+            {/* Summary */}
             <div className="space-y-2">
               <Label htmlFor="report-summary">
                 Summary{" "}
-                <span className="text-muted-foreground font-normal">(optional)</span>
+                <span className="text-muted-foreground font-normal">
+                  (optional)
+                </span>
               </Label>
               <Input
                 id="report-summary"
@@ -425,25 +425,14 @@ export function CreateReportDialog({
               />
             </div>
 
+            {/* Tags */}
             <div className="space-y-2">
-              <Label className="inline-flex items-center gap-1.5">
-                Content Type
-                <HelpTip text='Choose "Standard Report" for a scrollable document or "Slideshow" for a presentation.' />
+              <Label htmlFor="report-tags">
+                Tags{" "}
+                <span className="text-muted-foreground font-normal">
+                  (optional)
+                </span>
               </Label>
-              <Tabs
-                value={contentType}
-                onValueChange={(value) => setContentType(value as "report" | "slideshow")}
-                className="w-full"
-              >
-                <TabsList className="grid w-full grid-cols-2 h-9">
-                  <TabsTrigger value="report">Standard Report</TabsTrigger>
-                  <TabsTrigger value="slideshow">Slideshow</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="report-tags">Tags <span className="text-muted-foreground font-normal">(optional)</span></Label>
               <Input
                 id="report-tags"
                 placeholder="Search tags (type + Enter)"
@@ -453,7 +442,11 @@ export function CreateReportDialog({
                   if (e.key === "Enter" || e.key === ",") {
                     e.preventDefault()
                     addTag(tagInput)
-                  } else if (e.key === "Backspace" && !tagInput && selectedTags.length > 0) {
+                  } else if (
+                    e.key === "Backspace" &&
+                    !tagInput &&
+                    selectedTags.length > 0
+                  ) {
                     removeTag(selectedTags[selectedTags.length - 1])
                   }
                 }}
@@ -461,21 +454,33 @@ export function CreateReportDialog({
               {tagInput.trim() && (
                 <p className="text-xs text-muted-foreground">
                   Will be saved as:{" "}
-                  <span className="font-semibold text-foreground">{normalizeTagKey(tagInput) || "invalid tag"}</span>
+                  <span className="font-semibold text-foreground">
+                    {normalizeTagKey(tagInput) || "invalid tag"}
+                  </span>
                 </p>
               )}
               <div className="flex gap-1.5 flex-wrap">
                 {selectedTags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="bg-muted text-foreground gap-1 px-1.5 py-0.5">
+                  <Badge
+                    key={tag}
+                    variant="secondary"
+                    className="bg-muted text-foreground gap-1 px-1.5 py-0.5"
+                  >
                     {tag}
-                    <button type="button" onClick={() => removeTag(tag)} aria-label={`Remove ${tag}`}>
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      aria-label={`Remove ${tag}`}
+                    >
                       <X className="size-3" />
                     </button>
                   </Badge>
                 ))}
               </div>
               {selectedTags.length > 0 && (
-                <p className="text-xs text-muted-foreground">{selectedTags.length}/{MAX_TAGS} tags</p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedTags.length}/{MAX_TAGS} tags
+                </p>
               )}
 
               {suggestedTags.length > 0 && (
@@ -483,7 +488,14 @@ export function CreateReportDialog({
                   <p className="text-xs text-muted-foreground">Suggestions</p>
                   <div className="flex flex-wrap gap-1.5">
                     {suggestedTags.map((tag) => (
-                      <Button key={tag.id} type="button" variant="outline" size="sm" className="h-7 text-xs px-2.5" onClick={() => addTag(tag.canonical_name)}>
+                      <Button
+                        key={tag.id}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs px-2.5"
+                        onClick={() => addTag(tag.canonical_name)}
+                      >
                         {tag.canonical_name}
                       </Button>
                     ))}
@@ -496,7 +508,14 @@ export function CreateReportDialog({
                   <p className="text-xs text-muted-foreground">Recent</p>
                   <div className="flex flex-wrap gap-1.5">
                     {recentTags.slice(0, 8).map((tag) => (
-                      <Button key={tag} type="button" variant="ghost" size="sm" className="h-7 text-xs px-2.5" onClick={() => addTag(tag)}>
+                      <Button
+                        key={tag}
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs px-2.5"
+                        onClick={() => addTag(tag)}
+                      >
                         {tag}
                       </Button>
                     ))}
@@ -509,7 +528,14 @@ export function CreateReportDialog({
                   <p className="text-xs text-muted-foreground">Popular</p>
                   <div className="flex flex-wrap gap-1.5">
                     {popularTags.slice(0, 8).map((tag) => (
-                      <Button key={tag.id} type="button" variant="ghost" size="sm" className="h-7 text-xs px-2.5" onClick={() => addTag(tag.canonical_name)}>
+                      <Button
+                        key={tag.id}
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs px-2.5"
+                        onClick={() => addTag(tag.canonical_name)}
+                      >
                         {tag.canonical_name}
                       </Button>
                     ))}
@@ -518,159 +544,78 @@ export function CreateReportDialog({
               )}
             </div>
 
-            <Button
-              onClick={() => setStep(2)}
-              disabled={!canProceedToStep2}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-11"
-            >
-              Next: Add Content
-              <ArrowRight className="size-4 ml-2" />
-            </Button>
-          </div>
-        )}
-
-        {/* ── Step 2: Content ── */}
-        {step === 2 && (
-          <div className="space-y-4 pt-2">
-            <div className="flex items-center gap-2 text-sm text-foreground bg-muted rounded-lg px-3 py-2">
-              <Bot className="size-3.5 text-muted-foreground" />
-              <span className="font-medium">{myAgents.find((a) => a.id === selectedAgentId)?.name}</span>
-              <span className="text-border">/</span>
-              <span className="truncate">{title}</span>
-            </div>
-
+            {/* HTML content input */}
             <div className="space-y-2">
-              <Label className="inline-flex items-center gap-1.5">
-                HTML Content
-                <HelpTip text="The formatted content of your report. Your AI assistant usually generates this for you." />
-              </Label>
-              <Tabs defaultValue="paste" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-9">
-                  <TabsTrigger value="paste" className="text-sm gap-1.5">
-                    <Code2 className="size-3.5" /> Paste HTML
-                  </TabsTrigger>
-                  <TabsTrigger value="upload" className="text-sm gap-1.5">
-                    <Upload className="size-3.5" /> Upload File
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="paste">
-                  <Textarea
-                    placeholder={'<h2>My Report</h2>\n<p>Content here...</p>'}
-                    className="font-mono text-sm h-[180px] resize-none"
-                    value={htmlBody}
-                    onChange={(e) => setHtmlBody(e.target.value)}
-                  />
-                </TabsContent>
-                <TabsContent value="upload">
-                  <div
-                    className="border-2 border-dashed border-border rounded-lg h-[140px] flex flex-col items-center justify-center text-center p-4 hover:border-primary/30 transition-colors cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      const file = e.dataTransfer.files[0]
-                      if (file) {
-                        const reader = new FileReader()
-                        reader.onload = (ev) =>
-                          setHtmlBody(ev.target?.result as string)
-                        reader.readAsText(file)
-                      }
-                    }}
-                  >
-                    <Upload className="size-8 text-border mx-auto mb-3" />
-                    <p className="text-sm text-foreground mb-1">
-                      Drag and drop an .html file, or click to browse
-                    </p>
-                    <p className="text-xs text-muted-foreground">Max 2MB</p>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".html,.htm"
-                      className="hidden"
-                      onChange={handleFileUpload}
-                    />
-                  </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="html-input">HTML Content</Label>
+                <div className="flex items-center gap-2">
                   {htmlBody && (
-                    <div className="mt-3 flex items-center gap-2 text-sm text-emerald-600">
-                      <FileText className="size-4" />
-                      HTML loaded ({Math.round(htmlBody.length / 1024)}KB)
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-1 text-muted-foreground hover:text-destructive"
-                        onClick={() => setHtmlBody("")}
-                      >
-                        <X className="size-3.5" />
-                      </Button>
-                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {Math.round(new Blob([htmlBody]).size / 1024)} KB
+                    </span>
                   )}
-                </TabsContent>
-              </Tabs>
-
-              {preflightHints.length > 0 && (
-                <div className="p-3 bg-primary/10 text-primary text-sm rounded-lg border border-primary/20">
-                  <div className="font-semibold mb-1">Preflight checks found issues:</div>
-                  <ul className="list-disc pl-5 space-y-0.5">
-                    {preflightHints.map((hint) => (
-                      <li key={hint}>{hint}</li>
-                    ))}
-                  </ul>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs gap-1.5 px-2"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="size-3.5" />
+                    Upload .html
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".html,.htm"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
                 </div>
+              </div>
+              <div className="relative">
+                <textarea
+                  id="html-input"
+                  className={`w-full h-[280px] resize-none rounded-md border bg-background px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    showValidation
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : "border-input"
+                  }`}
+                  placeholder={
+                    isDragOver
+                      ? "Drop your .html file here..."
+                      : '<h2>My Report</h2>\n<p>Paste or drop HTML here...</p>'
+                  }
+                  value={htmlBody}
+                  onChange={(e) => setHtmlBody(e.target.value)}
+                />
+                {htmlBody && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => setHtmlBody("")}
+                    aria-label="Clear HTML content"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                )}
+              </div>
+              {isDragOver && (
+                <p className="text-xs text-primary font-medium">
+                  Drop your .html file to load it
+                </p>
               )}
-
-              {(isCheckingCoach || coachResult || coachError) && (
-                <div className="rounded-lg border p-3 text-sm bg-muted border-border">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold text-foreground">Authoring Coach</p>
-                    {isCheckingCoach ? (
-                      <span className="inline-flex items-center gap-1 text-muted-foreground">
-                        <Loader2 className="size-3.5 animate-spin" />
-                        Checking...
-                      </span>
-                    ) : coachResult ? (
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          coachResult.readiness_status === "ready"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : coachResult.readiness_status === "needs_work"
-                            ? "bg-primary/10 text-primary"
-                            : "bg-destructive/10 text-destructive"
-                        }`}
-                      >
-                        {coachResult.readiness_status.replace("_", " ")}
-                      </span>
-                    ) : null}
-                  </div>
-                  {coachError && <p className="mt-2 text-destructive">{coachError}</p>}
-                  {coachResult && (
-                    <div className="mt-2 space-y-2">
-                      <p className="text-xs text-foreground">
-                        Score: <span className="font-semibold">{coachResult.overall_score}</span>/100
-                        {" "}({coachResult.mode} mode)
-                      </p>
-                      {coachResult.issues.length > 0 ? (
-                        <ul className="space-y-1.5">
-                          {coachResult.issues.slice(0, 5).map((issue) => (
-                            <li key={`${issue.rule_id}-${issue.message}`} className="text-xs">
-                              <p className="font-medium text-foreground">
-                                {issue.severity.toUpperCase()}: {issue.message}
-                              </p>
-                              <p className="text-foreground">{issue.suggestion}</p>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="inline-flex items-center gap-1 text-emerald-700 text-xs">
-                          <CheckCircle2 className="size-3.5" />
-                          This draft is ready to publish.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
+              {showValidation && (
+                <p className="text-xs text-destructive flex items-center gap-1.5">
+                  <AlertCircle className="size-3.5 shrink-0" />
+                  {validationError}
+                </p>
               )}
             </div>
 
+            {/* Error display */}
             {error && (
               <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-lg border border-destructive/20 flex gap-2">
                 <AlertCircle className="size-4 shrink-0 mt-0.5" />
@@ -678,35 +623,45 @@ export function CreateReportDialog({
               </div>
             )}
 
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setStep(1)}
-                className="h-11 px-4"
-              >
-                <ArrowLeft className="size-4 mr-2" />
-                Back
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={!htmlBody.trim() || isSubmitting || isCheckingCoach || coachResult?.readiness_status === "blocked"}
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-11"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="size-4 mr-2 animate-spin" />
-                    Publishing...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="size-4 mr-2" />
-                    Publish Report
-                  </>
-                )}
-              </Button>
-            </div>
+            {/* Publish button */}
+            <Button
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-11"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  Publishing...
+                </>
+              ) : (
+                <>
+                  <Upload className="size-4 mr-2" />
+                  Publish
+                </>
+              )}
+            </Button>
           </div>
-        )}
+
+          {/* ── Right panel: live preview ── */}
+          <div className="md:w-1/2 w-full overflow-y-auto bg-muted/30 min-h-[300px]">
+            {previewHtml.trim() ? (
+              <SandboxedReport
+                htmlBody={previewHtml}
+                className="w-full h-full"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-16 px-6">
+                <Eye className="size-10 mb-4 opacity-40" />
+                <p className="text-sm font-medium mb-1">Live Preview</p>
+                <p className="text-xs text-center max-w-[240px]">
+                  Paste or drop HTML on the left and a sandboxed preview will
+                  appear here.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )

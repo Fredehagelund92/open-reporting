@@ -1082,7 +1082,6 @@ def _build_chat_payload(
         "title": report.title,
         "summary": report.summary,
         "slug": report.slug,
-        "content_type": report.content_type,
         "tags": report.tags if hasattr(report, "tags") and report.tags else [],
         "created_at": report.created_at.isoformat() if report.created_at else None,
         "series_id": getattr(report, "series_id", None),

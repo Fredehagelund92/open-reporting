@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio — Open Reporting</title>
+
+  <!-- Satoshi: Open Reporting's brand font (Fontshare) -->
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet">
+  <!-- Fragment Mono: Open Reporting's mono font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fragment+Mono:ital@0;1&display=swap" rel="stylesheet">
+
+  <style>
+    /* ─── Open Reporting design tokens ─────────────────────────────────────── */
+    :root {
+      --or-bg:         oklch(0.97 0.005 80);
+      --or-fg:         oklch(0.18 0.02 260);
+      --or-primary:    oklch(0.75 0.16 70);
+      --or-primary-fg: oklch(0.15 0.02 70);
+      --or-border:     oklch(0.88 0.01 80);
+      --or-muted:      oklch(0.50 0.02 260);
+      --or-muted-bg:   oklch(0.94 0.006 80);
+      --or-card:       oklch(0.99 0.003 80);
+
+      /* Sidebar — deep ink (mirror of OR's --foreground used as surface) */
+      --sb:       oklch(0.125 0.026 262);
+      --sb-surf:  oklch(0.165 0.022 262);
+      --sb-raise: oklch(0.205 0.018 262);
+      --sb-bdr:   oklch(0.235 0.016 262);
+      --sb-text:  oklch(0.88 0.009 260);
+      --sb-muted: oklch(0.48 0.014 260);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Satoshi', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      background: var(--or-bg);
+    }
+
+    /* ─── Dot-grid textures ─────────────────────────────────────────────────── */
+    .dot-grid-warm {
+      background-color: var(--or-bg);
+      background-image: radial-gradient(circle, oklch(0.50 0 0 / 2.5%) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    .dot-grid-dark {
+      background-color: var(--sb);
+      background-image: radial-gradient(circle, oklch(1 0 0 / 1.8%) 1px, transparent 1px);
+      background-size: 22px 22px;
+    }
+
+    /* ─── Layout ────────────────────────────────────────────────────────────── */
+    aside {
+      width: 360px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      border-right: 1px solid var(--sb-bdr);
+    }
+    aside::-webkit-scrollbar { width: 3px; }
+    aside::-webkit-scrollbar-thumb { background: var(--sb-bdr); border-radius: 2px; }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* ─── Sidebar sections ──────────────────────────────────────────────────── */
+    .sb-sect {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--sb-bdr);
+    }
+    .sb-sect-label {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 9.5px;
+      color: var(--sb-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.10em;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    /* ─── OR wordmark / logo mark ───────────────────────────────────────────── */
+    .or-badge {
+      width: 20px; height: 20px;
+      background: var(--or-primary);
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .or-badge svg { display: block; }
+
+    /* ─── Agent list ────────────────────────────────────────────────────────── */
+    .agent-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 10px;
+      border-radius: 7px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.12s, border-color 0.12s;
+      user-select: none;
+    }
+    .agent-row:hover { background: var(--sb-surf); }
+    .agent-row.active {
+      background: oklch(0.75 0.16 70 / 9%);
+      border-color: oklch(0.75 0.16 70 / 22%);
+    }
+    .agent-row.active .agent-pip { background: var(--or-primary); box-shadow: 0 0 8px oklch(0.75 0.16 70 / 55%); }
+    .agent-pip {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--sb-muted);
+      flex-shrink: 0;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+    .agent-name {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 12.5px;
+      color: var(--sb-text);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .agent-ext {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 10px;
+      color: var(--sb-muted);
+      opacity: 0.5;
+    }
+
+    /* ─── Form inputs ───────────────────────────────────────────────────────── */
+    .fi {
+      width: 100%;
+      background: var(--sb-surf);
+      border: 1px solid var(--sb-bdr);
+      border-radius: 7px;
+      color: var(--sb-text);
+      font-family: 'Satoshi', system-ui, sans-serif;
+      font-size: 13px;
+      padding: 7px 11px;
+      outline: none;
+      transition: border-color 0.14s, box-shadow 0.14s;
+      -webkit-appearance: none;
+    }
+    .fi::placeholder { color: oklch(0.55 0.012 260); }
+    .fi:hover { border-color: oklch(0.30 0.016 262); }
+    .fi:focus {
+      border-color: var(--or-primary);
+      box-shadow: 0 0 0 2.5px oklch(0.75 0.16 70 / 14%);
+    }
+    textarea.fi { resize: vertical; min-height: 58px; line-height: 1.5; }
+    input[type="date"].fi::-webkit-calendar-picker-indicator {
+      filter: invert(0.45) sepia(0.15);
+      cursor: pointer;
+    }
+
+    /* ─── Parameters V2 — type-chromatic property inspector ────────────────── */
+
+    /* Type color palette — each type has its own strip/accent color */
+    .p2[data-ptype="string"]  { --pc: oklch(0.75 0.16 70);  }   /* amber  */
+    .p2[data-ptype="date"]    { --pc: oklch(0.72 0.14 195); }   /* cyan   */
+    .p2[data-ptype="number"]  { --pc: oklch(0.65 0.14 145); }   /* green  */
+    .p2[data-ptype="boolean"] { --pc: oklch(0.60 0.14 262); }   /* indigo */
+    .p2[data-ptype="select"]  { --pc: oklch(0.68 0.15 300); }   /* violet */
+
+    /* Row container */
+    .p2 {
+      position: relative;
+      padding: 10px 14px 10px 18px;
+      border-bottom: 1px solid oklch(0.19 0.016 262 / 80%);
+      transition: background 0.13s ease;
+    }
+    .p2:last-child { border-bottom: none; }
+    .p2:hover         { background: oklch(0.75 0.16 70 / 3.5%); }
+    .p2:focus-within  { background: oklch(0.75 0.16 70 / 5%); }
+
+    /* Chromatic left strip — the key visual differentiator */
+    .p2::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 6px; bottom: 6px;
+      width: 2px;
+      border-radius: 0 2px 2px 0;
+      background: var(--pc, oklch(0.75 0.16 70));
+      opacity: 0.35;
+      transition: opacity 0.15s, top 0.15s, bottom 0.15s;
+    }
+    .p2:focus-within::before { opacity: 1; top: 0; bottom: 0; border-radius: 0; }
+    .p2:hover::before         { opacity: 0.65; }
+
+    /* Header row: icon · name · badge */
+    .p2-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 7px;
+    }
+    .p2-bool .p2-head { margin-bottom: 0; }
+
+    /* Type glyph icon — colored with the strip's color */
+    .p2-icon {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 11px;
+      line-height: 1;
+      color: var(--pc, var(--sb-muted));
+      opacity: 0.75;
+      flex-shrink: 0;
+      width: 13px;
+      text-align: center;
+    }
+    .p2-icon svg { display: block; }
+
+    /* Param name */
+    .p2-name {
+      font-family: 'Satoshi', system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: oklch(0.58 0.013 260);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Type badge — right-aligned, tinted with the type color */
+    .p2-badge {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 9px;
+      color: var(--pc, var(--sb-muted));
+      background: var(--sb-raise);
+      border: 1px solid var(--sb-bdr);
+      opacity: 0.85;
+      padding: 1px 5px;
+      border-radius: 3px;
+      letter-spacing: 0.03em;
+      flex-shrink: 0;
+    }
+    /* Tint the badge bg per type when browser supports CSS nesting */
+    .p2[data-ptype="string"]  .p2-badge { border-color: oklch(0.75 0.16 70 / 22%); }
+    .p2[data-ptype="date"]    .p2-badge { border-color: oklch(0.72 0.14 195 / 22%); }
+    .p2[data-ptype="number"]  .p2-badge { border-color: oklch(0.65 0.14 145 / 22%); }
+    .p2[data-ptype="boolean"] .p2-badge { border-color: oklch(0.60 0.14 262 / 22%); }
+    .p2[data-ptype="select"]  .p2-badge { border-color: oklch(0.68 0.15 300 / 22%); }
+
+    /* Select — refined dark dropdown */
+    .p2 select.fi {
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      background: var(--sb-surf);
+      border: 1px solid var(--sb-bdr);
+      border-radius: 6px;
+      padding: 6px 30px 6px 10px;
+      color: var(--sb-text);
+      font-family: 'Fragment Mono', monospace;
+      font-size: 12.5px;
+      letter-spacing: 0.01em;
+      color-scheme: dark;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a8394' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      transition: border-color 0.15s, box-shadow 0.15s, background-color 0.12s;
+      box-shadow: 0 1px 2px oklch(0 0 0 / 15%);
+    }
+    .p2 select.fi:hover {
+      border-color: oklch(0.34 0.016 262);
+      background-color: oklch(0.18 0.020 262);
+    }
+    .p2 select.fi:focus {
+      outline: none;
+      border-color: var(--pc, var(--or-primary));
+      box-shadow: 0 0 0 2px color-mix(in oklch, var(--pc, var(--or-primary)) 18%, transparent),
+                  0 1px 2px oklch(0 0 0 / 15%);
+      background-color: oklch(0.18 0.020 262);
+    }
+    .p2 select.fi option {
+      background: oklch(0.155 0.022 262);
+      color: oklch(0.88 0.009 260);
+      padding: 6px 10px;
+      font-size: 12.5px;
+    }
+    .p2 select.fi option:checked {
+      background: oklch(0.22 0.018 262);
+    }
+
+    /* Underline inputs — overrides .fi when inside a .p2 row */
+    .p2 .fi {
+      background: transparent;
+      border: none;
+      border-bottom: 1.5px solid oklch(0.22 0.016 262);
+      border-radius: 0;
+      padding: 3px 0 5px;
+      font-family: 'Fragment Mono', monospace;
+      font-size: 13px;
+      color: var(--sb-text);
+      letter-spacing: 0.01em;
+      box-shadow: none;
+      transition: border-bottom-color 0.14s;
+    }
+    .p2 .fi::placeholder { color: oklch(0.52 0.012 262); font-style: italic; }
+    .p2 .fi:hover  { border-bottom-color: oklch(0.32 0.016 262); }
+    .p2 .fi:focus  {
+      outline: none;
+      border-bottom-color: var(--pc, var(--or-primary));
+      box-shadow: 0 1.5px 0 0 color-mix(in oklch, var(--pc, var(--or-primary)) 40%, transparent);
+    }
+    input[type="date"].p2 .fi::-webkit-calendar-picker-indicator { filter: invert(0.4); }
+
+    /* ─── Toggle ────────────────────────────────────────────────────────────── */
+    .toggle-wrap { position: relative; width: 36px; height: 20px; flex-shrink: 0; cursor: pointer; }
+    .toggle-wrap input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-rail {
+      position: absolute; inset: 0;
+      background: var(--sb-bdr);
+      border-radius: 20px;
+      transition: background 0.2s;
+    }
+    .toggle-thumb {
+      position: absolute;
+      width: 14px; height: 14px;
+      top: 3px; left: 3px;
+      background: var(--sb-muted);
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .toggle-wrap input:checked ~ .toggle-rail  { background: var(--or-primary); }
+    .toggle-wrap input:checked ~ .toggle-thumb {
+      transform: translateX(16px);
+      background: var(--or-primary-fg);
+    }
+
+    /* ─── Run button ────────────────────────────────────────────────────────── */
+    #run-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--or-primary);
+      color: var(--or-primary-fg);
+      font-family: 'Fragment Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: filter 0.14s, transform 0.1s;
+      letter-spacing: 0.01em;
+    }
+    #run-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,0.15) 50%, transparent 65%);
+      transform: translateX(-120%);
+      pointer-events: none;
+    }
+    #run-btn:not(:disabled):hover::before { animation: shimmer 0.55s ease forwards; }
+    #run-btn:not(:disabled):hover  { filter: brightness(1.07); }
+    #run-btn:not(:disabled):active { transform: scale(0.985); }
+    #run-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* ─── Publish button ────────────────────────────────────────────────────── */
+    #publish-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 14px;
+      background: oklch(0.48 0.13 265);
+      color: oklch(0.92 0.008 260);
+      font-family: 'Satoshi', system-ui, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: filter 0.14s;
+    }
+    #publish-btn:not(:disabled):hover { filter: brightness(1.13); }
+    #publish-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* ─── Spinner ───────────────────────────────────────────────────────────── */
+    .spinner {
+      width: 13px; height: 13px;
+      border: 1.5px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: none;
+      flex-shrink: 0;
+    }
+    .spinner.on { display: block; }
+    @keyframes spin    { to { transform: rotate(360deg); } }
+    @keyframes shimmer { to { transform: translateX(220%); } }
+
+    /* ─── Error panel ───────────────────────────────────────────────────────── */
+    #error-panel {
+      display: none;
+      margin-top: 10px;
+      background: oklch(0.115 0.032 25);
+      border: 1px solid oklch(0.38 0.12 25);
+      border-radius: 8px;
+      padding: 11px 13px;
+      position: relative;
+    }
+    #error-panel pre {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 10.5px;
+      line-height: 1.65;
+      color: oklch(0.73 0.11 25);
+      white-space: pre-wrap;
+      word-break: break-all;
+      padding-right: 18px;
+    }
+    .err-x {
+      position: absolute; top: 7px; right: 9px;
+      background: none; border: none;
+      font-size: 16px; line-height: 1;
+      color: oklch(0.50 0.09 25);
+      cursor: pointer; padding: 2px 4px; border-radius: 4px;
+      transition: color 0.12s, background 0.12s;
+    }
+    .err-x:hover { color: oklch(0.70 0.11 25); background: oklch(0.18 0.04 25); }
+
+    /* ─── Push divider ──────────────────────────────────────────────────────── */
+    .push-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px 0 10px;
+    }
+    .push-line { flex: 1; height: 1px; background: var(--sb-bdr); }
+    .push-lbl {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 10px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--sb-muted);
+      white-space: nowrap;
+      transition: color 0.14s;
+      font-family: 'Satoshi', system-ui, sans-serif;
+    }
+    .push-toggle:hover .push-lbl { color: oklch(0.70 0.012 260); }
+    .push-chev { transition: transform 0.22s cubic-bezier(0.4,0,0.2,1); }
+    .push-chev.open { transform: rotate(180deg); }
+
+    .push-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.30s cubic-bezier(0.4,0,0.2,1);
+    }
+    .push-body.open { max-height: 700px; }
+
+    /* ─── Preview bar ───────────────────────────────────────────────────────── */
+    #preview-bar {
+      height: 38px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--or-border);
+      background: var(--or-card);
+      flex-shrink: 0;
+    }
+    #preview-bar.show { display: flex; }
+    .preview-live-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--or-primary);
+      box-shadow: 0 0 0 0 oklch(0.75 0.16 70 / 50%);
+      animation: live-pulse 2.2s infinite;
+    }
+    @keyframes live-pulse {
+      0%   { box-shadow: 0 0 0 0   oklch(0.75 0.16 70 / 50%); }
+      60%  { box-shadow: 0 0 0 5px oklch(0.75 0.16 70 / 0%);  }
+      100% { box-shadow: 0 0 0 0   oklch(0.75 0.16 70 / 0%);  }
+    }
+
+    /* ─── Empty state ───────────────────────────────────────────────────────── */
+    #empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+    }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-7px); }
+    }
+    .bob { animation: bob 3.8s ease-in-out infinite; }
+    .empty-icon-ring {
+      width: 64px; height: 64px;
+      border-radius: 16px;
+      background: oklch(0.75 0.16 70 / 9%);
+      border: 1.5px solid oklch(0.75 0.16 70 / 18%);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ─── Agent quick-launch pills ──────────────────────────────────────────── */
+    .agent-pill {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 11px;
+      color: var(--or-muted);
+      background: oklch(0.93 0.007 80);
+      border: 1px solid var(--or-border);
+      padding: 4px 11px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.14s, border-color 0.14s, color 0.14s;
+    }
+    .agent-pill:hover {
+      background: oklch(0.75 0.16 70 / 11%);
+      border-color: oklch(0.75 0.16 70 / 28%);
+      color: oklch(0.52 0.14 70);
+    }
+
+    /* ─── Preview iframe ────────────────────────────────────────────────────── */
+    #preview-wrap {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+    }
+    #preview-wrap.show { display: flex; }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    #preview-frame {
+      border: none;
+      display: block;
+      min-height: 0;
+      animation: fade-in 0.28s ease both;
+    }
+
+    /* ─── Viewport frame wrapper ─────────────────────────────────────────────── */
+    #preview-frame-wrap {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      min-height: 0;
+      overflow: hidden;
+      transition: background 0.18s;
+    }
+    #preview-frame-wrap.vp-full { background: transparent; }
+    #preview-frame-wrap.vp-full #preview-frame { flex: 1; width: 100%; }
+    #preview-frame-wrap.vp-tablet { background: oklch(0.91 0.006 80); }
+    #preview-frame-wrap.vp-tablet #preview-frame { width: 768px; max-width: 768px; box-shadow: 2px 0 12px oklch(0 0 0 / 12%), -2px 0 12px oklch(0 0 0 / 12%); }
+    #preview-frame-wrap.vp-mobile { background: oklch(0.91 0.006 80); }
+    #preview-frame-wrap.vp-mobile #preview-frame { width: 375px; max-width: 375px; box-shadow: 2px 0 12px oklch(0 0 0 / 12%), -2px 0 12px oklch(0 0 0 / 12%); }
+
+    /* ─── Viewport switcher buttons ──────────────────────────────────────────── */
+    .vp-group {
+      display: flex;
+      gap: 1px;
+      background: var(--or-border);
+      border: 1px solid var(--or-border);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .vp-btn {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 10px;
+      color: var(--or-muted);
+      background: var(--or-muted-bg);
+      border: none;
+      padding: 3px 8px;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+      white-space: nowrap;
+    }
+    .vp-btn:hover { background: var(--or-card); color: var(--or-fg); }
+    .vp-btn.active { background: var(--or-card); color: var(--or-fg); font-weight: 600; }
+
+    /* ─── Fullscreen mode ────────────────────────────────────────────────────── */
+    body.is-fullscreen aside,
+    body.is-fullscreen #resize-handle { display: none !important; }
+    body.is-fullscreen main { position: fixed; inset: 0; z-index: 200; }
+
+    /* ─── Console panel ──────────────────────────────────────────────────────── */
+    #console-panel {
+      flex-shrink: 0;
+      border-top: 1px solid var(--or-border);
+      background: oklch(0.978 0.004 262);
+      display: none;
+      flex-direction: column;
+      max-height: 200px;
+    }
+    #console-panel.show { display: flex; }
+    #console-hd {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 14px;
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.12s, background 0.12s;
+      flex-shrink: 0;
+    }
+    #console-hd:hover { background: oklch(0.965 0.005 262); }
+    #console-hd.open { border-bottom-color: var(--or-border); }
+    .console-hd-label {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 10px;
+      color: oklch(0.50 0.012 262);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .console-count-badge {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 9px;
+      color: oklch(0.52 0.12 70);
+      background: oklch(0.75 0.16 70 / 10%);
+      border: 1px solid oklch(0.75 0.16 70 / 18%);
+      border-radius: 20px;
+      padding: 0 6px;
+    }
+    .console-chev {
+      margin-left: auto;
+      color: oklch(0.58 0.01 262);
+      transition: transform 0.18s cubic-bezier(0.4,0,0.2,1);
+    }
+    .console-chev.open { transform: rotate(180deg); }
+    #console-body {
+      overflow-y: auto;
+      padding: 8px 14px;
+      display: none;
+      flex-direction: column;
+      gap: 1px;
+    }
+    #console-body.open { display: flex; }
+    #console-body::-webkit-scrollbar { width: 3px; }
+    #console-body::-webkit-scrollbar-thumb { background: var(--or-border); border-radius: 2px; }
+    .cl-line {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      color: oklch(0.38 0.015 262);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .cl-line.warn { color: oklch(0.58 0.14 72); }
+    .cl-line.err  { color: oklch(0.55 0.15 25); }
+
+/* ─── Params header ──────────────────────────────────────────────────────── */
+    .params-hd {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .params-hd .sb-sect-label { margin-bottom: 0; }
+
+    /* ─── Import hint ────────────────────────────────────────────────────────── */
+    #import-hint {
+      margin-top: 6px;
+      padding: 8px 11px;
+      background: oklch(0.115 0.025 195 / 60%);
+      border: 1px solid oklch(0.35 0.10 195 / 50%);
+      border-radius: 6px;
+      font-family: 'Fragment Mono', monospace;
+      font-size: 11px;
+      color: oklch(0.68 0.10 195);
+      line-height: 1.6;
+    }
+
+    /* ─── Param enter animation ─────────────────────────────────────────────── */
+    @keyframes param-in {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .param-row { animation: param-in 0.22s cubic-bezier(0.22,1,0.36,1) both; }
+
+    /* ─── Resize handle ─────────────────────────────────────────────────────── */
+    #resize-handle {
+      width: 4px;
+      flex-shrink: 0;
+      cursor: ew-resize;
+      background: var(--sb-bdr);
+      transition: background 0.15s;
+    }
+    #resize-handle:hover, #resize-handle.dragging { background: var(--or-primary); }
+
+    /* ─── Preview bar buttons ───────────────────────────────────────────────── */
+    .pb-btn {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 10.5px;
+      color: var(--or-muted);
+      background: var(--or-muted-bg);
+      border: 1px solid var(--or-border);
+      border-radius: 5px;
+      padding: 3px 9px;
+      cursor: pointer;
+      transition: background 0.13s, color 0.13s, border-color 0.13s;
+    }
+    .pb-btn:hover {
+      background: oklch(0.75 0.16 70 / 10%);
+      border-color: oklch(0.75 0.16 70 / 28%);
+      color: oklch(0.45 0.14 70);
+    }
+
+    /* ─── Auto-run toggle row ───────────────────────────────────────────────── */
+    .auto-run-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 8px;
+      padding: 5px 8px;
+      border-radius: 7px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.18s, border-color 0.18s;
+    }
+    /* Left accent bar — appears when active */
+    .auto-run-row::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 4px; bottom: 4px;
+      width: 2px;
+      border-radius: 0 2px 2px 0;
+      background: var(--or-primary);
+      opacity: 0;
+      transition: opacity 0.22s;
+    }
+    .auto-run-row:hover:not(:has(#auto-run-chk:checked)) {
+      background: var(--sb-surf);
+      border-color: var(--sb-bdr);
+    }
+    .auto-run-row:has(#auto-run-chk:checked) {
+      background: oklch(0.75 0.16 70 / 6%);
+      border-color: oklch(0.75 0.16 70 / 18%);
+    }
+    .auto-run-row:has(#auto-run-chk:checked)::before { opacity: 1; }
+    .auto-run-row:hover:has(#auto-run-chk:checked) {
+      background: oklch(0.75 0.16 70 / 9%);
+    }
+    /* Pill track */
+    .ar-pill {
+      position: relative;
+      width: 30px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+    .ar-rail {
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      background: var(--sb-raise);
+      border: 1px solid var(--sb-bdr);
+      transition: background 0.22s, border-color 0.22s, box-shadow 0.22s;
+    }
+    .ar-thumb {
+      position: absolute;
+      width: 10px; height: 10px;
+      top: 2px; left: 2px;
+      border-radius: 50%;
+      background: var(--sb-muted);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.22s;
+    }
+    /* Checked — amber glow */
+    .auto-run-row:has(#auto-run-chk:checked) .ar-rail {
+      background: var(--or-primary);
+      border-color: var(--or-primary);
+      box-shadow: 0 0 10px oklch(0.75 0.16 70 / 45%);
+    }
+    .auto-run-row:has(#auto-run-chk:checked) .ar-thumb {
+      transform: translateX(14px);
+      background: oklch(0.14 0.02 70);
+    }
+    /* Label text */
+    .ar-label {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 11px;
+      color: var(--sb-muted);
+      user-select: none;
+      transition: color 0.18s;
+    }
+    .auto-run-row:has(#auto-run-chk:checked) .ar-label {
+      color: oklch(0.70 0.12 70);
+    }
+
+    /* ─── Running state ─────────────────────────────────────────────────────── */
+    #running-state {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+    }
+    #running-state.show { display: flex; }
+
+    /* Orbital scene */
+    .rs-scene {
+      position: relative;
+      width: 120px;
+      height: 120px;
+    }
+    .rs-ring {
+      position: absolute;
+      border-radius: 50%;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    /* The travelling node dot sits at the top of each ring */
+    .rs-ring::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      background: var(--or-primary);
+      top: 50%; left: 50%;
+    }
+    .rs-ring-1 {
+      width: 46px; height: 46px;
+      border: 1.5px solid oklch(0.75 0.16 70 / 38%);
+      animation: rs-orbit 2.1s linear infinite;
+    }
+    .rs-ring-1::after {
+      width: 7px; height: 7px;
+      margin-top: -26px; margin-left: -3.5px;
+      box-shadow: 0 0 10px oklch(0.75 0.16 70 / 90%);
+    }
+    .rs-ring-2 {
+      width: 76px; height: 76px;
+      border: 1.5px solid oklch(0.75 0.16 70 / 22%);
+      animation: rs-orbit 3.7s linear infinite reverse;
+    }
+    .rs-ring-2::after {
+      width: 5px; height: 5px;
+      margin-top: -41px; margin-left: -2.5px;
+      box-shadow: 0 0 7px oklch(0.75 0.16 70 / 70%);
+      opacity: 0.8;
+    }
+    .rs-ring-3 {
+      width: 112px; height: 112px;
+      border: 1px solid oklch(0.75 0.16 70 / 11%);
+      animation: rs-orbit 6.2s linear infinite;
+    }
+    .rs-ring-3::after {
+      width: 4px; height: 4px;
+      margin-top: -60px; margin-left: -2px;
+      box-shadow: 0 0 5px oklch(0.75 0.16 70 / 55%);
+      opacity: 0.55;
+    }
+    @keyframes rs-orbit {
+      from { transform: translate(-50%,-50%) rotate(0deg); }
+      to   { transform: translate(-50%,-50%) rotate(360deg); }
+    }
+    /* Core */
+    .rs-core {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: oklch(0.75 0.16 70 / 12%);
+      border: 1.5px solid oklch(0.75 0.16 70 / 35%);
+      display: flex; align-items: center; justify-content: center;
+      animation: rs-breathe 2s ease-in-out infinite;
+    }
+    .rs-core-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--or-primary);
+      box-shadow: 0 0 14px oklch(0.75 0.16 70 / 85%);
+      animation: rs-breathe 2s ease-in-out infinite;
+    }
+    @keyframes rs-breathe {
+      0%, 100% { opacity: 0.75; transform: scale(1); }
+      50%       { opacity: 1;    transform: scale(1.18); }
+    }
+    /* Label */
+    .rs-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Fragment Mono', monospace;
+      font-size: 11.5px;
+      color: oklch(0.44 0.014 262);
+      letter-spacing: 0.04em;
+    }
+    .rs-label-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--or-primary);
+      animation: rs-blink 1.1s ease-in-out infinite;
+    }
+    @keyframes rs-blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.25; }
+    }
+    /* Elapsed timer */
+    .rs-timer {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 11px;
+      color: oklch(0.44 0.014 262);
+      letter-spacing: 0.04em;
+    }
+
+    /* Log stream */
+    .rs-log {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      align-items: center;
+    }
+    .rs-log-line {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 10.5px;
+      color: oklch(0.50 0.012 262);
+      letter-spacing: 0.02em;
+      animation: rs-log-pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes rs-log-pulse {
+      0%   { opacity: 0.12; }
+      40%  { opacity: 0.75; color: oklch(0.58 0.08 70); }
+      70%  { opacity: 0.55; }
+      100% { opacity: 0.12; }
+    }
+
+    /* ─── File-watcher flash ──────────────────────────────────────────────── */
+    .agent-row.changed {
+      position: relative;
+    }
+    .agent-row.changed .agent-pip {
+      background: oklch(0.65 0.18 145);
+      box-shadow: 0 0 8px oklch(0.65 0.18 145 / 60%);
+    }
+    .agent-row.changed::after {
+      content: 'changed';
+      font-family: 'Fragment Mono', monospace;
+      font-size: 9px;
+      color: oklch(0.72 0.14 145);
+      background: oklch(0.65 0.18 145 / 12%);
+      border: 1px solid oklch(0.65 0.18 145 / 25%);
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-left: auto;
+      flex-shrink: 0;
+      animation: flash-in 0.25s ease;
+    }
+    @keyframes flash-in {
+      from { opacity: 0; transform: scale(0.85); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* ─── History rows ────────────────────────────────────────────────────── */
+    .hist-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.12s, border-color 0.12s;
+      user-select: none;
+    }
+    .hist-row:hover { background: var(--sb-surf); }
+    .hist-row.active {
+      background: oklch(0.75 0.16 70 / 9%);
+      border-color: oklch(0.75 0.16 70 / 22%);
+    }
+    .hist-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--sb-muted);
+      opacity: 0.45;
+      flex-shrink: 0;
+    }
+    .hist-live-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--or-primary);
+      box-shadow: 0 0 6px oklch(0.75 0.16 70 / 55%);
+      flex-shrink: 0;
+    }
+    .hist-agent {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 11.5px;
+      color: var(--sb-text);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .hist-time {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 10px;
+      color: var(--sb-muted);
+      flex-shrink: 0;
+    }
+    .hist-dur {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 9.5px;
+      color: var(--sb-muted);
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+    .hist-empty {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 12px;
+      color: var(--sb-muted);
+      padding: 4px 10px;
+    }
+    .hist-count {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 9px;
+      color: var(--sb-muted);
+      background: var(--sb-surf);
+      border: 1px solid var(--sb-bdr);
+      border-radius: 20px;
+      padding: 1px 6px;
+      margin-left: 6px;
+    }
+
+    /* ─── History toggle (reuses push-toggle pattern) ─────────────────────── */
+    .hist-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px 0 10px;
+    }
+    .hist-toggle:hover .push-lbl { color: oklch(0.70 0.012 260); }
+
+    /* ─── Preview bar history mode ────────────────────────────────────────── */
+    #pb-back-live {
+      display: none;
+    }
+    .pb-mode-hist {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 9.5px;
+      color: oklch(0.68 0.15 300);
+      background: oklch(0.68 0.15 300 / 10%);
+      border: 1px solid oklch(0.68 0.15 300 / 20%);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    /* ─── Report tab bar ─────────────────────────────────────────────────── */
+    #report-tabs {
+      display: none;
+      flex-shrink: 0;
+      align-items: stretch;
+      gap: 0;
+      border-bottom: 1px solid var(--or-border);
+      background: var(--or-card);
+      padding: 0 14px;
+      overflow-x: auto;
+    }
+    #report-tabs.show { display: flex; }
+    #report-tabs::-webkit-scrollbar { height: 0; }
+
+    .rt-tab {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 11px;
+      color: var(--or-muted);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 0 14px;
+      height: 34px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.12s, border-color 0.12s;
+      flex-shrink: 0;
+    }
+    .rt-tab:hover { color: var(--or-fg); }
+    .rt-tab.active {
+      color: var(--or-fg);
+      border-bottom-color: var(--or-primary);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════ SIDEBAR -->
+  <aside class="dot-grid-dark">
+
+    <!-- Header -->
+    <div class="sb-sect" style="padding-top:16px;padding-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:9px">
+          <!-- OR logo mark -->
+          <div class="or-badge">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <circle cx="6" cy="6" r="4" stroke="oklch(0.15 0.02 70)" stroke-width="1.5"/>
+              <circle cx="6" cy="6" r="1.5" fill="oklch(0.15 0.02 70)"/>
+            </svg>
+          </div>
+          <div>
+            <div style="display:flex;align-items:baseline;gap:7px">
+              <span style="font-family:'Fragment Mono',monospace;font-size:14px;font-weight:500;color:var(--sb-text);letter-spacing:-0.02em">Studio</span>
+              <span style="font-size:11px;color:var(--sb-muted);font-weight:500">by Open Reporting</span>
+            </div>
+          </div>
+        </div>
+        <span id="badge" style="display:none;font-family:'Fragment Mono',monospace;font-size:10px;color:var(--sb-muted);background:var(--sb-surf);border:1px solid var(--sb-bdr);border-radius:20px;padding:2px 8px"></span>
+      </div>
+    </div>
+
+    <!-- Agents -->
+    <div class="sb-sect">
+      <span class="sb-sect-label">Agents</span>
+      <div id="agent-list">
+        <div style="font-family:'Fragment Mono',monospace;font-size:12px;color:var(--sb-muted);padding:4px 10px">
+          Scanning directory…
+        </div>
+      </div>
+    </div>
+
+    <!-- Parameters -->
+    <div class="sb-sect" style="flex:1">
+      <div class="params-hd">
+        <span class="sb-sect-label">Parameters</span>
+      </div>
+      <div id="params-container">
+        <div style="font-family:'Fragment Mono',monospace;font-size:12px;color:var(--sb-muted)">—</div>
+      </div>
+    </div>
+
+    <!-- Run -->
+    <div class="sb-sect">
+      <button id="run-btn" onclick="runAgent()">
+        <div class="spinner" id="run-spin" style="border-top-color:var(--or-primary-fg)"></div>
+        <span id="run-lbl">Run agent</span>
+        <kbd style="font-family:'Fragment Mono',monospace;font-size:11px;margin-left:auto;opacity:0.40;background:rgba(0,0,0,0.10);border-radius:4px;padding:2px 6px;letter-spacing:0">⌘↵</kbd>
+      </button>
+      <label class="auto-run-row" for="auto-run-chk">
+        <input type="checkbox" id="auto-run-chk" style="position:absolute;opacity:0;width:0;height:0">
+        <span class="ar-pill">
+          <span class="ar-rail"></span>
+          <span class="ar-thumb"></span>
+        </span>
+        <span class="ar-label">Auto-run on change</span>
+      </label>
+      <div id="error-panel">
+        <button class="err-x" onclick="hideErr()">×</button>
+        <pre id="error-text"></pre>
+      </div>
+      <div id="import-hint" style="display:none"></div>
+    </div>
+
+    <!-- History -->
+    <div class="sb-sect">
+      <button class="hist-toggle" onclick="toggleHistory()">
+        <div class="push-line"></div>
+        <div class="push-lbl">
+          <svg class="push-chev" id="hist-chev" width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          History
+          <span id="hist-count" class="hist-count" style="display:none">0</span>
+        </div>
+        <div class="push-line"></div>
+      </button>
+      <div class="push-body" id="hist-body">
+        <div id="history-list">
+          <div class="hist-empty">No runs yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Push to Open Reporting -->
+    <div class="sb-sect" style="border-bottom:none">
+      <button class="push-toggle" onclick="togglePush()">
+        <div class="push-line"></div>
+        <div class="push-lbl">
+          <svg class="push-chev" id="push-chev" width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Push to Open Reporting
+        </div>
+        <div class="push-line"></div>
+      </button>
+
+      <div class="push-body" id="push-body">
+        <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:4px">
+          <div>
+            <div class="plabel">Title</div>
+            <input id="pub-title" type="text" class="fi" placeholder="Report title">
+          </div>
+          <div>
+            <div class="plabel">Summary</div>
+            <textarea id="pub-summary" class="fi" rows="2" placeholder="Brief description…"></textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div>
+              <div class="plabel">Space</div>
+              <div id="pub-space-wrap">
+                <input id="pub-space" type="text" class="fi" placeholder="space-slug">
+              </div>
+            </div>
+            <div>
+              <div class="plabel">Tags</div>
+              <input id="pub-tags" type="text" class="fi" placeholder="tag1, tag2">
+            </div>
+          </div>
+          <div id="pub-connection-status" style="display:none;align-items:center;gap:6px;font-family:'Fragment Mono',monospace;font-size:10px;color:var(--sb-muted);padding:2px 0 4px"></div>
+          <button id="publish-btn" onclick="publishReport()">
+            <div class="spinner on" id="pub-spin" style="display:none;border-top-color:oklch(0.92 0.008 260)"></div>
+            <span id="pub-lbl">Publish report</span>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="margin-left:auto;opacity:0.7">
+              <path d="M2.5 6.5h8M7 3l3.5 3.5L7 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div id="pub-result" style="font-size:12px;line-height:1.55;font-family:'Fragment Mono',monospace;min-height:0"></div>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <div id="resize-handle"></div>
+
+  <!-- ══════════════════════════════════════════════════ MAIN PANEL -->
+  <main>
+
+    <!-- Preview bar — shown after first run -->
+    <div id="preview-bar">
+      <div class="preview-live-dot" id="pb-live-dot"></div>
+      <span id="pb-mode-label" style="font-family:'Fragment Mono',monospace;font-size:11px;color:var(--or-muted)">previewing</span>
+      <span id="pb-agent" style="font-family:'Fragment Mono',monospace;font-size:11px;font-weight:500;color:var(--or-fg)"></span>
+      <div class="vp-group" style="margin-left:12px">
+        <button class="vp-btn active" data-vp="full" onclick="setViewport('full')">Full</button>
+        <button class="vp-btn" data-vp="tablet" onclick="setViewport('tablet')">768</button>
+        <button class="vp-btn" data-vp="mobile" onclick="setViewport('mobile')">375</button>
+      </div>
+      <span style="flex:1"></span>
+      <span id="pb-time" style="font-family:'Fragment Mono',monospace;font-size:11px;color:oklch(0.64 0.01 80)"></span>
+      <button class="pb-btn" onclick="copyHtml()" id="copy-btn">Copy HTML</button>
+      <button class="pb-btn" onclick="downloadHtml()">Download ↓</button>
+<button class="pb-btn" onclick="toggleFullscreen()" title="Fullscreen (F)" style="padding:3px 7px">⛶</button>
+      <button class="pb-btn" id="pb-back-live" onclick="returnToLive()">Back to live</button>
+      <span id="pb-live-badge" style="font-family:'Fragment Mono',monospace;font-size:9.5px;color:var(--or-primary);background:oklch(0.75 0.16 70 / 10%);border:1px solid oklch(0.75 0.16 70 / 20%);padding:2px 8px;border-radius:20px">
+        Live in Studio
+      </span>
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="dot-grid-warm">
+      <div class="bob" style="display:flex;flex-direction:column;align-items:center;gap:16px">
+        <div class="empty-icon-ring">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+            <path d="M8 6.5L20 13L8 19.5V6.5Z" fill="oklch(0.75 0.16 70)" opacity="0.55"/>
+          </svg>
+        </div>
+        <div style="text-align:center;display:flex;flex-direction:column;gap:5px">
+          <p style="font-size:14px;font-weight:600;color:oklch(0.32 0.018 262)">Nothing running yet</p>
+          <p style="font-size:13px;color:oklch(0.58 0.014 262)">
+            Select an agent and click
+            <span style="font-family:'Fragment Mono',monospace;font-size:12px;color:oklch(0.55 0.15 72)">Run agent</span>
+          </p>
+        </div>
+      </div>
+      <div id="empty-pills" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:380px"></div>
+    </div>
+
+    <!-- Running state -->
+    <div id="running-state" class="dot-grid-warm">
+      <div class="rs-scene">
+        <div class="rs-ring rs-ring-1"></div>
+        <div class="rs-ring rs-ring-2"></div>
+        <div class="rs-ring rs-ring-3"></div>
+        <div class="rs-core"><div class="rs-core-dot"></div></div>
+      </div>
+      <div class="rs-label">
+        <span class="rs-label-dot"></span>
+        <span id="rs-agent-name">running</span>
+      </div>
+      <span id="rs-timer" class="rs-timer">0.0s</span>
+      <div class="rs-log">
+        <div class="rs-log-line" style="animation-delay:0s">→ initializing agent</div>
+        <div class="rs-log-line" style="animation-delay:0.5s">→ loading context</div>
+        <div class="rs-log-line" style="animation-delay:1.0s">→ running analysis</div>
+        <div class="rs-log-line" style="animation-delay:1.5s">→ composing output</div>
+        <div class="rs-log-line" style="animation-delay:2.0s">→ rendering report</div>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div id="preview-wrap">
+      <div id="report-tabs"></div>
+      <div id="preview-frame-wrap" class="vp-full">
+        <iframe id="preview-frame" srcdoc="" sandbox="allow-scripts allow-same-origin"></iframe>
+      </div>
+      <!-- Console panel — shows captured stdout/stderr from the last agent run -->
+      <div id="console-panel">
+        <div id="console-hd" onclick="toggleConsole()">
+          <span class="console-hd-label">Console</span>
+          <span id="console-count" class="console-count-badge">0</span>
+          <svg class="console-chev" id="console-chev" width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div id="console-body"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // ─── State ────────────────────────────────────────────────────────────────
+    let agents = [];
+    let selected = null;
+    let pushOpen = false;
+    let lastHtml = null;
+    let autoRunTimer = null;
+    let agentMtimes = {};       // { file: mtime }
+    let pollTimer = null;
+    let isRunning = false;
+    let runHistory = [];        // [{ agent, time, reports, params, duration_ms, logs }]
+    let viewingHistoryIdx = -1; // -1 = live view
+    let histOpen = false;
+    let consoleLogs = [];
+    let consoleOpen = false;
+    let currentViewport = 'full';
+    let currentReports = [];    // [{ label, html }, ...]
+    let activeReportIdx = 0;
+
+    // ─── Boot ─────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      restoreFromHash();
+      await Promise.all([loadAgents(), loadMeta()]);
+      await snapshotMtimes();
+      startPolling();
+      restoreLastPreview();
+      document.addEventListener('keydown', e => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); runAgent(); }
+        // F key — fullscreen (skip when typing in an input)
+        if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey) {
+          const tag = document.activeElement?.tagName;
+          if (!['INPUT','TEXTAREA','SELECT'].includes(tag)) { e.preventDefault(); toggleFullscreen(); }
+        }
+      });
+      initResizeHandle();
+      restoreSidebarWidth();
+    });
+
+    // ─── Load agents ──────────────────────────────────────────────────────────
+    async function loadAgents() {
+      try {
+        const r = await fetch('/api/agents');
+        agents = await r.json();
+        if (!Array.isArray(agents)) agents = [];
+      } catch (_) { agents = []; }
+
+      const list  = document.getElementById('agent-list');
+      const badge = document.getElementById('badge');
+      const pills = document.getElementById('empty-pills');
+
+      badge.style.display = 'inline-block';
+
+      if (!agents.length) {
+        badge.textContent = '0 agents';
+        list.innerHTML = `<div style="font-family:'Fragment Mono',monospace;font-size:12px;color:var(--sb-muted);padding:4px 10px">No agents found in this directory</div>`;
+        return;
+      }
+
+      badge.textContent = `${agents.length} agent${agents.length === 1 ? '' : 's'}`;
+
+      list.innerHTML = agents.map((a, i) => `
+        <div class="agent-row" id="ar${i}" onclick="pick(${i})">
+          <span class="agent-pip"></span>
+          <span class="agent-name">${x(a.name)}</span>
+          <span class="agent-ext">.py</span>
+        </div>
+      `).join('');
+
+      // Quick-launch pills on empty state
+      pills.innerHTML = agents.slice(0, 8).map((a, i) => `
+        <button class="agent-pill" onclick="pick(${i})">${x(a.name)}</button>
+      `).join('');
+
+      // Apply hash state if present, otherwise preserve selection or fall back to first agent
+      const hashState = window._pendingHashState;
+      if (hashState?.file) {
+        const hashIdx = agents.findIndex(a => a.file === hashState.file);
+        if (hashIdx >= 0) {
+          pick(hashIdx, true);
+          if (hashState.params) applyHashParams(hashState.params);
+          saveParamValues();
+          if (hashState.reportIdx != null) selectReport(hashState.reportIdx);
+          window._pendingHashState = null;
+          return;
+        }
+      }
+      const prevFile = selected?.file;
+      const restoredIdx = prevFile ? agents.findIndex(a => a.file === prevFile) : -1;
+      pick(restoredIdx >= 0 ? restoredIdx : 0, /* keepPreview */ restoredIdx >= 0);
+    }
+
+    // ─── Pick agent ───────────────────────────────────────────────────────────
+    function pick(idx, keepPreview = false) {
+      agents.forEach((_, i) => {
+        const el = document.getElementById(`ar${i}`);
+        if (el) el.classList.toggle('active', i === idx);
+      });
+      const prev = selected;
+      selected = agents[idx] || null;
+      // Only re-render params if agent actually changed
+      if (!prev || prev.file !== selected?.file) {
+        renderParams(selected?.params || []);
+        if (!keepPreview) clearPreview();
+      }
+    }
+
+// ─── Render params V2 ─────────────────────────────────────────────────────
+    function renderParams(params) {
+      const c = document.getElementById('params-container');
+      if (!params.length) {
+        c.innerHTML = `<div style="font-family:'Fragment Mono',monospace;font-size:12px;color:var(--sb-muted);padding:2px 0">No parameters</div>`;
+        return;
+      }
+
+      const badgeLabel = { date:'date', number:'int', boolean:'bool', string:'str', select:'enum' };
+
+      // Type glyph icons — Fragment Mono glyphs or tiny inline SVG
+      const icon = {
+        string:  `<span class="p2-icon" title="string">"</span>`,
+        number:  `<span class="p2-icon" title="number">#</span>`,
+        boolean: `<span class="p2-icon" title="boolean" style="font-size:12px">◎</span>`,
+        select:  `<span class="p2-icon" title="select"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="0.75" y="2.25" width="9.5" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M3.5 5.5l2 2 2-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`,
+        date:    `<span class="p2-icon" title="date"><svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                    <rect x="0.75" y="1.75" width="9.5" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.1"/>
+                    <path d="M0.75 5h9.5" stroke="currentColor" stroke-width="1"/>
+                    <path d="M3.5 0.75v2M7.5 0.75v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                  </svg></span>`,
+      };
+
+      c.innerHTML = params.map((p, i) => {
+        const dv    = p.default != null ? String(p.default) : '';
+        const badge = badgeLabel[p.type] || 'str';
+        const ic    = icon[p.type] || icon.string;
+        const del   = `${i * 45}ms`;
+
+        const head = `
+          <div class="p2-head">
+            ${ic}
+            <span class="p2-name">${x(p.name)}</span>
+            <span class="p2-badge">${badge}</span>
+          </div>`;
+
+        if (p.type === 'boolean') {
+          const chk = ['true','True','1'].includes(dv) ? 'checked' : '';
+          return `
+            <div class="p2 p2-bool param-row" data-ptype="boolean" style="animation-delay:${del}">
+              <div class="p2-head">
+                ${ic}
+                <span class="p2-name">${x(p.name)}</span>
+                <span class="p2-badge">${badge}</span>
+                <label class="toggle-wrap" style="margin-left:6px;flex-shrink:0">
+                  <input type="checkbox" data-param="${x(p.name)}" ${chk}>
+                  <span class="toggle-rail"></span>
+                  <span class="toggle-thumb"></span>
+                </label>
+              </div>
+            </div>`;
+        }
+
+        let inputEl;
+        if (p.type === 'select' && p.options) {
+          const opts = p.options.map(o => `<option value="${x(o)}"${o === dv ? ' selected' : ''}>${x(o)}</option>`).join('');
+          inputEl = `<select data-param="${x(p.name)}" class="fi">${opts}</select>`;
+        } else if (p.type === 'date') {
+          // Auto-default to today when no default is provided
+          const today = new Date().toISOString().split('T')[0];
+          inputEl = `<input type="date" data-param="${x(p.name)}" class="fi" value="${x(dv || today)}" style="color-scheme:dark">`;
+        } else if (p.type === 'number') {
+          inputEl = `<input type="number" data-param="${x(p.name)}" class="fi" value="${x(dv)}" placeholder="0">`;
+        } else {
+          inputEl = `<input type="text" data-param="${x(p.name)}" class="fi" value="${x(dv)}" placeholder="${x(p.name)}">`;
+        }
+
+        return `
+          <div class="p2 param-row" data-ptype="${x(p.type)}" style="animation-delay:${del}">
+            ${head}
+            ${inputEl}
+          </div>`;
+      }).join('');
+      // Restore saved values (overrides defaults)
+      restoreParamValues();
+      attachAutoRunListeners();
+    }
+
+    // ─── Param persistence ────────────────────────────────────────────────────
+    function paramStorageKey() {
+      return selected ? `studioParams:${selected.file}` : null;
+    }
+
+    function saveParamValues() {
+      const key = paramStorageKey();
+      if (!key) return;
+      try { localStorage.setItem(key, JSON.stringify(params())); } catch (_) {}
+    }
+
+    function restoreParamValues() {
+      const key = paramStorageKey();
+      if (!key) return;
+      try {
+        const saved = JSON.parse(localStorage.getItem(key) || 'null');
+        if (!saved) return;
+        document.querySelectorAll('[data-param]').forEach(el => {
+          const n = el.dataset.param;
+          if (!(n in saved)) return;
+          const v = saved[n];
+          if (el.type === 'checkbox') el.checked = (v === true || v === 'true');
+          else el.value = v;
+        });
+      } catch (_) {}
+    }
+
+    // ─── Collect param values ─────────────────────────────────────────────────
+    function params() {
+      const out = {};
+      document.querySelectorAll('[data-param]').forEach(el => {
+        const n = el.dataset.param;
+        out[n] = el.type === 'checkbox' ? el.checked
+               : el.type === 'number'   ? (el.value !== '' ? Number(el.value) : 0)
+               : el.value;
+      });
+      return out;
+    }
+
+    // ─── Run ──────────────────────────────────────────────────────────────────
+    async function runAgent() {
+      if (!selected) return;
+      isRunning = true;
+      const btn   = document.getElementById('run-btn');
+      const sp    = document.getElementById('run-spin');
+      const lbl   = document.getElementById('run-lbl');
+      const timer = document.getElementById('rs-timer');
+      const t0    = performance.now();
+
+      btn.disabled = true; sp.classList.add('on'); lbl.textContent = 'Running…'; hideErr();
+      // Show running state, hide empty state + preview
+      document.getElementById('empty-state').style.display = 'none';
+      document.getElementById('preview-wrap').classList.remove('show');
+      document.getElementById('preview-bar').classList.remove('show');
+      document.getElementById('rs-agent-name').textContent = selected.name;
+      document.getElementById('running-state').classList.add('show');
+
+      // Elapsed timer
+      if (timer) timer.textContent = '0.0s';
+      const timerInterval = setInterval(() => {
+        if (timer) timer.textContent = ((performance.now() - t0) / 1000).toFixed(1) + 's';
+      }, 100);
+
+      try {
+        const r = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ file: selected.file, params: params() }),
+        });
+        const d = await r.json();
+        if (d.error) { showErr(d.error); if (!lastHtml) document.getElementById('empty-state').style.display = 'flex'; }
+        else {
+          const dur = Math.round(performance.now() - t0);
+          showPreview(d.reports);
+          consoleLogs = d.logs || [];
+          renderConsole();
+          // Capture to history
+          runHistory.unshift({
+            agent: selected.name,
+            time: new Date(),
+            reports: d.reports,
+            params: { ...params() },
+            duration_ms: dur,
+            logs: consoleLogs,
+          });
+          if (runHistory.length > 10) runHistory.length = 10;
+          viewingHistoryIdx = -1;
+          updatePreviewBarMode('live');
+          renderHistory();
+        }
+      } catch (e) { showErr(String(e)); if (!lastHtml) document.getElementById('empty-state').style.display = 'flex'; }
+      finally { clearInterval(timerInterval); }
+
+      document.getElementById('running-state').classList.remove('show');
+      btn.disabled = false; sp.classList.remove('on'); lbl.textContent = 'Run agent';
+      isRunning = false;
+    }
+
+    // ─── Report tabs ──────────────────────────────────────────────────────────
+    function renderReportTabs(reports) {
+      const el = document.getElementById('report-tabs');
+      if (reports.length <= 1) { el.classList.remove('show'); el.innerHTML = ''; return; }
+      el.classList.add('show');
+      el.innerHTML = reports.map((r, i) =>
+        `<button class="rt-tab${i === activeReportIdx ? ' active' : ''}" onclick="selectReport(${i})">${x(r.label)}</button>`
+      ).join('');
+    }
+
+    function selectReport(idx) {
+      activeReportIdx = idx;
+      const fr = document.getElementById('preview-frame');
+      fr.srcdoc = '';
+      requestAnimationFrame(() => { fr.srcdoc = currentReports[idx].html; });
+      renderReportTabs(currentReports);
+      try {
+        location.hash = encodeURIComponent(JSON.stringify({ file: selected?.file, params: params(), reportIdx: idx }));
+      } catch (_) {}
+    }
+
+    // ─── Preview ──────────────────────────────────────────────────────────────
+    function showPreview(reports) {
+      currentReports = reports;
+      activeReportIdx = 0;
+      lastHtml = reports[0]?.html || '';
+
+      const fr = document.getElementById('preview-frame');
+      fr.srcdoc = '';
+      requestAnimationFrame(() => { fr.srcdoc = lastHtml; });
+
+      document.getElementById('empty-state').style.display = 'none';
+      document.getElementById('preview-wrap').classList.add('show');
+
+      renderReportTabs(reports);
+
+      const bar = document.getElementById('preview-bar');
+      bar.classList.add('show');
+      document.getElementById('pb-agent').textContent = selected?.name || '';
+      document.getElementById('pb-time').textContent  = new Date().toLocaleTimeString();
+
+      // Persist last preview so it survives page reload
+      try {
+        localStorage.setItem('studioLastPreview', JSON.stringify({
+          reports,
+          agent: selected?.name || '',
+          time: new Date().toLocaleTimeString(),
+        }));
+      } catch (_) {}
+
+      // Write hash state for shareable/restorable URL
+      try {
+        location.hash = encodeURIComponent(JSON.stringify({ file: selected?.file, params: params(), reportIdx: 0 }));
+      } catch (_) {}
+    }
+
+    function clearPreview() {
+      document.getElementById('empty-state').style.display   = 'flex';
+      document.getElementById('preview-wrap').classList.remove('show');
+      document.getElementById('preview-bar').classList.remove('show');
+      document.getElementById('preview-frame').srcdoc = '';
+      document.getElementById('console-panel').classList.remove('show');
+    }
+
+    function restoreFromHash() {
+      try {
+        if (!location.hash) return;
+        const state = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+        if (!state?.file) return;
+        window._pendingHashState = state;
+      } catch (_) {}
+    }
+
+    function applyHashParams(paramValues) {
+      document.querySelectorAll('[data-param]').forEach(el => {
+        const n = el.dataset.param;
+        if (!(n in paramValues)) return;
+        const v = paramValues[n];
+        if (el.type === 'checkbox') el.checked = (v === true || v === 'true');
+        else el.value = v;
+      });
+    }
+
+    function restoreLastPreview() {
+      if (lastHtml) return;
+      try {
+        const saved = JSON.parse(localStorage.getItem('studioLastPreview') || 'null');
+        if (!saved) return;
+        // Support new reports format and legacy html format
+        let reports;
+        if (saved.reports) {
+          reports = saved.reports;
+        } else if (saved.html) {
+          reports = [{ label: 'Report', html: saved.html }];
+        } else {
+          return;
+        }
+        showPreview(reports);
+        document.getElementById('pb-agent').textContent = saved.agent || '';
+        document.getElementById('pb-time').textContent  = saved.time  || '';
+        updatePreviewBarMode('live');
+      } catch (_) {}
+    }
+
+    // ─── Error ────────────────────────────────────────────────────────────────
+    function showErr(msg) {
+      document.getElementById('error-text').textContent = msg;
+      document.getElementById('error-panel').style.display = 'block';
+      // Show pip install hint when a ModuleNotFoundError is detected
+      const missing = parseImportHint(msg);
+      const hintEl  = document.getElementById('import-hint');
+      if (missing) {
+        hintEl.innerHTML = `Missing: <code style="background:oklch(0.75 0.16 195/12%);padding:1px 5px;border-radius:3px">${x(missing)}</code> &nbsp;→&nbsp; run <code style="background:oklch(0.75 0.16 195/12%);padding:1px 5px;border-radius:3px">pip install ${x(missing)}</code>`;
+        hintEl.style.display = 'block';
+      } else {
+        hintEl.style.display = 'none';
+      }
+    }
+    function hideErr() {
+      document.getElementById('error-panel').style.display = 'none';
+      document.getElementById('import-hint').style.display = 'none';
+    }
+
+    function parseImportHint(msg) {
+      const m = msg.match(/ModuleNotFoundError: No module named ['"]([^'"]+)['"]/);
+      return m ? m[1] : null;
+    }
+
+    // ─── Push toggle ──────────────────────────────────────────────────────────
+    function togglePush() {
+      pushOpen = !pushOpen;
+      document.getElementById('push-body').classList.toggle('open', pushOpen);
+      document.getElementById('push-chev').classList.toggle('open', pushOpen);
+    }
+
+    // ─── Platform meta (spaces + tags) ───────────────────────────────────────
+    async function loadMeta() {
+      try {
+        const r = await fetch('/api/meta');
+        const d = await r.json();
+        if (d.connected) {
+          renderSpaceSelect(d.spaces || []);
+          renderTagsDatalist(d.tags || []);
+          setConnectionStatus(true, d.spaces.length);
+        }
+        // no-key case: inputs stay as plain text, no status shown
+      } catch (_) { /* silently ignore — meta is best-effort */ }
+    }
+
+    function renderSpaceSelect(spaces) {
+      if (!spaces.length) return;
+      const wrap = document.getElementById('pub-space-wrap');
+      const opts = spaces
+        .map(s => `<option value="${x(s.name)}">${x(s.name)}</option>`)
+        .join('');
+      wrap.innerHTML = `<select id="pub-space" class="fi" style="-webkit-appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%229%22 height=%226%22 viewBox=%220 0 9 6%22%3E%3Cpath d=%22M1 1l3.5 3.5L8 1%22 stroke=%22%23566170%22 stroke-width=%221.4%22 fill=%22none%22 stroke-linecap=%22round%22/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 8px center;padding-right:24px;cursor:pointer">
+        <option value="">— choose a space —</option>
+        ${opts}
+      </select>`;
+    }
+
+    function renderTagsDatalist(tags) {
+      if (!tags.length) return;
+      const input = document.getElementById('pub-tags');
+      const dl = document.createElement('datalist');
+      dl.id = 'tag-suggestions';
+      tags.forEach(t => { const o = document.createElement('option'); o.value = t; dl.appendChild(o); });
+      input.setAttribute('list', 'tag-suggestions');
+      input.parentNode.appendChild(dl);
+    }
+
+    function setConnectionStatus(connected, spaceCount) {
+      const el = document.getElementById('pub-connection-status');
+      if (!connected) return;
+      el.style.display = 'flex';
+      el.innerHTML = `
+        <span style="width:5px;height:5px;border-radius:50%;background:oklch(0.65 0.14 145);flex-shrink:0"></span>
+        <span>Connected · ${spaceCount} space${spaceCount === 1 ? '' : 's'} available</span>`;
+    }
+
+    // ─── Publish ──────────────────────────────────────────────────────────────
+    async function publishReport() {
+      if (!selected) return;
+      const btn = document.getElementById('publish-btn');
+      const sp  = document.getElementById('pub-spin');
+      const lbl = document.getElementById('pub-lbl');
+      const res = document.getElementById('pub-result');
+
+      btn.disabled = true; sp.style.display = 'block'; lbl.textContent = 'Publishing…'; res.innerHTML = '';
+
+      try {
+        const r = await fetch('/api/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            file:    selected.file,
+            params:  params(),
+            html:    currentReports[activeReportIdx]?.html || '',
+            title:   document.getElementById('pub-title').value,
+            summary: document.getElementById('pub-summary').value,
+            space:   document.getElementById('pub-space').value,
+            tags:    document.getElementById('pub-tags').value,
+          }),
+        });
+        const d = await r.json();
+        if (d.error) {
+          res.innerHTML = `<span style="color:oklch(0.68 0.11 25)">${x(d.error)}</span>`;
+        } else {
+          res.innerHTML = `<span style="color:oklch(0.62 0.14 145)">Published ✓</span> <a href="${x(d.url)}" target="_blank" style="color:var(--or-primary);text-decoration:underline;text-underline-offset:2px">View on Open Reporting →</a>`;
+        }
+      } catch (e) {
+        res.innerHTML = `<span style="color:oklch(0.68 0.11 25)">${x(String(e))}</span>`;
+      }
+
+      btn.disabled = false; sp.style.display = 'none'; lbl.textContent = 'Publish report';
+    }
+
+    // ─── Copy HTML ────────────────────────────────────────────────────────────
+    async function copyHtml() {
+      const html = currentReports[activeReportIdx]?.html || lastHtml;
+      if (!html) return;
+      try {
+        await navigator.clipboard.writeText(html);
+        const btn = document.getElementById('copy-btn');
+        const orig = btn.textContent;
+        btn.textContent = 'Copied ✓';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+      } catch (_) {}
+    }
+
+// ─── Auto-run ─────────────────────────────────────────────────────────────
+    function scheduleAutoRun() {
+      if (!document.getElementById('auto-run-chk').checked) return;
+      clearTimeout(autoRunTimer);
+      autoRunTimer = setTimeout(runAgent, 300);
+    }
+
+    // Re-attach auto-run listeners whenever params are re-rendered
+    function attachAutoRunListeners() {
+      document.querySelectorAll('[data-param]').forEach(el => {
+        el.addEventListener('input',  () => { saveParamValues(); scheduleAutoRun(); });
+        el.addEventListener('change', () => { saveParamValues(); scheduleAutoRun(); });
+      });
+    }
+
+    // ─── Console panel ────────────────────────────────────────────────────────
+    function renderConsole() {
+      const panel = document.getElementById('console-panel');
+      const body  = document.getElementById('console-body');
+      const count = document.getElementById('console-count');
+      if (!consoleLogs.length) { panel.classList.remove('show'); return; }
+      panel.classList.add('show');
+      count.textContent = consoleLogs.length;
+      body.innerHTML = consoleLogs.map(line => {
+        const isErr  = /error|exception|traceback/i.test(line);
+        const isWarn = !isErr && /warning|warn/i.test(line);
+        const cls = isErr ? ' err' : isWarn ? ' warn' : '';
+        return `<div class="cl-line${cls}">${x(line)}</div>`;
+      }).join('');
+    }
+
+    function toggleConsole() {
+      consoleOpen = !consoleOpen;
+      document.getElementById('console-hd').classList.toggle('open', consoleOpen);
+      document.getElementById('console-body').classList.toggle('open', consoleOpen);
+      document.getElementById('console-chev').classList.toggle('open', consoleOpen);
+    }
+
+    // ─── Viewport switcher ────────────────────────────────────────────────────
+    function setViewport(size) {
+      currentViewport = size;
+      document.getElementById('preview-frame-wrap').className = `vp-${size}`;
+      document.querySelectorAll('.vp-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.vp === size);
+      });
+    }
+
+    // ─── Fullscreen ───────────────────────────────────────────────────────────
+    function toggleFullscreen() {
+      document.body.classList.toggle('is-fullscreen');
+    }
+
+    // ─── Download HTML ────────────────────────────────────────────────────────
+    function downloadHtml() {
+      const html = currentReports[activeReportIdx]?.html || lastHtml;
+      if (!html) return;
+      const tabLabel = currentReports[activeReportIdx]?.label;
+      const baseName = (selected?.name || 'report').replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
+      const suffix = tabLabel && tabLabel !== 'Report' ? `_${tabLabel.replace(/[^a-z0-9_-]/gi, '_').toLowerCase()}` : '';
+      const name = baseName + suffix;
+      const blob = new Blob([html], { type: 'text/html' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = `${name}.html`;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    // ─── Resize handle ────────────────────────────────────────────────────────
+    function initResizeHandle() {
+      const handle = document.getElementById('resize-handle');
+      const aside  = document.querySelector('aside');
+      let dragging = false;
+
+      handle.addEventListener('mousedown', e => {
+        dragging = true;
+        handle.classList.add('dragging');
+        e.preventDefault();
+
+        function onMove(e) {
+          const w = Math.min(560, Math.max(220, e.clientX));
+          aside.style.width = w + 'px';
+        }
+        function onUp() {
+          dragging = false;
+          handle.classList.remove('dragging');
+          localStorage.setItem('studioSidebarWidth', aside.offsetWidth);
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup',   onUp);
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup',   onUp);
+      });
+    }
+
+    function restoreSidebarWidth() {
+      const saved = localStorage.getItem('studioSidebarWidth');
+      if (saved) {
+        const w = Math.min(560, Math.max(220, parseInt(saved, 10)));
+        document.querySelector('aside').style.width = w + 'px';
+      }
+    }
+
+    // ─── File watcher polling ─────────────────────────────────────────────────
+    async function snapshotMtimes() {
+      agentMtimes = {};
+      try {
+        const r = await fetch('/api/agents/mtimes');
+        const list = await r.json();
+        if (Array.isArray(list)) {
+          list.forEach(e => { agentMtimes[e.file] = e.mtime; });
+          return;
+        }
+      } catch (_) {}
+      // Fallback: use agent list mtimes
+      agents.forEach(a => { if (a.mtime) agentMtimes[a.file] = a.mtime; });
+    }
+
+    function startPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(pollForChanges, 2000);
+    }
+
+    async function pollForChanges() {
+      if (isRunning) return;
+      try {
+        const r = await fetch('/api/agents/mtimes');
+        const list = await r.json();
+        if (!Array.isArray(list)) return;
+
+        const newMtimes = {};
+        list.forEach(e => { newMtimes[e.file] = e.mtime; });
+
+        // Detect added/removed files
+        const oldFiles = new Set(Object.keys(agentMtimes));
+        const newFiles = new Set(Object.keys(newMtimes));
+        let structureChanged = false;
+        for (const f of newFiles) { if (!oldFiles.has(f)) { structureChanged = true; break; } }
+        if (!structureChanged) {
+          for (const f of oldFiles) { if (!newFiles.has(f)) { structureChanged = true; break; } }
+        }
+
+        if (structureChanged) {
+          await loadAgents();
+          await snapshotMtimes();
+          return;
+        }
+
+        // Detect mtime changes
+        let selectedChanged = false;
+        for (const [file, mtime] of Object.entries(newMtimes)) {
+          if (agentMtimes[file] !== mtime) {
+            // Flash the agent row
+            const idx = agents.findIndex(a => a.file === file);
+            if (idx >= 0) flashAgentRow(idx);
+            if (selected && selected.file === file) selectedChanged = true;
+          }
+        }
+        agentMtimes = newMtimes;
+
+        if (selectedChanged && document.getElementById('auto-run-chk').checked) {
+          scheduleAutoRun();
+        }
+      } catch (_) { /* polling is best-effort */ }
+    }
+
+    function flashAgentRow(idx) {
+      const el = document.getElementById(`ar${idx}`);
+      if (!el) return;
+      el.classList.add('changed');
+      setTimeout(() => el.classList.remove('changed'), 1500);
+    }
+
+    // ─── History ───────────────────────────────────────────────────────────────
+    function toggleHistory() {
+      histOpen = !histOpen;
+      document.getElementById('hist-body').classList.toggle('open', histOpen);
+      document.getElementById('hist-chev').classList.toggle('open', histOpen);
+    }
+
+    function renderHistory() {
+      const list = document.getElementById('history-list');
+      const countBadge = document.getElementById('hist-count');
+
+      if (!runHistory.length) {
+        list.innerHTML = '<div class="hist-empty">No runs yet</div>';
+        countBadge.style.display = 'none';
+        return;
+      }
+
+      countBadge.style.display = 'inline-block';
+      countBadge.textContent = runHistory.length;
+
+      list.innerHTML = runHistory.map((h, i) => {
+        const isActive = (viewingHistoryIdx === -1 && i === 0) || (viewingHistoryIdx === i);
+        const dotCls = (i === 0 && viewingHistoryIdx === -1) ? 'hist-live-dot' : 'hist-dot';
+        const ts = h.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        return `
+          <div class="hist-row${isActive ? ' active' : ''}" onclick="viewHistory(${i})">
+            <span class="${dotCls}"></span>
+            <span class="hist-agent">${x(h.agent)}</span>
+            <span class="hist-time">${ts}</span>
+            <span class="hist-dur">${h.duration_ms}ms</span>
+          </div>`;
+      }).join('');
+    }
+
+    function viewHistory(idx) {
+      viewingHistoryIdx = idx;
+      const entry = runHistory[idx];
+      if (!entry) return;
+
+      currentReports = entry.reports || [];
+      activeReportIdx = 0;
+      lastHtml = currentReports[0]?.html || '';
+
+      const fr = document.getElementById('preview-frame');
+      fr.srcdoc = '';
+      requestAnimationFrame(() => { fr.srcdoc = lastHtml; });
+
+      document.getElementById('empty-state').style.display = 'none';
+      document.getElementById('preview-wrap').classList.add('show');
+      document.getElementById('preview-bar').classList.add('show');
+      document.getElementById('pb-agent').textContent = entry.agent;
+      document.getElementById('pb-time').textContent = entry.time.toLocaleTimeString();
+
+      renderReportTabs(currentReports);
+
+      // Restore console logs from this history entry
+      consoleLogs = entry.logs || [];
+      renderConsole();
+
+      updatePreviewBarMode('history');
+      renderHistory();
+    }
+
+    function returnToLive() {
+      viewingHistoryIdx = -1;
+      if (runHistory.length) {
+        const latest = runHistory[0];
+        currentReports = latest.reports || [];
+        activeReportIdx = 0;
+        lastHtml = currentReports[0]?.html || '';
+        const fr = document.getElementById('preview-frame');
+        fr.srcdoc = '';
+        requestAnimationFrame(() => { fr.srcdoc = lastHtml; });
+
+        document.getElementById('pb-agent').textContent = latest.agent;
+        document.getElementById('pb-time').textContent = latest.time.toLocaleTimeString();
+        consoleLogs = latest.logs || [];
+        renderConsole();
+        renderReportTabs(currentReports);
+      }
+      updatePreviewBarMode('live');
+      renderHistory();
+    }
+
+    function updatePreviewBarMode(mode) {
+      const liveDot = document.getElementById('pb-live-dot');
+      const label = document.getElementById('pb-mode-label');
+      const backBtn = document.getElementById('pb-back-live');
+      const liveBadge = document.getElementById('pb-live-badge');
+
+      if (mode === 'history') {
+        liveDot.style.display = 'none';
+        label.textContent = 'history';
+        label.className = 'pb-mode-hist';
+        backBtn.style.display = 'inline-block';
+        liveBadge.style.display = 'none';
+      } else {
+        liveDot.style.display = '';
+        label.textContent = 'previewing';
+        label.className = '';
+        label.style.fontFamily = "'Fragment Mono', monospace";
+        label.style.fontSize = '11px';
+        label.style.color = 'var(--or-muted)';
+        backBtn.style.display = 'none';
+        liveBadge.style.display = '';
+      }
+    }
+
+    // ─── HTML escape ──────────────────────────────────────────────────────────
+    function x(s) {
+      return String(s ?? '')
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+  </script>
+</body>
+</html>

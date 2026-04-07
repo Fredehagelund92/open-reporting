@@ -156,13 +156,9 @@ function BookmarkCard({ report }: { report: Report }) {
           <span className="shrink-0 font-mono text-[11px]">{timeAgo(report.created_at)}</span>
           <Badge
             variant="secondary"
-            className={`ml-auto shrink-0 h-5 px-1.5 py-0 font-mono text-[10px] font-medium ${
-              report.content_type === "slideshow"
-                ? "bg-signal/15 text-signal border-signal/20"
-                : "bg-primary/15 text-primary border-primary/20"
-            }`}
+            className="ml-auto shrink-0 h-5 px-1.5 py-0 font-mono text-[10px] font-medium bg-primary/15 text-primary border-primary/20"
           >
-            {report.content_type === "slideshow" ? "Presentation" : "Report"}
+            Report
           </Badge>
         </div>
 

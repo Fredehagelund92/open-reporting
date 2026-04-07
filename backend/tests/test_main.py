@@ -103,7 +103,6 @@ def test_search_hides_private_content_from_unauthorized_users():
                 tags="[]",
                 slug=f"private-scope-{suffix}",
                 html_body="<h2>Private</h2>",
-                content_type="report",
                 agent_id=private_agent.id,
                 space_id=private_space.id,
             )
@@ -113,7 +112,6 @@ def test_search_hides_private_content_from_unauthorized_users():
                 tags="[]",
                 slug=f"public-scope-{suffix}",
                 html_body="<h2>Public</h2>",
-                content_type="report",
                 agent_id=public_agent.id,
                 space_id=public_space.id,
             )
@@ -570,8 +568,8 @@ def test_report_delete_permissions_for_admin_space_owner_and_agent_owner():
             if report_has_legacy_tags:
                 session.execute(
                     text("""
-                    INSERT INTO report (id, title, summary, tags, slug, html_body, content_type, agent_id, space_id, created_at)
-                    VALUES (:id, :title, :summary, :tags, :slug, :html_body, :content_type, :agent_id, :space_id, :created_at)
+                    INSERT INTO report (id, title, summary, tags, slug, html_body, agent_id, space_id, created_at)
+                    VALUES (:id, :title, :summary, :tags, :slug, :html_body, :agent_id, :space_id, :created_at)
                 """),
                     {
                         "id": report_one_id,
@@ -580,7 +578,6 @@ def test_report_delete_permissions_for_admin_space_owner_and_agent_owner():
                         "tags": "[]",
                         "slug": f"delete-one-{suffix}",
                         "html_body": "<h2>Delete One</h2>",
-                        "content_type": "report",
                         "agent_id": agent.id,
                         "space_id": space.id,
                         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -588,8 +585,8 @@ def test_report_delete_permissions_for_admin_space_owner_and_agent_owner():
                 )
                 session.execute(
                     text("""
-                    INSERT INTO report (id, title, summary, tags, slug, html_body, content_type, agent_id, space_id, created_at)
-                    VALUES (:id, :title, :summary, :tags, :slug, :html_body, :content_type, :agent_id, :space_id, :created_at)
+                    INSERT INTO report (id, title, summary, tags, slug, html_body, agent_id, space_id, created_at)
+                    VALUES (:id, :title, :summary, :tags, :slug, :html_body, :agent_id, :space_id, :created_at)
                 """),
                     {
                         "id": report_two_id,
@@ -598,7 +595,6 @@ def test_report_delete_permissions_for_admin_space_owner_and_agent_owner():
                         "tags": "[]",
                         "slug": f"delete-two-{suffix}",
                         "html_body": "<h2>Delete Two</h2>",
-                        "content_type": "report",
                         "agent_id": agent.id,
                         "space_id": space.id,
                         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -611,7 +607,7 @@ def test_report_delete_permissions_for_admin_space_owner_and_agent_owner():
                     summary="delete permissions one",
                     slug=f"delete-one-{suffix}",
                     html_body="<h2>Delete One</h2>",
-                    content_type="report",
+    
                     agent_id=agent.id,
                     space_id=space.id,
                 )
@@ -621,7 +617,7 @@ def test_report_delete_permissions_for_admin_space_owner_and_agent_owner():
                     summary="delete permissions two",
                     slug=f"delete-two-{suffix}",
                     html_body="<h2>Delete Two</h2>",
-                    content_type="report",
+    
                     agent_id=agent.id,
                     space_id=space.id,
                 )
@@ -662,8 +658,8 @@ def test_report_delete_permissions_for_admin_space_owner_and_agent_owner():
             if report_has_legacy_tags:
                 session.execute(
                     text("""
-                    INSERT INTO report (id, title, summary, tags, slug, html_body, content_type, agent_id, space_id, created_at)
-                    VALUES (:id, :title, :summary, :tags, :slug, :html_body, :content_type, :agent_id, :space_id, :created_at)
+                    INSERT INTO report (id, title, summary, tags, slug, html_body, agent_id, space_id, created_at)
+                    VALUES (:id, :title, :summary, :tags, :slug, :html_body, :agent_id, :space_id, :created_at)
                 """),
                     {
                         "id": str(uuid4()),
@@ -672,7 +668,6 @@ def test_report_delete_permissions_for_admin_space_owner_and_agent_owner():
                         "tags": "[]",
                         "slug": report_three_slug,
                         "html_body": "<h2>Delete Three</h2>",
-                        "content_type": "report",
                         "agent_id": agent_id,
                         "space_id": space_id,
                         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -684,7 +679,7 @@ def test_report_delete_permissions_for_admin_space_owner_and_agent_owner():
                     summary="delete permissions three",
                     slug=report_three_slug,
                     html_body="<h2>Delete Three</h2>",
-                    content_type="report",
+    
                     agent_id=agent_id,
                     space_id=space_id,
                 )
@@ -790,7 +785,7 @@ def test_reports_include_user_vote_state_for_authenticated_user():
                 tags="[]",
                 slug=report_slug,
                 html_body="<h2>Vote State</h2>",
-                content_type="report",
+
                 agent_id=agent.id,
                 space_id=space.id,
             )
@@ -835,230 +830,6 @@ def test_reports_include_user_vote_state_for_authenticated_user():
                 obj = session.get(Report, report_id)
                 if obj:
                     session.delete(obj)
-            if agent_id:
-                obj = session.get(Agent, agent_id)
-                if obj:
-                    session.delete(obj)
-            if space_id:
-                obj = session.get(Space, space_id)
-                if obj:
-                    session.delete(obj)
-            if user_id:
-                obj = session.get(User, user_id)
-                if obj:
-                    session.delete(obj)
-            session.commit()
-
-
-def test_authoring_coach_evaluate_returns_machine_readable_feedback_for_agent():
-    suffix = uuid4().hex[:8]
-    agent_id = None
-
-    try:
-        with Session(engine) as session:
-            agent = Agent(
-                name=f"coach-agent-{suffix}",
-                description="authoring coach test",
-                api_key=f"openrep_coach_{suffix}",
-                is_claimed=True,
-            )
-            session.add(agent)
-            session.commit()
-            session.refresh(agent)
-            agent_id = agent.id
-            api_key = agent.api_key
-
-        payload = {
-            "title": "Short",
-            "summary": "brief",
-            "tags": [],
-            "html_body": "<h2>Draft</h2><p>Tiny.</p>",
-            "space_name": "o/does-not-matter-for-coach",
-            "content_type": "report",
-        }
-        res = client.post(
-            "/api/v1/reports/coach/evaluate",
-            json=payload,
-            headers={"Authorization": f"Bearer {api_key}"},
-        )
-        assert res.status_code == 200
-        body = res.json()
-        assert body["readiness_status"] in {"blocked", "needs_work", "ready"}
-        assert isinstance(body["overall_score"], int)
-        assert isinstance(body["issues"], list)
-        assert "mode" in body
-        if body["issues"]:
-            first = body["issues"][0]
-            assert "rule_id" in first
-            assert "severity" in first
-            assert "suggestion" in first
-    finally:
-        with Session(engine) as session:
-            if agent_id:
-                obj = session.get(Agent, agent_id)
-                if obj:
-                    session.delete(obj)
-            session.commit()
-
-
-def test_authoring_coach_enforce_mode_blocks_publish(monkeypatch):
-    suffix = uuid4().hex[:8]
-    user_id = None
-    space_id = None
-    agent_id = None
-    report_id = None
-
-    monkeypatch.setenv("AUTHORING_COACH_MODE", "enforce")
-
-    try:
-        with Session(engine) as session:
-            user = User(
-                email=f"coach-owner-{suffix}@example.com",
-                name=f"Coach Owner {suffix}",
-                provider="local",
-            )
-            session.add(user)
-            session.commit()
-            session.refresh(user)
-            user_id = user.id
-
-            space = Space(
-                name=f"o/coach-{suffix}",
-                description="coach mode space",
-                is_private=False,
-                owner_id=user.id,
-            )
-            session.add(space)
-            session.commit()
-            session.refresh(space)
-            space_id = space.id
-
-            agent = Agent(
-                name=f"coach-publisher-{suffix}",
-                description="coach publisher",
-                api_key=f"openrep_enforce_{suffix}",
-                owner_id=user.id,
-                is_claimed=True,
-                is_private=False,
-            )
-            session.add(agent)
-            session.commit()
-            session.refresh(agent)
-            agent_id = agent.id
-
-            api_key = agent.api_key
-            space_name = space.name
-
-        # Valid HTML, but blocked by coach due to short title/content.
-        publish_payload = {
-            "title": "tiny",
-            "summary": "short",
-            "tags": [],
-            "html_body": "<h2>Hello</h2><p>Small draft.</p>",
-            "space_name": space_name,
-            "content_type": "report",
-        }
-        publish_res = client.post(
-            "/api/v1/reports/",
-            json=publish_payload,
-            headers={"Authorization": f"Bearer {api_key}"},
-        )
-        assert publish_res.status_code == 422
-        detail = publish_res.json()["detail"]
-        assert detail["coach_blocked"] is True
-        assert detail["authoring_coach"]["readiness_status"] == "blocked"
-    finally:
-        monkeypatch.delenv("AUTHORING_COACH_MODE", raising=False)
-        with Session(engine) as session:
-            if report_id:
-                obj = session.get(Report, report_id)
-                if obj:
-                    session.delete(obj)
-            if agent_id:
-                obj = session.get(Agent, agent_id)
-                if obj:
-                    session.delete(obj)
-            if space_id:
-                obj = session.get(Space, space_id)
-                if obj:
-                    session.delete(obj)
-            if user_id:
-                obj = session.get(User, user_id)
-                if obj:
-                    session.delete(obj)
-            session.commit()
-
-
-def test_authoring_coach_enforce_mode_blocks_user_upload(monkeypatch):
-    suffix = uuid4().hex[:8]
-    user_id = None
-    space_id = None
-    agent_id = None
-
-    monkeypatch.setenv("AUTHORING_COACH_MODE", "enforce")
-
-    try:
-        register_res = client.post(
-            "/api/v1/auth/register",
-            json={
-                "name": f"Upload Coach {suffix}",
-                "email": f"upload-coach-{suffix}@example.com",
-                "password": "pass1234",
-            },
-        )
-        assert register_res.status_code == 200
-        user_token = register_res.json()["access_token"]
-
-        me_res = client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {user_token}"},
-        )
-        assert me_res.status_code == 200
-        user_id = me_res.json()["id"]
-
-        space_res = client.post(
-            "/api/v1/spaces/",
-            json={
-                "name": f"o/upload-coach-{suffix}",
-                "description": "coach upload checks",
-                "is_private": False,
-            },
-            headers={"Authorization": f"Bearer {user_token}"},
-        )
-        assert space_res.status_code == 201
-        space_id = space_res.json()["id"]
-
-        agent_res = client.post(
-            "/api/v1/agents/register-for-me",
-            json={
-                "name": f"upload-coach-agent-{suffix}",
-                "description": "coach upload test",
-            },
-            headers={"Authorization": f"Bearer {user_token}"},
-        )
-        assert agent_res.status_code == 201
-        agent_id = agent_res.json()["agent"]["id"]
-
-        upload_res = client.post(
-            "/api/v1/reports/upload",
-            json={
-                "title": "tiny",
-                "summary": "short",
-                "tags": [],
-                "html_body": "<h2>Hello</h2><p>Small draft.</p>",
-                "space_name": f"o/upload-coach-{suffix}",
-                "agent_id": agent_id,
-                "content_type": "report",
-            },
-            headers={"Authorization": f"Bearer {user_token}"},
-        )
-        assert upload_res.status_code == 422
-        detail = upload_res.json()["detail"]
-        assert detail["coach_blocked"] is True
-        assert detail["authoring_coach"]["readiness_status"] == "blocked"
-    finally:
-        monkeypatch.delenv("AUTHORING_COACH_MODE", raising=False)
-        with Session(engine) as session:
             if agent_id:
                 obj = session.get(Agent, agent_id)
                 if obj:
@@ -1123,7 +894,7 @@ def test_comment_reactions_toggle_and_list():
                 summary="reaction report",
                 slug=report_slug,
                 html_body="<h1>Reaction Check</h1><p>This report validates comment reaction persistence with deterministic counts and toggle state.</p><p><a href='https://example.com'>evidence</a></p>",
-                content_type="report",
+
                 agent_id=agent.id,
                 space_id=space.id,
             )

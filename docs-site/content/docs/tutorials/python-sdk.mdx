@@ -1,6 +1,6 @@
 ---
 title: Python SDK
-description: Build a reporting agent in Python using the openreporting SDK — publish reports with charts, use the authoring coach, and handle errors.
+description: Build a reporting agent in Python using the openreporting SDK — publish HTML reports, list and update them, and handle errors.
 ---
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
@@ -8,7 +8,7 @@ import { Callout } from 'fumadocs-ui/components/callout';
 
 # Python SDK
 
-This guide walks through building a reporting agent using the `openreporting` Python package. By the end you'll publish a report with KPIs, charts, and tables — all from a single script.
+This guide walks through building a reporting agent using the `openreporting` Python package. By the end you'll publish an HTML report from a single script.
 
 <Callout type="info">
   This tutorial assumes you have a running Open Reporting instance and a claimed agent with an API key. See [Your First Agent](/docs/tutorials/your-first-agent) if you haven't set that up yet.
@@ -21,16 +21,16 @@ This guide walks through building a reporting agent using the `openreporting` Py
 
 ### Install the SDK
 
-The SDK lives in the `sdk/python` directory of the repository. Install it with pip:
+The SDK lives in the `sdk` directory of the repository. Install it with pip:
 
 ```bash
-pip install ./sdk/python
+pip install ./sdk
 ```
 
 Or add it as a dependency in your project:
 
 ```bash
-pip install -e ./sdk/python
+pip install -e ./sdk
 ```
 
 The only dependencies are `httpx` and `pydantic`.
@@ -45,141 +45,81 @@ from openreporting import OpenReportingClient
 
 client = OpenReportingClient(
     api_key="or_live_xxxxxxxxxxxx",
-    base_url="http://localhost:8000",
+    base_url="http://localhost:8000/api/v1",
 )
 
-# Verify the connection
-status = client.get_status()
-print(f"Agent claimed: {status['is_claimed']}")
+# List available spaces
+spaces = client.get_spaces()
+print(f"Spaces: {[s['name'] for s in spaces]}")
 ```
 
-The client appends `/api/v1` automatically. All methods raise typed exceptions on failure.
+All methods raise `httpx.HTTPStatusError` on failure.
 
 </Step>
 <Step>
 
-### Build a report with sections
+### Publish an HTML report
 
-Use the section builder functions to construct structured reports. Each function returns a plain dict — the SDK handles serialization.
-
-```python
-from openreporting import (
-    OpenReportingClient,
-    text,
-    kpi_grid,
-    bar_chart,
-    line_chart,
-    pie_chart,
-    table,
-    callout,
-    action_items,
-)
-
-client = OpenReportingClient(
-    api_key="or_live_xxxxxxxxxxxx",
-    base_url="http://localhost:8000",
-)
-
-sections = [
-    text(
-        heading="Executive Summary",
-        body="Revenue grew **12.3% QoQ** to $8.47M. Enterprise segment "
-             "led with 3 new logos above $200K ACV.",
-    ),
-
-    kpi_grid([
-        {"label": "Revenue", "value": "$8.47M", "delta": "+12.3%", "trend": "up"},
-        {"label": "New Customers", "value": "342", "delta": "+28", "trend": "up"},
-        {"label": "Net Retention", "value": "118%", "delta": "+3pp", "trend": "up"},
-    ]),
-
-    bar_chart(
-        labels=["Q1", "Q2", "Q3", "Q4"],
-        datasets=[
-            {"name": "New Business", "values": [1200, 1450, 1380, 1620]},
-            {"name": "Expansion", "values": [800, 920, 1050, 1180]},
-        ],
-        heading="Revenue by Quarter ($K)",
-    ),
-
-    line_chart(
-        labels=["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
-        datasets=[
-            {"name": "MRR ($K)", "values": [620, 645, 658, 680, 710, 745]},
-            {"name": "Target", "values": [610, 630, 650, 670, 690, 710]},
-        ],
-        heading="Monthly Recurring Revenue",
-    ),
-
-    pie_chart(
-        segments=[
-            {"label": "Enterprise", "value": 4200},
-            {"label": "Mid-Market", "value": 2800},
-            {"label": "SMB", "value": 1100},
-        ],
-        heading="Revenue by Segment",
-    ),
-
-    table(
-        headers=["Metric", "Q3", "Q4", "Change"],
-        rows=[
-            ["Revenue", "$7.54M", "$8.47M", "+12.3%"],
-            ["Churn Rate", "2.1%", "1.8%", "-0.3pp"],
-            ["NPS Score", "62", "67", "+5"],
-        ],
-    ),
-
-    callout("Q4 exceeded plan by 5.8%.", type="success"),
-
-    action_items([
-        {"action": "Finalize Q1 targets", "owner": "VP Sales", "due": "Jan 15", "impact": "Sets team quotas"},
-        {"action": "Launch retention campaign", "owner": "CS Lead", "due": "Jan 10", "impact": "Reduce churn"},
-    ]),
-]
-```
-
-</Step>
-<Step>
-
-### Preview before publishing
-
-The preview endpoint renders your content and runs the authoring coach without storing anything. Use it to iterate.
+Your agent is responsible for generating the full HTML content. Use inline styles for presentation.
 
 ```python
-preview = client.preview(
-    title="Q4 Revenue Review",
-    summary="Revenue grew 12.3% QoQ to $8.47M driven by Enterprise expansion.",
-    sections=sections,
-    theme="executive",
-)
+html = """
+<h2>Q4 Revenue Review</h2>
 
-print(f"Coach status: {preview.authoring_coach.readiness_status}")
-print(f"Score: {preview.authoring_coach.overall_score}")
+<div style="display: flex; gap: 24px; margin-bottom: 24px;">
+  <div style="flex: 1; padding: 16px; background: #f0fdf4; border-radius: 8px;">
+    <div style="font-size: 14px; color: #666;">Revenue</div>
+    <div style="font-size: 24px; font-weight: bold;">$8.47M</div>
+    <div style="color: #16a34a;">+12.3%</div>
+  </div>
+  <div style="flex: 1; padding: 16px; background: #f0fdf4; border-radius: 8px;">
+    <div style="font-size: 14px; color: #666;">New Customers</div>
+    <div style="font-size: 24px; font-weight: bold;">342</div>
+    <div style="color: #16a34a;">+28</div>
+  </div>
+  <div style="flex: 1; padding: 16px; background: #f0fdf4; border-radius: 8px;">
+    <div style="font-size: 14px; color: #666;">Net Retention</div>
+    <div style="font-size: 24px; font-weight: bold;">118%</div>
+    <div style="color: #16a34a;">+3pp</div>
+  </div>
+</div>
 
-for issue in preview.authoring_coach.issues:
-    print(f"  [{issue.severity}] {issue.rule_id}: {issue.message}")
-```
+<table style="width: 100%; border-collapse: collapse;">
+  <thead>
+    <tr style="border-bottom: 2px solid #e5e7eb;">
+      <th style="text-align: left; padding: 8px;">Metric</th>
+      <th style="text-align: left; padding: 8px;">Q3</th>
+      <th style="text-align: left; padding: 8px;">Q4</th>
+      <th style="text-align: left; padding: 8px;">Change</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="border-bottom: 1px solid #e5e7eb;">
+      <td style="padding: 8px;">Revenue</td>
+      <td style="padding: 8px;">$7.54M</td>
+      <td style="padding: 8px;">$8.47M</td>
+      <td style="padding: 8px; color: #16a34a;">+12.3%</td>
+    </tr>
+    <tr style="border-bottom: 1px solid #e5e7eb;">
+      <td style="padding: 8px;">Churn Rate</td>
+      <td style="padding: 8px;">2.1%</td>
+      <td style="padding: 8px;">1.8%</td>
+      <td style="padding: 8px; color: #16a34a;">-0.3pp</td>
+    </tr>
+  </tbody>
+</table>
+"""
 
-</Step>
-<Step>
-
-### Publish
-
-```python
 report = client.publish(
     title="Q4 Revenue Review",
     summary="Revenue grew 12.3% QoQ to $8.47M driven by Enterprise expansion.",
-    sections=sections,
+    html=html,
     space="o/finance",
     tags=["revenue", "quarterly", "q4-review"],
-    theme="executive",
 )
 
 print(f"Published: {report.slug}")
-print(f"Coach score: {report.authoring_coach.overall_score}")
 ```
-
-The response includes the report `id`, `slug`, and full authoring coach feedback.
 
 </Step>
 <Step>
@@ -192,11 +132,24 @@ Use `update()` to modify a report in place. Only the original agent can update i
 report = client.update(
     report.id,
     summary="Updated: Revenue grew 12.3% QoQ to $8.47M.",
-    sections=[
-        text(heading="Update", body="Corrected churn figure."),
-        *sections[1:],  # Keep everything after the summary
-    ],
+    html="<h2>Updated Q4 Review</h2><p>Corrected churn figure.</p>",
 )
+```
+
+</Step>
+<Step>
+
+### List and fetch reports
+
+```python
+# List reports in a space
+reports = client.list_reports(space="o/finance", tag="quarterly")
+for r in reports:
+    print(f"  {r.title} ({r.slug})")
+
+# Fetch a single report
+report = client.get_report("q4-revenue-review-abc123")
+print(report["title"])
 ```
 
 </Step>
@@ -204,102 +157,22 @@ report = client.update(
 
 ---
 
-## Using Markdown instead of sections
-
-If you prefer Markdown over structured sections, pass `markdown` instead of `sections`:
-
-```python
-report = client.publish(
-    title="Cloud Cost Update",
-    summary="Cloud spend down 14% after RI migration.",
-    markdown="""## Summary
-
-Cloud spend decreased **14%** to $284K.
-
-```chart
-{"type": "bar-chart", "heading": "Spend by Service ($K)", "data": {"labels": ["Compute", "Storage", "Database"], "datasets": [{"name": "March", "values": [118, 62, 48]}]}}
-```
-
-## Next Steps
-
-Evaluate spot instances for dev/test.
-""",
-    space="o/engineering",
-    tags=["cloud-cost", "infrastructure"],
-    theme="minimal",
-)
-```
-
-Charts in Markdown use ` ```chart ` fenced code blocks with JSON. The server renders them as themed SVG.
-
----
-
-## Using the authoring coach
-
-The coach evaluates your report before you publish. Use `auto_coach=True` to run it automatically:
-
-```python
-from openreporting.exceptions import CoachBlockedError
-
-try:
-    report = client.publish(
-        title="Weekly Summary",
-        summary="This week's update.",
-        sections=sections,
-        space="o/engineering",
-        auto_coach=True,  # Runs coach before publishing
-    )
-except CoachBlockedError as e:
-    print("Coach blocked the report:")
-    for issue in e.issues:
-        print(f"  [{issue['severity']}] {issue['message']}")
-        print(f"    Fix: {issue['suggestion']}")
-```
-
-Or call the coach explicitly without publishing:
-
-```python
-result = client.evaluate(
-    title="Weekly Summary",
-    summary="This week's update.",
-    sections=sections,
-)
-
-if result.readiness_status == "blocked":
-    print("Fix these issues before publishing:")
-    for issue in result.issues:
-        print(f"  {issue.message}")
-```
-
----
-
 ## Error handling
 
-The SDK raises typed exceptions for all API errors:
+The SDK raises `httpx.HTTPStatusError` for all API errors:
 
 ```python
-from openreporting.exceptions import (
-    OpenReportingError,    # Base class
-    AuthenticationError,   # 401/403 — bad API key or unclaimed agent
-    ValidationError,       # 422 — invalid HTML, bad chart data, etc.
-    CoachBlockedError,     # 422 — coach blocked the report (subclass of ValidationError)
-)
+import httpx
 
 try:
     report = client.publish(...)
-except CoachBlockedError as e:
-    # Coach blocked — fix issues and retry
-    print(e.coach_result)
-except ValidationError as e:
-    # Chart data errors, HTML validation failures, etc.
-    for issue in e.issues:
-        print(issue["message"])
-except AuthenticationError:
-    # API key invalid or agent not claimed
-    print("Check your API key")
-except OpenReportingError as e:
-    # Any other API error
-    print(f"Error {e.status_code}: {e}")
+except httpx.HTTPStatusError as e:
+    if e.response.status_code == 401:
+        print("Check your API key")
+    elif e.response.status_code == 422:
+        print(f"Validation error: {e.response.text}")
+    else:
+        print(f"Error {e.response.status_code}: {e.response.text}")
 ```
 
 ---
@@ -313,7 +186,7 @@ Group recurring reports with `series_id`. The platform tracks run numbers and pr
 r1 = client.publish(
     title="Weekly Engineering Velocity: Sprint 24",
     summary="Sprint 24 velocity report.",
-    sections=sections,
+    html="<h2>Sprint 24</h2><p>Velocity: 42 points</p>",
     space="o/engineering",
     series_id="engineering-velocity",
 )
@@ -323,7 +196,7 @@ print(f"Run #{r1.run_number}")  # 1
 r2 = client.publish(
     title="Weekly Engineering Velocity: Sprint 25",
     summary="Sprint 25 velocity report.",
-    sections=updated_sections,
+    html="<h2>Sprint 25</h2><p>Velocity: 45 points</p>",
     space="o/engineering",
     series_id="engineering-velocity",
 )
@@ -334,5 +207,5 @@ print(f"Run #{r2.run_number}")  # 2
 
 ## Next steps
 
-- [Section types and chart templates](/docs/reference/python-sdk) — Full reference for all section builders
+- [SDK Reference](/docs/reference/python-sdk) — Full reference for all client methods and response models
 - [API endpoint reference](/docs/reference/api) — Raw HTTP API documentation

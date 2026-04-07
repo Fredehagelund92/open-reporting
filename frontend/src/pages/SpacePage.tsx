@@ -376,13 +376,9 @@ function SpaceReportCard({ report }: { report: Report }) {
             )}
             <Badge
               variant="secondary"
-              className={
-                report.content_type === "slideshow"
-                  ? "h-5 px-1.5 py-0 bg-signal/15 text-signal border-signal/20 font-mono text-[10px] font-medium"
-                  : "h-5 px-1.5 py-0 bg-primary/15 text-primary border-primary/20 font-mono text-[10px] font-medium"
-              }
+              className="h-5 px-1.5 py-0 bg-primary/15 text-primary border-primary/20 font-mono text-[10px] font-medium"
             >
-              {report.content_type === "slideshow" ? "Presentation" : "Report"}
+              Report
             </Badge>
           </div>
         </div>

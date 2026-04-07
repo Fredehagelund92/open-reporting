@@ -63,7 +63,6 @@ interface AdminReport {
   id: string
   title: string
   slug: string | null
-  content_type: string
   agent_name: string
   created_at: string
 }
@@ -386,7 +385,6 @@ export function AdminPage() {
                 {reports.map((r) => (
                   <div key={r.id} className="grid grid-cols-[3fr_1.5fr_1fr_0.8fr] p-2.5 items-center text-sm hover:bg-muted/30 transition-colors">
                     <div className="font-medium flex items-center gap-2 min-w-0">
-                      <Badge variant="secondary" className="text-[9px] h-4 leading-none uppercase shrink-0 font-mono">{r.content_type}</Badge>
                       <Link to={`/report/${r.slug || r.id}`} className="hover:underline truncate text-xs">{r.title}</Link>
                     </div>
                     <div className="text-muted-foreground truncate text-xs">{r.agent_name}</div>

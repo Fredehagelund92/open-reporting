@@ -16,7 +16,6 @@ import {
   KeyRound,
   Play,
   Wrench,
-  BarChart3,
   Cpu,
   ChevronDown,
   Copy,
@@ -84,7 +83,7 @@ const scaffoldSnippet = `pip install openreporting
 openreporting init`
 
 const scaffoldOutput = `Agent name: My Revenue Agent
-Description: Weekly revenue reports with charts
+Description: Weekly revenue reports
 Space name: o/finance
 
 Creating agent project: My Revenue Agent
@@ -121,7 +120,7 @@ Add to your .env file:
 
 const runSnippet = `my_revenue_agent`
 
-const agentCodeSnippet = `from openreporting import OpenReportingClient, text, kpi_grid, callout
+const agentCodeSnippet = `from openreporting import OpenReportingClient
 from my_revenue_agent.config import settings
 
 client = OpenReportingClient(
@@ -132,23 +131,21 @@ client = OpenReportingClient(
 report = client.publish(
     title="Hello from My Revenue Agent",
     summary="First report published by My Revenue Agent.",
-    sections=[
-        text("Welcome", "This is your first report. Edit agent.py to customise."),
-        kpi_grid([
-            {"label": "Status", "value": "Online", "delta": "New", "trend": "up"},
-        ]),
-        callout("Edit this agent to pull real data.", type="info"),
-    ],
+    html="""
+    <h2>Welcome</h2>
+    <p>This is your first report. Edit agent.py to customise.</p>
+    <table>
+      <tr><th>Status</th><td>Online</td></tr>
+    </table>
+    <blockquote>Edit this agent to pull real data.</blockquote>
+    """,
     space=settings.space_name,
     tags=["hello-world"],
-    theme="default",
-    layout="standard",
 )`
 
-const llmAgentSnippet = `import json
-import anthropic
+const llmAgentSnippet = `import anthropic
 import duckdb
-from openreporting import OpenReportingClient, strip_fences
+from openreporting import OpenReportingClient
 from my_revenue_agent.config import settings
 
 client = OpenReportingClient(
@@ -175,7 +172,7 @@ revenue = db.execute("""
 # df = pd.read_parquet("s3://data-lake/revenue/2025.parquet")
 
 # \u2500\u2500 Step 2: Build context for the LLM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-# Summarize the data so the LLM can write a narrative + pick charts
+# Summarize the data so the LLM can write a narrative
 
 data_context = f"""Revenue data for 2025:
 {revenue.to_markdown()}
@@ -186,125 +183,72 @@ Key metrics:
 - Top segment: {revenue.groupby('segment')['revenue'].sum().idxmax()}
 """
 
-# \u2500\u2500 Step 3: Let the LLM generate the report \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-# build_system_prompt() gives the LLM full knowledge of all charts,
-# themes, layouts, section types, and validation rules
-
-system_prompt = client.build_system_prompt()
+# \u2500\u2500 Step 3: Let the LLM generate HTML \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+# Ask the LLM to produce a self-contained HTML report
 
 response = anthropic.Anthropic().messages.create(
     model="claude-sonnet-4-20250514",
-    system=system_prompt,
     messages=[{
         "role": "user",
-        "content": f"""Write a Q4 revenue report using this data:
+        "content": f"""Write a Q4 revenue report as clean HTML using this data:
 
 {data_context}
 
-Use Markdown with embedded chart blocks where the data supports it.
-Include a KPI table, trend analysis, and action items.""",
+Use semantic HTML: headings, tables, lists, and inline SVG charts
+where the data supports it. Return only the HTML body content.""",
     }],
 )
 
-body = strip_fences(response.content[0].text)
+html_body = response.content[0].text
 
-# \u2500\u2500 Step 4: Publish with quality checks \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-# The coach validates structure and quality. fix_fn lets the LLM
-# auto-revise if the coach finds issues.
+# \u2500\u2500 Step 4: Publish the report \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
-def fix_with_llm(current_body, issues):
-    resp = anthropic.Anthropic().messages.create(
-        model="claude-sonnet-4-20250514",
-        system=system_prompt,
-        messages=[
-            {"role": "user", "content": f"Fix these coach issues:\\n{json.dumps(issues)}\\n\\n{current_body}"},
-        ],
-    )
-    return strip_fences(resp.content[0].text)
-
-report = client.publish_with_coach(
+report = client.publish(
     title="Q4 2025 Revenue Report",
     summary=f"Revenue hit \${revenue['revenue'].sum():,.0f} \u2014 {((revenue.iloc[-1]['revenue'] / revenue.iloc[-2]['revenue']) - 1) * 100:.1f}% QoQ growth.",
-    markdown=body,
+    html=html_body,
     space="o/finance",
     tags=["revenue", "quarterly", "q4-2025"],
-    theme="corporate",
-    layout="wide",
-    fix_fn=fix_with_llm,
-    max_retries=3,
 )
 print(f"Published: {report.slug}")`
 
-const chartGallerySnippet = `from openreporting import (
-    bar_chart, line_chart, area_chart, pie_chart,
-    horizontal_bar_chart, stacked_bar_chart, donut_chart, sparkline,
+const sdkMethodsSnippet = `from openreporting import OpenReportingClient
+
+client = OpenReportingClient(api_key="or_live_...", base_url="http://localhost:8000")
+
+# Publish a new report (HTML string)
+report = client.publish(
+    title="Monthly Summary",
+    summary="Key metrics for March 2025.",
+    html="<h2>Revenue</h2><p>$1.2M total revenue, up 12% MoM.</p>",
+    space="o/finance",
+    tags=["monthly", "revenue"],
 )
 
-# Bar \u2014 compare values across categories
-bar_chart(
-    labels=["Q1", "Q2", "Q3", "Q4"],
-    datasets=[{"name": "Revenue ($K)", "values": [120, 145, 138, 162]}],
-    heading="Revenue by Quarter",
-)
+# Update an existing report
+client.update(report.id, title="Updated Title", html="<p>New content</p>")
 
-# Line \u2014 trends over time
-line_chart(
-    labels=["Jan", "Feb", "Mar", "Apr"],
-    datasets=[{"name": "Users", "values": [4200, 4580, 4910, 5340]}],
-    heading="Monthly Active Users",
-)
+# Read back
+report = client.get_report(report.id)
+all_reports = client.list_reports(space="o/finance")
 
-# Pie \u2014 proportional breakdown
-pie_chart(
-    segments=[{"label": "Enterprise", "value": 4200}, {"label": "SMB", "value": 1100}],
-    heading="Revenue Split",
-)
+# Delete
+client.delete_report(report.id)
 
-# Donut \u2014 pie with center label
-donut_chart(
-    segments=[{"label": "Eng", "value": 12}, {"label": "Sales", "value": 6}],
-    heading="Headcount", center_label="18",
-)
+# Discovery
+spaces = client.get_spaces()
+caps = client.get_capabilities()`
 
-# Horizontal bar \u2014 long category labels
-horizontal_bar_chart(
-    labels=["North America", "Europe", "APAC"],
-    datasets=[{"name": "NPS", "values": [72, 68, 75]}],
-    heading="Satisfaction by Region",
-)
+const llmToolPrompt = `You have access to the Open Reporting API for publishing HTML reports.
 
-# Stacked bar \u2014 composition over time
-stacked_bar_chart(
-    labels=["Q1", "Q2", "Q3"],
-    datasets=[
-        {"name": "New", "values": [100, 120, 140]},
-        {"name": "Expansion", "values": [50, 65, 80]},
-    ],
-    heading="Revenue Sources",
-)
-
-# Area \u2014 filled trend
-area_chart(
-    labels=["Q1", "Q2", "Q3", "Q4"],
-    datasets=[{"name": "Customers", "values": [180, 210, 249, 290]}],
-    heading="Growth",
-)
-
-# Sparkline \u2014 tiny inline chart (no axes)
-sparkline(values=[12, 15, 11, 18, 22, 19, 25])`
-
-const llmToolPrompt = `You have access to the Open Reporting API for publishing reports.
-
-First, read the skill reference to learn all available section types, charts, themes, and layouts:
-  GET {YOUR_API_URL}/skill.md
-
-Then use the API to publish reports:
+Use the API to publish reports:
   POST {YOUR_API_URL}/api/v1/reports/
 
 Include this header with every request:
   Authorization: Bearer {YOUR_API_KEY}
 
-Follow the skill.md reference exactly for report structure, chart data formats, and validation rules.`
+Reports accept an "html" field containing the full HTML body content.
+Use semantic HTML (headings, tables, lists, inline SVG) for rich reports.`
 
 /* -- Page ------------------------------------------------------------ */
 
@@ -321,7 +265,7 @@ export function GettingStartedPage() {
     <ScrollArea className="flex-1 bg-card">
       <main className="max-w-4xl mx-auto p-6 md:p-8 pb-16">
 
-        {/* ── 1. Hero ────────────────────────────────────────────── */}
+        {/* -- 1. Hero -------------------------------------------------- */}
         <section className="mb-16">
           <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-xl mb-5">
             <Rocket className="size-6 text-primary" />
@@ -338,7 +282,7 @@ export function GettingStartedPage() {
           </p>
         </section>
 
-        {/* ── 2. Quick Start ─────────────────────────────────────── */}
+        {/* -- 2. Quick Start ------------------------------------------- */}
         <section className="mb-16">
           <SectionLabel>Quick start</SectionLabel>
 
@@ -388,7 +332,7 @@ export function GettingStartedPage() {
           </div>
         </section>
 
-        {/* ── 3. Make It Yours ────────────────────────────────────── */}
+        {/* -- 3. Make It Yours ----------------------------------------- */}
         <section className="mb-16 pl-6">
           <div className="flex items-center gap-3 mb-2">
             <Wrench className="size-4 text-muted-foreground" />
@@ -402,12 +346,14 @@ export function GettingStartedPage() {
             <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded-sm">
               agent.py
             </code>{" "}
-            is your starting point. Replace the Hello World with your data.
+            is your starting point. Replace the Hello World HTML with your
+            own content. Use any HTML you like -- headings, tables, lists,
+            inline SVG charts, or any standard markup.
           </p>
           <CodeBlock code={agentCodeSnippet} label="agent.py (generated)" />
         </section>
 
-        {/* ── 4. Let the LLM Write It ────────────────────────────── */}
+        {/* -- 4. Let the LLM Write It ---------------------------------- */}
         <section className="mb-16 pl-6">
           <div className="flex items-center gap-3 mb-2">
             <Cpu className="size-4 text-muted-foreground" />
@@ -417,82 +363,39 @@ export function GettingStartedPage() {
             Let the LLM write the report
           </h2>
           <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-            Connect your data sources (database, API, files), feed the data to
-            an LLM with{" "}
+            Connect your data sources (database, API, files), feed the data
+            to an LLM, and let it generate HTML with narrative and
+            visualizations. Pass the resulting HTML string directly to{" "}
             <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded-sm">
-              build_system_prompt()
+              client.publish()
             </code>
-            , and let it generate a full report with charts and narrative. The
-            LLM knows all available section types, charts, themes, and layouts
-            from the embedded skill reference.
+            .
           </p>
           <CodeBlock code={llmAgentSnippet} label="LLM-powered agent" />
           <div className="mt-4 p-3.5 bg-muted/40 rounded-sm border border-border text-sm text-muted-foreground leading-relaxed">
-            The system prompt embeds the full{" "}
-            <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded-sm">
-              skill.md
-            </code>{" "}
-            reference so the LLM knows every section type, chart format,
-            validation rule, theme, and layout -- no manual prompting needed.
+            Reports accept any valid HTML. Ask the LLM to produce semantic
+            markup (headings, tables, lists) and inline SVG for charts.
+            No special section types or templating required.
           </div>
         </section>
 
-        {/* ── 5. Chart Gallery ───────────────────────────────────── */}
+        {/* -- 5. SDK Methods ------------------------------------------- */}
         <section className="mb-16 pl-6">
           <div className="flex items-center gap-3 mb-2">
-            <BarChart3 className="size-4 text-muted-foreground" />
-            <SectionLabel>Visualization</SectionLabel>
+            <Wrench className="size-4 text-muted-foreground" />
+            <SectionLabel>SDK reference</SectionLabel>
           </div>
           <h2 className="text-lg font-semibold text-foreground tracking-tight mb-3">
-            Chart types
+            Client methods
           </h2>
           <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-            8 chart types, all rendered server-side as themed SVG.
+            The SDK client provides methods for the full report lifecycle:
+            publish, update, read, delete, and discovery.
           </p>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6">
-            {[
-              ["Bar", "Compare values across categories"],
-              ["Line", "Trends over time"],
-              ["Area", "Filled trend regions"],
-              ["Pie", "Proportional breakdown"],
-              ["Donut", "Pie with center label"],
-              ["H-Bar", "Long category labels"],
-              ["Stacked", "Composition over time"],
-              ["Sparkline", "Inline mini chart"],
-            ].map(([name, desc]) => (
-              <div
-                key={name}
-                className="p-3 rounded-sm border border-border bg-muted/20 text-center"
-              >
-                <div className="text-xs font-semibold text-foreground mb-0.5">
-                  {name}
-                </div>
-                <div className="text-[10px] text-muted-foreground leading-tight">
-                  {desc}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <CodeBlock code={chartGallerySnippet} label="All 8 chart types" />
-
-          <div className="mt-4 p-3.5 bg-muted/40 rounded-sm border border-border text-sm text-muted-foreground leading-relaxed">
-            <span className="font-medium text-foreground">Validation:</span>{" "}
-            The server checks that{" "}
-            <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded-sm">
-              values
-            </code>{" "}
-            length matches{" "}
-            <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded-sm">
-              labels
-            </code>
-            , all values are plain numbers, and pie/donut values are positive.
-            Invalid charts return a 422 with specific error messages.
-          </div>
+          <CodeBlock code={sdkMethodsSnippet} label="SDK methods" />
         </section>
 
-        {/* ── 6. Alternative: LLM Tool ───────────────────────────── */}
+        {/* -- 6. Alternative: LLM Tool --------------------------------- */}
         <section className="mb-16">
           <Collapsible>
             <CollapsibleTrigger asChild>
@@ -552,7 +455,7 @@ export function GettingStartedPage() {
           </Collapsible>
         </section>
 
-        {/* ── 7. Footer Links ────────────────────────────────────── */}
+        {/* -- 7. Footer Links ------------------------------------------ */}
         <section>
           <SectionLabel>Next steps</SectionLabel>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

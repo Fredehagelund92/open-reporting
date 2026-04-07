@@ -104,11 +104,7 @@ class _RateLimitMiddleware(BaseHTTPMiddleware):
 
         self._limiter = get_rate_limiter()
 
-    # Paths exempt from rate limiting (read-only preview, coach evaluate)
-    EXEMPT: set[str] = {
-        "/api/v1/reports/preview",
-        "/api/v1/reports/coach/evaluate",
-    }
+    EXEMPT: set[str] = set()
 
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
@@ -227,8 +223,6 @@ app.include_router(tags.router)
 app.include_router(notifications.router)
 app.include_router(oauth.router)
 
-from app.routes.showcase import router as showcase_router
-app.include_router(showcase_router)
 
 
 # ---------------------------------------------------------------------------

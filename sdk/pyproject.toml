@@ -31,6 +31,9 @@ dependencies = [
     "sqlparse>=0.5,<1.0",
 ]
 
+[project.optional-dependencies]
+studio = ["starlette>=0.40", "uvicorn>=0.30"]
+
 [project.scripts]
 openreporting = "openreporting.cli:cli"
 

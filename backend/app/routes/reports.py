@@ -1,9 +1,9 @@
 """
 Report CRUD and listing API routes.
 Agents create reports; Humans read them.
+HTML-first: agents submit full HTML documents, rendered in sandboxed iframes.
 """
 
-import json as _json
 import re
 import uuid
 from typing import Optional, Annotated
@@ -40,18 +40,7 @@ from app.models import (
 from app.routes.agents import get_current_agent
 from app.auth.dependencies import get_current_user_optional, get_current_user
 from app.core.cache import cache
-from app.core.html_validator import (
-    validate_html,
-    strip_wrapper_tags,
-    sanitize_forbidden_tags,
-)
-from app.core.authoring_coach import (
-    evaluate_authoring_quality,
-    get_authoring_coach_mode,
-)
-from app.core.llm_review import review_report, get_llm_review_mode
-from app.core.chart_validation import extract_chart_blocks_from_markdown
-from app.core.renderers import render_markdown_to_html, render_structured_to_html
+from app.core.html_validator import validate_html
 from app.core.tags import (
     resolve_canonical_tags,
     attach_tags_to_report,
@@ -136,15 +125,9 @@ class ReportCreateRequest(BaseModel):
     title: str
     summary: str
     tags: list[str] = []
-    html_body: Optional[str] = None
-    markdown_body: Optional[str] = None
-    structured_body: Optional[dict] = None
-    content_format: str = "auto"  # "auto" | "html" | "markdown" | "json"
-    theme: Optional[str] = None
-    layout: Optional[str] = None  # "narrow" | "standard" | "wide" | "full"
+    html_body: str  # Required — HTML only
     space_id: Optional[str] = None
     space_name: Optional[str] = None
-    content_type: str = "report"  # "report" or "slideshow"
     meta: Optional[dict] = None
     series_id: Optional[str] = None
     series_order: Optional[int] = None
@@ -166,36 +149,6 @@ class ReportCreateRequest(BaseModel):
         return v
 
 
-class AuthoringCoachIssueResponse(BaseModel):
-    rule_id: str
-    severity: str
-    message: str
-    suggestion: str
-
-
-class AuthoringCoachResponse(BaseModel):
-    readiness_status: str
-    overall_score: int
-    mode: str
-    issues: list[AuthoringCoachIssueResponse] = []
-    suggested_edits: list[str] = []
-    sanitization_applied: Optional[list[dict]] = None
-
-
-class LlmReviewResponse(BaseModel):
-    status: str  # "passed", "blocked", "skipped"
-    average_score: float = 0.0
-    scores: dict = {}
-    issues: list[str] = []
-    fix_instructions: list[str] = []
-
-
-class QualityResponse(BaseModel):
-    coach_score: int
-    coach_status: str
-    llm_review: Optional[LlmReviewResponse] = None
-
-
 class SeriesReportEntry(BaseModel):
     slug: str
     title: str
@@ -210,7 +163,6 @@ class ReportSummaryResponse(BaseModel):
     summary: str
     tags: list[str]
     slug: str
-    content_type: str = "report"
     agent_name: str
     agent_id: str
     space_name: str
@@ -219,15 +171,12 @@ class ReportSummaryResponse(BaseModel):
     comment_count: int
     can_delete: bool = False
     created_at: str
-    authoring_coach: Optional[AuthoringCoachResponse] = None
-    sanitization_applied: Optional[list[dict]] = None
     series_id: Optional[str] = None
     run_number: Optional[int] = None
     series_order: Optional[int] = None
     tab_count: Optional[int] = None
     series_total: Optional[int] = None
     series_index: Optional[int] = None
-    quality: Optional[QualityResponse] = None
 
 
 class ReportDetailResponse(ReportSummaryResponse):
@@ -241,229 +190,6 @@ class ReportDetailResponse(ReportSummaryResponse):
 # --- Routes ---
 
 
-def _resolve_body(
-    body: ReportCreateRequest,
-    brand_overrides: dict | None = None,
-) -> tuple[str, str, Optional[str]]:
-    """Resolve the submitted body to (rendered_html, content_format, source_body).
-
-    Supports three input formats:
-    - markdown_body → rendered to themed HTML
-    - structured_body → rendered to themed HTML from JSON sections
-    - html_body → passed through as-is (backward compatible)
-    """
-    fmt = body.content_format
-
-    if fmt == "auto":
-        if body.markdown_body:
-            fmt = "markdown"
-        elif body.structured_body:
-            fmt = "json"
-        elif body.html_body:
-            fmt = "html"
-        else:
-            raise HTTPException(
-                status_code=422,
-                detail="Provide html_body, markdown_body, or structured_body.",
-            )
-
-    if fmt == "markdown":
-        if not body.markdown_body:
-            raise HTTPException(
-                status_code=422,
-                detail="markdown_body is required when content_format is 'markdown'.",
-            )
-        rendered = render_markdown_to_html(
-            body.markdown_body,
-            theme=body.theme,
-            layout=body.layout,
-            brand_overrides=brand_overrides,
-        )
-        return rendered, "markdown", body.markdown_body
-
-    if fmt == "json":
-        if not body.structured_body:
-            raise HTTPException(
-                status_code=422,
-                detail="structured_body is required when content_format is 'json'.",
-            )
-        sections = body.structured_body.get("sections", [])
-        if not sections:
-            raise HTTPException(
-                status_code=422,
-                detail="structured_body must contain a 'sections' list.",
-            )
-        rendered = render_structured_to_html(
-            sections,
-            theme=body.theme,
-            layout=body.layout,
-            brand_overrides=brand_overrides,
-            content_type=body.content_type,
-        )
-        return rendered, "json", _json.dumps(body.structured_body)
-
-    if fmt == "html":
-        if not body.html_body:
-            raise HTTPException(
-                status_code=422,
-                detail="html_body is required when content_format is 'html'.",
-            )
-        return body.html_body, "html", None
-
-    raise HTTPException(
-        status_code=422,
-        detail=f"Invalid content_format: '{fmt}'. Use 'auto', 'html', 'markdown', or 'json'.",
-    )
-
-
-def _run_authoring_coach(
-    body: ReportCreateRequest,
-    resolved_html: Optional[str] = None,
-    resolved_format: str = "html",
-) -> AuthoringCoachResponse:
-    html_for_coach = resolved_html or body.html_body or ""
-
-    chart_sections = None
-    if resolved_format == "json" and body.structured_body:
-        chart_sections = [
-            s
-            for s in body.structured_body.get("sections", [])
-            if isinstance(s, dict) and s.get("type", "").endswith("-chart")
-        ]
-    elif resolved_format == "markdown" and body.markdown_body:
-        chart_sections = extract_chart_blocks_from_markdown(body.markdown_body)
-
-    coach_result = evaluate_authoring_quality(
-        title=body.title,
-        summary=body.summary,
-        html_body=html_for_coach,
-        content_type=body.content_type,
-        tags=body.tags,
-        content_format=resolved_format,
-        chart_sections=chart_sections or None,
-    )
-    return AuthoringCoachResponse(
-        readiness_status=coach_result.readiness_status,
-        overall_score=coach_result.overall_score,
-        mode=get_authoring_coach_mode(),
-        issues=[
-            AuthoringCoachIssueResponse(
-                rule_id=issue.rule_id,
-                severity=issue.severity,
-                message=issue.message,
-                suggestion=issue.suggestion,
-            )
-            for issue in coach_result.issues
-        ],
-        suggested_edits=coach_result.suggested_edits,
-    )
-
-
-def _require_user_or_agent(
-    current_user: Annotated[Optional[User], Depends(get_current_user_optional)],
-    authorization: Optional[str] = Header(None),
-    session: Session = Depends(get_session),
-) -> None:
-    # 1. Check if we have an active human session
-    # (Note: get_current_user_optional already returns None if user is deactivated)
-    if current_user:
-        return
-
-    # 2. Check if we have an active agent key
-    if authorization and authorization.startswith("Bearer "):
-        api_key = authorization.split("Bearer ", 1)[1].strip()
-        if api_key:
-            from app.routes.agents import _get_agent_by_key
-
-            try:
-                # This helper already checks agent.is_active and owner.is_active
-                _get_agent_by_key(api_key, session)
-                return
-            except HTTPException:
-                pass
-
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Not authenticated or account is disabled.",
-    )
-
-
-@router.post("/coach/evaluate", response_model=AuthoringCoachResponse)
-def evaluate_authoring_coach(
-    body: ReportCreateRequest,
-    _auth_ok: None = Depends(_require_user_or_agent),
-):
-    """Evaluate draft quality before publish for both user and agent workflows."""
-    if body.content_type not in ("report", "slideshow"):
-        raise HTTPException(
-            status_code=422, detail="content_type must be 'report' or 'slideshow'."
-        )
-
-    rendered_html, content_format, _source = _resolve_body(body)
-
-    clean_html, sanitization_warnings = sanitize_forbidden_tags(rendered_html)
-    html_errors = validate_html(clean_html, content_type=body.content_type)
-    if html_errors:
-        return AuthoringCoachResponse(
-            readiness_status="blocked",
-            overall_score=0,
-            mode=get_authoring_coach_mode(),
-            issues=[
-                AuthoringCoachIssueResponse(
-                    rule_id="html_validation",
-                    severity="error",
-                    message=error,
-                    suggestion="Fix this validation issue, then run coach evaluation again.",
-                )
-                for error in html_errors
-            ],
-            suggested_edits=["Resolve HTML validation errors before publishing."],
-            sanitization_applied=sanitization_warnings or None,
-        )
-
-    coach_response = _run_authoring_coach(
-        body, resolved_html=clean_html, resolved_format=content_format
-    )
-    coach_response.sanitization_applied = sanitization_warnings or None
-    return coach_response
-
-
-class PreviewResponse(BaseModel):
-    html_body: str
-    content_format: str
-    authoring_coach: Optional[AuthoringCoachResponse] = None
-    sanitization_applied: Optional[list[dict]] = None
-
-
-@router.post("/preview", response_model=PreviewResponse)
-def preview_report(
-    body: ReportCreateRequest,
-):
-    """Preview rendered output without storing. Useful for iteration before publish."""
-    if body.content_type not in ("report", "slideshow"):
-        raise HTTPException(
-            status_code=422, detail="content_type must be 'report' or 'slideshow'."
-        )
-
-    rendered_html, content_format, _source = _resolve_body(body)
-    clean_html, sanitization_warnings = sanitize_forbidden_tags(rendered_html)
-
-    html_errors = validate_html(clean_html, content_type=body.content_type)
-    coach_response = None
-    if not html_errors:
-        coach_response = _run_authoring_coach(
-            body, resolved_html=clean_html, resolved_format=content_format
-        )
-        coach_response.sanitization_applied = sanitization_warnings or None
-
-    return PreviewResponse(
-        html_body=strip_wrapper_tags(clean_html),
-        content_format=content_format,
-        authoring_coach=coach_response,
-        sanitization_applied=sanitization_warnings or None,
-    )
-
-
 @router.post(
     "/", response_model=ReportSummaryResponse, status_code=status.HTTP_201_CREATED
 )
@@ -475,20 +201,13 @@ def create_report(
     x_skill: Optional[str] = Header(None, alias="X-OpenReporting-Skill"),
 ):
     """[Agent Action] Upload a new HTML report to a specific space."""
-    # Enforce agent claim status
     if not agent.is_claimed:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Agent must be claimed by a user before posting reports.",
         )
 
-    # Validate content_type
-    if body.content_type not in ("report", "slideshow"):
-        raise HTTPException(
-            status_code=422, detail="content_type must be 'report' or 'slideshow'."
-        )
-
-    # Verify the space exists (either via ID or Name)
+    # Resolve space
     space = None
     if body.space_id:
         space = session.get(Space, body.space_id)
@@ -499,83 +218,13 @@ def create_report(
         target = body.space_id or body.space_name or "unknown"
         raise HTTPException(status_code=422, detail=f"Space '{target}' not found.")
 
-    # Apply space brand defaults when the request doesn't specify theme/layout
-    if body.theme is None and space.default_theme:
-        body.theme = space.default_theme
-    if body.layout is None and space.default_layout:
-        body.layout = space.default_layout
-
-    # Build brand overrides from space branding
-    brand_overrides = {}
-    if space.brand_accent_color:
-        brand_overrides["accent_color"] = space.brand_accent_color
-    if space.brand_heading_color:
-        brand_overrides["heading_color"] = space.brand_heading_color
-
-    # Resolve body to HTML (handles markdown, json, or html passthrough)
-    rendered_html, content_format, source_body = _resolve_body(
-        body, brand_overrides=brand_overrides or None
-    )
-
-    # Sanitize forbidden tags, then validate
-    clean_html, sanitization_warnings = sanitize_forbidden_tags(rendered_html)
-    html_errors = validate_html(clean_html, content_type=body.content_type)
+    # Validate HTML
+    html_errors = validate_html(body.html_body)
     if html_errors:
         raise HTTPException(status_code=422, detail={"validation_errors": html_errors})
 
-    coach_feedback = _run_authoring_coach(
-        body, resolved_html=clean_html, resolved_format=content_format
-    )
-    if (
-        coach_feedback.mode == "enforce"
-        and coach_feedback.readiness_status == "blocked"
-    ):
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "coach_blocked": True,
-                "authoring_coach": coach_feedback.model_dump(),
-            },
-        )
-
-    # LLM review gate — runs only when coach passes
-    llm_review_response: Optional[LlmReviewResponse] = None
-    if coach_feedback.readiness_status != "blocked":
-        coach_issue_msgs = [i.message for i in coach_feedback.issues]
-        llm_result = review_report(
-            html_body=clean_html,
-            title=body.title,
-            summary=body.summary,
-            tags=body.tags,
-            theme=body.theme or "default",
-            content_type=body.content_type,
-            coach_issues=coach_issue_msgs,
-        )
-        llm_review_response = LlmReviewResponse(
-            status=llm_result.status,
-            average_score=llm_result.average_score,
-            scores={
-                k: {"score": v.score, "issues": v.issues}
-                for k, v in llm_result.scores.items()
-            },
-            issues=llm_result.issues,
-            fix_instructions=llm_result.fix_instructions,
-        )
-        if get_llm_review_mode() == "enforce" and llm_result.status == "blocked":
-            raise HTTPException(
-                status_code=422,
-                detail={
-                    "llm_review_blocked": True,
-                    "llm_review": llm_review_response.model_dump(),
-                },
-            )
-
-    # Strip document wrappers if present
-    clean_html = strip_wrapper_tags(clean_html)
-
     canonical_tags = resolve_canonical_tags(session, body.tags)
 
-    # Consolidate metadata (internal field name 'meta' to avoid reserved keyword)
     report_metadata = body.meta or {}
     if x_skill:
         report_metadata["skill_attribution"] = x_skill
@@ -593,10 +242,7 @@ def create_report(
         title=body.title,
         summary=body.summary,
         slug=generate_slug(body.title),
-        html_body=clean_html,
-        content_format=content_format,
-        source_body=source_body,
-        content_type=body.content_type,
+        html_body=body.html_body,
         agent_id=agent.id,
         space_id=space.id,
         meta=report_metadata or None,
@@ -619,7 +265,6 @@ def create_report(
         summary=report.summary,
         tags=[tag.canonical_name for tag in canonical_tags],
         slug=report.slug,
-        content_type=report.content_type,
         agent_name=agent.name,
         agent_id=report.agent_id,
         space_name=space.name,
@@ -627,16 +272,9 @@ def create_report(
         user_vote=0,
         comment_count=0,
         created_at=report.created_at.isoformat(),
-        authoring_coach=coach_feedback,
-        sanitization_applied=sanitization_warnings or None,
         series_id=report.series_id,
         run_number=report.run_number,
         series_order=report.series_order,
-        quality=QualityResponse(
-            coach_score=coach_feedback.overall_score,
-            coach_status=coach_feedback.readiness_status,
-            llm_review=llm_review_response,
-        ),
     )
 
 
@@ -644,15 +282,9 @@ class UserReportCreateRequest(BaseModel):
     title: str
     summary: str
     tags: list[str] = []
-    html_body: Optional[str] = None
-    markdown_body: Optional[str] = None
-    structured_body: Optional[dict] = None
-    content_format: str = "auto"
-    theme: Optional[str] = None
-    layout: Optional[str] = None
+    html_body: str  # Required — HTML only
     space_name: str
     agent_id: str
-    content_type: str = "report"
     meta: Optional[dict] = None
     series_id: Optional[str] = None
     series_order: Optional[int] = None
@@ -684,12 +316,7 @@ def upload_report_as_user(
     current_user: User = Depends(get_current_user),
 ):
     """[User Action] Upload a report directly, published under one of the
-    user's own agents.  The caller must supply ``agent_id``."""
-    if body.content_type not in ("report", "slideshow"):
-        raise HTTPException(
-            status_code=422, detail="content_type must be 'report' or 'slideshow'."
-        )
-
+    user's own agents."""
     agent = session.get(Agent, body.agent_id)
     if not agent:
         raise HTTPException(
@@ -698,67 +325,16 @@ def upload_report_as_user(
     if agent.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="You do not own this agent.")
 
-    # Resolve space first for brand defaults
     space = session.exec(select(Space).where(Space.name == body.space_name)).first()
     if not space:
         raise HTTPException(
             status_code=422, detail=f"Space '{body.space_name}' not found."
         )
 
-    # Apply space brand defaults
-    theme = body.theme
-    layout = body.layout
-    if theme is None and space.default_theme:
-        theme = space.default_theme
-    if layout is None and space.default_layout:
-        layout = space.default_layout
-
-    brand_overrides = {}
-    if space.brand_accent_color:
-        brand_overrides["accent_color"] = space.brand_accent_color
-    if space.brand_heading_color:
-        brand_overrides["heading_color"] = space.brand_heading_color
-
-    # Build a ReportCreateRequest for shared rendering/coach logic
-    create_req = ReportCreateRequest(
-        title=body.title,
-        summary=body.summary,
-        tags=body.tags,
-        html_body=body.html_body,
-        markdown_body=body.markdown_body,
-        structured_body=body.structured_body,
-        content_format=body.content_format,
-        theme=theme,
-        layout=layout,
-        space_name=body.space_name,
-        content_type=body.content_type,
-    )
-
-    rendered_html, content_format, source_body = _resolve_body(
-        create_req, brand_overrides=brand_overrides or None
-    )
-
-    clean_html, sanitization_warnings = sanitize_forbidden_tags(rendered_html)
-    html_errors = validate_html(clean_html, content_type=body.content_type)
+    # Validate HTML
+    html_errors = validate_html(body.html_body)
     if html_errors:
         raise HTTPException(status_code=422, detail={"validation_errors": html_errors})
-
-    coach_feedback = _run_authoring_coach(
-        create_req, resolved_html=clean_html, resolved_format=content_format
-    )
-    if (
-        coach_feedback.mode == "enforce"
-        and coach_feedback.readiness_status == "blocked"
-    ):
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "coach_blocked": True,
-                "authoring_coach": coach_feedback.model_dump(),
-            },
-        )
-
-    clean_html = strip_wrapper_tags(clean_html)
 
     canonical_tags = resolve_canonical_tags(session, body.tags)
 
@@ -775,12 +351,10 @@ def upload_report_as_user(
         title=body.title,
         summary=body.summary,
         slug=generate_slug(body.title),
-        html_body=clean_html,
-        content_format=content_format,
-        source_body=source_body,
-        content_type=body.content_type,
+        html_body=body.html_body,
         agent_id=agent.id,
         space_id=space.id,
+        meta=body.meta,
         series_id=body.series_id,
         run_number=run_number,
         series_order=body.series_order,
@@ -792,6 +366,7 @@ def upload_report_as_user(
     attach_tags_to_report(session, report, canonical_tags)
     recalculate_tag_usage_counts(session)
     session.commit()
+    background_tasks.add_task(notify_subscribers, report.id)
 
     return ReportSummaryResponse(
         id=report.id,
@@ -799,7 +374,6 @@ def upload_report_as_user(
         summary=report.summary,
         tags=[tag.canonical_name for tag in canonical_tags],
         slug=report.slug,
-        content_type=report.content_type,
         agent_name=agent.name,
         agent_id=report.agent_id,
         space_name=space.name,
@@ -807,8 +381,6 @@ def upload_report_as_user(
         user_vote=0,
         comment_count=0,
         created_at=report.created_at.isoformat(),
-        authoring_coach=coach_feedback,
-        sanitization_applied=sanitization_warnings or None,
         series_id=report.series_id,
         run_number=report.run_number,
         series_order=report.series_order,
@@ -831,7 +403,6 @@ async def list_reports(
 ):
     """List reports with optional space filter, agent filter and sorting."""
 
-    # Check cache
     cache_viewer = current_user.id if current_user else "anon"
     cache_key = f"report_list:{sort}:{space}:{agent_id}:{agent_name}:{tag}:{page}:{page_size}:{cache_viewer}"
     cached_data = await cache.get(cache_key)
@@ -871,7 +442,6 @@ async def list_reports(
         .subquery()
     )
 
-    # series_sq: count visible cards per series (for progress dots)
     VisibleSibling = aliased(Report)
     series_sq = (
         select(
@@ -894,7 +464,6 @@ async def list_reports(
         .subquery()
     )
 
-    # series_rank_sq: 0-based position of each visible card within its series
     RankedReport = aliased(Report)
     series_rank_sq = (
         select(
@@ -924,7 +493,6 @@ async def list_reports(
         .subquery()
     )
 
-    # Base query: join Agent and Space to avoid N+1 lookups
     query = (
         select(
             Report,
@@ -961,7 +529,7 @@ async def list_reports(
 
     # Access control
     if current_user and current_user.role == "ADMIN":
-        pass  # Admin sees all
+        pass
     elif current_user:
         access_sq = select(SpaceAccess.space_id).where(
             SpaceAccess.user_id == current_user.id
@@ -976,12 +544,12 @@ async def list_reports(
     else:
         query = query.where(Space.is_private.is_(False))
 
-    # Hide secondary tabs — only show standalone, primary tab, or non-tab reports
+    # Hide secondary tabs
     query = query.where(
         or_(
-            Report.tab_label.is_(None),       # standalone or time-series
-            Report.series_order == 0,          # primary tab
-            Report.series_order.is_(None),     # safety fallback
+            Report.tab_label.is_(None),
+            Report.series_order == 0,
+            Report.series_order.is_(None),
         )
     )
 
@@ -1001,7 +569,7 @@ async def list_reports(
         if space_obj:
             query = query.where(Report.space_id == space_obj.id)
         else:
-            return []  # Space doesn't exist, return empty
+            return []
 
     # Filter by canonical tag
     if tag:
@@ -1025,8 +593,6 @@ async def list_reports(
             func.coalesce(upvotes_sq.c.score, 0).desc(), col(Report.created_at).desc()
         )
     elif sort == "trending":
-        # HN-style gravity: score / (age_hours + 2)^1.5
-        # (age+2)^1.5 = (age+2) * sqrt(age+2) — avoids POW() for SQLite compat
         if db_url.startswith("postgresql"):
             age_hours = func.extract("epoch", func.now() - Report.created_at) / 3600.0
         else:
@@ -1043,7 +609,6 @@ async def list_reports(
     offset = (page - 1) * page_size
     query = query.offset(offset).limit(page_size)
 
-    # Execute
     rows = session.exec(query).all()
 
     user_votes_by_report: dict[str, int] = {}
@@ -1068,7 +633,6 @@ async def list_reports(
                 summary=report.summary,
                 tags=_report_tag_names(report),
                 slug=report.slug,
-                content_type=report.content_type,
                 agent_name=agent_obj.name if agent_obj else "Unknown",
                 agent_id=report.agent_id,
                 space_name=space_obj.name if space_obj else "Unknown",
@@ -1090,7 +654,6 @@ async def list_reports(
             )
         )
 
-    # Cache for 30 seconds
     await cache.set(cache_key, [r.model_dump() for r in results], expire_seconds=30)
 
     return results
@@ -1124,7 +687,6 @@ async def get_report(
             if not acc:
                 raise HTTPException(status_code=403, detail="Unrecognized report")
 
-    # Check Cache
     cache_viewer = current_user.id if current_user else "anon"
     cache_key = f"report_detail:{report_id}:{cache_viewer}"
     cached_data = await cache.get(cache_key)
@@ -1177,7 +739,6 @@ async def get_report(
         ]
         series_total = len(siblings_sorted)
 
-        # Derive prev/next from sorted list for backward compat
         slugs = [s.slug for s in siblings_sorted]
         try:
             idx = slugs.index(report.slug)
@@ -1194,7 +755,6 @@ async def get_report(
         summary=report.summary,
         tags=_report_tag_names(report),
         slug=report.slug,
-        content_type=report.content_type,
         html_body=report.html_body,
         agent_name=agent_obj.name if agent_obj else "Unknown",
         agent_id=report.agent_id,
@@ -1218,7 +778,6 @@ async def get_report(
         series_reports=series_reports,
     )
 
-    # Save to cache for 60 seconds
     await cache.set(cache_key, response_data.model_dump(), expire_seconds=60)
 
     return response_data
@@ -1228,13 +787,7 @@ class ReportUpdateRequest(BaseModel):
     title: Optional[str] = None
     summary: Optional[str] = None
     html_body: Optional[str] = None
-    markdown_body: Optional[str] = None
-    structured_body: Optional[dict] = None
-    content_format: Optional[str] = None  # "html" | "markdown" | "json"
-    theme: Optional[str] = None
-    layout: Optional[str] = None
     tags: Optional[list[str]] = None
-    content_type: Optional[str] = None
 
 
 @router.patch("/{report_id}", response_model=ReportSummaryResponse)
@@ -1244,11 +797,7 @@ def update_report(
     agent: Agent = Depends(get_current_agent),
     session: Session = Depends(get_session),
 ):
-    """[Agent Action] Update an existing report in place.
-
-    Only the agent that originally published the report may update it.
-    Runs HTML validation and authoring coach on the new content.
-    """
+    """[Agent Action] Update an existing report in place."""
     report = _get_report_by_id_or_slug(session, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found.")
@@ -1257,82 +806,18 @@ def update_report(
             status_code=403, detail="Only the publishing agent may update this report."
         )
 
-    if body.content_type is not None and body.content_type not in (
-        "report",
-        "slideshow",
-    ):
-        raise HTTPException(
-            status_code=422, detail="content_type must be 'report' or 'slideshow'."
-        )
-
-    # Apply partial updates
     if body.title is not None:
         report.title = body.title
     if body.summary is not None:
         report.summary = body.summary
-    if body.content_type is not None:
-        report.content_type = body.content_type
 
-    effective_content_type = report.content_type
-
-    sanitization_warnings: list[dict[str, str]] = []
-    update_format = report.content_format or "html"
-
-    # Determine if a new body was submitted
-    has_new_body = (
-        body.html_body is not None
-        or body.markdown_body is not None
-        or body.structured_body is not None
-    )
-
-    if has_new_body:
-        # Build a temporary create request to use _resolve_body
-        temp_req = ReportCreateRequest(
-            title=report.title,
-            summary=report.summary,
-            html_body=body.html_body,
-            markdown_body=body.markdown_body,
-            structured_body=body.structured_body,
-            content_format=body.content_format or "auto",
-            theme=body.theme,
-            layout=body.layout,
-            content_type=effective_content_type,
-        )
-        rendered_html, update_format, source_body = _resolve_body(temp_req)
-
-        clean_html, sanitization_warnings = sanitize_forbidden_tags(rendered_html)
-        html_errors = validate_html(clean_html, content_type=effective_content_type)
+    if body.html_body is not None:
+        html_errors = validate_html(body.html_body)
         if html_errors:
             raise HTTPException(
                 status_code=422, detail={"validation_errors": html_errors}
             )
-        report.html_body = strip_wrapper_tags(clean_html)
-        report.content_format = update_format
-        report.source_body = source_body
-
-    # Re-run coach on the full (post-patch) state
-    coach_feedback = _run_authoring_coach(
-        ReportCreateRequest(
-            title=report.title,
-            summary=report.summary,
-            html_body=report.html_body,
-            content_type=effective_content_type,
-            tags=body.tags or [],
-        ),
-        resolved_html=report.html_body,
-        resolved_format=update_format,
-    )
-    if (
-        coach_feedback.mode == "enforce"
-        and coach_feedback.readiness_status == "blocked"
-    ):
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "coach_blocked": True,
-                "authoring_coach": coach_feedback.model_dump(),
-            },
-        )
+        report.html_body = body.html_body
 
     if body.tags is not None:
         canonical_tags = resolve_canonical_tags(session, body.tags)
@@ -1360,7 +845,6 @@ def update_report(
         summary=report.summary,
         tags=_report_tag_names(report),
         slug=report.slug,
-        content_type=report.content_type,
         agent_name=agent.name,
         agent_id=report.agent_id,
         space_name=space_obj.name if space_obj else "Unknown",
@@ -1368,8 +852,6 @@ def update_report(
         user_vote=0,
         comment_count=int(comment_count),
         created_at=report.created_at.isoformat(),
-        authoring_coach=coach_feedback,
-        sanitization_applied=sanitization_warnings or None,
         series_id=report.series_id,
         run_number=report.run_number,
         series_order=report.series_order,
@@ -1396,8 +878,7 @@ def delete_report(
             status_code=403, detail="Not authorized to delete this report"
         )
 
-    # Cleanup all dependent rows before deleting the report.
-    # Chat messages belong to conversations, so delete them first.
+    # Cleanup all dependent rows
     conversations = session.exec(
         select(ChatConversation).where(ChatConversation.report_id == report.id)
     ).all()

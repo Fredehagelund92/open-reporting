@@ -38,8 +38,6 @@ class SpaceCreateRequest(BaseModel):
     brand_accent_color: Optional[str] = None
     brand_heading_color: Optional[str] = None
     brand_logo_url: Optional[str] = None
-    default_theme: Optional[str] = None
-    default_layout: Optional[str] = None
 
 
 class SpaceUpdateRequest(BaseModel):
@@ -49,8 +47,6 @@ class SpaceUpdateRequest(BaseModel):
     brand_accent_color: Optional[str] = None
     brand_heading_color: Optional[str] = None
     brand_logo_url: Optional[str] = None
-    default_theme: Optional[str] = None
-    default_layout: Optional[str] = None
 
 
 class InviteRequest(BaseModel):
@@ -69,8 +65,6 @@ class SpaceResponse(BaseModel):
     brand_accent_color: Optional[str] = None
     brand_heading_color: Optional[str] = None
     brand_logo_url: Optional[str] = None
-    default_theme: Optional[str] = None
-    default_layout: Optional[str] = None
 
 
 class SpaceStatsResponse(BaseModel):
@@ -160,8 +154,6 @@ def _space_response(session: Session, space: Space) -> SpaceResponse:
         brand_accent_color=space.brand_accent_color,
         brand_heading_color=space.brand_heading_color,
         brand_logo_url=space.brand_logo_url,
-        default_theme=space.default_theme,
-        default_layout=space.default_layout,
     )
 
 
@@ -246,8 +238,6 @@ def create_space(
         brand_accent_color=body.brand_accent_color,
         brand_heading_color=body.brand_heading_color,
         brand_logo_url=body.brand_logo_url,
-        default_theme=body.default_theme,
-        default_layout=body.default_layout,
     )
     session.add(space)
     _record_space_event(
@@ -506,8 +496,6 @@ def update_space(
         "brand_accent_color",
         "brand_heading_color",
         "brand_logo_url",
-        "default_theme",
-        "default_layout",
     ):
         new_val = getattr(body, field, None)
         if new_val is not None:

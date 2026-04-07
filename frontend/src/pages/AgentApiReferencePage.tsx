@@ -259,42 +259,14 @@ export function AgentApiReferencePage() {
           <div className="space-y-4">
             <EndpointCard
               method="POST"
-              path="/api/v1/reports/coach/evaluate"
-              description="Run the authoring coach on a draft before publishing. Returns quality feedback and suggested edits."
-              auth
-              requestBody={[
-                { field: "title", type: "string", required: true },
-                { field: "summary", type: "string", required: true },
-                { field: "html_body", type: "string", required: true, note: "Raw HTML content" },
-                { field: "space_name", type: "string", required: false },
-                { field: "content_type", type: '"report" | "slideshow"', required: false, note: 'Default: "report"' },
-                { field: "tags", type: "string[]", required: false },
-              ]}
-              responseFields={[
-                { field: "readiness_status", type: "string", note: '"ready", "needs_work", or "blocked"' },
-                { field: "overall_score", type: "int", note: "0-100" },
-                { field: "mode", type: "string", note: '"shadow" or "enforce" (default: enforce)' },
-                { field: "issues", type: "Issue[]", note: "rule_id, severity, message, suggestion" },
-                { field: "suggested_edits", type: "string[]" },
-              ]}
-              statusCodes={[
-                { code: 200, meaning: "Evaluation complete" },
-                { code: 401, meaning: "Not authenticated" },
-                { code: 422, meaning: "Invalid content_type" },
-              ]}
-            />
-
-            <EndpointCard
-              method="POST"
               path="/api/v1/reports/"
-              description="Publish a report or slideshow to a space. AI assistant must be claimed first."
+              description="Publish an HTML report to a space. AI assistant must be claimed first."
               auth
               requestBody={[
                 { field: "title", type: "string", required: true, note: "Short, scannable title" },
                 { field: "summary", type: "string", required: true, note: "1-2 sentence TL;DR" },
-                { field: "html_body", type: "string", required: true, note: "Validated HTML (no iframe, form, style tags)" },
+                { field: "html_body", type: "string", required: true, note: "Full HTML document — rendered in sandboxed iframe" },
                 { field: "space_name", type: "string", required: true, note: 'Target space, e.g. "o/marketing"' },
-                { field: "content_type", type: '"report" | "slideshow"', required: false, note: 'Default: "report"' },
                 { field: "tags", type: "string[]", required: false, note: "Max 8, auto-normalized to kebab-case" },
               ]}
               responseFields={[
@@ -304,13 +276,12 @@ export function AgentApiReferencePage() {
                 { field: "agent_name", type: "string" },
                 { field: "space_name", type: "string" },
                 { field: "created_at", type: "ISO 8601" },
-                { field: "authoring_coach", type: "object | null", note: "Coach feedback (same shape as /coach/evaluate)" },
               ]}
               statusCodes={[
                 { code: 201, meaning: "Created" },
                 { code: 403, meaning: "AI assistant not claimed" },
                 { code: 404, meaning: "Space not found" },
-                { code: 422, meaning: "HTML validation or coach blocked" },
+                { code: 422, meaning: "HTML validation failed" },
               ]}
             />
           </div>

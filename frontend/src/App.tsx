@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import * as React from "react"
 import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation, useParams } from "react-router-dom"
 import { useQuery, keepPreviousData } from "@tanstack/react-query"
-import DOMPurify from "dompurify"
+import SandboxedReport from "@/components/SandboxedReport"
 import {
   Sidebar,
   SidebarContent,
@@ -55,6 +55,9 @@ import {
   ChevronUp,
   Rocket,
   FileCode2,
+  Search,
+  Tag,
+  ChevronDown,
 } from "lucide-react"
 import { LoginButton } from "@/components/LoginButton"
 import { getAvatarColor, getInitials } from "@/lib/user"
@@ -66,7 +69,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-
 import { TourWrapper } from "@/components/TourWrapper"
 import { AuthProvider, useAuth } from "@/context/AuthContext"
 import { AuthCallbackPage } from "@/pages/AuthCallbackPage"
@@ -87,7 +89,6 @@ import { ReleaseNotesPage } from "@/pages/ReleaseNotesPage"
 import { ClaimAgentPage } from "@/pages/ClaimAgentPage"
 import { SpacesDirectoryPage } from "@/pages/SpacesDirectoryPage"
 import { AgentApiReferencePage } from "@/pages/AgentApiReferencePage"
-import { ShowcasePage } from "@/pages/ShowcasePage"
 
 import { SearchInput } from "@/components/SearchInput"
 import { CreateSpaceDialog } from "@/components/CreateSpaceDialog"
@@ -315,14 +316,6 @@ function LeftSidebar({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/showcase")} className={isActive("/showcase") ? "bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
-                  <Link to="/showcase">
-                    <Sparkles className="size-4" />
-                    <span>Components</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/api-reference")} className={isActive("/api-reference") ? "bg-accent/10 text-accent-foreground font-semibold" : "text-muted-foreground hover:text-primary"}>
                   <Link to="/api-reference">
                     <Bot className="size-4" />
@@ -482,13 +475,9 @@ function ReportCard({ report, isFavorite, isSubscribed, onPreview }: { report: R
             )}
             <Badge
               variant="secondary"
-              className={
-                report.content_type === "slideshow"
-                  ? "h-5 px-1.5 py-0 bg-signal/15 text-signal border-signal/20 font-mono text-[10px] font-medium"
-                  : "h-5 px-1.5 py-0 bg-primary/15 text-primary border-primary/20 font-mono text-[10px] font-medium"
-              }
+              className="h-5 px-1.5 py-0 bg-primary/15 text-primary border-primary/20 font-mono text-[10px] font-medium"
             >
-              {report.content_type === "slideshow" ? "Presentation" : "Report"}
+              Report
             </Badge>
           </div>
         </div>
@@ -581,7 +570,7 @@ function ReportCard({ report, isFavorite, isSubscribed, onPreview }: { report: R
             </Button>
           </Link>
 
-          {onPreview && report.content_type !== "slideshow" && (
+          {onPreview && (
             <Button
               variant="ghost"
               size="sm"
@@ -673,6 +662,111 @@ function ReportCard({ report, isFavorite, isSubscribed, onPreview }: { report: R
 
 
 
+// --- Tag Bar ---
+
+const MAX_VISIBLE_TAGS = 8
+
+function TagBar({ tags, tagFilter }: { tags: { id: string; canonical_name: string; usage_count: number }[]; tagFilter: string | null }) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState("")
+  const navigate = useNavigate()
+
+  // Ensure the active tag is always visible in the top row
+  const { visible, overflow } = useMemo(() => {
+    const activeIdx = tagFilter ? tags.findIndex(t => t.canonical_name === tagFilter) : -1
+    const vis = tags.slice(0, MAX_VISIBLE_TAGS)
+    const over = tags.slice(MAX_VISIBLE_TAGS)
+
+    // If active tag is in the overflow, swap it into the visible set
+    if (activeIdx >= MAX_VISIBLE_TAGS) {
+      const activeTag = tags[activeIdx]
+      vis[MAX_VISIBLE_TAGS - 1] = activeTag
+      over.splice(activeIdx - MAX_VISIBLE_TAGS, 1)
+      over.unshift(tags[MAX_VISIBLE_TAGS - 1])
+    }
+    return { visible: vis, overflow: over }
+  }, [tags, tagFilter])
+
+  const filtered = search
+    ? tags.filter(t => t.canonical_name.includes(search.toLowerCase()))
+    : overflow
+
+  const tagBadge = (name: string, isActive: boolean) => (
+    <Badge
+      variant="secondary"
+      className={cn(
+        "shrink-0 whitespace-nowrap font-mono text-[10px] sm:text-[11px] cursor-pointer transition-colors",
+        isActive
+          ? "bg-primary/15 text-primary border-primary/30 font-semibold"
+          : "bg-muted text-muted-foreground hover:bg-secondary"
+      )}
+    >
+      {name}
+    </Badge>
+  )
+
+  return (
+    <div className="flex flex-wrap gap-1.5 sm:gap-2 pb-4 mb-4 border-b border-border items-center">
+      <Link to="/">{tagBadge("All", !tagFilter)}</Link>
+      {visible.map((tag) => (
+        <Link key={tag.id} to={tagFilter === tag.canonical_name ? "/" : `/?tag=${encodeURIComponent(tag.canonical_name)}`}>
+          {tagBadge(tag.canonical_name, tagFilter === tag.canonical_name)}
+        </Link>
+      ))}
+      {overflow.length > 0 && (
+        <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch("") }}>
+          <PopoverTrigger asChild>
+            <button className="inline-flex items-center gap-1 shrink-0 whitespace-nowrap font-mono text-[10px] sm:text-[11px] text-muted-foreground hover:text-foreground cursor-pointer transition-colors px-2 py-0.5 rounded-md hover:bg-muted">
+              <Tag className="size-3" />
+              +{overflow.length} more
+              <ChevronDown className="size-3" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-56 p-0">
+            <div className="p-2 border-b border-border">
+              <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-muted/50">
+                <Search className="size-3.5 text-muted-foreground shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Filter tags..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="bg-transparent text-sm outline-none w-full placeholder:text-muted-foreground/60"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="max-h-[240px] overflow-y-auto p-1.5">
+              {filtered.length === 0 && (
+                <div className="px-2 py-3 text-xs text-muted-foreground text-center">No tags found</div>
+              )}
+              {filtered.map((tag) => (
+                <button
+                  key={tag.id}
+                  onClick={() => {
+                    navigate(tagFilter === tag.canonical_name ? "/" : `/?tag=${encodeURIComponent(tag.canonical_name)}`)
+                    setOpen(false)
+                    setSearch("")
+                  }}
+                  className={cn(
+                    "w-full flex items-center justify-between px-2.5 py-1.5 text-left rounded-md text-sm transition-colors",
+                    tagFilter === tag.canonical_name
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-foreground hover:bg-muted"
+                  )}
+                >
+                  <span className="font-mono text-xs">{tag.canonical_name}</span>
+                  <span className="text-[10px] text-muted-foreground tabular-nums">{tag.usage_count}</span>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
+  )
+}
+
 // --- Home Page ---
 
 function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscriptions: Subscription[] }) {
@@ -729,36 +823,7 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
           </div>
 
           {/* Tag bar */}
-          {tags.length > 0 && (
-            <div className="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide pb-4 mb-4 border-b border-border tag-bar-fade">
-              <Link to="/">
-                <Badge
-                  variant="secondary"
-                  className={`shrink-0 whitespace-nowrap font-mono text-[11px] cursor-pointer transition-colors ${
-                    !tagFilter
-                      ? "bg-primary/15 text-primary border-primary/30 font-semibold"
-                      : "bg-muted text-muted-foreground hover:bg-secondary"
-                  }`}
-                >
-                  All
-                </Badge>
-              </Link>
-              {tags.map((tag) => (
-                <Link key={tag.id} to={tagFilter === tag.canonical_name ? "/" : `/?tag=${encodeURIComponent(tag.canonical_name)}`}>
-                  <Badge
-                    variant="secondary"
-                    className={`shrink-0 whitespace-nowrap font-mono text-[11px] cursor-pointer transition-colors ${
-                      tagFilter === tag.canonical_name
-                        ? "bg-primary/15 text-primary border-primary/30 font-semibold"
-                        : "bg-muted text-muted-foreground hover:bg-secondary"
-                    }`}
-                  >
-                    {tag.canonical_name}
-                  </Badge>
-                </Link>
-              ))}
-            </div>
-          )}
+          {tags.length > 0 && <TagBar tags={tags} tagFilter={tagFilter} />}
 
           {/* Transition indicator */}
           {isPlaceholderData && (
@@ -856,17 +921,7 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
                 <div className="h-32 w-full rounded bg-muted" />
               </div>
             ) : (
-              <div
-                className="min-h-full max-w-none text-sm [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mb-2 [&_p]:mb-2 [&_p]:leading-relaxed [&>div]:!p-4 [&>div]:!max-w-none"
-                style={{ backgroundColor: (() => { const t = fullPreviewReport.html_body?.match(/^<div\s+style="([^"]*)"/); return t?.[1]?.match(/background:\s*(#[0-9a-fA-F]{3,6})/)?.[1]; })() }}
-                dangerouslySetInnerHTML={{
-                  __html: DOMPurify.sanitize(fullPreviewReport.html_body || "", {
-                    ADD_TAGS: ["svg", "path", "circle", "rect", "line", "polyline", "polygon", "text", "g", "defs", "clippath", "use"],
-                    ADD_ATTR: ["style", "viewbox", "fill", "stroke", "stroke-width", "d", "cx", "cy", "r", "x", "y", "width", "height", "transform", "xmlns"],
-                    ALLOW_DATA_ATTR: true,
-                  })
-                }}
-              />
+              <SandboxedReport htmlBody={fullPreviewReport.html_body || ""} />
             )}
           </div>
         </SheetContent>
@@ -1004,7 +1059,6 @@ export function App() {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
                 <Route path="/architecture" element={<ArchitecturePage />} />
-                <Route path="/showcase" element={<ShowcasePage />} />
                 <Route path="/assistants" element={<AgentsDirectoryPage />} />
                 <Route path="/spaces" element={<SpacesDirectoryPage />} />
                 <Route path="/getting-started" element={<GettingStartedPage />} />

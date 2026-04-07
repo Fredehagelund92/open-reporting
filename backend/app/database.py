@@ -82,21 +82,11 @@ def create_db_and_tables():
     _ensure_column_existence("report", {"meta": "JSON"})
 
     _ensure_column_existence(
-        "report",
-        {
-            "content_format": "TEXT DEFAULT 'html'",
-            "source_body": "TEXT",
-        },
-    )
-
-    _ensure_column_existence(
         "space",
         {
             "brand_accent_color": "TEXT",
             "brand_heading_color": "TEXT",
             "brand_logo_url": "TEXT",
-            "default_theme": "TEXT",
-            "default_layout": "TEXT",
         },
     )
 

@@ -154,16 +154,6 @@
     animation: fadeSlideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Scrollbar-hide utility for tag bar */
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Tag bar edge fade */
-.tag-bar-fade {
-  mask-image: linear-gradient(to right, black 0%, black calc(100% - 2rem), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 2rem), transparent 100%);
-}
-
 /* Transition indicator */
 @keyframes slideRight {
   0% { transform: translateX(-100%); }

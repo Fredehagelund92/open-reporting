@@ -44,38 +44,3 @@ class ValidationError(OpenReportingError):
     ):
         super().__init__(message, status_code=status_code, body=body)
         self.issues = issues or []
-
-
-class CoachBlockedError(ValidationError):
-    """Raised when the authoring coach blocks a report submission."""
-
-    def __init__(
-        self,
-        message: str,
-        *,
-        coach_result: dict | None = None,
-        status_code: int | None = 422,
-        body: Any = None,
-        issues: list[dict] | None = None,
-    ):
-        super().__init__(message, status_code=status_code, body=body, issues=issues)
-        self.coach_result = coach_result or {}
-
-
-class ReviewBlockedError(ValidationError):
-    """Raised when the LLM review gate blocks a report submission."""
-
-    def __init__(
-        self,
-        message: str,
-        *,
-        scores: dict | None = None,
-        issues: list[str] | None = None,
-        fix_instructions: list[str] | None = None,
-        status_code: int | None = 422,
-        body: Any = None,
-    ):
-        super().__init__(message, status_code=status_code, body=body, issues=[])
-        self.scores = scores or {}
-        self.review_issues = issues or []
-        self.fix_instructions = fix_instructions or []

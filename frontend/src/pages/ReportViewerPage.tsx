@@ -28,8 +28,6 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  X,
-  Highlighter,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -40,30 +38,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { timeAgo } from "@/lib/time"
-import DOMPurify, { type Config as DOMPurifyConfig } from "dompurify"
-import { SlideshowViewer } from "@/components/SlideshowViewer"
-
-/** Shared DOMPurify config for rendering agent-submitted HTML reports. */
-const REPORT_SANITIZE_CONFIG: DOMPurifyConfig = {
-  ADD_TAGS: [
-    "canvas", "svg", "path", "circle", "rect", "line", "polyline",
-    "polygon", "text", "g", "defs", "clippath", "use",
-  ],
-  ADD_ATTR: [
-    "style", "viewbox", "fill", "stroke", "stroke-width", "d",
-    "cx", "cy", "r", "x", "y", "x1", "x2", "y1", "y2", "points",
-    "width", "height", "transform", "role", "aria-label", "xmlns",
-    "preserveaspectratio", "stroke-dasharray", "dominant-baseline",
-    "text-anchor", "fill-opacity", "rx",
-  ],
-  FORBID_TAGS: [
-    "script", "style", "iframe", "form", "input", "textarea", "select",
-    "button", "embed", "object", "applet", "meta", "base", "link",
-  ],
-  FORBID_ATTR: ["onerror", "onload", "onclick", "onmouseover", "onfocus", "onblur"],
-  ALLOW_DATA_ATTR: true,
-  RETURN_TRUSTED_TYPE: false,
-}
+import SandboxedReport from "@/components/SandboxedReport"
 
 import { cn } from "@/lib/utils"
 import { type Report, type ReportComment } from "@/types"
@@ -93,33 +68,8 @@ export function ReportViewerPage() {
     enabled: !!report?.id
   })
 
-  // Ref for the report body wrapper (position: relative container for overlays)
-  const reportWrapperRef = useRef<HTMLDivElement>(null)
   const commentTextareaRef = useRef<HTMLTextAreaElement>(null)
   const discussionRef = useRef<HTMLElement>(null)
-  const pendingQuoteRef = useRef<string>("")
-  const tooltipClickedRef = useRef(false)
-
-  // Text selection comment state
-  const [selectedQuote, setSelectedQuote] = useState<string | null>(null)
-  const selectedQuoteRef = useRef<string | null>(null)
-  // Keep a ref in sync so event-handler closures can read the latest value
-  useEffect(() => { selectedQuoteRef.current = selectedQuote }, [selectedQuote])
-
-  const [selectionTooltip, setSelectionTooltip] = useState<{
-    top: number
-    left: number
-  } | null>(null)
-
-  // Highlight overlays — absolutely positioned divs rendered by React
-  const [highlightRects, setHighlightRects] = useState<
-    { top: number; left: number; width: number; height: number }[]
-  >([])
-
-  const [showSelectHint, setShowSelectHint] = useState(() => {
-    try { return localStorage.getItem("or-select-hint-dismissed") !== "1" }
-    catch { return true }
-  })
 
   const [vote, setVote] = useState(0)
   const [commentText, setCommentText] = useState("")
@@ -138,10 +88,6 @@ export function ReportViewerPage() {
     if (!report) return
     setVote(report.user_vote ?? 0)
     setCurrentScore(report.upvote_score ?? 0)
-    setSelectedQuote(null)
-    setHighlightRects([])
-    setSelectionTooltip(null)
-    pendingQuoteRef.current = ""
   }, [report])
 
   // Split series_reports into series entries (distinct runs) and tab entries (within same run)
@@ -215,138 +161,11 @@ export function ReportViewerPage() {
     }
   }, [report?.series_reports, report?.slug, queryClient])
 
-  // Text selection → highlight overlays + floating "Comment" tooltip.
-  // Reads getClientRects() from the selection Range and renders React-owned
-  // overlay divs. Supports drag-select, double-click, and triple-click.
-  useEffect(() => {
-    const wrapper = reportWrapperRef.current
-    if (!wrapper || !isAuthenticated || isFullscreen) return
-
-    /** Read the current selection and compute overlay rects + tooltip pos.
-     *  Returns null if there's no usable selection inside the wrapper. */
-    const readSelection = () => {
-      const sel = window.getSelection()
-      const text = sel?.toString().trim()
-      if (!text || text.length < 2 || !sel || sel.rangeCount === 0) return null
-
-      const range = sel.getRangeAt(0)
-      if (!wrapper.contains(range.commonAncestorContainer)) return null
-
-      const wrapperRect = wrapper.getBoundingClientRect()
-      const clientRects = range.getClientRects()
-      const rects: { top: number; left: number; width: number; height: number }[] = []
-      for (let i = 0; i < clientRects.length; i++) {
-        const r = clientRects[i]
-        if (r.width < 1) continue
-        rects.push({
-          top: r.top - wrapperRect.top,
-          left: r.left - wrapperRect.left,
-          width: r.width,
-          height: r.height,
-        })
-      }
-      if (rects.length === 0) return null
-
-      const firstRect = clientRects[0]
-      return {
-        text: text.slice(0, 500),
-        rects,
-        tooltip: { top: firstRect.top - wrapperRect.top - 44, left: firstRect.left - wrapperRect.left + firstRect.width / 2 },
-      }
-    }
-
-    const applySelection = (result: NonNullable<ReturnType<typeof readSelection>>) => {
-      pendingQuoteRef.current = result.text
-      setHighlightRects(result.rects)
-      setSelectionTooltip(result.tooltip)
-    }
-
-    const clearIfNoQuote = () => {
-      setSelectionTooltip(null)
-      pendingQuoteRef.current = ""
-      if (!selectedQuoteRef.current) setHighlightRects([])
-    }
-
-    const handleSelectionAttempt = () => {
-      // Try reading immediately — works for most selections
-      const result = readSelection()
-      if (result) {
-        applySelection(result)
-        return
-      }
-      // Retry once after a tick — catches fast drags & double-clicks
-      // where the browser hasn't finalised the selection at mouseup time
-      setTimeout(() => {
-        const retry = readSelection()
-        if (retry) applySelection(retry)
-        else clearIfNoQuote()
-      }, 10)
-    }
-
-    const handleMouseUp = (e: MouseEvent) => {
-      // Don't interfere with text selection in fullscreen mode
-      if (!wrapper.contains(e.target as Node)) return
-      const target = e.target as HTMLElement
-      if (target.closest("[data-selection-tooltip]")) return
-      if (tooltipClickedRef.current) {
-        tooltipClickedRef.current = false
-        return
-      }
-      handleSelectionAttempt()
-    }
-
-    const handleMouseDown = (e: MouseEvent) => {
-      // Don't interfere with text selection in fullscreen mode
-      if (!wrapper.contains(e.target as Node)) return
-      const target = e.target as HTMLElement
-      if (target.closest("[data-selection-tooltip]")) return
-      // Only clear tooltip; keep highlight rects until the next selection
-      // resolves (prevents flicker during double/triple-click sequences)
-      setSelectionTooltip(null)
-    }
-
-    // Double-click selects a word — handle it explicitly since the
-    // mouseup in a dblclick sequence fires before the word is selected.
-    const handleDblClick = () => {
-      setTimeout(() => {
-        const result = readSelection()
-        if (result) applySelection(result)
-      }, 0)
-    }
-
-    document.addEventListener("mouseup", handleMouseUp)
-    document.addEventListener("mousedown", handleMouseDown)
-    wrapper.addEventListener("dblclick", handleDblClick)
-    return () => {
-      document.removeEventListener("mouseup", handleMouseUp)
-      document.removeEventListener("mousedown", handleMouseDown)
-      wrapper.removeEventListener("dblclick", handleDblClick)
-    }
-  }, [report?.html_body, isAuthenticated, isFullscreen])
-
-  // Extract the theme background color from the report's container div (first tag only)
-  const reportBgColor = useMemo(() => {
-    if (!report?.html_body) return undefined
-    // Match only within the first <div style="..."> tag — the container
-    const firstTag = report.html_body.match(/^<div\s+style="([^"]*)"/)
-    if (!firstTag) return undefined
-    const bgMatch = firstTag[1].match(/background:\s*(#[0-9a-fA-F]{3,6})/)
-    return bgMatch?.[1]
-  }, [report?.html_body])
-
   const SUGGESTED_USERS = ["Alex PM", "Sara Engineer", "Admin", "ResearchBot"]
   const filteredMentions = SUGGESTED_USERS.filter(u => u.toLowerCase().includes(mentionQuery.toLowerCase()))
 
   const handleToggleFullscreen = (val: boolean) => {
     setIsFullscreen(val)
-    if (val) {
-      // Clear selection highlight and comment tooltip when entering fullscreen
-      setSelectionTooltip(null)
-      setHighlightRects([])
-      setSelectedQuote(null)
-      pendingQuoteRef.current = ""
-      window.getSelection()?.removeAllRanges()
-    }
   }
 
   const handleVote = async (direction: 1 | -1) => {
@@ -404,11 +223,8 @@ export function ReportViewerPage() {
     try {
       await api.post(`/reports/${report.id}/comments`, {
         text: commentText.trim(),
-        ...(selectedQuote ? { quoted_text: selectedQuote } : {}),
       })
       setCommentText("")
-      setSelectedQuote(null)
-      setHighlightRects([])
       await queryClient.invalidateQueries({ queryKey: ["comments", report.id] })
       await queryClient.invalidateQueries({ queryKey: ["report", slug] })
     } catch (err) {
@@ -436,9 +252,9 @@ export function ReportViewerPage() {
         />
       )}
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-x-hidden">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-hidden">
 
-        {/* ─── Editorial Header ─── */}
+        {/* --- Editorial Header --- */}
         <header className="mb-5 pb-5 border-b border-border/60">
           {/* Byline */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground mb-3">
@@ -453,7 +269,7 @@ export function ReportViewerPage() {
               variant="secondary"
               className="h-4 px-1.5 py-0 text-sm font-medium text-muted-foreground bg-primary/10 text-primary border-primary/20"
             >
-              {report.content_type === "slideshow" ? "Presentation" : "Report"}
+              Report
             </Badge>
             <span className="text-border" aria-hidden>·</span>
             <span className="flex items-center gap-1">
@@ -490,7 +306,7 @@ export function ReportViewerPage() {
           )}
         </header>
 
-        {/* ─── Action Bar ─── */}
+        {/* --- Action Bar --- */}
         <div className="flex items-center gap-1.5 sm:gap-2 mb-7">
           {/* Grouped vote control */}
           <div className="flex items-center rounded-md border border-border/70 bg-card overflow-hidden shadow-sm">
@@ -608,76 +424,32 @@ export function ReportViewerPage() {
           </div>
         </div>
 
-        {/* ─── Fullscreen Overlay ─── */}
+        {/* --- Fullscreen Overlay --- */}
         {isFullscreen && (
-          report.content_type === "slideshow" ? (
-            <div className="fixed inset-0 z-[100] bg-foreground/90 backdrop-blur-sm overflow-hidden animate-in fade-in duration-300">
-              <div className="fixed top-4 right-4 z-[110]">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleToggleFullscreen(false)}
-                  className="bg-card/90 backdrop-blur shadow-md gap-2 text-foreground hover:text-foreground"
-                >
-                  <Minimize2 className="size-4" /> Exit Fullscreen
-                </Button>
-              </div>
-              <SlideshowViewer
-                htmlBody={report.html_body || ""}
-                isFullscreen={true}
-                onRequestExitFullscreen={() => handleToggleFullscreen(false)}
-              />
+          <div className="fixed inset-0 z-[100] bg-foreground/90 backdrop-blur-sm overflow-hidden animate-in fade-in duration-300 flex flex-col">
+            <div className="fixed top-4 right-4 z-[110]">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleToggleFullscreen(false)}
+                className="bg-card/90 backdrop-blur shadow-md gap-2 text-foreground hover:text-foreground"
+              >
+                <Minimize2 className="size-4" /> Exit Fullscreen
+              </Button>
             </div>
-          ) : (
-            <div className="fixed inset-0 z-[100] bg-foreground/90 backdrop-blur-sm overflow-y-auto p-4 md:p-12 animate-in fade-in duration-300">
-              <div className="fixed top-4 right-4 z-[110]">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleToggleFullscreen(false)}
-                  className="bg-card/90 backdrop-blur shadow-md gap-2 text-foreground hover:text-foreground"
-                >
-                  <Minimize2 className="size-4" /> Exit Fullscreen
-                </Button>
-              </div>
+            <div className="flex-1 overflow-auto p-4 md:p-12">
               <Card
                 className="mx-auto shadow-2xl border-border overflow-hidden max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0"
-                style={reportBgColor ? { backgroundColor: reportBgColor } : undefined}
               >
-                <CardContent className="!p-0 overflow-x-auto">
-                  <div
-                    className="max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto"
-                    dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(report.html_body || "", REPORT_SANITIZE_CONFIG),
-                    }}
-                  />
+                <CardContent className="!p-0">
+                  <SandboxedReport htmlBody={report.html_body || ""} />
                 </CardContent>
               </Card>
             </div>
-          )
-        )}
-
-        {/* ─── Select-to-quote hint ─── */}
-        {isAuthenticated && showSelectHint && report.content_type !== "slideshow" && (
-          <div className="mb-3 flex items-center gap-2.5 px-3 py-2 rounded-sm bg-primary/[0.04] border border-primary/10 animate-in fade-in slide-in-from-top-1 duration-500">
-            <Highlighter className="size-3.5 text-primary/50 shrink-0" />
-            <span className="text-[12px] text-muted-foreground">
-              <span className="font-medium text-foreground/70">Select text</span> in the report to quote it in a comment
-            </span>
-            <button
-              onClick={() => {
-                setShowSelectHint(false)
-                try { localStorage.setItem("or-select-hint-dismissed", "1") } catch { /* ignore */ }
-              }}
-              className="ml-auto shrink-0 p-0.5 rounded text-muted-foreground/30 hover:text-foreground/60 transition-colors"
-              aria-label="Dismiss hint"
-            >
-              <X className="size-3" />
-            </button>
           </div>
         )}
 
-        {/* ─── Series Slider (cross-run navigation) ─── */}
+        {/* --- Series Slider (cross-run navigation) --- */}
         {seriesEntries.length > 1 && (
           <nav aria-label="Series navigation" className="flex items-center gap-3 px-4 py-2.5 bg-muted/30 border border-border/40 rounded-lg mb-2">
             <button
@@ -722,7 +494,7 @@ export function ReportViewerPage() {
           </nav>
         )}
 
-        {/* ─── Tab Navigation (within same run) ─── */}
+        {/* --- Tab Navigation (within same run) --- */}
         {tabEntries.length > 1 && (
           <nav aria-label="Report tabs">
             {/* Desktop: equal-width tabs that truncate to fit */}
@@ -775,88 +547,17 @@ export function ReportViewerPage() {
           </nav>
         )}
 
-        {/* ─── Document Body ─── */}
+        {/* --- Document Body --- */}
         <div className={cn(
-          "mb-10 border border-border/60 overflow-hidden shadow-sm",
+          "mb-10 border border-border/60 overflow-hidden shadow-sm bg-card",
           tabEntries.length > 1
             ? "rounded-lg sm:rounded-t-none sm:rounded-b-lg"
             : "rounded-lg"
         )}>
-          {/* Content */}
-          <div style={reportBgColor ? { backgroundColor: reportBgColor } : undefined}>
-            {report.content_type === "slideshow" ? (
-              <SlideshowViewer htmlBody={report.html_body || ""} />
-            ) : (
-              <div ref={reportWrapperRef} className="relative">
-                <div
-                  className="max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:max-w-full [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_iframe]:max-w-full"
-                  dangerouslySetInnerHTML={{
-                    __html: DOMPurify.sanitize(report.html_body || "", REPORT_SANITIZE_CONFIG),
-                  }}
-                />
-                {/* Highlight overlays — React-owned, positioned over selected text */}
-                {highlightRects.map((r, i) => (
-                  <div
-                    key={i}
-                    className="absolute pointer-events-none rounded-[2px]"
-                    style={{
-                      top: r.top,
-                      left: r.left,
-                      width: r.width,
-                      height: r.height,
-                      background: "linear-gradient(120deg, rgba(250,204,21,0.22) 0%, rgba(250,204,21,0.38) 100%)",
-                    }}
-                  />
-                ))}
-
-                {/* ── Selection tooltip — absolute inside wrapper, same coordinate space as highlights ── */}
-                {selectionTooltip && (
-                  <div
-                    data-selection-tooltip
-                    className="absolute z-[200] pointer-events-none animate-in fade-in zoom-in-95 duration-150"
-                    style={{
-                      top: selectionTooltip.top,
-                      left: selectionTooltip.left,
-                      transform: "translateX(-50%)",
-                    }}
-                  >
-                    <button
-                      className={cn(
-                        "pointer-events-auto relative flex items-center gap-1.5",
-                        "pl-2.5 pr-3 py-1.5 rounded-full",
-                        "bg-foreground text-background text-[11px] font-semibold tracking-wide",
-                        "shadow-[0_4px_20px_rgba(0,0,0,0.25)] ring-1 ring-white/10",
-                        "hover:scale-105 active:scale-95 transition-transform duration-100",
-                        "after:absolute after:left-1/2 after:-translate-x-1/2 after:top-full",
-                        "after:border-[5px] after:border-transparent after:border-t-foreground",
-                      )}
-                      onMouseDown={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        tooltipClickedRef.current = true
-                        const quote = pendingQuoteRef.current
-                        if (quote) {
-                          setSelectedQuote(quote)
-                          setSelectionTooltip(null)
-                          pendingQuoteRef.current = ""
-                          setTimeout(() => {
-                            discussionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-                            setTimeout(() => commentTextareaRef.current?.focus(), 400)
-                          }, 50)
-                        }
-                      }}
-                    >
-                      <MessageSquare className="size-3 opacity-70" />
-                      Comment
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <SandboxedReport htmlBody={report.html_body || ""} />
         </div>
 
-        {/* ─── Discussion ─── */}
+        {/* --- Discussion --- */}
         <section ref={discussionRef} className="pb-16 scroll-mt-6">
           <div className="flex items-center gap-2.5 mb-5">
             <span className="text-sm font-medium text-muted-foreground">Discussion</span>
@@ -877,23 +578,6 @@ export function ReportViewerPage() {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="rounded-sm border border-border bg-card overflow-hidden focus-within:ring-1 focus-within:ring-primary/40 focus-within:border-primary/50 transition-all">
-                    {/* Quoted text preview */}
-                    {selectedQuote && (
-                      <div className="mx-3 mt-3 mb-1 flex items-start gap-2 animate-in slide-in-from-top-2 fade-in duration-300">
-                        <div className="flex-1 min-w-0 relative border-l-[3px] border-primary/50 pl-3 py-1.5 rounded-r-md bg-gradient-to-r from-primary/[0.06] to-transparent">
-                          <p className="text-[13px] text-foreground/70 italic leading-relaxed line-clamp-3">
-                            {selectedQuote.length > 150 ? selectedQuote.slice(0, 150) + "\u2026" : selectedQuote}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => { setSelectedQuote(null); setHighlightRects([]) }}
-                          className="shrink-0 mt-1 p-1 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-muted/80 transition-all duration-150"
-                          aria-label="Remove quote"
-                        >
-                          <X className="size-3.5" />
-                        </button>
-                      </div>
-                    )}
                     <textarea
                       ref={commentTextareaRef}
                       value={commentText}
@@ -927,7 +611,7 @@ export function ReportViewerPage() {
                           else if (e.key === "Escape") { setShowMentions(false) }
                         }
                       }}
-                      placeholder="Add to the discussion… use @ to mention someone"
+                      placeholder="Add to the discussion... use @ to mention someone"
                       className="w-full min-h-[84px] bg-transparent border-0 p-3 text-sm resize-none focus:outline-none placeholder:text-muted-foreground/40"
                     />
                     <div className="flex items-center justify-between px-3 py-2 border-t border-border/60 bg-muted/20">
@@ -996,7 +680,6 @@ export function ReportViewerPage() {
           )}
         </section>
       </main>
-
     </div>
   )
 }
@@ -1096,7 +779,7 @@ function CommentItem({ comment, reportId }: { comment: ReportComment; reportId: 
               <div className="col-span-3 px-1 py-1 text-sm font-medium text-muted-foreground text-center border-b border-border/60 mb-1">
                 React
               </div>
-              {["👍", "❤️", "🚀", "💡", "💯", "✅", "🔥", "👀", "🤔"].map(emoji => (
+              {["\u{1F44D}", "\u2764\uFE0F", "\u{1F680}", "\u{1F4A1}", "\u{1F4AF}", "\u2705", "\u{1F525}", "\u{1F440}", "\u{1F914}"].map(emoji => (
                 <DropdownMenuItem
                   key={emoji}
                   className="p-0 focus:bg-transparent rounded-md overflow-hidden"

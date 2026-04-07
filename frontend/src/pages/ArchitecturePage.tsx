@@ -16,7 +16,6 @@ import {
   LayoutGrid,
   Palette,
   ShieldCheck,
-  Presentation,
   FileText,
   MessageSquare,
 } from "lucide-react"
@@ -33,7 +32,7 @@ function ArchitectureDiagram() {
       <rect x="20" y={top} width="170" height={h} rx="14" fill="hsl(var(--primary))" fillOpacity="0.10" stroke="hsl(var(--primary))" strokeOpacity="0.4" strokeWidth="1.5" />
       <text x="105" y={midY - 18} textAnchor="middle" fill="currentColor" fontSize="13" fontWeight="700">Your Agent</text>
       <text x="105" y={midY} textAnchor="middle" fill="currentColor" fillOpacity="0.55" fontSize="10">Python SDK</text>
-      <text x="105" y={midY + 16} textAnchor="middle" fill="hsl(var(--primary))" fillOpacity="0.7" fontSize="9" fontWeight="500">sections · charts · slides</text>
+      <text x="105" y={midY + 16} textAnchor="middle" fill="hsl(var(--primary))" fillOpacity="0.7" fontSize="9" fontWeight="500">sections · charts</text>
 
       {/* Arrow 1 */}
       <line x1="190" y1={midY} x2="270" y2={midY} stroke="currentColor" strokeOpacity="0.35" strokeWidth="1.5" markerEnd="url(#sdk-arrow)" />
@@ -51,7 +50,7 @@ function ArchitectureDiagram() {
       {/* Space */}
       <rect x="530" y={top} width="120" height={h} rx="12" fill="currentColor" fillOpacity="0.05" stroke="currentColor" strokeOpacity="0.2" strokeWidth="1.5" />
       <text x="590" y={midY - 10} textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="600">Space</text>
-      <text x="590" y={midY + 8} textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="10">Reports · Slides</text>
+      <text x="590" y={midY + 8} textAnchor="middle" fill="currentColor" fillOpacity="0.5" fontSize="10">Reports</text>
 
       {/* Arrow 3 */}
       <line x1="650" y1={midY} x2="700" y2={midY} stroke="currentColor" strokeOpacity="0.35" strokeWidth="1.5" markerEnd="url(#sdk-arrow)" />
@@ -87,60 +86,37 @@ function ArchitectureDiagram() {
 
 /* ── Code snippets ─────────────────────────────────────────────────── */
 
-const reportSnippet = `from openreporting import OpenReportingClient, kpi_grid, bar_chart, text
+const reportSnippet = `from openreporting import OpenReportingClient
 
 client = OpenReportingClient(api_key="or_...", base_url="http://localhost:8000")
+
+html = """
+<style>
+  body { font-family: system-ui; max-width: 800px; margin: 0 auto; padding: 2rem; }
+  .kpi { display: flex; gap: 1rem; margin: 1rem 0; }
+  .kpi div { padding: 1rem; background: #f8f9fa; border-radius: 8px; flex: 1; }
+  .kpi .value { font-size: 1.5rem; font-weight: bold; }
+  .kpi .delta { color: #16a34a; font-size: 0.9rem; }
+</style>
+<h1>Weekly Revenue Summary</h1>
+<div class="kpi">
+  <div><div class="value">$1.2M</div><div class="delta">+12%</div>Revenue</div>
+  <div><div class="value">34</div><div class="delta">+8</div>Deals</div>
+  <div><div class="value">$35K</div><div class="delta">+4%</div>Avg Deal</div>
+</div>
+<h2>Highlights</h2>
+<ul>
+  <li>Enterprise segment drove 60% of growth</li>
+  <li>New pricing tier converting well</li>
+</ul>
+"""
 
 client.publish(
     title="Weekly Revenue Summary",
     summary="Revenue up 12% WoW driven by enterprise segment.",
+    html=html,
     space="o/finance",
-    sections=[
-        kpi_grid([
-            {"label": "Revenue", "value": "$1.2M", "delta": "+12%", "trend": "up"},
-            {"label": "Deals", "value": "34", "delta": "+8", "trend": "up"},
-            {"label": "Avg Deal", "value": "$35K", "delta": "+4%", "trend": "up"},
-        ]),
-        bar_chart(
-            labels=["Mon", "Tue", "Wed", "Thu", "Fri"],
-            values=[180, 220, 195, 240, 310],
-            heading="Daily Revenue ($K)",
-        ),
-        text("Highlights", "- Enterprise segment drove 60% of growth\\n- New pricing tier converting well"),
-    ],
-)`
-
-const slideshowSnippet = `from openreporting import (
-    OpenReportingClient, slide, summary_header,
-    kpi_grid, text, bar_chart, callout,
-)
-
-client = OpenReportingClient(api_key="or_...", base_url="http://localhost:8000")
-
-client.publish(
-    title="Q1 Board Update",
-    summary="Revenue at $34M, 105% of plan.",
-    space="o/executive",
-    content_type="slideshow",        # ← presentation mode
-    theme="presentation",
-    sections=[
-        slide([                      # Dark title slide
-            summary_header("Q1 Board Update", subtitle="Performance & Strategy"),
-        ], background_color="#0f172a"),
-
-        slide([                      # KPIs + chart
-            kpi_grid([
-                {"label": "Revenue", "value": "$34M", "delta": "+26% YoY", "trend": "up"},
-                {"label": "ARR", "value": "$72M", "delta": "+32%", "trend": "up"},
-            ]),
-            bar_chart(["Q1", "Q2", "Q3", "Q4"], values=[34, 0, 0, 0], heading="Quarterly Revenue ($M)"),
-        ]),
-
-        slide([                      # Strategy + callout
-            text("Priorities", "1. **AI launch** — Q3\\n2. **Growth tier** — Q2 pilot"),
-            callout("Board decision: approve $1.8M AI investment.", type="success"),
-        ]),
-    ],
+    tags=["revenue", "weekly"],
 )`
 
 const llmSnippet = `from openreporting import OpenReportingClient
@@ -148,60 +124,49 @@ import anthropic
 
 client = OpenReportingClient(api_key="or_...", base_url="http://localhost:8000")
 
-# Builds a system prompt with all 19 section types, chart rules, themes, and workflows
-system_prompt = client.build_system_prompt()
-
 llm = anthropic.Anthropic()
 response = llm.messages.create(
     model="claude-sonnet-4-20250514",
-    system=system_prompt,
+    system="Generate a complete HTML report with CSS styling. Output only the HTML.",
     messages=[{"role": "user", "content": "Write a weekly revenue report for the finance team"}],
 )
 
-# The LLM returns structured sections — publish directly
+# The LLM returns full HTML — publish directly
 client.publish(
     title="Weekly Revenue Report",
-    markdown_body=response.content[0].text,
+    summary="AI-generated weekly revenue analysis.",
+    html=response.content[0].text,
     space="o/finance",
 )`
 
-const chatSnippet = `from fastapi import FastAPI
-from openreporting import ChatHandler
-from openreporting.fastapi import create_chat_router
+const chatSnippet = `# Chat agents can be built as standalone FastAPI services
+# that register their endpoint with Open Reporting
 
-chat = ChatHandler(
-    system_prompt="You are the Finance Analyst. Answer questions about revenue data.",
-    schema="CREATE TABLE revenue (quarter TEXT, amount REAL, region TEXT)",
-    query_fn=lambda sql: db.execute(sql).fetchall(),
-    api_key="sk-ant-...",  # Claude or OpenAI — auto-detected
-)
+from fastapi import FastAPI
+import anthropic
 
 app = FastAPI()
-app.include_router(create_chat_router(chat))
-# Exposes /health, /chat, and /chat/stream (SSE)`
+llm = anthropic.Anthropic()
+
+@app.post("/chat")
+async def chat(request: dict):
+    response = llm.messages.create(
+        model="claude-sonnet-4-20250514",
+        system="You are the Finance Analyst. Answer questions about revenue data.",
+        messages=request["messages"],
+    )
+    return {"reply": response.content[0].text, "format": "markdown"}`
 
 /* ── Section type data ───────────────────────────────────────────────── */
 
-const sectionTypes = [
-  { name: "text", desc: "Headings + markdown body" },
-  { name: "kpi-grid", desc: "Metric cards with trends" },
-  { name: "table", desc: "Data tables" },
-  { name: "bar-chart", desc: "Vertical bar charts" },
-  { name: "line-chart", desc: "Line charts" },
-  { name: "area-chart", desc: "Filled line charts" },
-  { name: "pie-chart", desc: "Pie charts" },
-  { name: "donut-chart", desc: "Donut charts" },
-  { name: "horizontal-bar-chart", desc: "Horizontal bars" },
-  { name: "stacked-bar-chart", desc: "Stacked bars" },
-  { name: "sparkline", desc: "Inline trend lines" },
-  { name: "callout", desc: "Info / warning / success boxes" },
-  { name: "timeline", desc: "Chronological events" },
-  { name: "action-items", desc: "Tasks with owners + dates" },
-  { name: "summary-header", desc: "Report header with stats" },
-  { name: "slide", desc: "Presentation slide wrapper" },
-  { name: "columns", desc: "Side-by-side layout" },
-  { name: "divider", desc: "Horizontal separator" },
-  { name: "spacer", desc: "Vertical whitespace" },
+const sdkMethods = [
+  { name: "publish()", desc: "Create a new HTML report" },
+  { name: "update()", desc: "Update an existing report" },
+  { name: "get_report()", desc: "Fetch report by slug/ID" },
+  { name: "list_reports()", desc: "List with filters & sorting" },
+  { name: "delete_report()", desc: "Remove a report" },
+  { name: "get_spaces()", desc: "List available spaces" },
+  { name: "get_capabilities()", desc: "Platform metadata" },
 ]
 
 /* ── Page ───────────────────────────────────────────────────────────── */
@@ -220,8 +185,8 @@ export function ArchitecturePage() {
             Python SDK
           </h1>
           <p className="text-lg text-muted-foreground mb-6">
-            Everything your agent needs to publish reports and presentations.
-            Sections, charts, themes, quality coaching — one <code className="text-sm bg-muted px-1.5 py-0.5 rounded-sm font-mono">pip install</code> away.
+            A thin HTTP client for publishing HTML reports.
+            One <code className="text-sm bg-muted px-1.5 py-0.5 rounded-sm font-mono">pip install</code> away.
           </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted/60 border border-border rounded-lg font-mono text-sm text-foreground">
             <span className="text-muted-foreground select-none">$</span>
@@ -233,23 +198,23 @@ export function ArchitecturePage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
           <div className="p-4 rounded-sm border border-border bg-card">
             <LayoutGrid className="size-5 text-primary mb-2" />
-            <p className="font-semibold text-foreground text-sm mb-1">19 Section Types</p>
+            <p className="font-semibold text-foreground text-sm mb-1">Full HTML Control</p>
             <p className="text-xs text-muted-foreground">
-              KPI grids, 8 chart types, tables, timelines, callouts, slides, and more — all from pure data.
-            </p>
-          </div>
-          <div className="p-4 rounded-sm border border-border bg-card">
-            <Palette className="size-5 text-primary mb-2" />
-            <p className="font-semibold text-foreground text-sm mb-1">6 Themes · 4 Layouts</p>
-            <p className="text-xs text-muted-foreground">
-              corporate, executive, financial, consulting, technical, editorial — pick one or let the agent choose.
+              Custom CSS, JavaScript, interactive charts, collapsible sections — no restrictions.
             </p>
           </div>
           <div className="p-4 rounded-sm border border-border bg-card">
             <ShieldCheck className="size-5 text-primary mb-2" />
-            <p className="font-semibold text-foreground text-sm mb-1">Quality Coach</p>
+            <p className="font-semibold text-foreground text-sm mb-1">Sandboxed Iframes</p>
             <p className="text-xs text-muted-foreground">
-              Built-in validation checks structure, specificity, and evidence quality before publishing.
+              Reports render in sandboxed iframes — scripts run safely without access to the parent page.
+            </p>
+          </div>
+          <div className="p-4 rounded-sm border border-border bg-card">
+            <Palette className="size-5 text-primary mb-2" />
+            <p className="font-semibold text-foreground text-sm mb-1">Thin SDK Client</p>
+            <p className="text-xs text-muted-foreground">
+              Publish, update, list, and delete — a clean HTTP client that gets out of your way.
             </p>
           </div>
         </div>
@@ -259,7 +224,7 @@ export function ArchitecturePage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">How it works</CardTitle>
             <CardDescription>
-              Your agent builds content with the SDK. The platform validates, renders server-side SVG charts, and stores the report. Teams read, vote, and comment — feedback flows back to your agent.
+              Your agent builds HTML reports and publishes via the SDK. The platform validates, stores, and renders them in sandboxed iframes. Teams read, vote, and comment — feedback flows back to your agent.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -277,36 +242,13 @@ export function ArchitecturePage() {
               </div>
               <CardTitle className="text-xl">Publish a Report</CardTitle>
               <CardDescription>
-                Compose reports from typed sections. The SDK validates data, the platform renders themed HTML with server-side SVG charts.
+                Build full HTML reports with custom CSS and JavaScript. The platform validates and renders them in sandboxed iframes.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <CodeBlock code={reportSnippet} lang="python" />
               <p className="mt-4 text-sm text-muted-foreground">
-                Every section type has a Python helper: <code className="text-xs bg-muted px-1 rounded-sm font-mono">kpi_grid()</code>, <code className="text-xs bg-muted px-1 rounded-sm font-mono">bar_chart()</code>, <code className="text-xs bg-muted px-1 rounded-sm font-mono">table()</code>, <code className="text-xs bg-muted px-1 rounded-sm font-mono">callout()</code>, and 15 more. Or use <code className="text-xs bg-muted px-1 rounded-sm font-mono">markdown_body</code> for free-form content.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* ── Build Presentations ────────────────────────────────── */}
-        <div className="mb-10" id="presentations">
-          <Card className="border-border rounded-sm">
-            <CardHeader className="border-b border-border pb-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Presentation className="size-4 text-primary" />
-                <Badge variant="outline" className="bg-signal/10 text-signal border-signal/30">Presentation</Badge>
-              </div>
-              <CardTitle className="text-xl">Create Presentations</CardTitle>
-              <CardDescription>
-                Wrap sections in <code className="text-xs font-mono">slide()</code> for navigable presentations with per-slide backgrounds, arrow key navigation, and fullscreen mode.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <CodeBlock code={slideshowSnippet} lang="python" />
-              <p className="mt-4 text-sm text-muted-foreground">
-                Use <code className="text-xs bg-muted px-1 rounded-sm font-mono">background_color="#0f172a"</code> for dark title slides —
-                the viewer automatically adjusts text colors for contrast. Each <code className="text-xs bg-muted px-1 rounded-sm font-mono">slide()</code> groups 1–3 sections into a single navigable page.
+                Full HTML documents with <code className="text-xs bg-muted px-1 rounded-sm font-mono">&lt;style&gt;</code>, <code className="text-xs bg-muted px-1 rounded-sm font-mono">&lt;script&gt;</code>, and any CSS/JS. Reports render in sandboxed iframes with full interactivity.
               </p>
             </CardContent>
           </Card>
@@ -322,7 +264,7 @@ export function ArchitecturePage() {
               </div>
               <CardTitle className="text-xl">Power Up with LLMs</CardTitle>
               <CardDescription>
-                <code className="text-xs font-mono">build_system_prompt()</code> gives any LLM the full section reference, chart rules, and publishing workflow. Pair with the authoring coach for quality control.
+                Have any LLM generate full HTML reports and publish them directly via the SDK.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
@@ -334,11 +276,9 @@ export function ArchitecturePage() {
                   The system prompt embeds the complete skill reference — no external fetch needed:
                 </p>
                 <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                  <li>- All 19 section types with required/optional fields</li>
-                  <li>- Chart templates with validation rules</li>
-                  <li>- 6 themes (corporate, executive, financial, consulting, technical, editorial) and 4 layout widths</li>
-                  <li>- Publish → coach → revise workflow</li>
-                  <li>- API endpoint reference</li>
+                  <li>- HTML format guidelines and size limits</li>
+                  <li>- Publish workflow and API endpoint reference</li>
+                  <li>- Space and tag conventions</li>
                 </ul>
               </div>
             </CardContent>
@@ -378,12 +318,12 @@ export function ArchitecturePage() {
 
         {/* ── Section Types ──────────────────────────────────────── */}
         <div className="mb-12">
-          <h2 className="text-lg font-semibold text-foreground mb-1">All 19 section types</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-1">SDK Methods</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Every type has a Python helper function. Pass data — the platform renders themed HTML and SVG.
+            A clean HTTP client — publish, update, list, and manage HTML reports.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {sectionTypes.map((s) => (
+            {sdkMethods.map((s) => (
               <div key={s.name} className="p-2.5 rounded-sm border border-border bg-card">
                 <p className="font-mono text-xs font-medium text-foreground">{s.name}</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">{s.desc}</p>
@@ -428,7 +368,7 @@ export function ArchitecturePage() {
             <div>
               <p className="font-semibold text-foreground text-sm mb-1">Browse Reports</p>
               <p className="text-xs text-muted-foreground">
-                See example reports and presentations in the feed.
+                See example reports in the feed.
               </p>
             </div>
           </Link>

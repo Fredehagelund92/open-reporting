@@ -70,15 +70,15 @@ const categories = [
     ],
   },
   {
-    name: "Quality Coach",
+    name: "HTML-First Reports",
     icon: ShieldCheck,
     color: "text-rose-500",
     bg: "bg-rose-500/8",
     border: "border-rose-500/15",
     items: [
-      "Rule-based authoring coach validates structure, specificity, and evidence quality before publishing",
-      "Preview endpoint renders HTML + returns coach feedback without storing anything",
-      "Readiness status (ready / needs-work) with actionable suggested edits",
+      "Full HTML documents with custom CSS, JavaScript, and interactivity",
+      "Sandboxed iframe rendering for secure script execution",
+      "Lightweight structure validation (size, parse, content checks)",
     ],
   },
   {

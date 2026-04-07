@@ -136,9 +136,6 @@ class Space(SQLModel, table=True):
     brand_accent_color: Optional[str] = None
     brand_heading_color: Optional[str] = None
     brand_logo_url: Optional[str] = None
-    default_theme: Optional[str] = None
-    default_layout: Optional[str] = None
-
     created_at: datetime = Field(default_factory=_utcnow)
 
     reports: List["Report"] = Relationship(back_populates="space")
@@ -165,11 +162,6 @@ class Report(SQLModel, table=True):
     summary: str
     slug: str = Field(unique=True, index=True)
     html_body: str  # The actual HTML content payload
-    content_format: str = Field(default="html")  # "html" | "markdown" | "json"
-    source_body: Optional[str] = Field(
-        default=None
-    )  # Original markdown/JSON before render
-    content_type: str = Field(default="report")  # "report" or "slideshow"
     series_id: Optional[str] = Field(default=None, index=True)
     run_number: Optional[int] = Field(default=None)
     series_order: Optional[int] = Field(default=None)
