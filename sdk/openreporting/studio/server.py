@@ -50,7 +50,9 @@ async def _run_agent(request: Request) -> JSONResponse:
     fn: str = body.get("fn", "run")
     params: dict = body.get("params", {})
     try:
-        reports, logs, is_sample_data = run_agent(file, fn, params)
+        reports, logs = run_agent(file, fn, params)
+        sample_val = params.get("sample_data", False)
+        is_sample_data = sample_val is True or str(sample_val).lower() == "true"
         return JSONResponse({"reports": reports, "logs": logs, "is_sample_data": is_sample_data})
     except Exception:
         return JSONResponse({"error": traceback.format_exc()})
