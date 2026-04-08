@@ -147,6 +147,73 @@
       opacity: 0.5;
     }
 
+    /* ─── Agent reports section ─────────────────────────────────────────────── */
+    .agent-reports {
+      padding: 0;
+      background: oklch(0.15 0.024 262 / 50%);
+      border-radius: 6px;
+      margin-top: 2px;
+      margin-left: 12px;
+      margin-right: 6px;
+      overflow: hidden;
+    }
+
+    .agent-description {
+      padding: 8px 10px 10px 10px;
+      font-family: 'Fragment Mono', monospace;
+      font-size: 11px;
+      color: oklch(0.48 0.014 260);
+      line-height: 1.5;
+      border-bottom: 1px solid oklch(0.20 0.020 262);
+      background: oklch(0.16 0.024 262);
+    }
+
+    .report-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.12s, border-color 0.12s;
+      user-select: none;
+      border-radius: 0;
+    }
+    .report-row:hover {
+      background: oklch(0.16 0.024 262);
+    }
+    .report-row.active {
+      background: oklch(0.75 0.16 70 / 12%);
+      border-color: oklch(0.75 0.16 70 / 18%);
+    }
+
+    .report-indicator {
+      font-size: 11px;
+      color: oklch(0.48 0.014 260);
+      flex-shrink: 0;
+      width: 10px;
+      text-align: center;
+      transition: color 0.12s;
+    }
+    .report-row.active .report-indicator {
+      color: oklch(0.88 0.16 70);
+    }
+
+    .report-name {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 12px;
+      color: oklch(0.48 0.014 260);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: color 0.12s;
+    }
+    .report-row.active .report-name {
+      color: oklch(0.88 0.16 70);
+    }
+
     /* ─── Form inputs ───────────────────────────────────────────────────────── */
     .fi {
       width: 100%;
@@ -1405,19 +1472,20 @@
         const isExpanded = i === expandedAgentIdx;
         const reports = (a.reports || []).map((r, ri) => {
           const isActive = selectedReport && selected?.file === a.file && selectedReport.fn === r.fn;
-          return `<div class="report-row${isActive ? ' active' : ''}" onclick="event.stopPropagation();pickReport(${i}, ${ri})" style="padding:4px 10px 4px 32px;cursor:pointer;font-family:'Fragment Mono',monospace;font-size:12px;color:${isActive ? 'oklch(0.88 0.16 70)' : 'oklch(0.48 0.014 260)'};background:${isActive ? 'oklch(0.16 0.016 262)' : 'transparent'}">
-            <span style="color:oklch(0.50 0.012 262);margin-right:4px">${isActive ? '●' : '○'}</span>${x(r.name)}
+          return `<div class="report-row${isActive ? ' active' : ''}" onclick="event.stopPropagation();pickReport(${i}, ${ri})">
+            <span class="report-indicator">${isActive ? '●' : '○'}</span>
+            <span class="report-name">${x(r.name)}</span>
           </div>`;
         }).join('');
 
-        const desc = a.description ? `<div style="padding:2px 10px 6px 22px;font-family:'Fragment Mono',monospace;font-size:11px;color:oklch(0.50 0.012 262);line-height:1.4">${x(a.description)}</div>` : '';
+        const desc = a.description ? `<div class="agent-description">${x(a.description)}</div>` : '';
 
         return `
           <div class="agent-row" id="ar${i}" onclick="toggleAgent(${i})" style="cursor:pointer">
             <span style="font-size:10px;color:oklch(0.50 0.012 262);margin-right:4px">${isExpanded ? '▼' : '▶'}</span>
             <span class="agent-name">${x(a.name)}</span>
           </div>
-          <div id="agent-reports-${i}" style="display:${isExpanded ? 'block' : 'none'}">
+          <div class="agent-reports" id="agent-reports-${i}" style="display:${isExpanded ? 'block' : 'none'}">
             ${desc}
             ${reports}
           </div>
