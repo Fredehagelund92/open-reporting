@@ -168,7 +168,8 @@
       box-shadow: 0 0 0 2.5px oklch(0.75 0.16 70 / 14%);
     }
     textarea.fi { resize: vertical; min-height: 58px; line-height: 1.5; }
-    input[type="date"].fi::-webkit-calendar-picker-indicator {
+    input[type="date"].fi::-webkit-calendar-picker-indicator,
+    input[type="month"].fi::-webkit-calendar-picker-indicator {
       filter: invert(0.45) sepia(0.15);
       cursor: pointer;
     }
@@ -178,6 +179,7 @@
     /* Type color palette — each type has its own strip/accent color */
     .p2[data-ptype="string"]  { --pc: oklch(0.75 0.16 70);  }   /* amber  */
     .p2[data-ptype="date"]    { --pc: oklch(0.72 0.14 195); }   /* cyan   */
+    .p2[data-ptype="month"]   { --pc: oklch(0.72 0.14 195); }   /* cyan   */
     .p2[data-ptype="number"]  { --pc: oklch(0.65 0.14 145); }   /* green  */
     .p2[data-ptype="boolean"] { --pc: oklch(0.60 0.14 262); }   /* indigo */
     .p2[data-ptype="select"]  { --pc: oklch(0.68 0.15 300); }   /* violet */
@@ -260,6 +262,7 @@
     /* Tint the badge bg per type when browser supports CSS nesting */
     .p2[data-ptype="string"]  .p2-badge { border-color: oklch(0.75 0.16 70 / 22%); }
     .p2[data-ptype="date"]    .p2-badge { border-color: oklch(0.72 0.14 195 / 22%); }
+    .p2[data-ptype="month"]   .p2-badge { border-color: oklch(0.72 0.14 195 / 22%); }
     .p2[data-ptype="number"]  .p2-badge { border-color: oklch(0.65 0.14 145 / 22%); }
     .p2[data-ptype="boolean"] .p2-badge { border-color: oklch(0.60 0.14 262 / 22%); }
     .p2[data-ptype="select"]  .p2-badge { border-color: oklch(0.68 0.15 300 / 22%); }
@@ -1160,7 +1163,7 @@
     <div class="sb-sect">
       <button id="run-btn" onclick="runAgent()">
         <div class="spinner" id="run-spin" style="border-top-color:var(--or-primary-fg)"></div>
-        <span id="run-lbl">Run agent</span>
+        <span id="run-lbl">Run report</span>
         <kbd style="font-family:'Fragment Mono',monospace;font-size:11px;margin-left:auto;opacity:0.40;background:rgba(0,0,0,0.10);border-radius:4px;padding:2px 6px;letter-spacing:0">⌘↵</kbd>
       </button>
       <label class="auto-run-row" for="auto-run-chk">
@@ -1286,7 +1289,7 @@
           <p style="font-size:14px;font-weight:600;color:oklch(0.32 0.018 262)">Nothing running yet</p>
           <p style="font-size:13px;color:oklch(0.58 0.014 262)">
             Select an agent and click
-            <span style="font-family:'Fragment Mono',monospace;font-size:12px;color:oklch(0.55 0.15 72)">Run agent</span>
+            <span style="font-family:'Fragment Mono',monospace;font-size:12px;color:oklch(0.55 0.15 72)">Run report</span>
           </p>
         </div>
       </div>
@@ -1340,6 +1343,8 @@
     // ─── State ────────────────────────────────────────────────────────────────
     let agents = [];
     let selected = null;
+    let selectedReport = null;
+    let expandedAgentIdx = -1;
     let pushOpen = false;
     let lastHtml = null;
     let autoRunTimer = null;
@@ -1396,50 +1401,77 @@
 
       badge.textContent = `${agents.length} agent${agents.length === 1 ? '' : 's'}`;
 
-      list.innerHTML = agents.map((a, i) => `
-        <div class="agent-row" id="ar${i}" onclick="pick(${i})">
-          <span class="agent-pip"></span>
-          <span class="agent-name">${x(a.name)}</span>
-          <span class="agent-ext">.py</span>
-        </div>
-      `).join('');
+      list.innerHTML = agents.map((a, i) => {
+        const isExpanded = i === expandedAgentIdx;
+        const reports = (a.reports || []).map((r, ri) => {
+          const isActive = selectedReport && selected?.file === a.file && selectedReport.fn === r.fn;
+          return `<div class="report-row${isActive ? ' active' : ''}" onclick="event.stopPropagation();pickReport(${i}, ${ri})" style="padding:4px 10px 4px 32px;cursor:pointer;font-family:'Fragment Mono',monospace;font-size:12px;color:${isActive ? 'oklch(0.88 0.16 70)' : 'oklch(0.48 0.014 260)'};background:${isActive ? 'oklch(0.16 0.016 262)' : 'transparent'}">
+            <span style="color:oklch(0.50 0.012 262);margin-right:4px">${isActive ? '●' : '○'}</span>${x(r.name)}
+          </div>`;
+        }).join('');
 
-      // Quick-launch pills on empty state
-      pills.innerHTML = agents.slice(0, 8).map((a, i) => `
-        <button class="agent-pill" onclick="pick(${i})">${x(a.name)}</button>
-      `).join('');
+        const desc = a.description ? `<div style="padding:2px 10px 6px 22px;font-family:'Fragment Mono',monospace;font-size:11px;color:oklch(0.50 0.012 262);line-height:1.4">${x(a.description)}</div>` : '';
 
-      // Apply hash state if present, otherwise preserve selection or fall back to first agent
-      const hashState = window._pendingHashState;
-      if (hashState?.file) {
-        const hashIdx = agents.findIndex(a => a.file === hashState.file);
-        if (hashIdx >= 0) {
-          pick(hashIdx, true);
-          if (hashState.params) applyHashParams(hashState.params);
-          saveParamValues();
-          if (hashState.reportIdx != null) selectReport(hashState.reportIdx);
-          window._pendingHashState = null;
-          return;
+        return `
+          <div class="agent-row" id="ar${i}" onclick="toggleAgent(${i})" style="cursor:pointer">
+            <span style="font-size:10px;color:oklch(0.50 0.012 262);margin-right:4px">${isExpanded ? '▼' : '▶'}</span>
+            <span class="agent-name">${x(a.name)}</span>
+          </div>
+          <div id="agent-reports-${i}" style="display:${isExpanded ? 'block' : 'none'}">
+            ${desc}
+            ${reports}
+          </div>
+        `;
+      }).join('');
+
+      // Quick-launch pills
+      pills.innerHTML = agents.slice(0, 8).map((a, i) =>
+        `<button class="agent-pill" onclick="toggleAgent(${i});pickReport(${i}, 0)">${x(a.name)}</button>`
+      ).join('');
+
+      // Restore previous selection
+      if (selected && selectedReport) {
+        const agentIdx = agents.findIndex(a => a.file === selected.file);
+        if (agentIdx >= 0) {
+          expandedAgentIdx = agentIdx;
+          const reportIdx = agents[agentIdx].reports.findIndex(r => r.fn === selectedReport.fn);
+          if (reportIdx >= 0) return;
         }
       }
-      const prevFile = selected?.file;
-      const restoredIdx = prevFile ? agents.findIndex(a => a.file === prevFile) : -1;
-      pick(restoredIdx >= 0 ? restoredIdx : 0, /* keepPreview */ restoredIdx >= 0);
     }
 
-    // ─── Pick agent ───────────────────────────────────────────────────────────
-    function pick(idx, keepPreview = false) {
-      agents.forEach((_, i) => {
-        const el = document.getElementById(`ar${i}`);
-        if (el) el.classList.toggle('active', i === idx);
-      });
-      const prev = selected;
-      selected = agents[idx] || null;
-      // Only re-render params if agent actually changed
-      if (!prev || prev.file !== selected?.file) {
-        renderParams(selected?.params || []);
-        if (!keepPreview) clearPreview();
+    // ─── Agent / Report selection ─────────────────────────────────────────────
+    function toggleAgent(idx) {
+      if (expandedAgentIdx === idx) {
+        expandedAgentIdx = -1;
+      } else {
+        expandedAgentIdx = idx;
       }
+      loadAgents();
+    }
+
+    function pickReport(agentIdx, reportIdx, keepPreview = false) {
+      expandedAgentIdx = agentIdx;
+      selected = agents[agentIdx] || null;
+      selectedReport = selected?.reports?.[reportIdx] || null;
+      if (!selectedReport) return;
+
+      loadAgents();
+      renderParams(selectedReport.params || []);
+
+      if (!keepPreview && selectedReport.description) {
+        showDescription(selectedReport.description);
+      }
+    }
+
+    function showDescription(html) {
+      document.getElementById('empty-state').style.display = 'none';
+      document.getElementById('running-state').classList.remove('show');
+      const frame = document.getElementById('preview-frame');
+      frame.srcdoc = html;
+      document.getElementById('preview-wrap').classList.add('show');
+      document.getElementById('preview-bar').classList.add('show');
+      updatePreviewBarMode('description');
     }
 
 // ─── Render params V2 ─────────────────────────────────────────────────────
@@ -1450,7 +1482,7 @@
         return;
       }
 
-      const badgeLabel = { date:'date', number:'int', boolean:'bool', string:'str', select:'enum' };
+      const badgeLabel = { date:'date', month:'month', number:'int', boolean:'bool', string:'str', select:'enum' };
 
       // Type glyph icons — Fragment Mono glyphs or tiny inline SVG
       const icon = {
@@ -1503,6 +1535,10 @@
           // Auto-default to today when no default is provided
           const today = new Date().toISOString().split('T')[0];
           inputEl = `<input type="date" data-param="${x(p.name)}" class="fi" value="${x(dv || today)}" style="color-scheme:dark">`;
+        } else if (p.type === 'month') {
+          // Auto-default to current month when no default is provided
+          const thisMonth = new Date().toISOString().slice(0, 7);
+          inputEl = `<input type="month" data-param="${x(p.name)}" class="fi" value="${x(dv || thisMonth)}" style="color-scheme:dark">`;
         } else if (p.type === 'number') {
           inputEl = `<input type="number" data-param="${x(p.name)}" class="fi" value="${x(dv)}" placeholder="0">`;
         } else {
@@ -1522,7 +1558,7 @@
 
     // ─── Param persistence ────────────────────────────────────────────────────
     function paramStorageKey() {
-      return selected ? `studioParams:${selected.file}` : null;
+      return (selected && selectedReport) ? `studioParams:${selected.file}:${selectedReport.fn}` : null;
     }
 
     function saveParamValues() {
@@ -1574,7 +1610,7 @@
       document.getElementById('empty-state').style.display = 'none';
       document.getElementById('preview-wrap').classList.remove('show');
       document.getElementById('preview-bar').classList.remove('show');
-      document.getElementById('rs-agent-name').textContent = selected.name;
+      document.getElementById('rs-agent-name').textContent = selectedReport ? selectedReport.name : selected.name;
       document.getElementById('running-state').classList.add('show');
 
       // Elapsed timer
@@ -1587,7 +1623,7 @@
         const r = await fetch('/api/run', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ file: selected.file, params: params() }),
+          body: JSON.stringify({ file: selected.file, fn: selectedReport.fn, params: params() }),
         });
         const d = await r.json();
         if (d.error) { showErr(d.error); if (!lastHtml) document.getElementById('empty-state').style.display = 'flex'; }
@@ -1614,7 +1650,7 @@
       finally { clearInterval(timerInterval); }
 
       document.getElementById('running-state').classList.remove('show');
-      btn.disabled = false; sp.classList.remove('on'); lbl.textContent = 'Run agent';
+      btn.disabled = false; sp.classList.remove('on'); lbl.textContent = 'Run report';
       isRunning = false;
     }
 
@@ -2112,7 +2148,16 @@
       const backBtn = document.getElementById('pb-back-live');
       const liveBadge = document.getElementById('pb-live-badge');
 
-      if (mode === 'history') {
+      if (mode === 'description') {
+        liveDot.style.display = 'none';
+        label.textContent = 'about';
+        label.className = '';
+        label.style.fontFamily = "'Fragment Mono', monospace";
+        label.style.fontSize = '11px';
+        label.style.color = 'oklch(0.60 0.012 262)';
+        backBtn.style.display = 'none';
+        liveBadge.style.display = 'none';
+      } else if (mode === 'history') {
         liveDot.style.display = 'none';
         label.textContent = 'history';
         label.className = 'pb-mode-hist';
