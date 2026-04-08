@@ -71,20 +71,24 @@ def _normalize_reports(result) -> list[dict]:
     return [{"label": "Report", "html": str(result)}]
 
 
-def run_agent(file: str, fn: str, params: dict) -> tuple[list[dict], list[str]]:
+def run_agent(file: str, fn: str, params: dict) -> tuple[list[dict], list[str], bool]:
     """Load (or reload) a module and call the named function with params.
 
     Runs in a dedicated thread so agents that use asyncio.run() work correctly
     even when Studio's own event loop is already running.
 
-    Returns (reports, logs) where reports is a list of {"label", "html"} dicts
-    and logs is a list of captured stdout/stderr lines.
+    Returns (reports, logs, is_sample_data) where reports is a list of
+    {"label", "html"} dicts, logs is a list of captured stdout/stderr lines,
+    and is_sample_data reflects the STUDIO_SAMPLE_DATA flag from the module
+    (auto-detected from the presence of a .sample marker file in DATA_DIR).
     """
     path = Path(file)
     module = _load_module(path)
     func = getattr(module, fn, None)
     if not callable(func):
         raise ValueError(f"Function '{fn}' not found in {file}")
+
+    is_sample_data: bool = bool(getattr(module, "STUDIO_SAMPLE_DATA", False))
 
     def _execute() -> tuple[list[dict], list[str]]:
         buf = io.StringIO()
@@ -95,7 +99,9 @@ def run_agent(file: str, fn: str, params: dict) -> tuple[list[dict], list[str]]:
         return _normalize_reports(result), logs
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-        return pool.submit(_execute).result()
+        reports, logs = pool.submit(_execute).result()
+
+    return reports, logs, is_sample_data
 
 
 # ---------------------------------------------------------------------------
