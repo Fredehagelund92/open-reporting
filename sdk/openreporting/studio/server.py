@@ -47,10 +47,11 @@ async def _agent_mtimes(request: Request) -> JSONResponse:
 async def _run_agent(request: Request) -> JSONResponse:
     body = await request.json()
     file: str = body.get("file", "")
+    fn: str = body.get("fn", "run")
     params: dict = body.get("params", {})
     try:
-        reports, logs = run_agent(file, params)
-        return JSONResponse({"reports": reports, "logs": logs})
+        reports, logs, is_sample_data = run_agent(file, fn, params)
+        return JSONResponse({"reports": reports, "logs": logs, "is_sample_data": is_sample_data})
     except Exception:
         return JSONResponse({"error": traceback.format_exc()})
 
@@ -99,9 +100,10 @@ async def _publish(request: Request) -> JSONResponse:
 
     # Accept html directly from client (preferred) or re-run the agent
     html: str = body.get("html", "")
+    fn: str = body.get("fn", "run")
     if not html:
         try:
-            reports, _ = run_agent(file, params)
+            reports, _ = run_agent(file, fn, params)
             html = reports[0]["html"] if reports else ""
         except Exception:
             return JSONResponse({"error": f"Agent run failed:\n{traceback.format_exc()}"})

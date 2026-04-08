@@ -13,20 +13,39 @@ from pathlib import Path
 
 
 def discover_agents(directory: str) -> list[dict]:
-    """Scan a directory for Python files that expose a callable `run` function."""
+    """Scan a directory for Python files that expose STUDIO_REPORTS."""
     agents = []
     for path in sorted(Path(directory).rglob("*.py")):
         module = _load_module(path)
-        if module and hasattr(module, "run") and callable(module.run):
-            name = getattr(module, "STUDIO_NAME", path.stem)
-            agents.append(
-                {
-                    "name": name,
-                    "file": str(path),
-                    "mtime": path.stat().st_mtime,
-                    "params": _extract_params(module.run),
-                }
-            )
+        if module is None:
+            continue
+        reports_cfg = getattr(module, "STUDIO_REPORTS", None)
+        if not isinstance(reports_cfg, dict) or not reports_cfg:
+            continue
+        name = getattr(module, "STUDIO_NAME", path.stem)
+        description = getattr(module, "STUDIO_DESCRIPTION", "")
+
+        reports = []
+        for report_name, cfg in reports_cfg.items():
+            fn_name = cfg.get("fn", "")
+            fn = getattr(module, fn_name, None)
+            if not callable(fn):
+                continue
+            reports.append({
+                "name": report_name,
+                "fn": fn_name,
+                "description": cfg.get("description", ""),
+                "params": _extract_params(fn),
+            })
+
+        if reports:
+            agents.append({
+                "name": name,
+                "description": description,
+                "file": str(path),
+                "mtime": path.stat().st_mtime,
+                "reports": reports,
+            })
     return agents
 
 
@@ -52,28 +71,36 @@ def _normalize_reports(result) -> list[dict]:
     return [{"label": "Report", "html": str(result)}]
 
 
-def run_agent(file: str, params: dict) -> tuple[list[dict], list[str]]:
-    """Load (or reload) a module and call its `run(**params)` function.
+def run_agent(file: str, fn: str, params: dict) -> tuple[list[dict], list[str], bool]:
+    """Load (or reload) a module and call the named function with params.
 
     Runs in a dedicated thread so agents that use asyncio.run() work correctly
     even when Studio's own event loop is already running.
 
-    Returns (reports, logs) where reports is a list of {"label", "html"} dicts
-    and logs is a list of captured stdout/stderr lines.
+    Returns (reports, logs, is_sample_data) where reports is a list of
+    {"label", "html"} dicts, logs is a list of captured stdout/stderr lines,
+    and is_sample_data reflects the STUDIO_SAMPLE_DATA flag from the module.
     """
     path = Path(file)
     module = _load_module(path)
+    func = getattr(module, fn, None)
+    if not callable(func):
+        raise ValueError(f"Function '{fn}' not found in {file}")
+
+    is_sample_data: bool = bool(getattr(module, "STUDIO_SAMPLE_DATA", False))
 
     def _execute() -> tuple[list[dict], list[str]]:
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
-            result = module.run(**params)
+            result = func(**params)
         raw = buf.getvalue()
         logs = [line for line in raw.splitlines() if line]
         return _normalize_reports(result), logs
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-        return pool.submit(_execute).result()
+        reports, logs = pool.submit(_execute).result()
+
+    return reports, logs, is_sample_data
 
 
 # ---------------------------------------------------------------------------
@@ -121,6 +148,8 @@ def _extract_params(fn) -> list[dict]:
 def _map_type(name: str, hint) -> str:
     if name in ("date", "start_date", "end_date"):
         return "date"
+    if name in ("month", "start_month", "end_month"):
+        return "month"
     if hint is int:
         return "number"
     if hint is bool:
