@@ -2481,22 +2481,20 @@
         if (con) con.className = 'pl-connector done';
       }
 
-      // Stage 0: SQL — active immediately
+      // Stage 0: SQL — active immediately, completes fast (DuckDB is local)
       activateStage(0);
 
       pipelineTimers.push(setTimeout(() => {
         doneStage(0);
         if (skipLlm) {
-          // Skip LLM — jump straight to render
+          // No LLM call — jump straight to render
           activateStage(2);
         } else {
+          // LLM is the real bottleneck — stays active until finishPipeline() is called
           activateStage(1);
-          pipelineTimers.push(setTimeout(() => {
-            doneStage(1);
-            activateStage(2);
-          }, 3500));
+          // No auto-transition: render stage is activated by finishPipeline(true)
         }
-      }, 1800));
+      }, 800));
     }
 
     function finishPipeline(success) {
@@ -2504,14 +2502,37 @@
       pipelineTimers = [];
       if (!success) { resetPipeline(); return; }
       const skipLlm = document.querySelector('[data-param="skip_llm"]')?.checked || false;
-      for (let i = 0; i < 3; i++) {
-        if (i === 1 && skipLlm) continue; // keep skip styling for LLM when bypassed
-        const dot = document.getElementById(`pl-dot-${i}`);
-        const lbl = document.getElementById(`pl-lbl-${i}`);
-        const con = document.getElementById(`pl-con-${i}`);
+      // LLM done → briefly flash render active, then mark everything done
+      // (Jinja2 render is ~instant server-side, so we just show it completing)
+      if (!skipLlm) {
+        doneStageImmediate(1);
+        activateStageImmediate(2);
+      }
+      setTimeout(() => {
+        for (let i = 0; i < 3; i++) {
+          if (i === 1 && skipLlm) continue;
+          const dot = document.getElementById(`pl-dot-${i}`);
+          const lbl = document.getElementById(`pl-lbl-${i}`);
+          const con = document.getElementById(`pl-con-${i}`);
+          if (dot) dot.className = 'pl-dot done';
+          if (lbl) lbl.className = 'pl-label done';
+          if (con && i < 2) con.className = 'pl-connector done';
+        }
+      }, 280);
+
+      function activateStageImmediate(idx) {
+        const dot = document.getElementById(`pl-dot-${idx}`);
+        const lbl = document.getElementById(`pl-lbl-${idx}`);
+        if (dot) dot.className = 'pl-dot active';
+        if (lbl) lbl.className = 'pl-label active';
+      }
+      function doneStageImmediate(idx) {
+        const dot = document.getElementById(`pl-dot-${idx}`);
+        const lbl = document.getElementById(`pl-lbl-${idx}`);
+        const con = document.getElementById(`pl-con-${idx}`);
         if (dot) dot.className = 'pl-dot done';
         if (lbl) lbl.className = 'pl-label done';
-        if (con && i < 2) con.className = 'pl-connector done';
+        if (con) con.className = 'pl-connector done';
       }
     }
 
