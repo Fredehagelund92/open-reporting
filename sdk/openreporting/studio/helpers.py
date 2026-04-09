@@ -17,19 +17,18 @@ def make_run(
     """Build a Studio-compatible ``run()`` function from an agent class.
 
     Reads ``studio_params`` from *agent_class* (a list of
-    ``(name, type_hint, default)`` tuples), appends ``skip_llm`` and
-    ``replay`` toggles, and returns a synchronous function whose
-    ``inspect.signature()`` exposes exactly those parameters — so
-    Studio's auto-discovery renders the correct form fields.
+    ``(name, type_hint, default)`` tuples), appends the ``replay`` toggle,
+    and returns a synchronous function whose ``inspect.signature()`` exposes
+    exactly those parameters — so Studio's auto-discovery renders the correct
+    form fields.
 
     The returned function instantiates the agent via *factory*,
     calls ``agent.analyze(context)``, and returns ``output.html``.
     """
     studio_params: list[tuple[str, type, Any]] = getattr(agent_class, "studio_params", [])
 
-    # Build the full param list: agent params + auto-injected toggles
+    # Build the full param list: agent params + auto-injected toggle
     all_params = list(studio_params) + [
-        ("skip_llm", bool, False),
         ("replay", bool, False),
     ]
 

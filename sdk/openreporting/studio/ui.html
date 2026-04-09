@@ -1142,7 +1142,6 @@
     .hist-model[data-m="sonnet"]  { color: oklch(0.68 0.15 300); background: oklch(0.68 0.15 300 / 9%); border: 1px solid oklch(0.68 0.15 300 / 20%); }
     .hist-model[data-m="haiku"]   { color: oklch(0.65 0.14 145); background: oklch(0.65 0.14 145 / 9%); border: 1px solid oklch(0.65 0.14 145 / 20%); }
     .hist-model[data-m="replay"]  { color: oklch(0.60 0.14 262); background: oklch(0.60 0.14 262 / 9%); border: 1px solid oklch(0.60 0.14 262 / 20%); }
-    .hist-model[data-m="skipped"] { color: var(--sb-muted); background: transparent; border: 1px solid var(--sb-bdr); }
 
     /* ─── Model selector ────────────────────────────────────────────────── */
     .model-selector {
@@ -1214,11 +1213,6 @@
       box-shadow: 0 0 6px oklch(0.65 0.14 145 / 50%);
       animation: none;
     }
-    .pl-dot.skip {
-      background: oklch(0.20 0.014 262);
-      border-color: oklch(0.26 0.014 262);
-      animation: none;
-    }
     .pl-label {
       font-family: 'Fragment Mono', monospace;
       font-size: 10px;
@@ -1230,7 +1224,6 @@
     }
     .pl-label.active { color: oklch(0.75 0.16 70); }
     .pl-label.done   { color: oklch(0.62 0.12 145); }
-    .pl-label.skip   { color: oklch(0.30 0.012 262); text-decoration: line-through; opacity: 0.5; }
     .pl-connector {
       height: 1.5px;
       flex: 0.6;
@@ -1867,9 +1860,8 @@
           consoleLogs = d.logs || [];
           renderConsole();
           // Capture to history
-          const skipLlm = document.querySelector('[data-param="skip_llm"]')?.checked || false;
           const isReplay = document.querySelector('[data-param="replay"]')?.checked || false;
-          const modelLabel = isReplay ? 'replay' : (skipLlm ? 'skipped' : selectedModel);
+          const modelLabel = isReplay ? 'replay' : selectedModel;
           runHistory.unshift({
             agent: selected.name,
             time: new Date(),
@@ -2343,7 +2335,7 @@
         const ts = h.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const modelKey = h.model || 'sonnet';
         const paramsSummary = Object.entries(h.params || {})
-          .filter(([k]) => !['skip_llm', 'replay'].includes(k))
+          .filter(([k]) => k !== 'replay')
           .map(([, v]) => String(v))
           .join(' · ') || '—';
         return `
@@ -2466,20 +2458,18 @@
     function resetPipeline() {
       pipelineTimers.forEach(t => clearTimeout(t));
       pipelineTimers = [];
-      const skipLlm = document.querySelector('[data-param="skip_llm"]')?.checked || false;
       for (let i = 0; i < 3; i++) {
         const dot = document.getElementById(`pl-dot-${i}`);
         const lbl = document.getElementById(`pl-lbl-${i}`);
         const con = document.getElementById(`pl-con-${i}`);
-        if (dot) dot.className = 'pl-dot' + (i === 1 && skipLlm ? ' skip' : '');
-        if (lbl) lbl.className = 'pl-label' + (i === 1 && skipLlm ? ' skip' : '');
+        if (dot) dot.className = 'pl-dot';
+        if (lbl) lbl.className = 'pl-label';
         if (con) con.className = 'pl-connector';
       }
     }
 
     function startPipeline() {
       resetPipeline();
-      const skipLlm = document.querySelector('[data-param="skip_llm"]')?.checked || false;
 
       function activateStage(idx) {
         const dot = document.getElementById(`pl-dot-${idx}`);
@@ -2501,14 +2491,9 @@
 
       pipelineTimers.push(setTimeout(() => {
         doneStage(0);
-        if (skipLlm) {
-          // No LLM call — jump straight to render
-          activateStage(2);
-        } else {
-          // LLM is the real bottleneck — stays active until finishPipeline() is called
-          activateStage(1);
-          // No auto-transition: render stage is activated by finishPipeline(true)
-        }
+        // LLM is the real bottleneck — stays active until finishPipeline() is called
+        activateStage(1);
+        // No auto-transition: render stage is activated by finishPipeline(true)
       }, 800));
     }
 
@@ -2516,16 +2501,12 @@
       pipelineTimers.forEach(t => clearTimeout(t));
       pipelineTimers = [];
       if (!success) { resetPipeline(); return; }
-      const skipLlm = document.querySelector('[data-param="skip_llm"]')?.checked || false;
       // LLM done → briefly flash render active, then mark everything done
       // (Jinja2 render is ~instant server-side, so we just show it completing)
-      if (!skipLlm) {
-        doneStageImmediate(1);
-        activateStageImmediate(2);
-      }
+      doneStageImmediate(1);
+      activateStageImmediate(2);
       setTimeout(() => {
         for (let i = 0; i < 3; i++) {
-          if (i === 1 && skipLlm) continue;
           const dot = document.getElementById(`pl-dot-${i}`);
           const lbl = document.getElementById(`pl-lbl-${i}`);
           const con = document.getElementById(`pl-con-${i}`);
