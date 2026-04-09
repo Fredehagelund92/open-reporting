@@ -1116,6 +1116,131 @@
       margin-left: 6px;
     }
 
+    /* ─── History row v2 — two-line layout with model badges ────────────── */
+    .hist-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .hist-top { display: flex; align-items: center; gap: 6px; }
+    .hist-bottom { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+    .hist-params {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 9.5px;
+      color: var(--sb-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+      opacity: 0.65;
+    }
+    .hist-model {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      letter-spacing: 0.02em;
+    }
+    .hist-model[data-m="opus"]    { color: oklch(0.75 0.16 70);  background: oklch(0.75 0.16 70 / 9%);  border: 1px solid oklch(0.75 0.16 70 / 20%); }
+    .hist-model[data-m="sonnet"]  { color: oklch(0.68 0.15 300); background: oklch(0.68 0.15 300 / 9%); border: 1px solid oklch(0.68 0.15 300 / 20%); }
+    .hist-model[data-m="haiku"]   { color: oklch(0.65 0.14 145); background: oklch(0.65 0.14 145 / 9%); border: 1px solid oklch(0.65 0.14 145 / 20%); }
+    .hist-model[data-m="replay"]  { color: oklch(0.60 0.14 262); background: oklch(0.60 0.14 262 / 9%); border: 1px solid oklch(0.60 0.14 262 / 20%); }
+    .hist-model[data-m="skipped"] { color: var(--sb-muted); background: transparent; border: 1px solid var(--sb-bdr); }
+
+    /* ─── Model selector ────────────────────────────────────────────────── */
+    .model-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .model-sel-label {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 9.5px;
+      color: var(--sb-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.10em;
+      flex-shrink: 0;
+    }
+    .model-chips { display: flex; gap: 4px; flex: 1; }
+    .model-chip {
+      flex: 1;
+      font-family: 'Fragment Mono', monospace;
+      font-size: 10px;
+      padding: 5px 0;
+      border-radius: 5px;
+      border: 1px solid var(--sb-bdr);
+      background: var(--sb-surf);
+      color: var(--sb-muted);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      letter-spacing: 0.01em;
+    }
+    .model-chip:hover { border-color: oklch(0.35 0.016 262); color: var(--sb-text); }
+    .model-chip.active[data-model="opus"]   { background: oklch(0.75 0.16 70 / 11%);  border-color: oklch(0.75 0.16 70 / 40%);  color: oklch(0.85 0.13 70); }
+    .model-chip.active[data-model="sonnet"] { background: oklch(0.68 0.15 300 / 11%); border-color: oklch(0.68 0.15 300 / 40%); color: oklch(0.80 0.12 300); }
+    .model-chip.active[data-model="haiku"]  { background: oklch(0.65 0.14 145 / 11%); border-color: oklch(0.65 0.14 145 / 40%); color: oklch(0.78 0.12 145); }
+
+    /* ─── Pipeline stage indicator ──────────────────────────────────────── */
+    .pipeline {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      margin-top: 4px;
+      width: 220px;
+    }
+    .pl-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      flex: 1;
+    }
+    .pl-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      border: 1.5px solid oklch(0.25 0.014 262);
+      background: transparent;
+      transition: all 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+      flex-shrink: 0;
+    }
+    .pl-dot.active {
+      background: var(--or-primary);
+      border-color: var(--or-primary);
+      box-shadow: 0 0 12px oklch(0.75 0.16 70 / 75%);
+      animation: rs-breathe 1.5s ease-in-out infinite;
+    }
+    .pl-dot.done {
+      background: oklch(0.65 0.14 145);
+      border-color: oklch(0.65 0.14 145);
+      box-shadow: 0 0 6px oklch(0.65 0.14 145 / 50%);
+      animation: none;
+    }
+    .pl-dot.skip {
+      background: oklch(0.20 0.014 262);
+      border-color: oklch(0.26 0.014 262);
+      animation: none;
+    }
+    .pl-label {
+      font-family: 'Fragment Mono', monospace;
+      font-size: 10px;
+      color: oklch(0.30 0.012 262);
+      letter-spacing: 0.06em;
+      text-align: center;
+      transition: color 0.45s;
+      white-space: nowrap;
+    }
+    .pl-label.active { color: oklch(0.75 0.16 70); }
+    .pl-label.done   { color: oklch(0.62 0.12 145); }
+    .pl-label.skip   { color: oklch(0.30 0.012 262); text-decoration: line-through; opacity: 0.5; }
+    .pl-connector {
+      height: 1.5px;
+      flex: 0.6;
+      background: oklch(0.22 0.014 262);
+      margin-top: 4px;
+      transition: background 0.45s;
+      border-radius: 1px;
+    }
+    .pl-connector.done { background: oklch(0.45 0.12 145 / 60%); }
+
     /* ─── History toggle (reuses push-toggle pattern) ─────────────────────── */
     .hist-toggle {
       width: 100%;
@@ -1228,6 +1353,15 @@
 
     <!-- Run -->
     <div class="sb-sect">
+      <!-- Model selector -->
+      <div class="model-selector">
+        <span class="model-sel-label">Model</span>
+        <div class="model-chips">
+          <button class="model-chip" data-model="opus"   onclick="selectModel('opus')"   title="claude-opus-4-6 — most capable">opus</button>
+          <button class="model-chip active" data-model="sonnet" onclick="selectModel('sonnet')" title="claude-sonnet-4-6 — balanced">sonnet</button>
+          <button class="model-chip" data-model="haiku"  onclick="selectModel('haiku')"  title="claude-haiku-4-5 — fastest">haiku</button>
+        </div>
+      </div>
       <button id="run-btn" onclick="runAgent()">
         <div class="spinner" id="run-spin" style="border-top-color:var(--or-primary-fg)"></div>
         <span id="run-lbl">Run report</span>
@@ -1376,12 +1510,21 @@
         <span id="rs-agent-name">running</span>
       </div>
       <span id="rs-timer" class="rs-timer">0.0s</span>
-      <div class="rs-log">
-        <div class="rs-log-line" style="animation-delay:0s">→ initializing agent</div>
-        <div class="rs-log-line" style="animation-delay:0.5s">→ loading context</div>
-        <div class="rs-log-line" style="animation-delay:1.0s">→ running analysis</div>
-        <div class="rs-log-line" style="animation-delay:1.5s">→ composing output</div>
-        <div class="rs-log-line" style="animation-delay:2.0s">→ rendering report</div>
+      <div class="pipeline" id="pipeline-stages">
+        <div class="pl-stage">
+          <div class="pl-dot" id="pl-dot-0"></div>
+          <div class="pl-label" id="pl-lbl-0">sql</div>
+        </div>
+        <div class="pl-connector" id="pl-con-0"></div>
+        <div class="pl-stage">
+          <div class="pl-dot" id="pl-dot-1"></div>
+          <div class="pl-label" id="pl-lbl-1">llm</div>
+        </div>
+        <div class="pl-connector" id="pl-con-1"></div>
+        <div class="pl-stage">
+          <div class="pl-dot" id="pl-dot-2"></div>
+          <div class="pl-label" id="pl-lbl-2">render</div>
+        </div>
       </div>
     </div>
 
@@ -1422,7 +1565,7 @@
     let agentMtimes = {};       // { file: mtime }
     let pollTimer = null;
     let isRunning = false;
-    let runHistory = [];        // [{ agent, time, reports, params, duration_ms, logs }]
+    let runHistory = [];        // [{ agent, time, reports, params, duration_ms, logs, model }]
     let viewingHistoryIdx = -1; // -1 = live view
     let histOpen = false;
     let consoleLogs = [];
@@ -1431,9 +1574,14 @@
     let currentReports = [];    // [{ label, html }, ...]
     let activeReportIdx = 0;
     let isSampleData = false;
+    let selectedModel = 'sonnet'; // which Claude model to use
+    let pipelineTimers = [];      // clearable timers for stage animation
 
     // ─── Boot ─────────────────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {
+      // Restore model selection from last session
+      const savedModel = localStorage.getItem('studioModel') || 'sonnet';
+      selectModel(savedModel);
       restoreFromHash();
       await Promise.all([loadAgents(), loadMeta()]);
       await snapshotMtimes();
@@ -1693,6 +1841,7 @@
       const timerInterval = setInterval(() => {
         if (timer) timer.textContent = ((performance.now() - t0) / 1000).toFixed(1) + 's';
       }, 100);
+      startPipeline();
 
       try {
         const r = await fetch('/api/run', {
@@ -1701,7 +1850,7 @@
           body: JSON.stringify({ file: selected.file, fn: selectedReport.fn, params: params() }),
         });
         const d = await r.json();
-        if (d.error) { showErr(d.error); if (!lastHtml) document.getElementById('empty-state').style.display = 'flex'; }
+        if (d.error) { showErr(d.error); if (!lastHtml) document.getElementById('empty-state').style.display = 'flex'; finishPipeline(false); }
         else {
           const dur = Math.round(performance.now() - t0);
           isSampleData = d.is_sample_data || false;
@@ -1710,6 +1859,9 @@
           consoleLogs = d.logs || [];
           renderConsole();
           // Capture to history
+          const skipLlm = document.querySelector('[data-param="skip_llm"]')?.checked || false;
+          const isReplay = document.querySelector('[data-param="replay"]')?.checked || false;
+          const modelLabel = isReplay ? 'replay' : (skipLlm ? 'skipped' : selectedModel);
           runHistory.unshift({
             agent: selected.name,
             time: new Date(),
@@ -1717,13 +1869,21 @@
             params: { ...params() },
             duration_ms: dur,
             logs: consoleLogs,
+            model: modelLabel,
           });
-          if (runHistory.length > 10) runHistory.length = 10;
+          if (runHistory.length > 20) runHistory.length = 20;
           viewingHistoryIdx = -1;
           updatePreviewBarMode('live');
+          // Auto-open history panel on first run
+          if (!histOpen) {
+            histOpen = true;
+            document.getElementById('hist-body').classList.add('open');
+            document.getElementById('hist-chev').classList.add('open');
+          }
+          finishPipeline(true);
           renderHistory();
         }
-      } catch (e) { showErr(String(e)); if (!lastHtml) document.getElementById('empty-state').style.display = 'flex'; }
+      } catch (e) { showErr(String(e)); if (!lastHtml) document.getElementById('empty-state').style.display = 'flex'; finishPipeline(false); }
       finally { clearInterval(timerInterval); }
 
       document.getElementById('running-state').classList.remove('show');
@@ -2171,13 +2331,26 @@
       list.innerHTML = runHistory.map((h, i) => {
         const isActive = (viewingHistoryIdx === -1 && i === 0) || (viewingHistoryIdx === i);
         const dotCls = (i === 0 && viewingHistoryIdx === -1) ? 'hist-live-dot' : 'hist-dot';
-        const ts = h.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const ts = h.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const modelKey = h.model || 'sonnet';
+        const paramsSummary = Object.entries(h.params || {})
+          .filter(([k]) => !['skip_llm', 'replay'].includes(k))
+          .map(([, v]) => String(v))
+          .join(' · ') || '—';
         return `
           <div class="hist-row${isActive ? ' active' : ''}" onclick="viewHistory(${i})">
             <span class="${dotCls}"></span>
-            <span class="hist-agent">${x(h.agent)}</span>
-            <span class="hist-time">${ts}</span>
-            <span class="hist-dur">${h.duration_ms}ms</span>
+            <div class="hist-content">
+              <div class="hist-top">
+                <span class="hist-agent">${x(h.agent)}</span>
+                <span class="hist-model" data-m="${x(modelKey)}">${x(modelKey)}</span>
+                <span class="hist-dur">${h.duration_ms}ms</span>
+              </div>
+              <div class="hist-bottom">
+                <span class="hist-params">${x(paramsSummary)}</span>
+                <span class="hist-time">${ts}</span>
+              </div>
+            </div>
           </div>`;
       }).join('');
     }
@@ -2262,6 +2435,83 @@
         label.style.color = 'var(--or-muted)';
         backBtn.style.display = 'none';
         liveBadge.style.display = '';
+      }
+    }
+
+    // ─── Model selector ───────────────────────────────────────────────────────
+    function selectModel(m) {
+      selectedModel = m;
+      document.querySelectorAll('.model-chip').forEach(c => {
+        c.classList.toggle('active', c.dataset.model === m);
+      });
+      try { localStorage.setItem('studioModel', m); } catch (_) {}
+    }
+
+    // ─── Pipeline animation ───────────────────────────────────────────────────
+    function resetPipeline() {
+      pipelineTimers.forEach(t => clearTimeout(t));
+      pipelineTimers = [];
+      const skipLlm = document.querySelector('[data-param="skip_llm"]')?.checked || false;
+      for (let i = 0; i < 3; i++) {
+        const dot = document.getElementById(`pl-dot-${i}`);
+        const lbl = document.getElementById(`pl-lbl-${i}`);
+        const con = document.getElementById(`pl-con-${i}`);
+        if (dot) dot.className = 'pl-dot' + (i === 1 && skipLlm ? ' skip' : '');
+        if (lbl) lbl.className = 'pl-label' + (i === 1 && skipLlm ? ' skip' : '');
+        if (con) con.className = 'pl-connector';
+      }
+    }
+
+    function startPipeline() {
+      resetPipeline();
+      const skipLlm = document.querySelector('[data-param="skip_llm"]')?.checked || false;
+
+      function activateStage(idx) {
+        const dot = document.getElementById(`pl-dot-${idx}`);
+        const lbl = document.getElementById(`pl-lbl-${idx}`);
+        if (dot) dot.className = 'pl-dot active';
+        if (lbl) lbl.className = 'pl-label active';
+      }
+      function doneStage(idx) {
+        const dot = document.getElementById(`pl-dot-${idx}`);
+        const lbl = document.getElementById(`pl-lbl-${idx}`);
+        const con = document.getElementById(`pl-con-${idx}`);
+        if (dot) dot.className = 'pl-dot done';
+        if (lbl) lbl.className = 'pl-label done';
+        if (con) con.className = 'pl-connector done';
+      }
+
+      // Stage 0: SQL — active immediately
+      activateStage(0);
+
+      pipelineTimers.push(setTimeout(() => {
+        doneStage(0);
+        if (skipLlm) {
+          // Skip LLM — jump straight to render
+          activateStage(2);
+        } else {
+          activateStage(1);
+          pipelineTimers.push(setTimeout(() => {
+            doneStage(1);
+            activateStage(2);
+          }, 3500));
+        }
+      }, 1800));
+    }
+
+    function finishPipeline(success) {
+      pipelineTimers.forEach(t => clearTimeout(t));
+      pipelineTimers = [];
+      if (!success) { resetPipeline(); return; }
+      const skipLlm = document.querySelector('[data-param="skip_llm"]')?.checked || false;
+      for (let i = 0; i < 3; i++) {
+        if (i === 1 && skipLlm) continue; // keep skip styling for LLM when bypassed
+        const dot = document.getElementById(`pl-dot-${i}`);
+        const lbl = document.getElementById(`pl-lbl-${i}`);
+        const con = document.getElementById(`pl-con-${i}`);
+        if (dot) dot.className = 'pl-dot done';
+        if (lbl) lbl.className = 'pl-label done';
+        if (con && i < 2) con.className = 'pl-connector done';
       }
     }
 

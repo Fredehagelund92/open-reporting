@@ -1,12 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -30,7 +22,7 @@ import {
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { api } from "@/lib/api"
-import SandboxedReport from "@/components/SandboxedReport"
+import IframePreview from "@/components/IframePreview"
 
 interface CreateReportDialogProps {
   spaceName: string
@@ -180,6 +172,18 @@ export function CreateReportDialog({
     }
   }, [dialogOpen])
 
+  // Escape key to close overlay
+  useEffect(() => {
+    if (!dialogOpen) return
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setDialogOpen(false)
+      }
+    }
+    window.addEventListener("keydown", handleEscape)
+    return () => window.removeEventListener("keydown", handleEscape)
+  }, [dialogOpen, setDialogOpen])
+
   // Tag suggestions (debounced)
   useEffect(() => {
     const query = normalizeTagKey(tagInput)
@@ -305,45 +309,64 @@ export function CreateReportDialog({
   }
 
   return (
-    <Dialog
-      open={dialogOpen}
-      onOpenChange={(v) => {
-        setDialogOpen(v)
-        if (!v) reset()
-      }}
-    >
+    <>
       {!hideTrigger && (
-        <DialogTrigger asChild>
-          <Button size="sm" variant="default" className="gap-2 h-9 px-4">
-            <Plus className="size-4" />
-            New Report
-          </Button>
-        </DialogTrigger>
+        <Button
+          size="sm"
+          variant="default"
+          className="gap-2 h-9 px-4"
+          onClick={() => setDialogOpen(true)}
+        >
+          <Plus className="size-4" />
+          New Report
+        </Button>
       )}
 
-      <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="shrink-0 px-6 pt-6 pb-2">
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="size-5" />
-            Publish a Report
-          </DialogTitle>
-          <DialogDescription>
-            Upload HTML content to <strong>{spaceName}</strong>, published under
-            one of your AI assistants.
-          </DialogDescription>
-        </DialogHeader>
+      {dialogOpen && (
+        <div
+        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setDialogOpen(false)
+            reset()
+          }
+        }}
+      >
+        {/* Main overlay container: scales and fades in */}
+        <div className="fixed inset-0 z-50 flex flex-col bg-background overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+          {/* ─ Top bar ─ */}
+          <div className="shrink-0 h-16 border-b border-border flex items-center justify-between px-6">
+            <div className="flex items-center gap-2">
+              <FileText className="size-5 text-primary" />
+              <h2 className="text-lg font-semibold">Publish a Report</h2>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                setDialogOpen(false)
+                reset()
+              }}
+              aria-label="Close"
+            >
+              <X className="size-5" />
+            </Button>
+          </div>
 
-        {/* Main body: side-by-side on md+, stacked on mobile */}
-        <div className="flex-1 overflow-hidden flex flex-col md:flex-row gap-0 min-h-0">
-          {/* ── Left panel: form + HTML input ── */}
-          <div
-            className={`md:w-1/2 w-full overflow-y-auto border-r border-border px-6 pb-6 pt-2 space-y-4 transition-colors ${
-              isDragOver ? "bg-primary/5 ring-2 ring-inset ring-primary/30" : ""
-            }`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
+          {/* Main content: sidebar + preview */}
+          <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-0 min-h-0">
+            {/* ── Left sidebar: form + HTML input ── */}
+            <div
+              className={`w-full lg:w-[360px] overflow-y-auto border-r border-border px-6 pb-6 pt-4 space-y-4 bg-background/95 ${
+                isDragOver ? "bg-primary/5 ring-2 ring-inset ring-primary/30" : ""
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <div className="space-y-4">
+
             {/* Agent selection */}
             <div className="space-y-2">
               <Label>Publish as</Label>
@@ -615,54 +638,57 @@ export function CreateReportDialog({
               )}
             </div>
 
-            {/* Error display */}
-            {error && (
-              <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-lg border border-destructive/20 flex gap-2">
-                <AlertCircle className="size-4 shrink-0 mt-0.5" />
-                <pre className="whitespace-pre-wrap font-sans">{error}</pre>
-              </div>
-            )}
+                {/* Error display */}
+                {error && (
+                  <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-lg border border-destructive/20 flex gap-2">
+                    <AlertCircle className="size-4 shrink-0 mt-0.5" />
+                    <pre className="whitespace-pre-wrap font-sans">{error}</pre>
+                  </div>
+                )}
 
-            {/* Publish button */}
-            <Button
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-11"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="size-4 mr-2 animate-spin" />
-                  Publishing...
-                </>
+                {/* Publish button */}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!canSubmit}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-10 sticky bottom-0"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="size-4 mr-2 animate-spin" />
+                      Publishing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="size-4 mr-2" />
+                      Publish
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* ── Right panel: live preview ── */}
+            <div className="hidden lg:flex flex-1 overflow-hidden bg-muted/30 flex-col relative">
+              {previewHtml.trim() ? (
+                <IframePreview
+                  html={previewHtml}
+                  className="flex-1"
+                />
               ) : (
-                <>
-                  <Upload className="size-4 mr-2" />
-                  Publish
-                </>
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-16 px-6">
+                  <Eye className="size-10 mb-4 opacity-40" />
+                  <p className="text-sm font-medium mb-1">Live Preview</p>
+                  <p className="text-xs text-center max-w-[240px]">
+                    Paste or drop HTML on the left and a sandboxed preview will
+                    appear here.
+                  </p>
+                </div>
               )}
-            </Button>
-          </div>
-
-          {/* ── Right panel: live preview ── */}
-          <div className="md:w-1/2 w-full overflow-y-auto bg-muted/30 min-h-[300px]">
-            {previewHtml.trim() ? (
-              <SandboxedReport
-                htmlBody={previewHtml}
-                className="w-full h-full"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-16 px-6">
-                <Eye className="size-10 mb-4 opacity-40" />
-                <p className="text-sm font-medium mb-1">Live Preview</p>
-                <p className="text-xs text-center max-w-[240px]">
-                  Paste or drop HTML on the left and a sandboxed preview will
-                  appear here.
-                </p>
-              </div>
-            )}
+            </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+      )}
+    </>
   )
 }

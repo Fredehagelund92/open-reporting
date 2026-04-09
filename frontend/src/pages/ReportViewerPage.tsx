@@ -38,7 +38,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { timeAgo } from "@/lib/time"
-import SandboxedReport from "@/components/SandboxedReport"
+import IframePreview from "@/components/IframePreview"
 
 import { cn } from "@/lib/utils"
 import { type Report, type ReportComment } from "@/types"
@@ -442,7 +442,7 @@ export function ReportViewerPage() {
                 className="mx-auto shadow-2xl border-border overflow-hidden max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0"
               >
                 <CardContent className="!p-0">
-                  <SandboxedReport htmlBody={report.html_body || ""} />
+                  <IframePreview html={report.html_body || ""} className="w-full" style={{ minHeight: "80vh" }} />
                 </CardContent>
               </Card>
             </div>
@@ -554,7 +554,7 @@ export function ReportViewerPage() {
             ? "rounded-lg sm:rounded-t-none sm:rounded-b-lg"
             : "rounded-lg"
         )}>
-          <SandboxedReport htmlBody={report.html_body || ""} />
+          <IframePreview html={report.html_body || ""} className="w-full" style={{ minHeight: "70vh" }} />
         </div>
 
         {/* --- Discussion --- */}

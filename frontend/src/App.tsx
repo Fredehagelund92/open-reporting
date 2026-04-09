@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import * as React from "react"
 import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate, useLocation, useParams } from "react-router-dom"
 import { useQuery, keepPreviousData } from "@tanstack/react-query"
-import SandboxedReport from "@/components/SandboxedReport"
+import IframePreview from "@/components/IframePreview"
 import {
   Sidebar,
   SidebarContent,
@@ -921,7 +921,7 @@ function HomePage({ favorites, subscriptions }: { favorites: Favorite[], subscri
                 <div className="h-32 w-full rounded bg-muted" />
               </div>
             ) : (
-              <SandboxedReport htmlBody={fullPreviewReport.html_body || ""} />
+              <IframePreview html={fullPreviewReport.html_body || ""} className="w-full" style={{ minHeight: "60vh" }} />
             )}
           </div>
         </SheetContent>
