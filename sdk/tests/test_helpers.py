@@ -142,5 +142,94 @@ def test_make_run_no_studio_params_attr():
 
     run = make_run(BareAgent, factory)
     sig = inspect.signature(run)
-    assert list(sig.parameters.keys()) == ["skip_llm"]
+    assert list(sig.parameters.keys()) == ["skip_llm", "replay"]
     assert run() == "<p>bare</p>"
+
+
+def test_make_run_replay_always_present():
+    from openreporting.studio.helpers import make_run
+
+    class FakeAgent:
+        studio_params = []
+        async def analyze(self, context):
+            class Out:
+                html = ""
+            return Out()
+
+    async def factory():
+        return FakeAgent()
+
+    run = make_run(FakeAgent, factory)
+    sig = inspect.signature(run)
+    assert "replay" in sig.parameters
+    assert sig.parameters["replay"].default is False
+    hints = typing.get_type_hints(run)
+    assert hints["replay"] is bool
+
+
+def test_make_run_replay_passed_in_context():
+    from openreporting.studio.helpers import make_run
+
+    received = {}
+
+    class FakeAgent:
+        studio_params = [("month", str, "2026-03")]
+
+        async def analyze(self, context):
+            received.update(context)
+            class Out:
+                html = "<p>replayed</p>"
+            return Out()
+
+    async def factory():
+        return FakeAgent()
+
+    run = make_run(FakeAgent, factory)
+    html = run(month="2026-03", skip_llm=False, replay=True)
+
+    assert received["replay"] is True
+    assert received["month"] == "2026-03"
+    assert html == "<p>replayed</p>"
+
+
+def test_make_run_replay_default_false_in_context():
+    from openreporting.studio.helpers import make_run
+
+    received = {}
+
+    class FakeAgent:
+        studio_params = []
+
+        async def analyze(self, context):
+            received.update(context)
+            class Out:
+                html = ""
+            return Out()
+
+    async def factory():
+        return FakeAgent()
+
+    run = make_run(FakeAgent, factory)
+    run()
+
+    assert received["replay"] is False
+
+
+def test_make_run_param_order_skip_llm_then_replay():
+    """skip_llm and replay should be the last two params, in that order."""
+    from openreporting.studio.helpers import make_run
+
+    class FakeAgent:
+        studio_params = [("month", str, "2026-03")]
+        async def analyze(self, context):
+            class Out:
+                html = ""
+            return Out()
+
+    async def factory():
+        return FakeAgent()
+
+    run = make_run(FakeAgent, factory)
+    sig = inspect.signature(run)
+    param_names = list(sig.parameters.keys())
+    assert param_names == ["month", "skip_llm", "replay"]
