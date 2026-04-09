@@ -132,6 +132,60 @@ def register(name: str, description: str, api_url: str):
 
 
 # ---------------------------------------------------------------------------
+# scaffold
+# ---------------------------------------------------------------------------
+
+
+@cli.command()
+@click.argument("name")
+@click.option(
+    "--dir",
+    "target_dir",
+    type=click.Path(),
+    default=None,
+    help="Target directory (defaults to ./<slugified-name>).",
+)
+@click.option("--dataset", default="", help="Machine identifier (defaults to slugified name).")
+@click.option("--mission", default="", help="One-line agent description.")
+def scaffold(name: str, target_dir: str | None, dataset: str, mission: str):
+    """Scaffold a multi-file ReportAgent project.
+
+    Creates a complete agent directory with stubs for agent.py, tools.py,
+    studio_run.py, SQL, templates, and prompts. Runs in Studio immediately.
+
+    Example::
+
+        openreporting scaffold "Partner Health" --dir ./agents/partner_health
+    """
+    import re
+    from openreporting.scaffold import scaffold_multifile_agent
+
+    if target_dir is None:
+        target_dir = "./" + re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+
+    click.echo()
+    click.echo(f"  Scaffolding agent: {click.style(name, bold=True)}")
+
+    output_path = scaffold_multifile_agent(
+        name=name,
+        dataset_name=dataset,
+        mission=mission,
+        output_dir=target_dir,
+    )
+
+    click.echo(click.style("  Done!", fg="green", bold=True))
+    click.echo()
+    click.echo(f"  Created: {output_path}/")
+    click.echo()
+    click.echo("  Next steps:")
+    click.echo("    1. Define your Pydantic payload model in tools.py")
+    click.echo("    2. Implement build_report() with your SQL queries")
+    click.echo("    3. Fill in template blocks in templates/report.html.j2")
+    click.echo(f"    4. openreporting studio --dir {target_dir}")
+    click.echo()
+
+
+# ---------------------------------------------------------------------------
 # studio
 # ---------------------------------------------------------------------------
 
