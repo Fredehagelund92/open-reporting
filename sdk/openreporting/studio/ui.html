@@ -1472,6 +1472,7 @@
       <button class="pb-btn" onclick="copyHtml()" id="copy-btn">Copy HTML</button>
       <button class="pb-btn" onclick="downloadHtml()">Download ↓</button>
 <button class="pb-btn" onclick="toggleFullscreen()" title="Fullscreen (F)" style="padding:3px 7px">⛶</button>
+      <button class="pb-btn" id="pb-view-desc" onclick="showDescription(descriptionHtml)" style="display:none">View description</button>
       <button class="pb-btn" id="pb-back-live" onclick="returnToLive()">Back to live</button>
       <span id="pb-live-badge" style="font-family:'Fragment Mono',monospace;font-size:9.5px;color:var(--or-primary);background:oklch(0.75 0.16 70 / 10%);border:1px solid oklch(0.75 0.16 70 / 20%);padding:2px 8px;border-radius:20px">
         Live in Studio
@@ -1576,6 +1577,8 @@
     let isSampleData = false;
     let selectedModel = 'sonnet'; // which Claude model to use
     let pipelineTimers = [];      // clearable timers for stage animation
+    let viewingDescription = false; // are we viewing description or report?
+    let descriptionHtml = '';     // cached description HTML
 
     // ─── Boot ─────────────────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {
@@ -1682,12 +1685,17 @@
       loadAgents();
       renderParams(selectedReport.params || []);
 
+      // Cache description for View description button
+      descriptionHtml = selectedReport.description || '';
+
       if (!keepPreview && selectedReport.description) {
         showDescription(selectedReport.description);
       }
     }
 
     function showDescription(html) {
+      viewingDescription = true;
+      descriptionHtml = html;
       document.getElementById('empty-state').style.display = 'none';
       document.getElementById('running-state').classList.remove('show');
       const frame = document.getElementById('preview-frame');
@@ -1927,6 +1935,7 @@
 
     // ─── Preview ──────────────────────────────────────────────────────────────
     function showPreview(reports) {
+      viewingDescription = false;
       currentReports = reports;
       activeReportIdx = 0;
       lastHtml = reports[0]?.html || '';
@@ -2123,7 +2132,7 @@
 
     // ─── Copy HTML ────────────────────────────────────────────────────────────
     async function copyHtml() {
-      const html = currentReports[activeReportIdx]?.html || lastHtml;
+      const html = viewingDescription ? descriptionHtml : (currentReports[activeReportIdx]?.html || lastHtml);
       if (!html) return;
       try {
         await navigator.clipboard.writeText(html);
@@ -2188,12 +2197,12 @@
 
     // ─── Download HTML ────────────────────────────────────────────────────────
     function downloadHtml() {
-      const html = currentReports[activeReportIdx]?.html || lastHtml;
+      const html = viewingDescription ? descriptionHtml : (currentReports[activeReportIdx]?.html || lastHtml);
       if (!html) return;
-      const tabLabel = currentReports[activeReportIdx]?.label;
+      const tabLabel = viewingDescription ? undefined : currentReports[activeReportIdx]?.label;
       const baseName = (selected?.name || 'report').replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
       const suffix = tabLabel && tabLabel !== 'Report' ? `_${tabLabel.replace(/[^a-z0-9_-]/gi, '_').toLowerCase()}` : '';
-      const name = baseName + suffix;
+      const name = baseName + (viewingDescription ? '_description' : suffix);
       const blob = new Blob([html], { type: 'text/html' });
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
@@ -2357,6 +2366,7 @@
 
     function viewHistory(idx) {
       viewingHistoryIdx = idx;
+      viewingDescription = false;
       const entry = runHistory[idx];
       if (!entry) return;
 
@@ -2386,6 +2396,7 @@
 
     function returnToLive() {
       viewingHistoryIdx = -1;
+      viewingDescription = false;
       if (runHistory.length) {
         const latest = runHistory[0];
         currentReports = latest.reports || [];
@@ -2409,6 +2420,7 @@
       const liveDot = document.getElementById('pb-live-dot');
       const label = document.getElementById('pb-mode-label');
       const backBtn = document.getElementById('pb-back-live');
+      const descBtn = document.getElementById('pb-view-desc');
       const liveBadge = document.getElementById('pb-live-badge');
 
       if (mode === 'description') {
@@ -2419,12 +2431,14 @@
         label.style.fontSize = '11px';
         label.style.color = 'oklch(0.60 0.012 262)';
         backBtn.style.display = 'none';
+        descBtn.style.display = 'none';
         liveBadge.style.display = 'none';
       } else if (mode === 'history') {
         liveDot.style.display = 'none';
         label.textContent = 'history';
         label.className = 'pb-mode-hist';
         backBtn.style.display = 'inline-block';
+        descBtn.style.display = 'inline-block';
         liveBadge.style.display = 'none';
       } else {
         liveDot.style.display = '';
@@ -2434,6 +2448,7 @@
         label.style.fontSize = '11px';
         label.style.color = 'var(--or-muted)';
         backBtn.style.display = 'none';
+        descBtn.style.display = descriptionHtml ? 'inline-block' : 'none';
         liveBadge.style.display = '';
       }
     }
