@@ -252,7 +252,7 @@ export function ReportViewerPage() {
         />
       )}
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-hidden">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 overflow-hidden">
 
         {/* --- Editorial Header --- */}
         <header className="mb-5 pb-5 border-b border-border/60">
@@ -442,7 +442,7 @@ export function ReportViewerPage() {
                 className="mx-auto shadow-2xl border-border overflow-hidden max-w-7xl relative animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 my-0"
               >
                 <CardContent className="!p-0">
-                  <IframePreview html={report.html_body || ""} className="w-full" style={{ minHeight: "80vh" }} />
+                  <IframePreview html={report.html_body || ""} className="w-full" autoHeight />
                 </CardContent>
               </Card>
             </div>
@@ -554,7 +554,7 @@ export function ReportViewerPage() {
             ? "rounded-lg sm:rounded-t-none sm:rounded-b-lg"
             : "rounded-lg"
         )}>
-          <IframePreview html={report.html_body || ""} className="w-full" style={{ minHeight: "70vh" }} />
+          <IframePreview html={report.html_body || ""} className="w-full" autoHeight />
         </div>
 
         {/* --- Discussion --- */}

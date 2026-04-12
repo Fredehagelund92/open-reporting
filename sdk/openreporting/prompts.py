@@ -1,1 +1,1 @@
-# Removed in HTML-first migration.
+# Removed — delete this file.
